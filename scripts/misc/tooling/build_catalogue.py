@@ -1,9 +1,17 @@
-"""Generate the setup-oriented profiling evidence catalogue (stdlib only).
+"""Generate the profiling evidence catalogues (stdlib only).
 
-Run ``python scripts/misc/tooling/build_catalogue.py [--check]``. The registry
-owns navigation and explicit reference choices; adapters only transcribe
-recorded measurements. No script imports, timings, latest-row choice or
-scientific acceptance occur here. See catalogue/README.md.
+Run ``python scripts/misc/tooling/build_catalogue.py [--check]``. Two documents come out of
+one pass over the mirrored results tree:
+
+- ``dashboard/catalogue.json``: the ``profiling-summary@3`` lifecycle catalogue Pulse reads
+  (likelihood, setup_id, host_class, class/status by the day-zero rule; see
+  ``catalogue_lifecycle.py``).
+- ``dashboard/catalogue/setups.json`` + ``catalogue/shards/``: the companion v2 setup catalogue
+  behind this repo's setup browser and setup wiki.
+
+The registry owns navigation and explicit reference choices; adapters only transcribe
+recorded measurements. No script imports, timings, latest-row choice or scientific acceptance
+occur here. See catalogue/README.md.
 """
 
 from __future__ import annotations
@@ -17,10 +25,12 @@ from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import catalogue_lifecycle as lc
 from catalogue_adapters import metrics, number, pointer, rows
-from results_layout import legacy_of
 
 REGISTRY = "catalogue/registry.json"
+#: The companion v2 index, relative to ``dashboard/`` (its shards sit beside it).
+SETUPS_INDEX = "catalogue/setups.json"
 UNKNOWN = "Not recorded in this legacy evidence; no current default substituted."
 REQUIRED_SETTINGS = {
     "image_shape": "pixel",
@@ -175,6 +185,11 @@ def registry(root):
 
 
 def route(path, payload, reg):
+    cell = lc.mirrored(path)
+    if cell is not None:
+        # The mirrored tree names its likelihood and instrument; payload labels never override.
+        model = reg["model_aliases"].get(cell["variant"], cell["variant"])
+        return cell["dataset_type"], model, cell["instrument"]
     parts = Path(path).parts
     dataset = payload.get("dataset_class")
     if not text(dataset):
@@ -262,10 +277,11 @@ def identity(payload, path):
         software["jax"] = payload["jax_version"]
     hardware = payload.get("hardware")
     backend = device.get("backend") or payload.get("backend")
-    # Only explicit, documented config/hardware labels are used as hints.
-    label = next(
-        (x for x in (payload.get("_config_label"), hardware, Path(path).stem) if text(x)), ""
-    )
+    # Only explicit, documented config/hardware labels are used as hints; a mirrored cell's
+    # folder names are its setup and host class.
+    cell = lc.mirrored(path)
+    stem = f"{cell['setup_id']}_{cell['host_class']}" if cell else Path(path).stem
+    label = next((x for x in (payload.get("_config_label"), hardware, stem) if text(x)), "")
     precision = None
     mixed = payload.get("use_mixed_precision", payload.get("mixed_precision"))
     if not isinstance(mixed, bool) and isinstance(payload.get("precision"), dict):
@@ -274,7 +290,7 @@ def identity(payload, path):
         precision = "mixed" if mixed else "float64"
     elif "_fp64" in label:
         precision = "float64"
-    elif re.search(r"_mp(?:_|$)", label):
+    elif re.search(r"_(?:mp|mixed)(?:_|$)", label):
         precision = "mixed"
     if not text(backend) and text(hardware):
         backend = "cpu" if hardware == "local_cpu" else "gpu" if "gpu" in hardware else None
@@ -360,11 +376,8 @@ def build(root, generated, revision):
             if path in files:
                 raise ValueError(f"Overlapping catalogue source declarations: {path}")
             files[path] = spec["adapter"]
-    # Moved results keep their pre-move identity (routing, labels, setup ids, order); the
-    # evidence path is where the file lives now (results_layout.py, #442 PR 2).
-    for path, adapter in sorted(files.items(), key=lambda kv: Path(legacy_of(root, kv[0]))):
-        legacy = legacy_of(root, path)
-        override = next((s for s in reg["overrides"] if legacy.startswith(s["prefix"])), {})
+    for path, adapter in sorted(files.items(), key=lambda kv: Path(kv[0])):
+        override = next((s for s in reg["overrides"] if path.startswith(s["prefix"])), {})
         adapter = override.get("adapter", adapter)
         doc = load_json(source_path(root, path))
         source = {
@@ -407,12 +420,12 @@ def build(root, generated, revision):
                 "Findings retained separately until explicit versioned setup bindings exist."
             )
         for payload, base, context in rows(doc, adapter):
-            dataset, model, instrument = route(legacy, payload, reg)
+            dataset, model, instrument = route(path, payload, reg)
             dataset, model = override.get("dataset", dataset), override.get("model", model)
             config = settings(payload, context)
             # Legacy schemas do not promise complete scientific identity. A
             # source/row boundary prevents a false join despite equal partial settings.
-            cid = digest([legacy, base, config])
+            cid = digest([path, base, config])
             setup_id = f"{dataset}/{model}/{instrument or 'unspecified'}/{cid}"
             setup = {
                 "id": setup_id,
@@ -428,7 +441,7 @@ def build(root, generated, revision):
             }
             if instrument is None:
                 setup["unknowns"] = {"instrument": UNKNOWN}
-            ident, prov = identity(payload, legacy)
+            ident, prov = identity(payload, path)
             if adapter == "streaming" and payload.get("outcome") != "OK":
                 setups.append(setup)
                 status = "unusable" if "MEM" in str(payload.get("outcome")) else "failed"
@@ -479,12 +492,12 @@ def build(root, generated, revision):
                         f"{anchor}: no measured software version/revision; cannot satisfy v2 record identity."
                     )
                     continue
-                rid = "measurement/" + digest([legacy, anchor, axis, metric])
+                rid = "measurement/" + digest([path, anchor, axis, metric])
                 emitted.append(
                     {
                         "id": rid,
                         "setup_id": setup_id,
-                        "run_id": "legacy/" + digest([legacy, base]),
+                        "run_id": "legacy/" + digest([path, base]),
                         "axis": axis,
                         "metric": metric,
                         "unit": unit,
@@ -819,8 +832,335 @@ def validate_local(root, doc):
                 raise ValueError("Recommendation support is missing, mismatched or unaccepted")
 
 
+# ---------------------------------------------------------------- profiling-summary@3 ---
+
+RELEASE_DATE = re.compile(r"(\d{4})\.(\d{1,2})\.(\d{1,2})(?:\D|$)")
+
+V3_LIMITATIONS = [
+    "Phase-0 labels (autolens_profiling#442): nothing was re-measured. A current record is the "
+    "canonical cell row on a reference host class for a planned baseline cell; it is not an "
+    "accepted baseline and carries no day_zero stamp.",
+    "No designation decision exists yet: provisional Optimal rows are class secondary with "
+    "'provisional_optimal: true' in their limitations (R3); planned_cells carry the "
+    "provisional class.",
+    "Standard source-pixel counts are Delaunay 1250 and rectangular 1225 (35x35). No committed "
+    "row is at the standard size; current pixelized rows carry a size_fallback limitation.",
+    "Records whose key has no current row (laptop-only, experiment-only, or outside the "
+    "planned cells) are not rendered; coverage.excluded counts them per key. Every row stays "
+    "in the companion v2 setup catalogue (dashboard/catalogue/setups.json).",
+    "Historical recommendations and hazard findings name v2 setups and stay in the companion "
+    "catalogue until they are re-bound to v3 setup_ids.",
+]
+
+
+def planned_baseline_cells(reg):
+    """{(dataset_type, variant, instrument)} of the registry's planned baseline cells."""
+    cells = set()
+    for cell in reg["cells"]:
+        if not text(cell.get("instrument")):
+            raise ValueError(f"v3 planned cell needs an instrument: {cell['id']}")
+        cells.add((cell["dataset"], cell["model"], cell["instrument"]))
+    return cells
+
+
+def lifecycle_candidates(root, reg, path, doc, adapter):
+    """(v3 records, reasons) for one mirrored source file; nothing is labelled yet."""
+    cell = lc.mirrored(path)
+    out, reasons = [], []
+    if cell is None:
+        return out, ["Outside the mirrored tree: no lifecycle key; companion catalogue only."]
+    if cell["file_measurement"] is None:
+        return out, ["Job sidecar, not a measurement file: no lifecycle record."]
+    figure = source_path(root, path).with_name("fit.png")
+    figures = []
+    if figure.is_file():
+        figures.append(
+            {
+                "kind": "fit",
+                "path": figure.relative_to(root).as_posix(),
+                "sha256": hashlib.sha256(figure.read_bytes()).hexdigest(),
+            }
+        )
+    cls, notes = lc.record_class(
+        cell["dataset_type"], cell["variant"], cell["host_class"], cell["setup_id"]
+    )
+    for payload, base, _context in rows(doc, adapter):
+        groups = {}
+        for axis, metric, unit, value, anchor, statistic, n in metrics(payload, adapter, base):
+            if not number(value):
+                reasons.append(f"{anchor}: missing/non-finite/negative measurement refused.")
+                continue
+            measurement = lc.measurement_of(axis, metric, cell["file_measurement"])
+            groups.setdefault(measurement, {}).setdefault(
+                metric, (value, anchor, statistic, n, unit)
+            )
+        if not groups:
+            continue
+        ident, prov = identity(payload, path)
+        if not ident["software"]:
+            reasons.append(f"{base or '/'}: no measured software version; no v3 record.")
+            continue
+        measured_at, row_notes = prov["measured_at"], list(notes)
+        if measured_at is None:
+            # v3 needs a UTC measured_at; a row without one is dated by its release, the
+            # earliest day it can have been measured, and says so.
+            release = RELEASE_DATE.match(ident["library_version"] or "")
+            if release is None:
+                reasons.append(f"{base or '/'}: no measurement timestamp or release; no v3 record.")
+                continue
+            year, month, day = (int(g) for g in release.groups())
+            measured_at = f"{year:04d}-{month:02d}-{day:02d}T00:00:00Z"
+            row_notes.append(
+                f"measured_at_derived: the row records no timestamp; {measured_at[:10]} is the "
+                f"date of release {ident['library_version']}, the earliest it can have run"
+            )
+        pixels = lc.source_pixels(payload)
+        for measurement, found in sorted(groups.items()):
+            values = {k: v[0] for k, v in sorted(found.items())}
+            head = lc.headline(measurement, values)
+            _value, _anchor, statistic, n, unit = found[head]
+            out.append(
+                {
+                    "id": "lifecycle/" + digest([path, base, measurement]),
+                    "run_id": "legacy/" + digest([path, base]),
+                    "likelihood": {
+                        "dataset_type": cell["dataset_type"],
+                        "variant": cell["variant"],
+                    },
+                    "instrument": cell["instrument"],
+                    "regime": lc.regime(cell["variant"], pixels),
+                    "setup": {**cell["setup"], "threads": None},
+                    "setup_id": cell["setup_id"],
+                    "host_class": cell["host_class"],
+                    "model_variant": cell["model_variant"],
+                    "measurement": measurement,
+                    "metric": head,
+                    "unit": unit,
+                    "values": values,
+                    "class": cls,
+                    "status": None,
+                    "superseded_by": None,
+                    "day_zero": None,
+                    "figures": figures,
+                    "decision_id": None,
+                    "release_pin": ident["library_version"],
+                    "measured_at": measured_at,
+                    "identity": ident,
+                    "method": method(payload, measurement, head, statistic, n),
+                    "provenance": prov,
+                    "validation": {
+                        "status": "unreviewed",
+                        "reason": "Legacy evidence labelled by the phase-0 day-zero rule; not an accepted baseline.",
+                    },
+                    "evidence": {"path": path, "fragment": base or None},
+                    "pointers": {k: v[1] for k, v in sorted(found.items())},
+                    "location": cell["location"],
+                    "limitations": list(row_notes),
+                    "_rank": (
+                        lc.size_rank(cell["variant"], pixels),
+                        lc.FILE_ORDER[cell["file_measurement"]],
+                    ),
+                    "_pixels": pixels,
+                }
+            )
+    return out, reasons
+
+
+def label_lifecycle(records, planned, refs):
+    """Assign status/superseded_by by the day-zero rule; return (kept, excluded entries)."""
+    by_key = {}
+    for record in records:
+        by_key.setdefault(lc_key(record), []).append(record)
+    current = {}
+    for key, items in by_key.items():
+        eligible = [
+            r
+            for r in items
+            if r["location"] == "cell"
+            and r["host_class"] not in lc.LOCAL_HOSTS
+            and (
+                (r["likelihood"]["dataset_type"], r["likelihood"]["variant"], r["instrument"])
+                in planned
+                or r["evidence"]["path"] in refs
+            )
+        ]
+        if eligible:
+            best = min(eligible, key=lambda r: (r["_rank"], r["id"]))
+            best["status"] = "current"
+            if best["_rank"][0][0] != 0:
+                best["limitations"].append(
+                    lc.size_note(best["likelihood"]["variant"], best["_pixels"])
+                )
+            current[key] = best
+    kept, orphans = [], {}
+    for key, items in sorted(by_key.items()):
+        for record in items:
+            if record["status"] == "current":
+                kept.append(record)
+                continue
+            target = current.get(key)
+            if target is None and record["host_class"] in lc.LOCAL_HOSTS:
+                ref_host = lc.REFERENCE_HOSTS[record["setup"]["device"]]
+                target = current.get(lc_key({**record, "host_class": ref_host}))
+            if target is None:
+                orphans.setdefault(key, []).append(record)
+                continue
+            record["status"] = "superseded"
+            record["superseded_by"] = target["id"]
+            kept.append(record)
+    excluded = []
+    for key, items in sorted(orphans.items()):
+        first = items[0]
+        why = (
+            "laptop/local-GPU rows only (R7: never current)"
+            if all(r["host_class"] in lc.LOCAL_HOSTS for r in items)
+            else "scan/experiment/history rows only (never current)"
+            if all(r["location"] != "cell" for r in items)
+            else "likelihood x instrument is not a planned baseline cell"
+        )
+        excluded.append(
+            {
+                "id": "no-current/" + digest(key),
+                "reason": f"No current record on this key: {why}. Kept in the companion v2 catalogue.",
+                "record_count": len(items),
+                "key": json.loads(key),
+                "evidence": {"path": first["evidence"]["path"]},
+            }
+        )
+    for record in kept:
+        record.pop("_rank")
+        record.pop("_pixels")
+    return sorted(kept, key=lambda r: r["id"]), excluded
+
+
+def lc_key(record):
+    return json.dumps(
+        {
+            k: record[k]
+            for k in (
+                "likelihood",
+                "instrument",
+                "setup_id",
+                "host_class",
+                "model_variant",
+                "measurement",
+            )
+        },
+        sort_keys=True,
+    )
+
+
+def archived_count(root, path, doc, adapter):
+    """The v3 records an archived file would yield (counted, never rendered)."""
+    count = 0
+    stem = Path(path).stem
+    for payload, base, _context in rows(doc, adapter):
+        found = {
+            lc.measurement_of(axis, metric, stem if stem in lc.FILE_MEASUREMENTS else None)
+            for axis, metric, _u, value, *_ in metrics(payload, adapter, base)
+            if number(value)
+        }
+        count += len(found)
+    return count
+
+
+def build_lifecycle(root, generated, revision):
+    """The ``profiling-summary@3`` document (Pulse REFERENCE.md "profiling-summary v3")."""
+    root = Path(root).resolve()
+    reg = registry(root)
+    planned = planned_baseline_cells(reg)
+    refs = {r["path"] for r in reg["references"]}
+    candidates, archived = [], 0
+    for spec in reg["sources"]:
+        if spec["adapter"] != "profile":
+            continue
+        for p in sorted(root.glob(spec["glob"])):
+            path = p.relative_to(root).as_posix()
+            override = next((s for s in reg["overrides"] if path.startswith(s["prefix"])), {})
+            adapter = override.get("adapter", spec["adapter"])
+            if adapter not in ("profile", "streaming"):
+                continue
+            doc = load_json(source_path(root, path))
+            if path.startswith("archive/"):
+                archived += archived_count(root, path, doc, adapter)
+                continue
+            found, _reasons = lifecycle_candidates(root, reg, path, doc, adapter)
+            candidates.extend(found)
+    records, excluded = label_lifecycle(candidates, planned, refs)
+    planned_cells = []
+    for dataset_type, variant, instrument in sorted(planned):
+        for host_class in ("hpc_a100", "hpc_ral_cpu"):
+            for sid, cls in lc.planned_setups(dataset_type, variant, host_class).items():
+                for measurement in ("runtime", "breakdown"):
+                    planned_cells.append(
+                        {
+                            "likelihood": {"dataset_type": dataset_type, "variant": variant},
+                            "instrument": instrument,
+                            "setup_id": sid,
+                            "host_class": host_class,
+                            "model_variant": "default",
+                            "measurement": measurement,
+                            "class": cls,
+                        }
+                    )
+    counts = {s: sum(r["status"] == s for r in records) for s in ("current", "superseded")}
+    doc = {
+        "schema": "profiling-summary",
+        "version": 3,
+        "project": "autolens_profiling",
+        "scope": "likelihood-lifecycle",
+        "generated_at": generated,
+        "evidence_updated_at": None,
+        "evidence_updated_at_reason": "No common measurement wall-clock across legacy evidence; inspect each record's measured_at.",
+        "valid_until": None,
+        "producer_revision": revision,
+        "comparison_policy": {"id": "no-temporal-comparisons"},
+        "coverage": {
+            "expected": {"cells": len(planned_cells)},
+            "observed": {"records": len(records), **counts},
+            "excluded": excluded,
+        },
+        "records": records,
+        "planned_cells": planned_cells,
+        "archive_record_count": archived,
+        "standard_source_pixels": dict(sorted(lc.STANDARD_SOURCE_PIXELS.items())),
+        "comparisons": [],
+        "hazards": [],
+        "recommendations": [],
+        "limitations": V3_LIMITATIONS,
+    }
+    validate_lifecycle(root, doc)
+    return doc
+
+
+def validate_lifecycle(root, doc):
+    """Producer integrity checks for v3; CI also runs the independent Pulse reader."""
+    json.dumps(doc, allow_nan=False)
+    ids = {r["id"] for r in doc["records"]}
+    if len(ids) != len(doc["records"]):
+        raise ValueError("Duplicate lifecycle record id")
+    current, sources = {}, {}
+    for record in doc["records"]:
+        if record["status"] == "current":
+            if lc_key(record) in current:
+                raise ValueError(f"Second current record on one key: {record['id']}")
+            if record["host_class"] in lc.LOCAL_HOSTS or record["location"] != "cell":
+                raise ValueError(f"Ineligible current record: {record['id']}")
+            current[lc_key(record)] = record["id"]
+        elif record["status"] != "superseded" or record["superseded_by"] not in ids:
+            raise ValueError(f"Superseded record without a target: {record['id']}")
+        if record["class"] == "optimal" and not text(record["decision_id"]):
+            raise ValueError("class optimal needs a designation decision_id")
+        ev = record["evidence"]
+        if ev["path"] not in sources:
+            sources[ev["path"]] = load_json(source_path(root, ev["path"]))
+        for metric, fragment in record["pointers"].items():
+            if resolve_pointer(sources[ev["path"]], fragment) != record["values"][metric]:
+                raise ValueError("Lifecycle value does not match original evidence")
+
+
 def render_outputs(root, generated, revision):
-    """Index plus independently valid setup shards; no 36 MB landing fetch."""
+    """The v3 lifecycle catalogue, plus the companion v2 index and its setup shards."""
     import copy
 
     full = build(root, generated, revision)
@@ -902,8 +1242,12 @@ def render_outputs(root, generated, revision):
     index["evidence_shards"] = shards
     index["archive_record_count"] = len(full["records"])
     validate_local(root, index)
-    outputs["catalogue.json"] = (
+    outputs[SETUPS_INDEX] = (
         json.dumps(index, sort_keys=True, separators=(",", ":"), allow_nan=False) + "\n"
+    )
+    lifecycle = build_lifecycle(root, generated, revision)
+    outputs["catalogue.json"] = (
+        json.dumps(lifecycle, sort_keys=True, separators=(",", ":"), allow_nan=False) + "\n"
     )
     return outputs
 
@@ -924,7 +1268,7 @@ def main(argv=None):
     parser.add_argument(
         "--validate-with",
         type=Path,
-        help="Pulse checkout: validate using the independent merged contract reader",
+        help="Pulse checkout: validate with its independent contract reader (v3 lifecycle, v2 companion)",
     )
     args = parser.parse_args(argv)
     root = args.root.resolve()
@@ -937,10 +1281,11 @@ def main(argv=None):
         from pulse.summary import classify
 
         for name, content in outputs.items():
-            outcome, errors = classify(json.loads(content), ("profiling-summary", 2))
+            version = 3 if name == "catalogue.json" else 2
+            outcome, errors = classify(json.loads(content), ("profiling-summary", version))
             if outcome != "ok":
                 raise ValueError(
-                    f"Pulse v2 validation failed for {name}: " + "; ".join(errors[:20])
+                    f"Pulse v{version} validation failed for {name}: " + "; ".join(errors[:20])
                 )
     stale = [
         name
@@ -962,9 +1307,14 @@ def main(argv=None):
         path.write_text(content)
     for path in obsolete:
         path.unlink()
-    doc = json.loads(outputs["catalogue.json"])
+    doc = json.loads(outputs[SETUPS_INDEX])
+    v3 = json.loads(outputs["catalogue.json"])
+    observed = v3["coverage"]["observed"]
     print(
-        f"catalogue: wrote {len(doc['setups'])} setups, {doc['archive_record_count']} measurements, {len(doc['inventory'])} evidence files, {len(outputs) - 1} shards"
+        f"catalogue: wrote v3 {observed['current']} current + {observed['superseded']} superseded "
+        f"records, {v3['archive_record_count']} archived, {len(v3['planned_cells'])} planned cells; "
+        f"companion v2 {len(doc['setups'])} setups, {doc['archive_record_count']} measurements, "
+        f"{len(doc['inventory'])} evidence files, {len(outputs) - 2} shards"
     )
     return 0
 

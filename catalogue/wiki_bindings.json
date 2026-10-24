@@ -5,16 +5,16 @@
     {
       "path": "wiki/campaigns/interferometer/interferometer_likelihood.md",
       "setup_ids": [
-        "interferometer/delaunay/alma/00e86a7de323cb7098eb",
-        "interferometer/delaunay/alma/c00199cd0663a6f29c96",
-        "interferometer/delaunay/sdp81/5eb412356335dad23303",
-        "interferometer/delaunay/sdp81/e72d63bebe8acf2cb84c",
-        "interferometer/mge/sdp81/24e7d46221f7dca168bf",
-        "interferometer/mge/sdp81/61c6dccf97c81d66fc1e",
-        "interferometer/rectangular/alma/5e3423306e47ff2283ff",
-        "interferometer/rectangular/alma/c6ff0b2db1b9b636c14c",
-        "interferometer/rectangular/sdp81/0058ef5f0b6c03fd1580",
-        "interferometer/rectangular/sdp81/f81557c6f4f9324e5beb"
+        "interferometer/delaunay/alma/fa2d3e07d987f846293d",
+        "interferometer/delaunay/alma/8ced88b7d8f5fea0aed8",
+        "interferometer/delaunay/sdp81/e69a84a60787315b9cb0",
+        "interferometer/delaunay/sdp81/d902694ddca4cfa88ade",
+        "interferometer/mge/sdp81/1425cc7cd69e83045c24",
+        "interferometer/mge/sdp81/436aab39311c5503aa90",
+        "interferometer/rectangular/alma/39e1b1f8aa1c07b1c730",
+        "interferometer/rectangular/alma/616d536fdc11c9793e17",
+        "interferometer/rectangular/sdp81/78d57b6ccae57892a1f2",
+        "interferometer/rectangular/sdp81/36c9d616cd093a5bad14"
       ]
     }
   ]

@@ -4,15 +4,11 @@ import copy
 import hashlib
 import importlib.util
 import json
-import sys
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(ROOT / "scripts/misc/tooling"))
-from results_layout import current_of, legacy_of  # noqa: E402
-
 spec = importlib.util.spec_from_file_location(
     "build_setup_wiki", ROOT / "scripts/misc/tooling/build_setup_wiki.py"
 )
@@ -22,7 +18,7 @@ spec.loader.exec_module(wiki)
 
 @pytest.fixture
 def tree(tmp_path):
-    index = json.loads((ROOT / "dashboard/catalogue.json").read_text())
+    index = json.loads((ROOT / "dashboard/catalogue/setups.json").read_text())
     refs = index["evidence_shards"][:2]
     ids = {r["setup_id"] for r in refs}
     index["setups"] = [s for s in index["setups"] if s["id"] in ids] + [
@@ -40,7 +36,7 @@ def tree(tmp_path):
         path = tmp_path / "dashboard" / ref["path"]
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes((ROOT / "dashboard" / ref["path"]).read_bytes())
-    (tmp_path / "dashboard/catalogue.json").write_text(json.dumps(index))
+    (tmp_path / "dashboard/catalogue/setups.json").write_text(json.dumps(index))
     (tmp_path / "catalogue").mkdir()
     (tmp_path / "catalogue/wiki_bindings.json").write_text(json.dumps({"campaigns": []}))
     return tmp_path
@@ -71,7 +67,7 @@ def test_checksum_missing_shard_and_wrong_identity_fail(tree):
     raw = json.dumps(doc).encode()
     path.write_bytes(raw)
     ref["sha256"] = hashlib.sha256(raw).hexdigest()
-    (tree / "dashboard/catalogue.json").write_text(json.dumps(index))
+    (tree / "dashboard/catalogue/setups.json").write_text(json.dumps(index))
     assert "identity/count mismatch" in wiki.check(tree)[0]
     path.unlink()
     assert "invalid setup wiki" in wiki.check(tree)[0]
@@ -111,7 +107,7 @@ def test_recommendation_only_on_bound_exact_setup_and_no_campaign_inference(tree
     first, second = index["setups"][:2]
     record = shards[first["id"]]["records"][0]
     recommendation = copy.deepcopy(
-        json.loads((ROOT / "dashboard/catalogue.json").read_text())["recommendations"][0]
+        json.loads((ROOT / "dashboard/catalogue/setups.json").read_text())["recommendations"][0]
     )
     recommendation["applies_to"]["setup_ids"] = [first["id"]]
     recommendation["record_ids"] = [record["id"]]
@@ -195,15 +191,15 @@ def test_historical_matrix_uses_correct_mge_arm_and_exact_alma_analogues():
         for r in shards[sid]["records"]
         if r["id"] in mge["record_ids"]
     }
-    assert "measurement/0107b28bf36bac6cdfc4" not in support
-    sparse = support["measurement/3b9e72ef5d8791a738a9"]
+    assert "measurement/574c5dff24d35f868958" not in support
+    sparse = support["measurement/b3c1b8868e990c75846c"]
     assert (
         sparse["evidence"]["fragment"]
         == "/jit_phases/library_sparse_full_pipeline/steady_per_call_s"
     )
     assert sparse["measurement"][sparse["metric"]] == pytest.approx(0.0037863500998355447)
     assert (
-        support["measurement/d399e1ba20dcdf9665e0"]["evidence"]["fragment"]
+        support["measurement/9fc99b7f5e690fb38373"]["evidence"]["fragment"]
         == "/full_pipeline_single_jit"
     )
     extent = recommendations["extent"]
@@ -212,17 +208,20 @@ def test_historical_matrix_uses_correct_mge_arm_and_exact_alma_analogues():
         for sid in extent["applies_to"]["setup_ids"]
         if setups[sid]["instrument"] == "alma"
     }
-    # Evidence paths are where the files live since the day-zero move (#442 PR 2).
+    # Evidence paths are the mirrored cells (#442): the canonical row of each setup.
     assert alma == {
-        current_of(ROOT, "results/breakdown/interferometer/" + model + "_" + suffix + ".json")
-        for model in ["delaunay", "pixelization"]
-        for suffix in ["hpc_a100_fp64", "numba_hpc_ral_cpu_fp64"]
+        f"results/interferometer/{model}/alma/{setup}/breakdown.json"
+        for model in ["delaunay", "rectangular"]
+        for setup in [
+            "jax_gpu_sparse_fp64_wtilde/hpc_a100",
+            "numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu",
+        ]
     }
     assert len(extent["applies_to"]["setup_ids"]) == 8
     for sid in extent["applies_to"]["setup_ids"]:
-        path = legacy_of(ROOT, setups[sid]["evidence"]["path"])
-        assert not any(excluded in path for excluded in ["n_sweep", "levers", "constant_split"])
-        assert "_numba_" in path or "_a100_" in path
+        path = setups[sid]["evidence"]["path"]
+        assert "/scans/" not in path and "/experiments/" not in path
+        assert "/numba_cpu_" in path or "/hpc_a100/" in path
     for sid in recommendations["mesh-sparse"]["applies_to"]["setup_ids"]:
         path = setups[sid]["evidence"]["path"]
         assert {"path": path, "fragment": "/dense_total_step_by_step"} in recommendations[

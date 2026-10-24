@@ -1,4 +1,4 @@
-"""Generate exact-setup wiki navigation from the exported v2 catalogue (stdlib)."""
+"""Generate exact-setup wiki navigation from the companion v2 setup catalogue (stdlib)."""
 
 from __future__ import annotations
 
@@ -38,7 +38,7 @@ def link(page, target, label):
 
 
 def load_catalogue(root):
-    index = json.loads((root / "dashboard/catalogue.json").read_text())
+    index = json.loads((root / "dashboard/catalogue/setups.json").read_text())
     shards = {}
     for ref in index["evidence_shards"]:
         path = Path(ref["path"])
@@ -171,7 +171,9 @@ def render_outputs(root, index=None, shards=None):
             for item in applicable:
                 lines += [
                     link(
-                        page, "dashboard/catalogue.json", "Full versioned applicability and support"
+                        page,
+                        "dashboard/catalogue/setups.json",
+                        "Full versioned applicability and support",
                     ),
                     "",
                     f"### {cell(item['title'])}",

@@ -12,7 +12,8 @@ re-renders on release. `pages_dashboard.yml` publishes the folder as-is at
 | `index.html` | a human | the setup browser (shared theme, inline code, catalogue and lazy shards) |
 | `series.json` | `index.html` | the trend data, `schema_version` 1 — this project's own shape |
 | `state.json` | this project's own Pages badge | `PyAutoBrain/board/state_schema.json` v1; project label `autolens_profiling` |
-| `catalogue.json` + `catalogue/shards/*.json` | setup browser / assistant foundation | companion **v2**, [catalogue documentation](../catalogue/README.md) |
+| `catalogue.json` | the **PyAutoPulse** organ (re-pin pending) | **`profiling-summary@3`** lifecycle catalogue, [catalogue documentation](../catalogue/README.md) |
+| `catalogue/setups.json` + `catalogue/shards/*.json` | setup browser / assistant foundation | companion **v2**, [catalogue documentation](../catalogue/README.md) |
 | `summary.json` | the **PyAutoPulse** organ | **`profiling-summary` v1** — below |
 
 The Brain board and cockpit read the **PyAutoPulse** organ feed (`PyAutoPulse/state.json`);
