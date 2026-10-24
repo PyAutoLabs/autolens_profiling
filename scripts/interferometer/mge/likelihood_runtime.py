@@ -537,7 +537,8 @@ dict_path, chart_path = resolve_output_paths(
     _cli,
     default_dir=_workspace_root / "results" / "runtime" / "interferometer" / "mge",
     default_basename=f"mge_likelihood_summary_{instrument}_v{al_version}",
-    hints=likelihood_summary,
+    # The payload does not record the transformer class; the placement needs it (#442 PR 3b).
+    hints={**likelihood_summary, "transformer": _transformer_class.__name__},
 )
 dict_path.write_text(json.dumps(likelihood_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")

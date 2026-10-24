@@ -9,10 +9,21 @@ top-level folder (``results/latent/``, ``results/jit/``), would re-grow the lega
 
 Heuristic (source text, no execution):
 
-- **Python** (``scripts/**/*.py`` and ``_profile_cli.py``), parsed with ``ast``: a ``/`` path
-  join whose operands hold the constant ``"results"`` immediately followed by a constant
-  top-level folder, or a string constant / f-string part holding ``results/<top>`` at a path
-  boundary (start of the string, whitespace, quote, ``(``, ``=``, ``}/`` or ``)/``), where ``<top>`` is not ``misc``, ``lens`` or a ``scripts/`` dataset-type folder.
+- **Python** (``scripts/**/*.py`` and ``_profile_cli.py``), parsed with ``ast``. Every path
+  expression is flattened into its segments: ``/`` joins, ``<path>.joinpath(a, b)``,
+  ``os.path.join(a, b)``, ``Path(a, b)`` / ``PurePosixPath(a, b)``, ``"a/b"`` constants split on
+  ``/``, and a bare name bound earlier in the same module by a simple ``NAME = <path>``
+  assignment (the variable-root alias ``R = ROOT / "results"; R / "runtime"``). A segment
+  ``results`` that starts the path or follows an unknown root (a name, call or parameter --
+  not another constant folder, so ``.../jax_profiling/results/jit`` is someone else's tree)
+  must be followed by ``misc``, ``lens`` or a ``scripts/`` dataset folder, and a dataset folder
+  by a variant that ``scripts/<dataset_type>/<variant>/`` also has. A string constant or
+  f-string part holding ``results/<top>[/<variant>]`` at a path boundary (start, whitespace,
+  quote, ``(``, ``=``, ``}/`` or ``)/``) is held to the same rule.
+- Not followed: names bound in another module or by a non-trivial expression (a function
+  parameter, ``x = a if c else b``, attribute assignments, loop targets), and dynamic segments
+  (the check accepts what it cannot read). These need execution to resolve; the placement
+  helpers and code review cover them.
 - **Shell** (``hpc/**`` submit scripts and ``scripts/**/*.sh``): a non-comment line holding
   ``results/<top>`` at a path boundary (start, whitespace, quote, ``=``, ``ROOT/``, ``}/``).
 
@@ -69,12 +80,89 @@ EXCLUDED_FILES = {
     # ``baseline/README.md`` fixes for a future producer; no script writes there yet.
     "scripts/misc/tooling/baseline_readiness.py",
 }
-_PY_STRING = re.compile(r"(?:^/?|[\s\"'`(=]|\}/|\)/)results/([A-Za-z0-9_]+)")
-_SHELL = re.compile(r"(?:^|[\s\"'=]|ROOT\}?/|\}/)results/([A-Za-z0-9_]+)")
+_PY_STRING = re.compile(r"(?:^/?|[\s\"'`(=]|\}/|\)/)results/([A-Za-z0-9_]+)(?:/([A-Za-z0-9_]+))?")
+#: (dataset_type, variant) pairs ``scripts/`` has; a results/<dataset_type>/ path must name one.
+VARIANTS = {
+    (d.name, v.name)
+    for d in (ROOT / "scripts").iterdir()
+    if d.is_dir() and d.name not in ("misc", "lens") and not d.name.startswith("_")
+    for v in d.iterdir()
+    if v.is_dir() and not v.name.startswith("_")
+}
+#: Call names that build a path from their arguments (and, for joinpath, the receiver).
+PATH_CALLS = {"Path", "PurePosixPath", "PurePath", "join", "joinpath"}
+_SHELL = re.compile(r"(?:^|[\s\"'=]|ROOT\}?/|\}/)results/([A-Za-z0-9_]+)(?:/([A-Za-z0-9_]+))?")
 
 
 def _bad(top: str) -> bool:
     return top not in ALLOWED_TOPS
+
+
+def _violation(top: str, variant: str | None) -> str | None:
+    """The offending ``results/...`` text, or None when the path is in the mirrored tree."""
+    if _bad(top):
+        return f"results/{top}"
+    if top not in ("misc", "lens") and variant is not None and (top, variant) not in VARIANTS:
+        return f"results/{top}/{variant}"
+    return None
+
+
+#: A segment whose value the matcher cannot read (a name, call, parameter, f-string field).
+UNKNOWN = None
+
+
+def _segments(node: ast.AST, aliases: dict[str, list]) -> list:
+    """The path segments ``node`` builds (``UNKNOWN`` where a segment cannot be read)."""
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return [part for part in node.value.split("/") if part] or [UNKNOWN]
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
+        return _segments(node.left, aliases) + _segments(node.right, aliases)
+    if isinstance(node, ast.Name):
+        return list(aliases.get(node.id, [UNKNOWN]))
+    if isinstance(node, ast.Call) and _call_name(node) in PATH_CALLS:
+        out = []
+        if _call_name(node) == "joinpath" and isinstance(node.func, ast.Attribute):
+            out = _segments(node.func.value, aliases)
+        for arg in node.args:
+            out += _segments(arg, aliases)
+        return out
+    return [UNKNOWN]
+
+
+def _path_violation(segs: list) -> str | None:
+    for i, seg in enumerate(segs):
+        if seg != "results" or i + 1 >= len(segs) or segs[i + 1] is UNKNOWN:
+            continue
+        if i > 0 and segs[i - 1] is not UNKNOWN:
+            continue  # results/ inside another constant folder: someone else's tree
+        variant = segs[i + 2] if i + 2 < len(segs) else None
+        found = _violation(segs[i + 1], variant)
+        if found:
+            return found
+    return None
+
+
+def _aliases(tree: ast.AST) -> dict[str, list]:
+    """Segments of every name bound by a simple same-module ``NAME = <path>`` assignment.
+
+    Bound in source order; a name bound twice keeps its last value. ``LEGACY_*`` names are
+    declared legacy names (an exclusion) and are not followed.
+    """
+    aliases: dict[str, list] = {}
+    assigns = [n for n in ast.walk(tree) if isinstance(n, (ast.Assign, ast.AnnAssign))]
+    for node in sorted(assigns, key=lambda n: (n.lineno, n.col_offset)):
+        targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+        if len(targets) != 1 or not isinstance(targets[0], ast.Name) or node.value is None:
+            continue
+        name = targets[0].id
+        if LEGACY_NAME.match(name):
+            continue
+        segs = _segments(node.value, aliases)
+        if any(seg is not UNKNOWN for seg in segs):
+            aliases[name] = segs
+        else:
+            aliases.pop(name, None)
+    return aliases
 
 
 def _call_name(node: ast.Call) -> str:
@@ -100,39 +188,26 @@ def _excluded_nodes(tree: ast.AST) -> set[int]:
     return {id(n) for root in roots for n in ast.walk(root)}
 
 
-def _div_operands(node: ast.BinOp) -> list[ast.AST]:
-    out: list[ast.AST] = []
-    for side in (node.left, node.right):
-        if isinstance(side, ast.BinOp) and isinstance(side.op, ast.Div):
-            out.extend(_div_operands(side))
-        else:
-            out.append(side)
-    return out
-
-
 def python_hits(source: str) -> list[tuple[int, str]]:
     """``(line, offending text)`` of every results path outside the mirrored tree."""
     tree = ast.parse(source)
     skip = _excluded_nodes(tree)
+    aliases = _aliases(tree)
     hits: list[tuple[int, str]] = []
     for node in ast.walk(tree):
         if id(node) in skip:
             continue
-        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
-            ops = _div_operands(node)
-            for a, b in zip(ops, ops[1:]):
-                if (
-                    isinstance(a, ast.Constant)
-                    and a.value == "results"
-                    and isinstance(b, ast.Constant)
-                    and isinstance(b.value, str)
-                    and _bad(b.value.split("/")[0])
-                ):
-                    hits.append((node.lineno, f'"results" / "{b.value}"'))
+        is_join = isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div)
+        if is_join or (isinstance(node, ast.Call) and _call_name(node) in PATH_CALLS):
+            found = _path_violation(_segments(node, aliases))
+            if found:
+                hits.append((node.lineno, found))
         elif isinstance(node, ast.Constant) and isinstance(node.value, str):
             for m in _PY_STRING.finditer(node.value):
-                if _bad(m.group(1)):
-                    hits.append((node.lineno, f"results/{m.group(1)}"))
+                found = _violation(m.group(1), m.group(2))
+                if found:
+                    hits.append((node.lineno, found))
+    # A join nested in a longer join reports once per line.
     return sorted(set(hits))
 
 
@@ -142,8 +217,9 @@ def shell_hits(text: str) -> list[tuple[int, str]]:
         if line.lstrip().startswith("#"):
             continue
         for m in _SHELL.finditer(line):
-            if _bad(m.group(1)):
-                hits.append((i, f"results/{m.group(1)}"))
+            found = _violation(m.group(1), m.group(2))
+            if found:
+                hits.append((i, found))
     return hits
 
 
@@ -169,11 +245,29 @@ def _shell_files() -> list[Path]:
 
 def test_the_matcher_catches_a_legacy_write_and_spares_the_exclusions():
     assert python_hits('out = ROOT / "results" / "breakdown" / "x.json"\n') == [
-        (1, '"results" / "breakdown"')
+        (1, "results/breakdown")
     ]
     assert python_hits('p = ROOT / "results/simulators/x.json"\n') == [(1, "results/simulators")]
-    assert python_hits('p = ROOT / "results" / "latent"\n') == [(1, '"results" / "latent"')]
+    assert python_hits('p = ROOT / "results" / "latent"\n') == [(1, "results/latent")]
     assert python_hits('p = f"{root}/results/notes/x.md"\n') == [(1, "results/notes")]
+    # the forms the first matcher missed (PR 3b review finding 3)
+    assert python_hits('R = ROOT / "results"\nout = R / "runtime" / "x.json"\n') == [
+        (2, "results/runtime")
+    ]
+    assert python_hits('R = ROOT / "results"\nRT = R / "runtime"\n') == [(2, "results/runtime")]
+    assert python_hits('p = ROOT.joinpath("results", "runtime", "x.json")\n') == [
+        (1, "results/runtime")
+    ]
+    assert python_hits('p = os.path.join(root, "results", "breakdown")\n') == [
+        (1, "results/breakdown")
+    ]
+    assert python_hits('p = Path("results", "runtime")\n') == [(1, "results/runtime")]
+    assert python_hits('p = ROOT / "results" / "imaging" / "pixelization" / "x.json"\n') == [
+        (1, "results/imaging/pixelization")
+    ]
+    assert python_hits('p = "results/interferometer/nonsense/x.json"\n') == [
+        (1, "results/interferometer/nonsense")
+    ]
     spared = (
         '"""Rows were written to results/breakdown/imaging/ before #442."""\n'
         "# results/runtime/ was the old home\n"
@@ -184,6 +278,9 @@ def test_the_matcher_catches_a_legacy_write_and_spares_the_exclusions():
         'q = ROOT / "results" / "misc" / "likelihood_breakdown" / "imaging"\n'
         'r = ROOT / "results" / "imaging" / "delaunay"\n'
         's = "autolens_workspace_developer/jax_profiling/results/jit"\n'
+        't = WS / "jax_profiling" / "results" / "jit"\n'
+        'R = ROOT / "results"\nu = R / "misc" / "hazards"\nv = R.joinpath("imaging", "mge")\n'
+        'w = Path(ROOT, "results", dataset_type, variant)\n'
     )
     assert python_hits(spared) == []
     assert shell_hits("    --output-dir $AP_ROOT/results/breakdown/interferometer\n") == [
@@ -191,6 +288,9 @@ def test_the_matcher_catches_a_legacy_write_and_spares_the_exclusions():
     ]
     assert shell_hits('RESULTS_DIR="${AP_ROOT}/results/runtime/x"\n') == [(1, "results/runtime")]
     assert shell_hits("# landed in results/breakdown/imaging/\nX=$AP_ROOT/results/misc/a\n") == []
+    assert shell_hits("X=$AP_ROOT/results/imaging/pixelization/a\n") == [
+        (1, "results/imaging/pixelization")
+    ]
 
 
 def test_no_script_writes_outside_the_mirrored_tree():
