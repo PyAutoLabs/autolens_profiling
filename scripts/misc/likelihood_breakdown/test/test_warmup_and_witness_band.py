@@ -102,6 +102,8 @@ def test_every_witness_cell_passes_its_host_class(cell):
         'witness_verdict(timing["cold_eval_median_s"], instrument, _cli.config_name)' in source
         or 'witness_for(preset, timing["cold_eval_median_s"], instrument, _cli.config_name)'
         in source
+        or 'preset, timing["cold_eval_median_s"], instrument, _cli.config_name, mesh_class=MESH_CLASS'
+        in source
     )
     assert '"INCONCLUSIVE"' in source and "witness['reason']" in source
 

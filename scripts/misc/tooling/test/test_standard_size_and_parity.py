@@ -109,6 +109,16 @@ def test_hst_delaunay_is_already_standard_and_keeps_its_pin_and_witness():
     assert prod.witness_for(preset, 1.0, "hst", "local_laptop_fp64")["verdict"] == "INCONCLUSIVE"
 
 
+def test_a_delaunay_nn_numba_cell_is_never_judged_against_the_delaunay_production_band():
+    preset = prod.standard_size_preset("delaunay_numba", "hst")  # unresized: a band would apply
+    assert prod.witness_for(preset, 0.6, "hst", "hpc_ral_cpu_fp64")["verdict"] == "PASS"
+    nn = prod.witness_for(preset, 0.6, "hst", "hpc_ral_cpu_fp64", mesh_class="delaunay_nn")
+    assert nn["verdict"] == "not_applicable" and "delaunay_nn" in nn["reason"]
+    for script in ("likelihood_runtime_numba.py", "likelihood_breakdown_numba.py"):
+        text = (ROOT / "scripts/imaging/delaunay" / script).read_text()
+        assert "_cli.config_name, mesh_class=MESH_CLASS" in text
+
+
 # ------------------------------------------------------------------- script wiring
 
 
@@ -116,7 +126,7 @@ def test_hst_delaunay_is_already_standard_and_keeps_its_pin_and_witness():
 def test_every_campaign_script_honours_standard_size_and_records_the_request(script):
     text = (ROOT / script).read_text()
     if SIZED[script] == "numba":
-        assert "standard_size_preset(" in text and "witness_for(preset" in text
+        assert "standard_size_preset(" in text and "witness_for(" in text
         assert "preset.size_override is not None" in text  # the pin is skipped when resized
     else:
         assert "requested_source_pixels(_cli" in text
