@@ -45,6 +45,9 @@ class ProfileCLI:
     sparse_batch_size: int
     source_pixels: int | None
     over_sampling: str = "flat1"
+    #: ``--output-path``: the exact result JSON a driver (``likelihood_runtime/sweep.py``) has
+    #: already placed; it wins over every other naming rule.
+    output_path: Path | None = None
 
     def parse_cell_args(self, cell_parser: argparse.ArgumentParser, *, argv=None):
         """Finish staged parsing, rejecting flags neither parser understands.
@@ -110,6 +113,14 @@ def _profile_parser() -> argparse.ArgumentParser:
         help=(
             "Override results dir. Each per-cell script defaults to its "
             "package's section under <autolens_profiling>/results/."
+        ),
+    )
+    parser.add_argument(
+        "--output-path",
+        default=None,
+        help=(
+            "Exact result JSON path (the PNG goes beside it). Set by drivers that place the "
+            "row themselves (likelihood_runtime/sweep.py); overrides --output-dir and naming."
         ),
     )
     parser.add_argument(
@@ -351,6 +362,7 @@ def parse_profile_cli(default_config_name: str | None = None, *, argv=None) -> P
         sparse_batch_size=int(args.sparse_batch_size),
         source_pixels=int(args.source_pixels) if args.source_pixels is not None else None,
         over_sampling=args.over_sampling,
+        output_path=Path(args.output_path).resolve() if args.output_path else None,
     )
 
 
@@ -772,6 +784,40 @@ def _in_legacy_results(path: Path) -> bool:
     return rel.parts[:2] in _LEGACY_RESULT_DIRS
 
 
+def _row_instrument(cli: ProfileCLI, default_basename: str) -> str | None:
+    """``--instrument``, else the instrument token of ``default_basename``."""
+    if getattr(cli, "instrument", None):
+        return cli.instrument
+    tokens = f"_{default_basename}_"
+    return next((i for i in _migration_map_module().INSTRUMENTS if f"_{i}_" in tokens), None)
+
+
+def runtime_instrument_dir(legacy_dir: Path, instrument: str | None) -> Path:
+    """``results/runtime/<class>/<model>`` -> ``.../<model>/<instrument>`` (any other path as is).
+
+    The sweep layout names every runtime row under its instrument; a two-level legacy runtime
+    folder would make a config-named row (``delaunay_local_cpu_fp64.json``) of every instrument
+    the same name, so a row whose cell cannot be derived would collide in the landing folder.
+    """
+    try:
+        rel = Path(legacy_dir).resolve().relative_to(_REPO_ROOT).parts
+    except ValueError:
+        return Path(legacy_dir)
+    if instrument and len(rel) == 4 and rel[:2] == ("results", "runtime"):
+        return Path(legacy_dir) / instrument
+    return Path(legacy_dir)
+
+
+def placed_path(legacy_path: Path, doc: dict) -> Path:
+    """:func:`mirrored_output_path` without creating or announcing anything (for readers)."""
+    legacy_path = Path(legacy_path)
+    if not _in_legacy_results(legacy_path):
+        return legacy_path
+    rel = legacy_path.resolve().relative_to(_REPO_ROOT)
+    new, _kind = _migration_map_module().destination(_REPO_ROOT, rel.as_posix(), doc)
+    return _REPO_ROOT / new
+
+
 def place_output_path(
     json_path: Path, cli: ProfileCLI, default_basename: str, hints: dict | None = None
 ) -> Path:
@@ -1011,7 +1057,12 @@ def resolve_output_paths(
       label (``--config-name hpc_a100_fp64_n3000``) and gets no extra suffix —
       the label already says the size.
     """
+    if getattr(cli, "output_path", None) is not None:
+        cli.output_path.parent.mkdir(parents=True, exist_ok=True)
+        return cli.output_path, cli.output_path.with_suffix(".png")
     results_dir = cli.output_dir if cli.output_dir is not None else default_dir
+    if cli.output_dir is None and _in_legacy_results(results_dir):
+        results_dir = runtime_instrument_dir(results_dir, _row_instrument(cli, default_basename))
     if cli.config_name is None:
         basename = default_basename
     else:

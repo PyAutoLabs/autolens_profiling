@@ -60,16 +60,18 @@ import numpy as np
 
 _REPO_ROOT = _profiling_root()
 sys.path.insert(0, str(_REPO_ROOT))
-from _profile_cli import (  # noqa: E402
-    legacy_landing_dir,
-    legacy_result_dirs,
-    legacy_result_files,
-    locate_legacy_result,
-    mirrored_output_path,
+from _profile_cli import legacy_landing_dir, legacy_result_dirs, legacy_result_files  # noqa: E402
+
+sys.path.insert(0, str(_REPO_ROOT / "scripts" / "misc" / "likelihood_runtime"))
+from sweep_layout import (  # noqa: E402
+    CELLS,
+    CONFIG_NAMES,
+    LEGACY_RUNTIME_ROOT,
+    is_fresh,
+    placed_comparison,
+    placed_row,
 )
 
-#: The legacy root sweep rows are named under (see the module docstring).
-LEGACY_RUNTIME_ROOT = _REPO_ROOT / "results" / "runtime"
 _DEFAULT_OUTPUT_ROOT = LEGACY_RUNTIME_ROOT
 _DEFAULT_HAZARD_INDEX = _REPO_ROOT / "results" / "misc" / "hazards" / "hazards_index.json"
 
@@ -123,6 +125,13 @@ def _discover_cells(output_root: Path) -> list[tuple[str, ...]]:
             rel = d.relative_to(output_root).parts
             if len(rel) in (2, 3) and _has_config_json(d):
                 cells.append(rel)
+        # Cells whose only rows a sweep placed after the move (no legacy name on disk).
+        for cls, model, instruments in CELLS:
+            for inst in instruments:
+                cell = (cls, model, inst)
+                if cell not in cells and _placed_rows(output_root, cell):
+                    cells.append(cell)
+        cells = sorted(set(cells))
         # A 2-level cell also holds per-instrument subdirs; keep the deeper layout only.
         return [c for c in cells if not (len(c) == 2 and any(o[:2] == c for o in cells if o != c))]
     if not output_root.exists():
@@ -149,29 +158,46 @@ def _is_legacy(path: Path) -> bool:
     return legacy_landing_dir(path) != Path(path)
 
 
+def _placed_rows(root: Path, cell: tuple[str, ...]) -> dict[str, Path]:
+    """{legacy row name: path} of the rows a sweep placed for ``cell`` after the move.
+
+    The same ``sweep_layout.placed_row`` the sweep wrote with, for every config label and
+    operator; only rows a run actually wrote count (``sweep_layout.is_fresh``).
+    """
+    cls, model = cell[0], cell[1]
+    inst = cell[2] if len(cell) == 3 else None
+    out = {}
+    for cfg in CONFIG_NAMES:
+        for sparse in (False, True):
+            path = placed_row(cls, model, inst, cfg, sparse, root)
+            if is_fresh(path):
+                out[f"{model}_{cfg}{'_sparse' if sparse else ''}.json"] = path
+    return out
+
+
 def _cell_files(cell_dir: Path) -> dict[str, Path]:
     """{legacy file name: current path} of a cell's JSONs (a verbatim folder: its own files).
 
-    Under a legacy root it also looks up each canonical config row by name, so a row a sweep
-    placed into a *new* mirrored cell after the move is found
-    (``_profile_cli.locate_legacy_result``).
+    Under the legacy root: the committed rows by legacy name (moved by the day-zero map, kept
+    in the landing folder, or left in place), then the rows a sweep placed after the move,
+    which win (``_placed_rows``: the exact paths the sweep wrote, never a guess).
     """
     files = {name: path for path, name in legacy_result_files(cell_dir, "*.json")}
     if _is_legacy(cell_dir):
-        model = cell_dir.relative_to(LEGACY_RUNTIME_ROOT).parts[1]
         rel = cell_dir.relative_to(LEGACY_RUNTIME_ROOT).parts
-        hints = {"instrument": rel[2]} if len(rel) == 3 else {}
-        for cfg in _CONFIG_ORDER:
-            for suffix in ("", "_sparse"):
-                name = f"{model}_{cfg}{suffix}.json"
-                if name not in files:
-                    found = locate_legacy_result(
-                        cell_dir / name,
-                        {**hints, "use_mixed_precision": cfg.endswith("_mp")},
-                    )
-                    if found is not None:
-                        files[name] = found
+        if len(rel) in (2, 3):
+            files.update(_placed_rows(LEGACY_RUNTIME_ROOT, rel))
     return files
+
+
+def _rows_instrument(comparison: dict) -> str | None:
+    """The one instrument a cell's rows record (None when absent or mixed)."""
+    found = {
+        c.get("instrument")
+        for c in comparison.get("configs", {}).values()
+        if isinstance(c, dict) and isinstance(c.get("instrument"), str)
+    }
+    return found.pop() if len(found) == 1 else None
 
 
 def _has_config_json(d: Path) -> bool:
@@ -536,9 +562,10 @@ def main() -> int:
         comparison["hazard_findings"] = _hazard_findings_for_cell(_DEFAULT_HAZARD_INDEX, cell_id)
 
         # Under the legacy root the comparison goes to the mirrored
-        # results/<dataset_type>/<variant>/<instrument>/ (or results/misc/likelihood_runtime/
-        # when that is not derivable); a verbatim root keeps it beside the rows.
-        comparison_path = mirrored_output_path(cell_dir / "comparison.json", {})
+        # results/<dataset_type>/<variant>/<instrument>/, named under the instrument its rows
+        # record (a two-level cell such as imaging/delaunay_nn too); a verbatim root keeps it
+        # beside the rows.
+        comparison_path = placed_comparison(cell_dir, _rows_instrument(comparison))
         png_path = comparison_path.with_suffix(".png")
         comparison_path.parent.mkdir(parents=True, exist_ok=True)
         comparison_path.write_text(json.dumps(comparison, indent=2, default=str))
