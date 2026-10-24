@@ -358,7 +358,12 @@ def test_the_repeat_point_wins_the_per_release_dedup_whatever_the_scan_order(tmp
     raw = bd._point(runs[0], "1", "a/x_hpc_a100_fp64.json")
     for order in ([raw, with_repeats], [with_repeats, raw]):
         monkeypatch.setattr(
-            bd, "scan", lambda root, _o=order: {("runtime", "c", "hpc_a100_fp64", False): list(_o)}
+            # scan() is keyed on the v3 series id (autolens_profiling#442 PR 3b)
+            bd,
+            "scan",
+            lambda root, _o=order: {
+                "runtime:imaging/delaunay:hst:jax_gpu_dense_fp64:hpc_a100:default": list(_o)
+            },
         )
         series, _ = bd.build_series(tmp_path, _CONF)
         (point,) = series[0]["points"]

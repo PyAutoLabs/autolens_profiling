@@ -55,64 +55,78 @@ def _row(version, single, vmap=None, backend="gpu", hostname=None, prov=None, in
     return d
 
 
+#: v3 series ids of the fixture cells (``build_dashboard.series_key``).
+A100_RT = "runtime:imaging/delaunay:hst:jax_gpu_dense_fp64:hpc_a100:default"
+LOCAL_RT = "runtime:imaging/delaunay:hst:jax_cpu_dense_fp64:local_laptop:default"
+PIX_BD = "breakdown:imaging/rectangular:hst:jax_cpu_dense_fp64:local_laptop:default"
+MGE_MP = "breakdown:imaging/mge:hst:jax_gpu_dense_mixed:hpc_a100:default"
+MGE_FP64 = "breakdown:imaging/mge:hst:jax_gpu_dense_fp64:hpc_a100:default"
+
+
+def _write(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload))
+
+
 def _tree(tmp_path: Path) -> Path:
+    """A mirrored results tree (results/README.md): current rows, history/ and a comparison."""
     root = tmp_path / "repo"
     (root / "hpc").mkdir(parents=True)
     (root / "hpc" / "release_sweep.conf").write_text(
         "RELEASE_SWEEP_NODE=euclid-ral-gpu-2\nRELEASE_SWEEP_LOADAVG_CAP=8.0\n"
     )
-    rt = root / "results" / "runtime" / "imaging" / "delaunay"
-    rt.mkdir(parents=True)
-    # versioned local rows (no provenance): two releases, steady
-    (rt / "delaunay_likelihood_summary_hst_v2026.8.17.1.json").write_text(
-        json.dumps(_row("2026.8.17.1", 4.5, backend="cpu"))
+    hst = root / "results" / "imaging" / "delaunay" / "hst"
+    # laptop rows (no provenance): two releases, steady -- the older one in history/
+    local = hst / "jax_cpu_dense_fp64" / "local_laptop"
+    _write(local / "runtime.json", _row("2026.9.27.1", 4.7, backend="cpu"))
+    _write(
+        local / "history" / "r2026_8_17_1_2026-08-17" / "runtime.json",
+        _row("2026.8.17.1", 4.5, backend="cpu"),
     )
-    (rt / "delaunay_likelihood_summary_hst_v2026.9.27.1.json").write_text(
-        json.dumps(_row("2026.9.27.1", 4.7, backend="cpu"))
+    # A100 rows: old without provenance, new on the reference host (via the cell's
+    # comparison.json, which joins the setup row it summarises) -> drifted 2.2x
+    _write(
+        hst / "jax_gpu_dense_fp64" / "hpc_a100" / "runtime.json",
+        _row("2026.8.17.1", 0.065, vmap=0.0425, hostname="euclid-ral-gpu-2"),
     )
-    # A100 rows: old without provenance, new on the reference host -> drifted 2.2x
-    (rt / "delaunay_hpc_a100_fp64.json").write_text(
-        json.dumps(_row("2026.8.17.1", 0.065, vmap=0.0425, hostname="euclid-ral-gpu-2"))
-    )
-    (rt / "hst").mkdir()
-    (rt / "hst" / "comparison.json").write_text(
-        json.dumps(
-            {"configs": {"hpc_a100_fp64": _row("2026.9.27.1", 0.143, vmap=0.09, prov=_prov())}}
-        )
+    _write(
+        hst / "comparison.json",
+        {"configs": {"hpc_a100_fp64": _row("2026.9.27.1", 0.143, vmap=0.09, prov=_prov())}},
     )
     # a loaded-host row -> refused; an off-host row -> hollow
-    bd_dir = root / "results" / "breakdown" / "imaging"
-    bd_dir.mkdir(parents=True)
-    (bd_dir / "mge_hpc_a100_fp64.json").write_text(
-        json.dumps(_row("2026.9.27.1", 0.008, prov=_prov(loadavg=190.0, job="357321")))
+    mge = root / "results" / "imaging" / "mge" / "hst"
+    _write(
+        mge / "jax_gpu_dense_fp64" / "hpc_a100" / "breakdown.json",
+        _row("2026.9.27.1", 0.008, prov=_prov(loadavg=190.0, job="357321")),
     )
-    (bd_dir / "mge_hpc_a100_mp.json").write_text(
-        json.dumps(_row("2026.9.27.1", 0.007, prov=_prov(host="euclid-ral-gpu-1")))
+    _write(
+        mge / "jax_gpu_dense_mixed" / "hpc_a100" / "breakdown.json",
+        _row("2026.9.27.1", 0.007, prov=_prov(host="euclid-ral-gpu-1")),
     )
-    # a versioned breakdown pair with an improvement
-    (bd_dir / "pixelization_breakdown_hst_v2026.8.17.1.json").write_text(
-        json.dumps(
+    # a breakdown pair with an improvement
+    pix = (
+        root / "results" / "imaging" / "rectangular" / "hst" / "jax_cpu_dense_fp64" / "local_laptop"
+    )
+    for version, total, where in (
+        ("2026.8.17.1", 9.0, pix / "history" / "r2026_8_17_1_2026-08-17"),
+        ("2026.9.27.1", 3.0, pix),
+    ):
+        _write(
+            where / "breakdown.json",
             {
-                "autolens_version": "2026.8.17.1",
+                "autolens_version": version,
                 "device": {"backend": "cpu"},
                 "instrument": "hst",
-                "total_step_by_step": 9.0,
-            }
+                "total_step_by_step": total,
+            },
         )
+    # scans/experiments are never trend points; ledgers are ignored
+    _write(
+        hst / "jax_cpu_dense_fp64" / "local_laptop" / "scans" / "n3000" / "runtime.json",
+        _row("2026.9.27.1", 99.0, backend="cpu"),
     )
-    (bd_dir / "pixelization_breakdown_hst_v2026.9.27.1.json").write_text(
-        json.dumps(
-            {
-                "autolens_version": "2026.9.27.1",
-                "device": {"backend": "cpu"},
-                "instrument": "hst",
-                "total_step_by_step": 3.0,
-            }
-        )
-    )
-    # ledger tree: ignored
-    (root / "results" / "notes").mkdir()
-    (root / "results" / "notes" / "x.md").write_text("# x\n")
+    (root / "wiki").mkdir()
+    (root / "wiki" / "x.md").write_text("# x\n")
     return root
 
 
@@ -133,23 +147,23 @@ def test_series_qualification_and_drift(tmp_path):
     root = _tree(tmp_path)
     series, refused = bd.build_series(root, bd.read_release_sweep_conf(root))
     by_key = {s["key"]: s for s in series}
-    a100 = by_key["runtime:imaging/delaunay/hst:hpc_a100_fp64"]
+    a100 = by_key[A100_RT]
     assert [p["version"] for p in a100["points"]] == ["2026.8.17.1", "2026.9.27.1"]
     assert (
         a100["points"][0]["qualified"] is False and "no provenance" in a100["points"][0]["reason"]
     )
     assert a100["points"][1]["qualified"] is True and a100["points"][1]["job"] == "360001"
     assert a100["drift"]["status"] == "drifted" and a100["drift"]["ratio"] == 2.2
-    local = by_key["runtime:imaging/delaunay/hst:local_cpu_fp64"]
+    local = by_key[LOCAL_RT]
     assert local["drift"]["status"] == "steady"
-    pix = by_key["breakdown:imaging/pixelization/hst:local_cpu_fp64"]
+    pix = by_key[PIX_BD]
     assert pix["drift"]["status"] == "improved" and pix["points"][-1]["single_jit_s"] == 3.0
-    off = by_key["breakdown:imaging/mge/hst:hpc_a100_mp"]
+    off = by_key[MGE_MP]
     assert (
         off["points"][0]["qualified"] is False
         and "off the reference host" in off["points"][0]["reason"]
     )
-    assert "breakdown:imaging/mge/hst:hpc_a100_fp64" not in by_key
+    assert MGE_FP64 not in by_key
     assert (
         len(refused) == 1
         and refused[0]["job"] == "357321"
@@ -208,14 +222,10 @@ def test_build_writes_and_check_is_idempotent(tmp_path, capsys):
     assert "<title>" in page and "prefers-color-scheme" in page
     assert bd.main(["--root", str(root), "--check"]) == 0
     # data change -> stale
-    (
-        root
-        / "results"
-        / "runtime"
-        / "imaging"
-        / "delaunay"
-        / "delaunay_likelihood_summary_hst_v2026.9.27.1.json"
-    ).write_text(json.dumps(_row("2026.9.27.1", 40.0, backend="cpu")))
+    _write(
+        root / "results/imaging/delaunay/hst/jax_cpu_dense_fp64/local_laptop/runtime.json",
+        _row("2026.9.27.1", 40.0, backend="cpu"),
+    )
     assert bd.main(["--root", str(root), "--check"]) == 1
     assert "STALE" in capsys.readouterr().out
 
@@ -251,7 +261,7 @@ def test_summary_envelope_and_records(tmp_path):
     assert s["comparison_policy"]["ratio"] == 2.0 and s["comparison_policy"]["floor_s"] == 0.001
     ids = [r["id"] for r in s["records"]]
     assert len(ids) == len(set(ids)) == s["coverage"]["observed"]["points"]
-    a100 = next(r for r in s["records"] if r["id"].endswith(":hpc_a100_fp64@2026.9.27.1"))
+    a100 = next(r for r in s["records"] if r["id"] == f"{A100_RT}@2026.9.27.1")
     assert a100["axis"] == "runtime" and a100["unit"] == "s"
     assert a100["measurement"] == {"single_jit_s": 0.143, "vmap_per_call_s": 0.09}
     assert a100["identity"]["tier"] == "hpc" and a100["identity"]["device"] == "a100"
@@ -259,10 +269,10 @@ def test_summary_envelope_and_records(tmp_path):
     assert a100["identity"]["release_date"] == "2026-09-27"
     assert a100["provenance"]["qualified"] is True and a100["provenance"]["job"] == "360001"
     assert a100["evidence"] == {
-        "path": "results/runtime/imaging/delaunay/hst/comparison.json",
+        "path": "results/imaging/delaunay/hst/comparison.json",
         "fragment": "hpc_a100_fp64",
     }
-    old = next(r for r in s["records"] if r["id"].endswith(":hpc_a100_fp64@2026.8.17.1"))
+    old = next(r for r in s["records"] if r["id"] == f"{A100_RT}@2026.8.17.1")
     # unknown provenance stays null + reason, never a default (the host is the row's hostname)
     assert old["provenance"]["job"] is None and old["provenance"]["loadavg"] is None
     assert old["provenance"]["has_provenance"] is False and old["provenance"]["qualified"] is False
@@ -273,17 +283,17 @@ def test_summary_envelope_and_records(tmp_path):
 def test_summary_comparisons_are_the_producers_verdict(tmp_path):
     s = _summary(tmp_path)
     by_key = {c["comparison_key"]: c for c in s["comparisons"]}
-    drifted = by_key["runtime:imaging/delaunay/hst:hpc_a100_fp64"]
+    drifted = by_key[A100_RT]
     assert drifted["status"] == "drifted" and drifted["ratio"] == 2.2
     assert (drifted["baseline"], drifted["candidate"]) == ("2026.8.17.1", "2026.9.27.1")
     # the baseline row has no provenance: a drift flag, not regression evidence
     assert drifted["qualified"] is False and any("baseline" in r for r in drifted["reasons"])
     # inside the 2x band with single-sample endpoints: insufficient, never a bare flat null
-    local = by_key["runtime:imaging/delaunay/hst:local_cpu_fp64"]
+    local = by_key[LOCAL_RT]
     assert local["status"] == "insufficient" and bd.SINGLE_SAMPLE_NULL_REASON in local["reasons"]
-    improved = by_key["breakdown:imaging/pixelization/hst:local_cpu_fp64"]
+    improved = by_key[PIX_BD]
     assert improved["status"] == "improved" and bd.SINGLE_SAMPLE_REASON in improved["reasons"]
-    single = by_key["breakdown:imaging/mge/hst:hpc_a100_mp"]
+    single = by_key[MGE_MP]
     assert single["status"] == "insufficient" and "one release only" in single["reasons"]
     assert all(c["policy"] == "runtime-drift-2x-1ms" for c in s["comparisons"])
 
@@ -292,7 +302,7 @@ def test_summary_refused_rows_are_excluded_not_recorded(tmp_path):
     s = _summary(tmp_path)
     excluded = s["coverage"]["excluded"]
     assert len(excluded) == 1 and "above the cap" in excluded[0]["reason"]
-    assert excluded[0]["id"] == "breakdown:imaging/mge/hst:hpc_a100_fp64@2026.9.27.1"
+    assert excluded[0]["id"] == f"{MGE_FP64}@2026.9.27.1"
     assert not any(r["id"] == excluded[0]["id"] for r in s["records"])
     assert any("coverage.excluded" in line for line in s["limitations"])
 
@@ -548,3 +558,109 @@ def test_real_tree_qualified_records_are_the_ral_reference_rows():
             assert r["identity"]["tier"] == "hpc"
             assert r["provenance"]["host"] == "euclid-ral-gpu-2"
             assert r["provenance"]["loadavg"] is not None
+
+
+# --- v3 series identity and the committed series id map (#442 PR 3b) --------
+
+
+def test_series_ids_are_the_v3_identity(tmp_path):
+    root = _tree(tmp_path)
+    series, _ = bd.build_series(root, bd.read_release_sweep_conf(root))
+    by_key = {s["key"]: s for s in series}
+    local = by_key[LOCAL_RT]
+    assert (local["section"], local["cell"], local["config"], local["sparse"]) == (
+        "runtime",
+        "imaging/delaunay/hst",
+        "local_cpu_fp64",
+        False,
+    )
+    assert local["identity"] == {
+        "likelihood": "imaging/delaunay",
+        "instrument": "hst",
+        "setup_id": "jax_cpu_dense_fp64",
+        "host_class": "local_laptop",
+        "model_variant": "default",
+        "measurement": "runtime",
+    }
+    # history/ joins its cell; scans/ never become trend points
+    assert [p["version"] for p in local["points"]] == ["2026.8.17.1", "2026.9.27.1"]
+    assert all("scans/" not in p["source"] for s in series for p in s["points"])
+
+
+def test_parse_key_legacy_and_component_ids():
+    sparse = bd.parse_key("runtime:imaging/mge:hst:jax_gpu_sparse_mixed:hpc_a100:light_fixed")
+    assert (sparse["cell"], sparse["config"], sparse["sparse"]) == (
+        "imaging/mge/hst/light_fixed",
+        "hpc_a100_mp",
+        True,
+    )
+    legacy = bd.parse_key("legacy:breakdown:imaging/pixelization/hst:local_cpu_fp64_sparse")
+    assert legacy == {
+        "section": "breakdown",
+        "cell": "imaging/pixelization/hst",
+        "config": "local_cpu_fp64",
+        "sparse": True,
+        "identity": None,
+    }
+    assert bd.parse_key("lens:deflections/total/hst:local_cpu_fp64")["section"] == "lens"
+
+
+def test_comparison_entry_with_an_ambiguous_label_has_no_native_id(tmp_path):
+    root = _tree(tmp_path)
+    hst = root / "results" / "imaging" / "delaunay" / "hst"
+    # a numba row on the same host class shares the entry's label: no unique setup
+    _write(hst / "numba_cpu_dense_fp64" / "local_laptop" / "runtime.json", {"x": 1})
+    _write(hst / "comparison.json", {"configs": {"local_cpu_fp64": _row("2026.9.27.1", 1.0)}})
+    index = bd._cell_index(bd.result_files(root))
+    rel = "results/imaging/delaunay/hst/comparison.json"
+    assert bd.comparison_key(index, rel, "local_cpu_fp64") is None
+    assert bd.comparison_key(index, rel, "hpc_a100_fp64") == A100_RT
+
+
+def test_series_id_map_attaches_pre_move_sources(tmp_path):
+    root = _tree(tmp_path)
+    archived = (
+        "archive/2026/08/hostless_summaries/runtime/imaging/delaunay/x_summary_v2026.8.17.1.json"
+    )
+    _write(root / archived, _row("2026.8.17.1", 4.4, backend="cpu"))
+    legacy_id = "legacy:runtime:imaging/delaunay_numba/hst:local_cpu_fp64"
+    # the map also re-files one mirrored row (its native id is overridden, never doubled)
+    claimed = "results/imaging/delaunay/hst/jax_cpu_dense_fp64/local_laptop/runtime.json"
+    _write(
+        root / bd.SERIES_ID_MAP,
+        {
+            "series": {},
+            "sources": {
+                archived: {"id": legacy_id, "version": "2026.8.17.1"},
+                claimed: {"id": legacy_id, "version": "2026.9.27.1"},
+            },
+        },
+    )
+    series, _ = bd.build_series(root, bd.read_release_sweep_conf(root))
+    by_key = {s["key"]: s for s in series}
+    legacy = by_key[legacy_id]
+    assert legacy["identity"] is None and legacy["cell"] == "imaging/delaunay_numba/hst"
+    assert [p["source"] for p in legacy["points"]] == [archived, claimed]
+    assert [p["version"] for p in by_key[LOCAL_RT]["points"]] == ["2026.8.17.1"]
+
+
+def test_real_tree_series_history_is_continuous():
+    """Every pre-move series is published under its mapped id with every release it held."""
+    sim = _load("build_series_id_map")
+    root = _TOOLING.parents[2]
+    committed = json.loads((root / bd.SERIES_ID_MAP).read_text())
+    assert sim.render(sim.build(root)) == (root / bd.SERIES_ID_MAP).read_text(), (
+        "catalogue/series_id_map.json is stale: run build_series_id_map.py"
+    )
+    series, _ = bd.build_series(root, bd.read_release_sweep_conf(root))
+    by_key = {s["key"]: s for s in series}
+    ids = [v["id"] for v in committed["series"].values()]
+    assert len(ids) == len(set(ids)), "two pre-move series share a new id"
+    for old, entry in committed["series"].items():
+        if not entry["releases"]:
+            continue  # every row refused: never a published series
+        assert entry["id"] in by_key, f"{old} -> {entry['id']} dropped"
+        held = {p["version"] for p in by_key[entry["id"]]["points"]}
+        assert set(entry["releases"]) <= held, f"{old} lost releases"
+    published = sum(bool(v["releases"]) for v in committed["series"].values())
+    assert published == committed["counts"]["published_series"] <= len(series)

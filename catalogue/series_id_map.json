@@ -1,0 +1,1201 @@
+{
+ "schema": "autolens-profiling-series-id-map",
+ "version": 1,
+ "issue": "PyAutoLabs/autolens_profiling#442",
+ "generator": "scripts/misc/tooling/build_series_id_map.py",
+ "source": "catalogue/migration_day_zero.json",
+ "note": "Pre-move dashboard series ids (legacy file grammar) -> the v3 ids they publish under, with the releases each held; sources attaches pre-move points outside the mirrored tree. Generated; do not edit.",
+ "counts": {
+  "series": 151,
+  "remapped_to_v3": 107,
+  "kept_legacy": 44,
+  "published_series": 144,
+  "points": 158,
+  "sources": 65
+ },
+ "series": {
+  "breakdown:cluster/image_plane:hpc_ral_cpu_fp64": {
+   "id": "legacy:breakdown:cluster/image_plane:hpc_ral_cpu_fp64",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:cluster/image_plane:local_cpu_fp64": {
+   "id": "legacy:breakdown:cluster/image_plane:local_cpu_fp64",
+   "releases": [
+    "2026.7.6.649",
+    "2026.7.23.1",
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:cluster/source_plane:local_cpu_fp64": {
+   "id": "legacy:breakdown:cluster/source_plane:local_cpu_fp64",
+   "releases": [
+    "2026.7.6.649",
+    "2026.7.23.1"
+   ]
+  },
+  "breakdown:datacube/delaunay/alma_high:hpc_a100_fp64": {
+   "id": "legacy:breakdown:datacube/delaunay/alma_high:hpc_a100_fp64",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "breakdown:datacube/delaunay/alma_high:hpc_a100_mp": {
+   "id": "legacy:breakdown:datacube/delaunay/alma_high:hpc_a100_mp",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "breakdown:imaging/delaunay/hst:hpc_a100_fp64": {
+   "id": "breakdown:imaging/delaunay:hst:jax_gpu_dense_fp64:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:imaging/delaunay/hst:hpc_a100_fp64_sparse": {
+   "id": "breakdown:imaging/delaunay:hst:jax_gpu_sparse_fp64:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:imaging/delaunay/hst:hpc_a100_mp": {
+   "id": "breakdown:imaging/delaunay:hst:jax_gpu_dense_mixed:hpc_a100:default",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "breakdown:imaging/delaunay/hst:hpc_a100_mp_sparse": {
+   "id": "breakdown:imaging/delaunay:hst:jax_gpu_sparse_mixed:hpc_a100:default",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "breakdown:imaging/delaunay/hst:local_cpu_fp64": {
+   "id": "legacy:breakdown:imaging/delaunay/hst:local_cpu_fp64",
+   "releases": [
+    "2026.5.29.4",
+    "2026.7.6.649",
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:imaging/delaunay/hst:local_cpu_fp64_sparse": {
+   "id": "legacy:breakdown:imaging/delaunay/hst:local_cpu_fp64_sparse",
+   "releases": [
+    "2026.5.29.4",
+    "2026.7.6.649"
+   ]
+  },
+  "breakdown:imaging/delaunay_nn/hst:hpc_a100_fp64": {
+   "id": "breakdown:imaging/delaunay_nn:hst:jax_gpu_dense_fp64:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:imaging/delaunay_nn/hst:hpc_a100_fp64_sparse": {
+   "id": "breakdown:imaging/delaunay_nn:hst:jax_gpu_sparse_fp64:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:imaging/delaunay_nn/hst:local_cpu_fp64": {
+   "id": "legacy:breakdown:imaging/delaunay_nn/hst:local_cpu_fp64",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:imaging/delaunay_numba/euclid:local_cpu_fp64": {
+   "id": "legacy:breakdown:imaging/delaunay_numba/euclid:local_cpu_fp64",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:imaging/delaunay_numba/hst:local_cpu_fp64": {
+   "id": "legacy:breakdown:imaging/delaunay_numba/hst:local_cpu_fp64",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:imaging/mge/hst:hpc_a100_fp64": {
+   "id": "breakdown:imaging/mge:hst:jax_gpu_dense_fp64:hpc_a100:default",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "breakdown:imaging/mge/hst:local_cpu_fp64": {
+   "id": "legacy:breakdown:imaging/mge/hst:local_cpu_fp64",
+   "releases": [
+    "2026.5.29.4",
+    "2026.7.6.649",
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:imaging/pixelization/hst:hpc_a100_fp64": {
+   "id": "breakdown:imaging/rectangular:hst:jax_gpu_dense_fp64:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:imaging/pixelization/hst:hpc_a100_fp64_sparse": {
+   "id": "breakdown:imaging/rectangular:hst:jax_gpu_sparse_fp64:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:imaging/pixelization/hst:hpc_a100_mp": {
+   "id": "breakdown:imaging/rectangular:hst:jax_gpu_dense_mixed:hpc_a100:default",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "breakdown:imaging/pixelization/hst:hpc_a100_mp_sparse": {
+   "id": "breakdown:imaging/rectangular:hst:jax_gpu_sparse_mixed:hpc_a100:default",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "breakdown:imaging/pixelization/hst:local_cpu_fp64": {
+   "id": "legacy:breakdown:imaging/pixelization/hst:local_cpu_fp64",
+   "releases": [
+    "2026.5.29.4",
+    "2026.7.6.649",
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:imaging/pixelization/hst:local_cpu_fp64_sparse": {
+   "id": "legacy:breakdown:imaging/pixelization/hst:local_cpu_fp64_sparse",
+   "releases": [
+    "2026.5.29.4",
+    "2026.7.6.649"
+   ]
+  },
+  "breakdown:imaging/pixelization_numba/euclid:local_cpu_fp64": {
+   "id": "legacy:breakdown:imaging/pixelization_numba/euclid:local_cpu_fp64",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:imaging/pixelization_numba/hst:local_cpu_fp64": {
+   "id": "legacy:breakdown:imaging/pixelization_numba/hst:local_cpu_fp64",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/alma_high/delaunay/alma_high:hpc_a100_fp64": {
+   "id": "breakdown:interferometer/delaunay:alma_high:jax_gpu_sparse_fp64_wtilde:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/alma_high/delaunay/alma_high:hpc_a100_mp": {
+   "id": "breakdown:interferometer/delaunay:alma_high:jax_gpu_sparse_mixed_wtilde:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/alma_high/delaunay/alma_high:hpc_ral_cpu_fp64": {
+   "id": "breakdown:interferometer/delaunay:alma_high:jax_cpu_sparse_fp64_wtilde:hpc_ral_cpu:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/alma_high/delaunay_numba/alma_high:hpc_ral_cpu_fp64": {
+   "id": "breakdown:interferometer/delaunay:alma_high:numba_cpu_sparse_fp64_wtilde:hpc_ral_cpu:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/alma_high/mge/alma_high:hpc_a100_fp64": {
+   "id": "breakdown:interferometer/mge:alma_high:jax_gpu_dense_fp64_nufft:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/alma_high/mge/alma_high:hpc_a100_fp64_sparse": {
+   "id": "breakdown:interferometer/mge:alma_high:jax_gpu_sparse_fp64_wtilde:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/alma_high/mge/alma_high:hpc_a100_mp": {
+   "id": "breakdown:interferometer/mge:alma_high:jax_gpu_dense_mixed_nufft:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/alma_high/pixelization/alma_high:hpc_a100_fp64": {
+   "id": "breakdown:interferometer/rectangular:alma_high:jax_gpu_sparse_fp64_wtilde:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/alma_high/pixelization/alma_high:hpc_a100_mp": {
+   "id": "breakdown:interferometer/rectangular:alma_high:jax_gpu_sparse_mixed_wtilde:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/alma_high/pixelization/alma_high:hpc_ral_cpu_fp64": {
+   "id": "breakdown:interferometer/rectangular:alma_high:jax_cpu_sparse_fp64_wtilde:hpc_ral_cpu:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/alma_high/pixelization_numba/alma_high:hpc_ral_cpu_fp64": {
+   "id": "breakdown:interferometer/rectangular:alma_high:numba_cpu_sparse_fp64_wtilde:hpc_ral_cpu:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/delaunay/alma:hpc_a100_fp64": {
+   "id": "breakdown:interferometer/delaunay:alma:jax_gpu_sparse_fp64_wtilde:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/delaunay/alma:hpc_a100_mp": {
+   "id": "breakdown:interferometer/delaunay:alma:jax_gpu_sparse_mixed_wtilde:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/delaunay/alma:hpc_ral_cpu_fp64": {
+   "id": "breakdown:interferometer/delaunay:alma:jax_cpu_sparse_fp64_wtilde:hpc_ral_cpu:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/delaunay/alma:local_cpu_fp64": {
+   "id": "breakdown:interferometer/delaunay:alma:jax_cpu_sparse_fp64_wtilde:local_laptop:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/delaunay/sma:local_cpu_fp64": {
+   "id": "breakdown:interferometer/delaunay:sma:jax_cpu_sparse_fp64_wtilde:local_laptop:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/delaunay_numba/alma:hpc_ral_cpu_fp64": {
+   "id": "breakdown:interferometer/delaunay:alma:numba_cpu_sparse_fp64_wtilde:hpc_ral_cpu:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/delaunay_numba/sma:local_cpu_fp64": {
+   "id": "breakdown:interferometer/delaunay:sma:numba_cpu_sparse_fp64_wtilde:local_laptop:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/delaunay_numba_direct_conv/alma:local_cpu_fp64": {
+   "id": "legacy:breakdown:interferometer/delaunay_numba_direct_conv/alma:local_cpu_fp64",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/delaunay_numba_direct_conv/sma:local_cpu_fp64": {
+   "id": "legacy:breakdown:interferometer/delaunay_numba_direct_conv/sma:local_cpu_fp64",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/delaunay_numba_jax/alma:local_cpu_fp64": {
+   "id": "legacy:breakdown:interferometer/delaunay_numba_jax/alma:local_cpu_fp64",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/delaunay_numba_jax/sma:local_cpu_fp64": {
+   "id": "legacy:breakdown:interferometer/delaunay_numba_jax/sma:local_cpu_fp64",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/delaunay_numba_reference/alma:local_cpu_fp64": {
+   "id": "legacy:breakdown:interferometer/delaunay_numba_reference/alma:local_cpu_fp64",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/delaunay_numba_reference/sma:local_cpu_fp64": {
+   "id": "legacy:breakdown:interferometer/delaunay_numba_reference/sma:local_cpu_fp64",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/delaunay_numba_source_loop/sma:local_cpu_fp64": {
+   "id": "legacy:breakdown:interferometer/delaunay_numba_source_loop/sma:local_cpu_fp64",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/delaunay_numba_symmetric/sma:local_cpu_fp64": {
+   "id": "legacy:breakdown:interferometer/delaunay_numba_symmetric/sma:local_cpu_fp64",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/delaunay_numba_two_stage/sma:local_cpu_fp64": {
+   "id": "legacy:breakdown:interferometer/delaunay_numba_two_stage/sma:local_cpu_fp64",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/jvla/delaunay/jvla:hpc_a100_fp64": {
+   "id": "breakdown:interferometer/delaunay:jvla:jax_gpu_sparse_fp64_wtilde:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/jvla/delaunay/jvla:hpc_a100_mp": {
+   "id": "breakdown:interferometer/delaunay:jvla:jax_gpu_sparse_mixed_wtilde:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/jvla/mge/jvla:hpc_a100_fp64": {
+   "id": "breakdown:interferometer/mge:jvla:jax_gpu_dense_fp64_nufft:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/jvla/mge/jvla:hpc_a100_fp64_sparse": {
+   "id": "breakdown:interferometer/mge:jvla:jax_gpu_sparse_fp64_wtilde:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/jvla/mge/jvla:hpc_a100_mp": {
+   "id": "breakdown:interferometer/mge:jvla:jax_gpu_dense_mixed_nufft:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/jvla/pixelization/jvla:hpc_a100_fp64": {
+   "id": "breakdown:interferometer/rectangular:jvla:jax_gpu_sparse_fp64_wtilde:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/jvla/pixelization/jvla:hpc_a100_mp": {
+   "id": "breakdown:interferometer/rectangular:jvla:jax_gpu_sparse_mixed_wtilde:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/mge/alma:hpc_a100_fp64": {
+   "id": "breakdown:interferometer/mge:alma:jax_gpu_dense_fp64_nufft:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/mge/alma:hpc_a100_fp64_sparse": {
+   "id": "breakdown:interferometer/mge:alma:jax_gpu_sparse_fp64_wtilde:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/mge/alma:local_cpu_fp64": {
+   "id": "breakdown:interferometer/mge:alma:jax_cpu_dense_fp64_nufft:local_laptop:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/mge/alma:local_cpu_fp64_sparse": {
+   "id": "breakdown:interferometer/mge:alma:jax_cpu_sparse_fp64_wtilde:local_laptop:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/mge/alma_high:local_cpu_fp64": {
+   "id": "breakdown:interferometer/mge:alma_high:jax_cpu_dense_fp64_nufft:local_laptop:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/mge/sma:local_cpu_fp64": {
+   "id": "breakdown:interferometer/mge:sma:jax_cpu_dense_fp64_nufft:local_laptop:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/mge/sma:local_cpu_fp64_sparse": {
+   "id": "breakdown:interferometer/mge:sma:jax_cpu_sparse_fp64_wtilde:local_laptop:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/mge_dft/sma:local_cpu_fp64": {
+   "id": "legacy:breakdown:interferometer/mge_dft/sma:local_cpu_fp64",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/pixelization/alma:hpc_a100_fp64": {
+   "id": "breakdown:interferometer/rectangular:alma:jax_gpu_sparse_fp64_wtilde:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/pixelization/alma:hpc_a100_mp": {
+   "id": "breakdown:interferometer/rectangular:alma:jax_gpu_sparse_mixed_wtilde:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/pixelization/alma:hpc_ral_cpu_fp64": {
+   "id": "breakdown:interferometer/rectangular:alma:jax_cpu_sparse_fp64_wtilde:hpc_ral_cpu:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/pixelization/alma:local_cpu_fp64": {
+   "id": "breakdown:interferometer/rectangular:alma:jax_cpu_sparse_fp64_wtilde:local_laptop:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/pixelization/sma:local_cpu_fp64": {
+   "id": "breakdown:interferometer/rectangular:sma:jax_cpu_sparse_fp64_wtilde:local_laptop:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/pixelization_numba/alma:hpc_ral_cpu_fp64": {
+   "id": "breakdown:interferometer/rectangular:alma:numba_cpu_sparse_fp64_wtilde:hpc_ral_cpu:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/pixelization_numba/sma:local_cpu_fp64": {
+   "id": "breakdown:interferometer/rectangular:sma:numba_cpu_sparse_fp64_wtilde:local_laptop:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/pixelization_numba_direct_conv/alma:local_cpu_fp64": {
+   "id": "legacy:breakdown:interferometer/pixelization_numba_direct_conv/alma:local_cpu_fp64",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/pixelization_numba_direct_conv/sma:local_cpu_fp64": {
+   "id": "legacy:breakdown:interferometer/pixelization_numba_direct_conv/sma:local_cpu_fp64",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/pixelization_numba_jax/alma:local_cpu_fp64": {
+   "id": "legacy:breakdown:interferometer/pixelization_numba_jax/alma:local_cpu_fp64",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/pixelization_numba_jax/sma:local_cpu_fp64": {
+   "id": "legacy:breakdown:interferometer/pixelization_numba_jax/sma:local_cpu_fp64",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/pixelization_numba_reference/alma:local_cpu_fp64": {
+   "id": "legacy:breakdown:interferometer/pixelization_numba_reference/alma:local_cpu_fp64",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/pixelization_numba_reference/sma:local_cpu_fp64": {
+   "id": "legacy:breakdown:interferometer/pixelization_numba_reference/sma:local_cpu_fp64",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/sdp81/delaunay/sdp81:hpc_a100_fp64": {
+   "id": "breakdown:interferometer/delaunay:sdp81:jax_gpu_sparse_fp64_wtilde:hpc_a100:default",
+   "releases": []
+  },
+  "breakdown:interferometer/sdp81/delaunay_numba/sdp81:hpc_ral_cpu_fp64": {
+   "id": "breakdown:interferometer/delaunay:sdp81:numba_cpu_sparse_fp64_wtilde:hpc_ral_cpu:default",
+   "releases": []
+  },
+  "breakdown:interferometer/sdp81/mge/sdp81:hpc_a100_fp64": {
+   "id": "breakdown:interferometer/mge:sdp81:jax_gpu_dense_fp64_nufft:hpc_a100:default",
+   "releases": []
+  },
+  "breakdown:interferometer/sdp81/mge/sdp81:hpc_a100_fp64_sparse": {
+   "id": "breakdown:interferometer/mge:sdp81:jax_gpu_sparse_fp64_wtilde:hpc_a100:default",
+   "releases": []
+  },
+  "breakdown:interferometer/sdp81/pixelization/sdp81:hpc_a100_fp64": {
+   "id": "breakdown:interferometer/rectangular:sdp81:jax_gpu_sparse_fp64_wtilde:hpc_a100:default",
+   "releases": []
+  },
+  "breakdown:interferometer/sdp81/pixelization_numba/sdp81:hpc_ral_cpu_fp64": {
+   "id": "breakdown:interferometer/rectangular:sdp81:numba_cpu_sparse_fp64_wtilde:hpc_ral_cpu:default",
+   "releases": []
+  },
+  "breakdown:interferometer/sma/delaunay/sma:hpc_a100_fp64": {
+   "id": "breakdown:interferometer/delaunay:sma:jax_gpu_sparse_fp64_wtilde:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/sma/delaunay/sma:hpc_a100_mp": {
+   "id": "breakdown:interferometer/delaunay:sma:jax_gpu_sparse_mixed_wtilde:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/sma/delaunay/sma:hpc_ral_cpu_fp64": {
+   "id": "breakdown:interferometer/delaunay:sma:jax_cpu_sparse_fp64_wtilde:hpc_ral_cpu:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/sma/delaunay_numba/sma:hpc_ral_cpu_fp64": {
+   "id": "breakdown:interferometer/delaunay:sma:numba_cpu_sparse_fp64_wtilde:hpc_ral_cpu:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/sma/mge/sma:hpc_a100_fp64": {
+   "id": "breakdown:interferometer/mge:sma:jax_gpu_dense_fp64_nufft:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/sma/pixelization/sma:hpc_a100_fp64": {
+   "id": "breakdown:interferometer/rectangular:sma:jax_gpu_sparse_fp64_wtilde:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/sma/pixelization/sma:hpc_a100_mp": {
+   "id": "breakdown:interferometer/rectangular:sma:jax_gpu_sparse_mixed_wtilde:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/sma/pixelization/sma:hpc_ral_cpu_fp64": {
+   "id": "breakdown:interferometer/rectangular:sma:jax_cpu_sparse_fp64_wtilde:hpc_ral_cpu:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:interferometer/sma/pixelization_numba/sma:hpc_ral_cpu_fp64": {
+   "id": "breakdown:interferometer/rectangular:sma:numba_cpu_sparse_fp64_wtilde:hpc_ral_cpu:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:point_source_image/image_plane/simple:hpc_ral_cpu_fp64": {
+   "id": "breakdown:point_source_image/image_plane:simple:jax_cpu_na_fp64:hpc_ral_cpu:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:point_source_image/image_plane/simple:local_cpu_fp64": {
+   "id": "breakdown:point_source_image/image_plane:simple:jax_cpu_na_fp64:local_laptop:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:point_source_source/source_plane/simple:hpc_a100_fp64": {
+   "id": "breakdown:point_source_source/source_plane:simple:jax_gpu_na_fp64:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:point_source_source/source_plane/simple:hpc_ral_cpu_fp64": {
+   "id": "breakdown:point_source_source/source_plane:simple:jax_cpu_na_fp64:hpc_ral_cpu:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "breakdown:point_source_source/source_plane/simple:local_cpu_fp64": {
+   "id": "breakdown:point_source_source/source_plane:simple:jax_cpu_na_fp64:local_laptop:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "runtime:imaging/delaunay/hst:hpc_a100_fp64": {
+   "id": "runtime:imaging/delaunay:hst:jax_gpu_dense_fp64:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "runtime:imaging/delaunay/hst:hpc_a100_fp64_sparse": {
+   "id": "runtime:imaging/delaunay:hst:jax_gpu_sparse_fp64:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "runtime:imaging/delaunay/hst:local_cpu_fp64": {
+   "id": "runtime:imaging/delaunay:hst:jax_cpu_dense_fp64:local_laptop:default",
+   "releases": [
+    "2026.7.6.649",
+    "2026.8.17.1"
+   ]
+  },
+  "runtime:imaging/delaunay/hst:local_cpu_fp64_sparse": {
+   "id": "runtime:imaging/delaunay:hst:jax_cpu_sparse_fp64:local_laptop:default",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "runtime:imaging/delaunay/hst:local_cpu_mp": {
+   "id": "runtime:imaging/delaunay:hst:jax_cpu_dense_mixed:local_laptop:default",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "runtime:imaging/delaunay/hst:local_cpu_mp_sparse": {
+   "id": "runtime:imaging/delaunay:hst:jax_cpu_sparse_mixed:local_laptop:default",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "runtime:imaging/delaunay/jwst:local_cpu_fp64": {
+   "id": "runtime:imaging/delaunay:jwst:jax_cpu_dense_fp64:local_laptop:default",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "runtime:imaging/delaunay/jwst:local_cpu_fp64_sparse": {
+   "id": "runtime:imaging/delaunay:jwst:jax_cpu_sparse_fp64:local_laptop:default",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "runtime:imaging/delaunay/jwst:local_cpu_mp": {
+   "id": "runtime:imaging/delaunay:jwst:jax_cpu_dense_mixed:local_laptop:default",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "runtime:imaging/delaunay/jwst:local_cpu_mp_sparse": {
+   "id": "runtime:imaging/delaunay:jwst:jax_cpu_sparse_mixed:local_laptop:default",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "runtime:imaging/delaunay_nn/hst:hpc_a100_fp64": {
+   "id": "runtime:imaging/delaunay_nn:hst:jax_gpu_dense_fp64:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "runtime:imaging/delaunay_nn/hst:hpc_a100_fp64_sparse": {
+   "id": "runtime:imaging/delaunay_nn:hst:jax_gpu_sparse_fp64:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "runtime:imaging/delaunay_nn/hst:local_cpu_fp64": {
+   "id": "legacy:runtime:imaging/delaunay_nn/hst:local_cpu_fp64",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "runtime:imaging/delaunay_numba/euclid:local_cpu_fp64": {
+   "id": "legacy:runtime:imaging/delaunay_numba/euclid:local_cpu_fp64",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "runtime:imaging/delaunay_numba/hst:local_cpu_fp64": {
+   "id": "legacy:runtime:imaging/delaunay_numba/hst:local_cpu_fp64",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "runtime:imaging/mge/ao:local_cpu_fp64": {
+   "id": "runtime:imaging/mge:ao:jax_cpu_dense_fp64:local_laptop:default",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "runtime:imaging/mge/ao:local_cpu_mp": {
+   "id": "runtime:imaging/mge:ao:jax_cpu_dense_mixed:local_laptop:default",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "runtime:imaging/mge/hst:local_cpu_fp64": {
+   "id": "runtime:imaging/mge:hst:jax_cpu_dense_fp64:local_laptop:default",
+   "releases": [
+    "2026.7.6.649",
+    "2026.8.17.1"
+   ]
+  },
+  "runtime:imaging/mge/hst:local_cpu_fp64_sparse": {
+   "id": "runtime:imaging/mge:hst:jax_cpu_sparse_fp64:local_laptop:default",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "runtime:imaging/mge/hst:local_cpu_mp": {
+   "id": "runtime:imaging/mge:hst:jax_cpu_dense_mixed:local_laptop:default",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "runtime:imaging/mge/hst:local_cpu_mp_sparse": {
+   "id": "runtime:imaging/mge:hst:jax_cpu_sparse_mixed:local_laptop:default",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "runtime:imaging/mge/jwst:local_cpu_fp64": {
+   "id": "runtime:imaging/mge:jwst:jax_cpu_dense_fp64:local_laptop:default",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "runtime:imaging/mge/jwst:local_cpu_fp64_sparse": {
+   "id": "runtime:imaging/mge:jwst:jax_cpu_sparse_fp64:local_laptop:default",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "runtime:imaging/mge/jwst:local_cpu_mp": {
+   "id": "runtime:imaging/mge:jwst:jax_cpu_dense_mixed:local_laptop:default",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "runtime:imaging/mge/jwst:local_cpu_mp_sparse": {
+   "id": "runtime:imaging/mge:jwst:jax_cpu_sparse_mixed:local_laptop:default",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "runtime:imaging/mge_mass_jax/hst:local_cpu_fp64": {
+   "id": "legacy:runtime:imaging/mge_mass_jax/hst:local_cpu_fp64",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "runtime:imaging/pixelization/hst:hpc_a100_fp64": {
+   "id": "runtime:imaging/rectangular:hst:jax_gpu_dense_fp64:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "runtime:imaging/pixelization/hst:hpc_a100_fp64_sparse": {
+   "id": "runtime:imaging/rectangular:hst:jax_gpu_sparse_fp64:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "runtime:imaging/pixelization/hst:local_cpu_fp64": {
+   "id": "runtime:imaging/rectangular:hst:jax_cpu_dense_fp64:local_laptop:default",
+   "releases": [
+    "2026.7.6.649",
+    "2026.8.17.1"
+   ]
+  },
+  "runtime:imaging/pixelization/hst:local_cpu_fp64_sparse": {
+   "id": "runtime:imaging/rectangular:hst:jax_cpu_sparse_fp64:local_laptop:default",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "runtime:imaging/pixelization/hst:local_cpu_mp": {
+   "id": "runtime:imaging/rectangular:hst:jax_cpu_dense_mixed:local_laptop:default",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "runtime:imaging/pixelization/hst:local_cpu_mp_sparse": {
+   "id": "runtime:imaging/rectangular:hst:jax_cpu_sparse_mixed:local_laptop:default",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "runtime:imaging/pixelization/jwst:local_cpu_fp64": {
+   "id": "runtime:imaging/rectangular:jwst:jax_cpu_dense_fp64:local_laptop:default",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "runtime:imaging/pixelization/jwst:local_cpu_fp64_sparse": {
+   "id": "runtime:imaging/rectangular:jwst:jax_cpu_sparse_fp64:local_laptop:default",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "runtime:imaging/pixelization/jwst:local_cpu_mp": {
+   "id": "runtime:imaging/rectangular:jwst:jax_cpu_dense_mixed:local_laptop:default",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "runtime:imaging/pixelization/jwst:local_cpu_mp_sparse": {
+   "id": "runtime:imaging/rectangular:jwst:jax_cpu_sparse_mixed:local_laptop:default",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "runtime:imaging/pixelization_numba/euclid:local_cpu_fp64": {
+   "id": "legacy:runtime:imaging/pixelization_numba/euclid:local_cpu_fp64",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "runtime:imaging/pixelization_numba/hst:local_cpu_fp64": {
+   "id": "legacy:runtime:imaging/pixelization_numba/hst:local_cpu_fp64",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "runtime:imaging/pixelization_numba_mge_mass/hst:local_cpu_fp64": {
+   "id": "runtime:imaging/rectangular:hst:numba_cpu_sparse_fp64:local_laptop:mge_mass",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "runtime:interferometer/delaunay/alma:local_cpu_mp": {
+   "id": "legacy:runtime:interferometer/delaunay/alma:local_cpu_mp",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "runtime:interferometer/delaunay/sma:local_cpu_fp64": {
+   "id": "legacy:runtime:interferometer/delaunay/sma:local_cpu_fp64",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "runtime:interferometer/delaunay/sma:local_cpu_mp": {
+   "id": "legacy:runtime:interferometer/delaunay/sma:local_cpu_mp",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "runtime:interferometer/mge/sma:local_cpu_fp64": {
+   "id": "runtime:interferometer/mge:sma:jax_cpu_dense_fp64_nufft:local_laptop:default",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "runtime:interferometer/mge/sma:local_cpu_mp": {
+   "id": "runtime:interferometer/mge:sma:jax_cpu_dense_mixed_nufft:local_laptop:default",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "runtime:interferometer/pixelization/sma:local_cpu_fp64": {
+   "id": "legacy:runtime:interferometer/pixelization/sma:local_cpu_fp64",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "runtime:interferometer/pixelization/sma:local_cpu_mp": {
+   "id": "legacy:runtime:interferometer/pixelization/sma:local_cpu_mp",
+   "releases": [
+    "2026.7.6.649"
+   ]
+  },
+  "runtime:point_source_image/image_plane_solved:local_cpu_fp64": {
+   "id": "legacy:runtime:point_source_image/image_plane_solved:local_cpu_fp64",
+   "releases": [
+    "2026.7.23.1"
+   ]
+  },
+  "runtime:point_source_source/source_plane_solved:hpc_a100_fp64": {
+   "id": "runtime:point_source_source/source_plane:simple:jax_gpu_na_fp64:hpc_a100:default",
+   "releases": [
+    "2026.10.17.1"
+   ]
+  },
+  "runtime:point_source_source/source_plane_solved:hpc_ral_cpu_fp64": {
+   "id": "runtime:point_source_source/source_plane:simple:jax_cpu_na_fp64:hpc_ral_cpu:default",
+   "releases": []
+  },
+  "runtime:point_source_source/source_plane_solved:local_cpu_fp64": {
+   "id": "legacy:runtime:point_source_source/source_plane_solved:local_cpu_fp64",
+   "releases": [
+    "2026.7.23.1"
+   ]
+  }
+ },
+ "sources": {
+  "archive/2026/05/hostless_summaries/breakdown/imaging/delaunay_breakdown_hst_v2026.5.29.4.json": {
+   "id": "legacy:breakdown:imaging/delaunay/hst:local_cpu_fp64",
+   "version": "2026.5.29.4"
+  },
+  "archive/2026/05/hostless_summaries/breakdown/imaging/delaunay_breakdown_hst_v2026.5.29.4_sparse.json": {
+   "id": "legacy:breakdown:imaging/delaunay/hst:local_cpu_fp64_sparse",
+   "version": "2026.5.29.4"
+  },
+  "archive/2026/05/hostless_summaries/breakdown/imaging/mge_breakdown_hst_v2026.5.29.4.json": {
+   "id": "legacy:breakdown:imaging/mge/hst:local_cpu_fp64",
+   "version": "2026.5.29.4"
+  },
+  "archive/2026/05/hostless_summaries/breakdown/imaging/pixelization_breakdown_hst_v2026.5.29.4.json": {
+   "id": "legacy:breakdown:imaging/pixelization/hst:local_cpu_fp64",
+   "version": "2026.5.29.4"
+  },
+  "archive/2026/05/hostless_summaries/breakdown/imaging/pixelization_breakdown_hst_v2026.5.29.4_sparse.json": {
+   "id": "legacy:breakdown:imaging/pixelization/hst:local_cpu_fp64_sparse",
+   "version": "2026.5.29.4"
+  },
+  "archive/2026/07/hostless_summaries/breakdown/cluster/image_plane_breakdown_v2026.7.23.1.json": {
+   "id": "legacy:breakdown:cluster/image_plane:local_cpu_fp64",
+   "version": "2026.7.23.1"
+  },
+  "archive/2026/07/hostless_summaries/breakdown/cluster/image_plane_breakdown_v2026.7.6.649.json": {
+   "id": "legacy:breakdown:cluster/image_plane:local_cpu_fp64",
+   "version": "2026.7.6.649"
+  },
+  "archive/2026/07/hostless_summaries/breakdown/cluster/source_plane_breakdown_v2026.7.23.1.json": {
+   "id": "legacy:breakdown:cluster/source_plane:local_cpu_fp64",
+   "version": "2026.7.23.1"
+  },
+  "archive/2026/07/hostless_summaries/breakdown/cluster/source_plane_breakdown_v2026.7.6.649.json": {
+   "id": "legacy:breakdown:cluster/source_plane:local_cpu_fp64",
+   "version": "2026.7.6.649"
+  },
+  "archive/2026/07/hostless_summaries/breakdown/imaging/delaunay_breakdown_hst_v2026.7.6.649.json": {
+   "id": "legacy:breakdown:imaging/delaunay/hst:local_cpu_fp64",
+   "version": "2026.7.6.649"
+  },
+  "archive/2026/07/hostless_summaries/breakdown/imaging/delaunay_breakdown_hst_v2026.7.6.649_sparse.json": {
+   "id": "legacy:breakdown:imaging/delaunay/hst:local_cpu_fp64_sparse",
+   "version": "2026.7.6.649"
+  },
+  "archive/2026/07/hostless_summaries/breakdown/imaging/mge_breakdown_hst_v2026.7.6.649.json": {
+   "id": "legacy:breakdown:imaging/mge/hst:local_cpu_fp64",
+   "version": "2026.7.6.649"
+  },
+  "archive/2026/07/hostless_summaries/breakdown/imaging/pixelization_breakdown_hst_v2026.7.6.649.json": {
+   "id": "legacy:breakdown:imaging/pixelization/hst:local_cpu_fp64",
+   "version": "2026.7.6.649"
+  },
+  "archive/2026/07/hostless_summaries/breakdown/imaging/pixelization_breakdown_hst_v2026.7.6.649_sparse.json": {
+   "id": "legacy:breakdown:imaging/pixelization/hst:local_cpu_fp64_sparse",
+   "version": "2026.7.6.649"
+  },
+  "archive/2026/07/hostless_summaries/runtime/point_source_image/image_plane_solved/image_plane_solved_summary_v2026.7.23.1.json": {
+   "id": "legacy:runtime:point_source_image/image_plane_solved:local_cpu_fp64",
+   "version": "2026.7.23.1"
+  },
+  "archive/2026/07/hostless_summaries/runtime/point_source_source/source_plane_solved/source_plane_solved_summary_v2026.7.23.1.json": {
+   "id": "legacy:runtime:point_source_source/source_plane_solved:local_cpu_fp64",
+   "version": "2026.7.23.1"
+  },
+  "archive/2026/08/hostless_summaries/breakdown/imaging/delaunay_breakdown_hst_v2026.8.17.1.json": {
+   "id": "legacy:breakdown:imaging/delaunay/hst:local_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "archive/2026/08/hostless_summaries/breakdown/imaging/delaunay_nn_breakdown_hst_v2026.8.17.1.json": {
+   "id": "legacy:breakdown:imaging/delaunay_nn/hst:local_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "archive/2026/08/hostless_summaries/breakdown/imaging/delaunay_numba_breakdown_euclid_v2026.8.17.1.json": {
+   "id": "legacy:breakdown:imaging/delaunay_numba/euclid:local_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "archive/2026/08/hostless_summaries/breakdown/imaging/delaunay_numba_breakdown_hst_v2026.8.17.1.json": {
+   "id": "legacy:breakdown:imaging/delaunay_numba/hst:local_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "archive/2026/08/hostless_summaries/breakdown/imaging/mge_breakdown_hst_v2026.8.17.1.json": {
+   "id": "legacy:breakdown:imaging/mge/hst:local_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "archive/2026/08/hostless_summaries/breakdown/imaging/pixelization_breakdown_hst_v2026.8.17.1.json": {
+   "id": "legacy:breakdown:imaging/pixelization/hst:local_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "archive/2026/08/hostless_summaries/breakdown/imaging/pixelization_numba_breakdown_euclid_v2026.8.17.1.json": {
+   "id": "legacy:breakdown:imaging/pixelization_numba/euclid:local_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "archive/2026/08/hostless_summaries/breakdown/imaging/pixelization_numba_breakdown_hst_v2026.8.17.1.json": {
+   "id": "legacy:breakdown:imaging/pixelization_numba/hst:local_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_direct_conv_breakdown_alma_v2026.8.17.1.json": {
+   "id": "legacy:breakdown:interferometer/delaunay_numba_direct_conv/alma:local_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_direct_conv_breakdown_sma_v2026.8.17.1.json": {
+   "id": "legacy:breakdown:interferometer/delaunay_numba_direct_conv/sma:local_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_jax_breakdown_alma_v2026.8.17.1.json": {
+   "id": "legacy:breakdown:interferometer/delaunay_numba_jax/alma:local_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_jax_breakdown_sma_v2026.8.17.1.json": {
+   "id": "legacy:breakdown:interferometer/delaunay_numba_jax/sma:local_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_reference_breakdown_alma_v2026.8.17.1.json": {
+   "id": "legacy:breakdown:interferometer/delaunay_numba_reference/alma:local_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_reference_breakdown_sma_v2026.8.17.1.json": {
+   "id": "legacy:breakdown:interferometer/delaunay_numba_reference/sma:local_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_source_loop_breakdown_sma_v2026.8.17.1.json": {
+   "id": "legacy:breakdown:interferometer/delaunay_numba_source_loop/sma:local_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_symmetric_breakdown_sma_v2026.8.17.1.json": {
+   "id": "legacy:breakdown:interferometer/delaunay_numba_symmetric/sma:local_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "archive/2026/08/hostless_summaries/breakdown/interferometer/delaunay_numba_two_stage_breakdown_sma_v2026.8.17.1.json": {
+   "id": "legacy:breakdown:interferometer/delaunay_numba_two_stage/sma:local_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_direct_conv_breakdown_alma_v2026.8.17.1.json": {
+   "id": "legacy:breakdown:interferometer/pixelization_numba_direct_conv/alma:local_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_direct_conv_breakdown_sma_v2026.8.17.1.json": {
+   "id": "legacy:breakdown:interferometer/pixelization_numba_direct_conv/sma:local_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_jax_breakdown_alma_v2026.8.17.1.json": {
+   "id": "legacy:breakdown:interferometer/pixelization_numba_jax/alma:local_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_jax_breakdown_sma_v2026.8.17.1.json": {
+   "id": "legacy:breakdown:interferometer/pixelization_numba_jax/sma:local_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_reference_breakdown_alma_v2026.8.17.1.json": {
+   "id": "legacy:breakdown:interferometer/pixelization_numba_reference/alma:local_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "archive/2026/08/hostless_summaries/breakdown/interferometer/pixelization_numba_reference_breakdown_sma_v2026.8.17.1.json": {
+   "id": "legacy:breakdown:interferometer/pixelization_numba_reference/sma:local_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "archive/2026/08/hostless_summaries/runtime/imaging/delaunay/delaunay_likelihood_summary_hst_v2026.8.17.1.json": {
+   "id": "runtime:imaging/delaunay:hst:jax_cpu_dense_fp64:local_laptop:default",
+   "version": "2026.8.17.1"
+  },
+  "archive/2026/08/hostless_summaries/runtime/imaging/delaunay_nn/delaunay_nn_likelihood_summary_hst_v2026.8.17.1.json": {
+   "id": "legacy:runtime:imaging/delaunay_nn/hst:local_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "archive/2026/08/hostless_summaries/runtime/imaging/delaunay_numba/delaunay_numba_likelihood_summary_euclid_v2026.8.17.1.json": {
+   "id": "legacy:runtime:imaging/delaunay_numba/euclid:local_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "archive/2026/08/hostless_summaries/runtime/imaging/delaunay_numba/delaunay_numba_likelihood_summary_hst_v2026.8.17.1.json": {
+   "id": "legacy:runtime:imaging/delaunay_numba/hst:local_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "archive/2026/08/hostless_summaries/runtime/imaging/pixelization/pixelization_likelihood_summary_hst_v2026.8.17.1.json": {
+   "id": "runtime:imaging/rectangular:hst:jax_cpu_dense_fp64:local_laptop:default",
+   "version": "2026.8.17.1"
+  },
+  "archive/2026/08/hostless_summaries/runtime/imaging/pixelization_numba/pixelization_numba_likelihood_summary_euclid_v2026.8.17.1.json": {
+   "id": "legacy:runtime:imaging/pixelization_numba/euclid:local_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "archive/2026/08/hostless_summaries/runtime/imaging/pixelization_numba/pixelization_numba_likelihood_summary_hst_v2026.8.17.1.json": {
+   "id": "legacy:runtime:imaging/pixelization_numba/hst:local_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "archive/2026/08/pre_2026_09/breakdown/interferometer/mge_dft_breakdown_sma_v2026.8.17.1.json": {
+   "id": "legacy:breakdown:interferometer/mge_dft/sma:local_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "results/breakdown/cluster/image_plane_hpc_ral_cpu_fp64.json": {
+   "id": "legacy:breakdown:cluster/image_plane:hpc_ral_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "results/breakdown/cluster/image_plane_local_cpu_fp64.json": {
+   "id": "legacy:breakdown:cluster/image_plane:local_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "results/breakdown/datacube/delaunay_hpc_a100_fp64.json": {
+   "id": "legacy:breakdown:datacube/delaunay/alma_high:hpc_a100_fp64",
+   "version": "2026.7.6.649"
+  },
+  "results/breakdown/datacube/delaunay_hpc_a100_mp.json": {
+   "id": "legacy:breakdown:datacube/delaunay/alma_high:hpc_a100_mp",
+   "version": "2026.7.6.649"
+  },
+  "results/interferometer/delaunay/alma/comparison.json#local_cpu_mp": {
+   "id": "legacy:runtime:interferometer/delaunay/alma:local_cpu_mp",
+   "version": "2026.7.6.649"
+  },
+  "results/interferometer/delaunay/sma/comparison.json#local_cpu_fp64": {
+   "id": "legacy:runtime:interferometer/delaunay/sma:local_cpu_fp64",
+   "version": "2026.7.6.649"
+  },
+  "results/interferometer/delaunay/sma/comparison.json#local_cpu_mp": {
+   "id": "legacy:runtime:interferometer/delaunay/sma:local_cpu_mp",
+   "version": "2026.7.6.649"
+  },
+  "results/interferometer/rectangular/sma/comparison.json#local_cpu_fp64": {
+   "id": "legacy:runtime:interferometer/pixelization/sma:local_cpu_fp64",
+   "version": "2026.7.6.649"
+  },
+  "results/interferometer/rectangular/sma/comparison.json#local_cpu_mp": {
+   "id": "legacy:runtime:interferometer/pixelization/sma:local_cpu_mp",
+   "version": "2026.7.6.649"
+  },
+  "results/misc/likelihood_runtime/point_source_source/source_plane_solved/comparison.json#hpc_a100_fp64": {
+   "id": "runtime:point_source_source/source_plane:simple:jax_gpu_na_fp64:hpc_a100:default",
+   "version": "2026.10.17.1"
+  },
+  "results/misc/likelihood_runtime/point_source_source/source_plane_solved/comparison.json#hpc_ral_cpu_fp64": {
+   "id": "runtime:point_source_source/source_plane:simple:jax_cpu_na_fp64:hpc_ral_cpu:default",
+   "version": "2026.10.17.1"
+  },
+  "results/runtime/imaging/mge/mge_likelihood_summary_hst_v2026.8.17.1.json": {
+   "id": "runtime:imaging/mge:hst:jax_cpu_dense_fp64:local_laptop:default",
+   "version": "2026.8.17.1"
+  },
+  "results/runtime/imaging/mge_mass_jax/mge_mass_jax_likelihood_summary_hst_v2026.8.17.1.json": {
+   "id": "legacy:runtime:imaging/mge_mass_jax/hst:local_cpu_fp64",
+   "version": "2026.8.17.1"
+  },
+  "results/runtime/interferometer/delaunay/alma/delaunay_local_cpu_mp.json": {
+   "id": "legacy:runtime:interferometer/delaunay/alma:local_cpu_mp",
+   "version": "2026.7.6.649"
+  },
+  "results/runtime/interferometer/delaunay/sma/delaunay_local_cpu_fp64.json": {
+   "id": "legacy:runtime:interferometer/delaunay/sma:local_cpu_fp64",
+   "version": "2026.7.6.649"
+  },
+  "results/runtime/interferometer/delaunay/sma/delaunay_local_cpu_mp.json": {
+   "id": "legacy:runtime:interferometer/delaunay/sma:local_cpu_mp",
+   "version": "2026.7.6.649"
+  },
+  "results/runtime/interferometer/pixelization/sma/pixelization_local_cpu_fp64.json": {
+   "id": "legacy:runtime:interferometer/pixelization/sma:local_cpu_fp64",
+   "version": "2026.7.6.649"
+  },
+  "results/runtime/interferometer/pixelization/sma/pixelization_local_cpu_mp.json": {
+   "id": "legacy:runtime:interferometer/pixelization/sma:local_cpu_mp",
+   "version": "2026.7.6.649"
+  }
+ },
+ "cells": {
+  "datacube/delaunay/sma": "datacube/delaunay/sma",
+  "imaging/delaunay/hst": "imaging/delaunay/hst",
+  "imaging/delaunay/jwst": "imaging/delaunay/jwst",
+  "imaging/mge/ao": "imaging/mge/ao",
+  "imaging/mge/hst": "imaging/mge/hst",
+  "imaging/mge/jwst": "imaging/mge/jwst",
+  "imaging/pixelization/hst": "imaging/rectangular/hst",
+  "imaging/pixelization/jwst": "imaging/rectangular/jwst",
+  "interferometer/delaunay/alma": "interferometer/delaunay/alma",
+  "interferometer/delaunay/sma": "interferometer/delaunay/sma",
+  "interferometer/mge/sma": "interferometer/mge/sma",
+  "interferometer/pixelization/sma": "interferometer/rectangular/sma",
+  "point_source_source/source_plane_solved": "point_source_source/source_plane_solved"
+ }
+}

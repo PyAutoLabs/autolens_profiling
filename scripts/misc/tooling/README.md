@@ -18,10 +18,12 @@ Repo tooling (not profiling scripts).
   once applied, its `--check` reports the map frozen. The applier `git mv`s every entry
   (`--apply`, sha-checked, re-runnable) and repoints references from the map alone
   (`--rewrite-refs`, idempotent; never edits `results/`, `archive/` or generated output).
-- **`results_layout.py`** — readers' view of the moved tree: a moved file keeps its
-  pre-move identity (`iter_legacy`, `legacy_glob`, `current`); only `build_dashboard.py` and
-  `build_readme.py` still read through it. `destination` places a new result with the map's
-  classification (used by `_profile_cli.resolve_output_paths`).
+- **`build_series_id_map.py`** — `catalogue/series_id_map.json`, generated from the day-zero
+  map: every pre-move dashboard series id (legacy file grammar) -> the v3 id it now publishes
+  under, with the releases it held; the pre-move points outside the mirrored tree it attaches;
+  and the pre-move runtime cell -> current cell map `build_readme.py` matches archived
+  baselines with. `--check` reports it stale; `test_build_dashboard.py` checks history stays
+  continuous.
 - **`build_catalogue.py`** / **`catalogue_lifecycle.py`** — the `profiling-summary@3`
   lifecycle catalogue (`dashboard/catalogue.json`) and the companion v2 setup catalogue
   (`dashboard/catalogue/setups.json` + shards), read natively from the mirrored tree; CI runs

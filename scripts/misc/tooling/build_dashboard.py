@@ -8,16 +8,21 @@ Run from the repo root::
 Historical transport retained during browser migration
 -----------------------------------------------------
 
-One point per PyAutoLens release per **series** — a likelihood cell x instrument x sweep
-config (device + precision) x dense/sparse — read from the result JSONs this repo already
-commits (autolens_profiling#345):
+One point per PyAutoLens release per **series**, read from the result JSONs this repo already
+commits (autolens_profiling#345). A series is keyed on the v3 identity the catalogue builder uses
+(autolens_profiling#442): ``<measurement>:<dataset_type>/<variant>:<instrument>:<setup_id>:
+<host_class>:<model_variant>``, read natively from the mirrored tree
+(``results/<dataset_type>/<variant>/<instrument>/<setup_id>/<host_class>[/<model_variant>]/
+{runtime,breakdown}.json`` and its ``history/``), plus each config entry of a cell's
+``comparison.json``, which joins the setup row it summarises. ``results/lens/`` keeps its
+versioned-artifact grammar (``<script>_<summary|breakdown>_<instrument>_v<version>.json``).
 
-* versioned artifacts ``<script>_<summary|breakdown>_<instrument>_v<version>[_sparse].json``
-  under ``results/{runtime,breakdown,simulators,lens}`` (untagged = ``local_cpu_fp64`` by
-  package convention, the same grammar as ``build_readme.py``);
-* config-tagged rows ``<script>_<config>[_sparse].json`` under ``results/{runtime,breakdown}``
-  whose payload carries ``autolens_version`` (the A100 and RAL CPU tiers);
-* every sweep ``comparison.json`` under ``results/runtime`` (one entry per config).
+Points measured before the day-zero move whose files now live outside the mirrored tree
+(``archive/``, ``results/misc/``, the unresolved rows left under ``results/runtime|breakdown/``)
+are attached by the committed ``catalogue/series_id_map.json`` (generated mechanically from
+``catalogue/migration_day_zero.json`` by ``build_series_id_map.py``), which also records every
+pre-move series id and the id it now publishes under, so history stays continuous. A pre-move
+series with no mirrored member keeps its old id behind ``legacy:``.
 
 The per-call headline is the ladder ``build_readme.py`` uses (``full_pipeline_per_call`` ->
 ``full_pipeline_single_jit`` -> ...), extended for breakdown cells; ``vmap.per_call`` rides
@@ -56,7 +61,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from results_layout import iter_legacy  # noqa: E402
+import catalogue_lifecycle as lc  # noqa: E402
 
 SCHEMA_VERSION = 1
 PAGES_URL = "https://pyautolabs.github.io/autolens_profiling/"
@@ -524,87 +529,238 @@ def _per_call_html(p: dict) -> str:
     return out
 
 
-def scan(root: Path) -> dict[tuple, list[dict]]:
-    """Every (section, cell, config, sparse) -> its points, one per (version, source)."""
-    root = root.resolve()
-    raw: dict[tuple, list[dict]] = {}
+#: The committed old-id -> new-id map and the pre-move sources it attaches
+#: (``build_series_id_map.py``, generated from ``catalogue/migration_day_zero.json``).
+SERIES_ID_MAP = "catalogue/series_id_map.json"
+#: Prefix of a pre-move series whose evidence never reached the mirrored tree.
+LEGACY_PREFIX = "legacy:"
+#: ``host_class`` -> the tier/device half of the sweep config label (``hpc_a100_fp64``).
+HOST_TIERS = {
+    "hpc_ral_cpu": "hpc_ral_cpu",
+    "hpc_a100": "hpc_a100",
+    "local_laptop": "local_cpu",
+    "local_gpu": "local_gpu",
+}
+#: Measurements a trend series is drawn for.
+SERIES_MEASUREMENTS = ("runtime", "breakdown")
 
-    def add(key: tuple, point: dict | None):
+
+def config_label(setup: dict, host_class: str) -> str:
+    """The sweep config label (``hpc_a100_mp``) of a v3 setup on a host class."""
+    tier = HOST_TIERS.get(host_class, host_class)
+    return f"{tier}_{'mp' if setup.get('precision') == 'mixed' else 'fp64'}"
+
+
+def series_key(facts: dict) -> str:
+    """The v3 series id of a mirrored-tree cell (``catalogue_lifecycle.mirrored`` facts)."""
+    return ":".join(
+        (
+            facts["file_measurement"],
+            f"{facts['dataset_type']}/{facts['variant']}",
+            facts["instrument"],
+            facts["setup_id"],
+            facts["host_class"],
+            facts["model_variant"],
+        )
+    )
+
+
+def parse_key(key: str) -> dict:
+    """``section`` / ``cell`` / ``config`` / ``sparse`` / ``identity`` of a series id.
+
+    A v3 id carries its identity; a ``legacy:`` id (and a ``results/lens`` component id) is
+    ``<section>:<cell>:<config>[_sparse]`` with no v3 identity.
+    """
+    body = key[len(LEGACY_PREFIX) :] if key.startswith(LEGACY_PREFIX) else key
+    parts = body.split(":")
+    if not key.startswith(LEGACY_PREFIX) and len(parts) == 6:
+        measurement, likelihood, instrument, setup_id, host_class, model_variant = parts
+        match = lc.SETUP_RE.match(setup_id)
+        setup = match.groupdict() if match else {}
+        cell = f"{likelihood}/{instrument}" + (
+            f"/{model_variant}" if model_variant != "default" else ""
+        )
+        return {
+            "section": measurement,
+            "cell": cell,
+            "config": config_label(setup, host_class),
+            "sparse": setup.get("operator") == "sparse",
+            "identity": {
+                "likelihood": likelihood,
+                "instrument": instrument,
+                "setup_id": setup_id,
+                "host_class": host_class,
+                "model_variant": model_variant,
+                "measurement": measurement,
+            },
+        }
+    section, cell, config = parts[0], ":".join(parts[1:-1]), parts[-1]
+    sparse = config.endswith("_sparse")
+    return {
+        "section": section,
+        "cell": cell,
+        "config": config[: -len("_sparse")] if sparse else config,
+        "sparse": sparse,
+        "identity": None,
+    }
+
+
+def load_series_id_map(root: Path) -> dict:
+    """The committed series id map (empty when the checkout has none, e.g. a fixture)."""
+    doc = _load(Path(root) / SERIES_ID_MAP)
+    return doc if doc is not None else {"series": {}, "sources": {}}
+
+
+def _comparison_cell(rel: str) -> tuple[str, str, str] | None:
+    """(dataset_type, variant, instrument) of a mirrored cell's ``comparison.json``."""
+    parts = rel.split("/")
+    if len(parts) == 5 and parts[0] == "results" and parts[1] in lc.DATASET_TYPES:
+        return parts[1], parts[2], parts[3]
+    return None
+
+
+def _cell_index(files: list[str]) -> dict[tuple, list[dict]]:
+    """Every current mirrored cell file, by (dataset_type, variant, instrument)."""
+    index: dict[tuple, list[dict]] = {}
+    for rel in files:
+        facts = lc.mirrored(rel)
+        if facts is None or facts["location"] != "cell" or facts["file_measurement"] != "runtime":
+            continue
+        index.setdefault((facts["dataset_type"], facts["variant"], facts["instrument"]), []).append(
+            facts
+        )
+    return index
+
+
+def comparison_key(index: dict, rel: str, config: str) -> str | None:
+    """The v3 id of one ``comparison.json`` config entry: the one setup row it summarises.
+
+    The entry's config label (``local_cpu_fp64_sparse``) must name exactly one default-variant
+    runtime cell beside it; an ambiguous or unmatched entry has no native id.
+    """
+    cell = _comparison_cell(rel)
+    if cell is None:
+        return None
+    name, sparse = (config[:-7], True) if config.endswith("_sparse") else (config, False)
+    matches = {
+        series_key(f)
+        for f in index.get(cell, [])
+        if f["model_variant"] == "default"
+        and config_label(f["setup"], f["host_class"]) == name
+        and (f["setup"]["operator"] == "sparse") == sparse
+    }
+    return matches.pop() if len(matches) == 1 else None
+
+
+def _lens_key(rel: str, payload: dict) -> tuple[str, str] | None:
+    """(component id, version) of a ``results/lens/`` versioned artifact."""
+    path = Path(rel)
+    m = ARTIFACT_RE.match(path.name)
+    if m is None:
+        return None
+    folder = "/".join(path.parts[2:-1])
+    instrument = m["extra"] or (
+        payload.get("instrument") if isinstance(payload.get("instrument"), str) else None
+    )
+    cell = f"{folder}/{m['script']}" + (f"/{instrument}" if instrument else "")
+    return f"lens:{cell}:local_cpu_fp64{'_sparse' if m['sparse'] else ''}", m["version"]
+
+
+def result_files(root: Path) -> list[str]:
+    """Repo-relative result JSONs under ``results/`` and ``archive/``, sorted."""
+    out = []
+    for top in ("results", "archive"):
+        base = root / top
+        if base.is_dir():
+            out += [p.relative_to(root).as_posix() for p in base.rglob("*.json") if p.is_file()]
+    return sorted(out)
+
+
+def native_points(root: Path, rel: str, index: dict) -> list[tuple[str, str, str, dict]]:
+    """``(series id, version, source, payload)`` the mirrored tree itself gives one file.
+
+    Mirrored ``runtime``/``breakdown`` rows (current and ``history/``) that record
+    ``autolens_version``; each such entry of a mirrored cell's ``comparison.json``; and
+    ``results/lens`` versioned artifacts. Anything else has no native series.
+    """
+    facts = lc.mirrored(rel)
+    name = rel.rsplit("/", 1)[-1]
+    if facts is not None:
+        if (
+            facts["location"] not in ("cell", "history")
+            or facts["file_measurement"] not in SERIES_MEASUREMENTS
+        ):
+            return []
+        payload = _load(root / rel)
+        if payload is None or "autolens_version" not in payload:
+            return []
+        return [(series_key(facts), str(payload["autolens_version"]), rel, payload)]
+    if name == "comparison.json" and _comparison_cell(rel):
+        payload = _load(root / rel)
+        configs = payload.get("configs") if payload else None
+        if not isinstance(configs, dict):
+            return []
+        out = []
+        for config, entry in configs.items():
+            if not isinstance(entry, dict) or "autolens_version" not in entry:
+                continue
+            key = comparison_key(index, rel, config)
+            if key is not None:
+                out.append((key, str(entry["autolens_version"]), f"{rel}#{config}", entry))
+        return out
+    if rel.startswith("results/lens/"):
+        payload = _load(root / rel)
+        found = _lens_key(rel, payload) if payload is not None else None
+        if found is not None:
+            return [(found[0], found[1], rel, payload)]
+    return []
+
+
+def _entry(payload: dict, fragment: str) -> dict | None:
+    """The payload a source names: the file, or one ``comparison.json`` config entry."""
+    if not fragment:
+        return payload
+    configs = payload.get("configs") if isinstance(payload, dict) else None
+    entry = configs.get(fragment) if isinstance(configs, dict) else None
+    return entry if isinstance(entry, dict) else None
+
+
+def scan(root: Path) -> dict[str, list[dict]]:
+    """Every series id -> its points, one per (version, source).
+
+    Sources the committed series id map attaches (pre-move files outside the mirrored tree,
+    or a pre-move point the native rules no longer reach) take the id and version the map
+    records; every other file is read natively (:func:`native_points`).
+    """
+    root = root.resolve()
+    mapped = load_series_id_map(root).get("sources", {})
+    files = result_files(root)
+    index = _cell_index(files)
+    raw: dict[str, list[dict]] = {}
+
+    def add(key: str, point: dict | None):
         if point is not None:
             raw.setdefault(key, []).append(point)
 
-    # Moved results are scanned under their pre-move identity and linked where they live
-    # now (results_layout.py, autolens_profiling#442 PR 2).
-    for section in SECTIONS:
-        for path, legacy in iter_legacy(root, f"results/{section}", "*.json"):
-            rel = path.relative_to(root)
-            parts = legacy.relative_to(f"results/{section}").parts
-            if legacy.name == "comparison.json":
-                if section != "runtime":
+    by_file: dict[str, list[tuple[str, dict]]] = {}
+    for source, target in mapped.items():
+        path, _, fragment = source.partition("#")
+        by_file.setdefault(path, []).append((fragment, target))
+    for rel in files:
+        claimed = set()
+        if rel in by_file:
+            payload = _load(root / rel)
+            for fragment, target in sorted(by_file[rel], key=lambda t: t[0]):
+                entry = _entry(payload, fragment) if payload is not None else None
+                if entry is None:
                     continue
-                payload = _load(path)
-                configs = payload.get("configs") if payload else None
-                if not isinstance(configs, dict):
-                    continue
-                cell = "/".join(parts[:-1])
-                for config, entry in configs.items():
-                    if not isinstance(entry, dict) or "autolens_version" not in entry:
-                        continue
-                    name, sparse = (
-                        (config[:-7], True) if config.endswith("_sparse") else (config, False)
-                    )
-                    add(
-                        (section, cell, name, sparse),
-                        _point(entry, str(entry["autolens_version"]), f"{rel}#{config}"),
-                    )
+                claimed.add(fragment)
+                source = f"{rel}#{fragment}" if fragment else rel
+                add(target["id"], _point(entry, target["version"], source))
+        for key, version, source, payload in native_points(root, rel, index):
+            if source.partition("#")[2] in claimed:
                 continue
-            m = ARTIFACT_RE.match(legacy.name)
-            if m:
-                payload = _load(path)
-                if payload is None:
-                    continue
-                folder = "/".join(parts[:-1])
-                instrument = m["extra"] or (
-                    payload.get("instrument")
-                    if isinstance(payload.get("instrument"), str)
-                    else None
-                )
-                if section == "runtime":
-                    cell = (
-                        folder
-                        if (instrument and folder.endswith("/" + instrument))
-                        else (f"{folder}/{instrument}" if instrument else folder)
-                    )
-                else:
-                    cell = f"{folder}/{m['script']}" + (f"/{instrument}" if instrument else "")
-                add(
-                    (section, cell, "local_cpu_fp64", bool(m["sparse"])),
-                    _point(payload, m["version"], str(rel)),
-                )
-                continue
-            m = CONFIG_TAGGED_RE.match(legacy.name)
-            if m and section in ("runtime", "breakdown"):
-                payload = _load(path)
-                if payload is None or "autolens_version" not in payload:
-                    continue
-                folder = "/".join(parts[:-1])
-                instrument = (
-                    payload.get("instrument")
-                    if isinstance(payload.get("instrument"), str)
-                    else None
-                )
-                if section == "runtime":
-                    cell = (
-                        folder
-                        if (instrument and folder.endswith("/" + instrument))
-                        else (f"{folder}/{instrument}" if instrument else folder)
-                    )
-                else:
-                    cell = f"{folder}/{m['script']}" + (f"/{instrument}" if instrument else "")
-                add(
-                    (section, cell, m["config"], bool(m["sparse"])),
-                    _point(payload, str(payload["autolens_version"]), str(rel)),
-                )
+            add(key, _point(payload, version, source))
     return raw
 
 
@@ -739,15 +895,22 @@ def build_series(root: Path, conf: dict) -> tuple[list[dict], list[dict]]:
     raw = scan(root)
     series: list[dict] = []
     refused: list[dict] = []
-    for key in sorted(raw, key=lambda k: (SECTIONS.index(k[0]), k[1], _config_rank(k[2]), k[3])):
-        section, cell, config, sparse = key
+
+    def order(key: str) -> tuple:
+        f = parse_key(key)
+        rank = SECTIONS.index(f["section"]) if f["section"] in SECTIONS else len(SECTIONS)
+        return (rank, f["cell"], _config_rank(f["config"]), f["sparse"], key)
+
+    for key in sorted(raw, key=order):
+        fields = parse_key(key)
+        section, cell, config, sparse = (fields[k] for k in ("section", "cell", "config", "sparse"))
         by_version: dict[str, dict] = {}
         for point in raw[key]:
             ok, reason, is_refused = qualify(point, config, conf)
             point = dict(point, qualified=ok, reason=reason)
             if is_refused:
                 refused.append(
-                    dict(point, section=section, cell=cell, config=config, sparse=sparse)
+                    dict(point, key=key, section=section, cell=cell, config=config, sparse=sparse)
                 )
                 continue
             cur = by_version.get(point["version"])
@@ -770,11 +933,12 @@ def build_series(root: Path, conf: dict) -> tuple[list[dict], list[dict]]:
         points = [by_version[v] for v in sorted(by_version, key=_version_key)]
         series.append(
             {
-                "key": f"{section}:{cell}:{config}{'_sparse' if sparse else ''}",
+                "key": key,
                 "section": section,
                 "cell": cell,
                 "config": config,
                 "sparse": sparse,
+                "identity": fields["identity"],
                 "points": points,
                 "drift": drift(points),
             }
@@ -1010,7 +1174,7 @@ def build_summary(
     comparisons = [_summary_comparison(s) for s in series]
     excluded = [
         {
-            "id": f"{r['section']}:{r['cell']}:{r['config']}{'_sparse' if r['sparse'] else ''}@{r['version']}",
+            "id": f"{r['key']}@{r['version']}",
             "reason": r["reason"],
             "evidence": _evidence(r["source"]),
         }
