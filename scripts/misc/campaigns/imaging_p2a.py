@@ -93,6 +93,38 @@ BATCH0_TIME = "12:00:00"
 #: Batch 1's placeholder ``--time`` until batch 0's walls replace the WALL-BASIS rows.
 BATCH1_TIME = {"ral_cpu": "12:00:00", "a100": "2-00:00:00"}
 
+#: Pixel scale per instrument (arcsec / pixel; ``scripts/misc/simulators/imaging.INSTRUMENTS``,
+#: pinned equal by the campaign test) and the cells' 3.5" circular mask: the masked image size
+#: every cell's memory scales with.
+PIXEL_SCALES = {"ao": 0.01, "euclid": 0.1, "hst": 0.05, "jwst": 0.03}
+MASK_RADIUS = 3.5
+#: Columns of the dense mapping matrix: 1280 Delaunay vertices (rectangular 1225) plus up to 60
+#: linear MGE Gaussians.
+MAPPING_COLUMNS = 1340
+MEM_STEPS_GB = (16, 32, 64, 128, 256)
+
+
+def masked_pixels(instrument: str) -> int:
+    """Image pixels inside the 3.5" mask: pi r^2 / pixel_scale^2 (ao ~385k, euclid ~3.8k)."""
+    import math
+
+    return int(math.pi * MASK_RADIUS**2 / PIXEL_SCALES[instrument] ** 2)
+
+
+def mem_gb(instruments, minimum: int = 16) -> int:
+    """``--mem`` for a job over ``instruments``: the largest instrument decides.
+
+    Estimated peak = 4 GB (Python, JAX, numba, libraries) + eight fp64 arrays the size of the
+    dense mapping matrix (masked pixels x 1340 columns): the mapping and blurred mapping
+    matrices of the cell, the same two of the eager NumPy dense parity reference, and JAX /
+    numba working copies. The request is the next step of 16 / 32 / 64 / 128 / 256 GB at or above
+    twice that peak. An estimate from the dataset sizes, not a measurement: batch 0's
+    ``sacct --format=MaxRSS`` replaces it before batch 1.
+    """
+    peak = max(4.0 + 8 * masked_pixels(i) * MAPPING_COLUMNS * 8 / 1e9 for i in instruments)
+    return next(step for step in MEM_STEPS_GB if step >= max(minimum, 2 * peak))
+
+
 _ROUTES = {row["path"]: row["legacy"] for row in load_routes(ROOT)["routes"]}
 
 
@@ -184,8 +216,12 @@ def planned_tasks() -> list[Task]:
     return sorted(tasks)
 
 
-def batch1_ral_cpu() -> list[Task]:
-    return [t for t in planned_tasks() if t.host_class == "hpc_ral_cpu"]
+def batch1_ral_cpu(instrument: str | None = None) -> list[Task]:
+    return [
+        t
+        for t in planned_tasks()
+        if t.host_class == "hpc_ral_cpu" and instrument in (None, t.instrument)
+    ]
 
 
 def batch1_a100(instrument: str) -> list[Task]:
@@ -366,6 +402,8 @@ run_leg() {
     echo "  cell script: scripts/${CELLS[$I]}.py ${FLAGS[$I]} -> $RESULTS_ROOT/${OUTS[$I]}"
     echo "  JAX_PLATFORMS=$JAX_PLATFORMS  NPROC=$NPROC  log=$LOG"
     local T0=$(date +%s)
+    # A START line first, so a leg killed at --time (which never reaches its WALL line) still shows.
+    printf 'START\t%s\t%s\t%s\t%s\n' "${SLURM_JOB_ID:-local}" "$I" "$T0" "${CELLNAMES[$I]}" >> "$AP_ROOT/output/p2a_logs/walls.tsv"
     python3 -u scripts/${CELLS[$I]}.py --instrument ${INSTS[$I]} ${FLAGS[$I]} --output-path "$RESULTS_ROOT/${OUTS[$I]}" > "$LOG" 2>&1 \
         || { echo "LEG $I FAILED (rc $?), see $LOG"; tail -20 "$LOG"; STATUS=4; }
     local WALL=$(( $(date +%s) - T0 ))
@@ -396,7 +434,9 @@ def render(name: str, tasks: list[Task], *, kind: str, batch: int, title: str) -
     guess = BATCH0_WALL_GUESS_S if batch == 0 else None
     time = BATCH0_TIME if batch == 0 else BATCH1_TIME[device]
     n = len(tasks)
-    results_root = "$AP_ROOT/output/p2a_batch0" if batch == 0 else "$AP_ROOT"
+    # Never in place over committed rows: PR B copies complete rows into results/ (README).
+    results_root = f"$AP_ROOT/output/p2a_batch{batch}"
+    mem = mem_gb({t.instrument for t in tasks}, minimum=16 if kind == "ral_cpu" else 32)
     header = [
         "#!/bin/bash -l",
         "#",
@@ -415,9 +455,16 @@ def render(name: str, tasks: list[Task], *, kind: str, batch: int, title: str) -
         "#",
         "# CELLS. Every leg runs one cell script at the standard size (--standard-size: Delaunay",
         "# 1250 Hilbert vertices, rectangular 35x35; MGE has no mesh) and writes its row, fit.png and",
-        "# parity.json into the mirrored cell named by --output-path"
-        + (" under the gitignored output/p2a_batch0/" if batch == 0 else "")
-        + ".",
+        "# parity.json into the mirrored cell named by --output-path under the gitignored",
+        f"# output/p2a_batch{batch}/ scratch tree, never in place over committed rows"
+        + (" (PR B copies complete rows into results/)." if batch == 1 else "."),
+        "#",
+        f"# MEMORY. --mem={mem_gb({t.instrument for t in tasks}, minimum=16 if kind == 'ral_cpu' else 32)}gb from the dataset size "
+        f"({', '.join(sorted({t.instrument for t in tasks}))}; masked pixels "
+        + ", ".join(f"{i} {masked_pixels(i)}" for i in sorted({t.instrument for t in tasks}))
+        + "):",
+        "# 4 GB + eight fp64 arrays of masked pixels x 1340 mapping columns, doubled, rounded up",
+        "# to 16/32/64/128 GB (imaging_p2a.mem_gb). batch 0's sacct MaxRSS replaces the estimate.",
     ]
     if kind == "ral_cpu":
         header += [
@@ -469,7 +516,7 @@ def render(name: str, tasks: list[Task], *, kind: str, batch: int, title: str) -
     sbatch += [
         "#SBATCH --ntasks=1",
         "#SBATCH --cpus-per-task=8",
-        "#SBATCH --mem=128gb",
+        f"#SBATCH --mem={mem}gb",
         f"#SBATCH --time={time}",
         "#SBATCH -o output/output.%A_%a.out"
         if "array" in kind or kind == "ral_cpu"
@@ -536,14 +583,15 @@ def render(name: str, tasks: list[Task], *, kind: str, batch: int, title: str) -
 def submits() -> dict[str, str]:
     """{repo-relative submit path: rendered text} for batch 0 and batch 1."""
     out = {}
-    name = "submit_campaign_p2a_imaging_ral_cpu_fp64"
-    out[f"hpc/batch_cpu/{name}"] = render(
-        name,
-        batch1_ral_cpu(),
-        kind="ral_cpu",
-        batch=1,
-        title="RAL CPU array: the 44 hpc_ral_cpu imaging cells at the standard size.",
-    )
+    for instrument in INSTRUMENTS:  # one array per instrument: --mem follows the dataset size
+        name = f"submit_campaign_p2a_imaging_ral_cpu_{instrument}_fp64"
+        out[f"hpc/batch_cpu/{name}"] = render(
+            name,
+            batch1_ral_cpu(instrument),
+            kind="ral_cpu",
+            batch=1,
+            title=f"RAL CPU array: the hpc_ral_cpu imaging cells of {instrument} at the standard size.",
+        )
     for instrument in INSTRUMENTS:
         name = f"submit_campaign_p2a_imaging_a100_{instrument}_fp64"
         out[f"hpc/batch_gpu/{name}"] = render(

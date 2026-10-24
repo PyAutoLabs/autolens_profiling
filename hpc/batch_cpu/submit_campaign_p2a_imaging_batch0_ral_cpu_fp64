@@ -15,7 +15,12 @@
 #
 # CELLS. Every leg runs one cell script at the standard size (--standard-size: Delaunay
 # 1250 Hilbert vertices, rectangular 35x35; MGE has no mesh) and writes its row, fit.png and
-# parity.json into the mirrored cell named by --output-path under the gitignored output/p2a_batch0/.
+# parity.json into the mirrored cell named by --output-path under the gitignored
+# output/p2a_batch0/ scratch tree, never in place over committed rows.
+#
+# MEMORY. --mem=128gb from the dataset size (ao, hst; masked pixels ao 384845, hst 15393):
+# 4 GB + eight fp64 arrays of masked pixels x 1340 mapping columns, doubled, rounded up
+# to 16/32/64/128 GB (imaging_p2a.mem_gb). batch 0's sacct MaxRSS replaces the estimate.
 # One cell per array task on `ral` (CPU work never goes on `gpu`). numba cells pin their
 # BLAS threads to 1 (production per-worker cost); JAX CPU cells get NPROC=8.
 #
@@ -145,6 +150,8 @@ run_leg() {
     echo "  cell script: scripts/${CELLS[$I]}.py ${FLAGS[$I]} -> $RESULTS_ROOT/${OUTS[$I]}"
     echo "  JAX_PLATFORMS=$JAX_PLATFORMS  NPROC=$NPROC  log=$LOG"
     local T0=$(date +%s)
+    # A START line first, so a leg killed at --time (which never reaches its WALL line) still shows.
+    printf 'START\t%s\t%s\t%s\t%s\n' "${SLURM_JOB_ID:-local}" "$I" "$T0" "${CELLNAMES[$I]}" >> "$AP_ROOT/output/p2a_logs/walls.tsv"
     python3 -u scripts/${CELLS[$I]}.py --instrument ${INSTS[$I]} ${FLAGS[$I]} --output-path "$RESULTS_ROOT/${OUTS[$I]}" > "$LOG" 2>&1 \
         || { echo "LEG $I FAILED (rc $?), see $LOG"; tail -20 "$LOG"; STATUS=4; }
     local WALL=$(( $(date +%s) - T0 ))

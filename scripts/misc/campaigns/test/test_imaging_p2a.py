@@ -37,10 +37,9 @@ import catalogue_lifecycle as lc  # noqa: E402
 sys.path.insert(0, str(ROOT))
 import _profile_cli as pc  # noqa: E402
 
-BATCH1 = [
-    "hpc/batch_cpu/submit_campaign_p2a_imaging_ral_cpu_fp64",
-    *(f"hpc/batch_gpu/submit_campaign_p2a_imaging_a100_{i}_fp64" for i in p2a.INSTRUMENTS),
-]
+RAL1 = [f"hpc/batch_cpu/submit_campaign_p2a_imaging_ral_cpu_{i}_fp64" for i in p2a.INSTRUMENTS]
+A1001 = [f"hpc/batch_gpu/submit_campaign_p2a_imaging_a100_{i}_fp64" for i in p2a.INSTRUMENTS]
+BATCH1 = RAL1 + A1001
 BATCH0 = [
     "hpc/batch_cpu/submit_campaign_p2a_imaging_batch0_ral_cpu_fp64",
     "hpc/batch_gpu/submit_campaign_p2a_imaging_batch0_a100_fp64",
@@ -125,20 +124,58 @@ def legs(path):
 
 
 def test_batch1_runs_every_cell_once_44_on_ral_and_62_on_gpu():
-    seen = []
+    seen, ral = [], 0
     for path in BATCH1:
         text, names = legs(path)
         seen += names
+        instrument = path.rsplit("_", 2)[-2]
+        assert set(bash_array(text, "INSTS")) == {instrument}  # one instrument per submit
         if "batch_cpu" in path:
             assert sbatch(text, "partition") == "ral" and "--gres" not in text
             assert sbatch(text, "array") == f"0-{len(names) - 1}%16"
-            assert len(names) == 44 and all("@hpc_ral_cpu" in n for n in names)
+            assert all("@hpc_ral_cpu" in n for n in names)
+            ral += len(names)
         else:
             assert sbatch(text, "partition") == "gpu" and sbatch(text, "gres") == "gpu:1"
             assert sbatch(text, "array") is None  # one job per instrument, legs in turn
             assert all("@hpc_a100" in n for n in names)
-    assert len(seen) == len(set(seen)) == 106
+    assert len(seen) == len(set(seen)) == 106 and ral == 44
     assert set(seen) == planned_imaging_cells()
+
+
+def test_memory_follows_the_dataset_size():
+    import math
+
+    sys.path.insert(0, str(ROOT / "scripts" / "misc"))
+    from simulators.imaging import INSTRUMENTS as SIMULATED
+
+    for instrument, scale in p2a.PIXEL_SCALES.items():
+        assert SIMULATED[instrument]["pixel_scale"] == scale
+        assert p2a.masked_pixels(instrument) == int(math.pi * 3.5**2 / scale**2)
+    assert {i: p2a.mem_gb([i]) for i in p2a.INSTRUMENTS} == {
+        "ao": 128,
+        "euclid": 16,
+        "hst": 16,
+        "jwst": 16,
+    }
+    for path in RAL1 + A1001:
+        text = (ROOT / path).read_text()
+        instrument = path.rsplit("_", 2)[-2]
+        floor = 16 if path in RAL1 else 32
+        assert sbatch(text, "mem") == f"{p2a.mem_gb([instrument], minimum=floor)}gb"
+        assert "# MEMORY." in text
+    for path in BATCH0:  # the bounding slice holds ao
+        assert sbatch((ROOT / path).read_text(), "mem") == "128gb"
+
+
+def test_every_run_writes_to_a_scratch_tree_and_marks_each_leg_start():
+    for batch, paths in ((1, BATCH1), (0, BATCH0)):
+        for path in paths:
+            text = (ROOT / path).read_text()
+            assert f'RESULTS_ROOT="$AP_ROOT/output/p2a_batch{batch}"' in text
+            assert 'RESULTS_ROOT="$AP_ROOT"' not in text  # never in place over results/
+            assert text.index("printf 'START") < text.index("python3 -u scripts/")
+            assert text.index("python3 -u scripts/") < text.index("printf 'WALL")
 
 
 def test_no_cpu_only_job_on_the_gpu_partition():
@@ -152,7 +189,7 @@ def test_no_cpu_only_job_on_the_gpu_partition():
 
 
 def test_a100_cpu_legs_run_inside_the_gpu_jobs_on_the_cpu_platform():
-    for path in BATCH1[1:]:
+    for path in A1001:
         text, names = legs(path)
         platforms = bash_array(text, "PLATFORMS")
         for name, platform in zip(names, platforms, strict=True):

@@ -21,17 +21,21 @@ Never edit a generated submit by hand; edit the module and run `--write`.
 ## Phase 2a imaging
 
 **Cells.** The 106 planned imaging cells (`dashboard/coverage.json`): 44 on `hpc_ral_cpu` and
-62 on `hpc_a100`. Every pixelized cell runs with `--standard-size` (Delaunay 1250 Hilbert
-vertices, plus the 30 zeroed edge points of the numba production construction; rectangular
-35x35). Each row lands at its mirrored cell (`--output-path results/imaging/...`) with
-`fit.png` and `parity.json` beside it. The numba leg of `delaunay_nn` runs the numba Delaunay
-script with `--mesh-class delaunay_nn`.
+62 on `hpc_a100`. Every pixelized cell runs with `--standard-size`: JAX and numba alike build
+the numba production preset of the instrument from `_production_config.py` (jwst and ao
+borrow the hst preset, recorded in `size_override`): Delaunay 1250 Hilbert vertices + 30
+zeroed edge points (1280 built) or rectangular 35x35, the preset's MGE lens light, adapt-image
+weights, regularization priors, over-sampling, settings and positions penalty, evaluated at
+the preset's seeded iid draw 0. So every setup of one likelihood and instrument evaluates the
+same likelihood; the row records the preset as `configuration.production_preset`. Each row
+gets `fit.png` and `parity.json` (the eager NumPy dense-mapping reference) beside it. The
+numba leg of `delaunay_nn` runs the numba Delaunay script with `--mesh-class delaunay_nn`.
 
 **Submits.**
 
 | Submit | Partition | Tasks |
 |--------|-----------|-------|
-| `batch_cpu/submit_campaign_p2a_imaging_ral_cpu_fp64` | `ral`, array | 44, one cell each |
+| `batch_cpu/submit_campaign_p2a_imaging_ral_cpu_<instrument>_fp64` | `ral`, array | one array per instrument: ao 10, euclid 10, hst 14, jwst 10 cells (44) |
 | `batch_gpu/submit_campaign_p2a_imaging_a100_<instrument>_fp64` | `gpu`, `--gres=gpu:1` | one job per instrument: ao 14, euclid 14, hst 20, jwst 14 legs in turn |
 | `batch_cpu/submit_campaign_p2a_imaging_batch0_ral_cpu_fp64` | `ral`, array | 14 (batch 0) |
 | `batch_gpu/submit_campaign_p2a_imaging_batch0_a100_fp64` | `gpu`, `--gres=gpu:1`, array `%2` | 20 (batch 0) |
@@ -43,8 +47,16 @@ Every submit loads the libraries from a private checkout at tag 2026.10.23.1
 (`PYAUTO_PRIVATE_BASE`, default `/mnt/ral/jnightin/profiling/PyAuto_2026.10.23.1`) over the
 shared venv (`PYAUTO_HPC_BASE`), refuses to run on any other tag or import origin, and checks
 each row's `library_revisions` against that checkout. A missing dataset is simulated, and its
-adapt image cached, once per instrument under a lock (`prepare_dataset`). Each leg's wall
-clock is appended to `output/p2a_logs/walls.tsv`.
+adapt image cached, once per instrument under a lock (`prepare_dataset`). Each leg appends a
+`START` line and, when it finishes, a `WALL` line to `output/p2a_logs/walls.tsv`, so a leg
+killed at `--time` shows as a `START` with no `WALL`.
+
+**Memory.** `--mem` follows the dataset size (`mem_gb`): masked pixels at the 3.5" mask
+(ao 384845, jwst 42760, hst 15393, euclid 3848) times 1340 dense-mapping columns, eight fp64
+arrays of that size (the cell's mapping and blurred mapping matrices, the same two of the
+parity reference, and working copies) plus 4 GB, doubled and rounded up: 128 GB for ao,
+16 GB for the other RAL arrays, 32 GB minimum for the A100 jobs. It is an estimate; replace
+it with batch 0's `sacct --format=MaxRSS`.
 
 **Batch 0 (timing arm).** Run the two `batch0` submits first. They run the cells that bound
 every other instrument: ao (by far the most masked pixels at the 3.5" mask: about 385k,
@@ -65,6 +77,13 @@ and `ref:` the batch-0 job), set `WALL_BASIS_STATUS=measured`, run `--write`, an
 `python scripts/misc/wall/check_submits.py --check` passes. Until then the batch-1 submits refuse
 to run (`WALL_BASIS_STATUS=provisional`; `P2A_ALLOW_PROVISIONAL_WALL=1` overrides it).
 
-**Batch 1.** Submit the RAL array and the four A100 jobs from the private RAL checkout of
-this repo. 13 of the target paths already hold older rows (hst, 1500 / 39x39). The run
-overwrites them in that checkout, and PR B moves the old rows to their cell's `history/`.
+**Batch 1.** Submit the four RAL arrays and the four A100 jobs from the private RAL checkout of
+this repo. Rows go to the gitignored `output/p2a_batch1/results/...` scratch tree, never in
+place: 13 of the target paths in `results/` already hold older rows (hst, 1500 / 39x39).
+
+**PR B** copies only complete cells from `output/p2a_batch1/results/` into `results/`: the row
+JSON exists and is the final write (no `"vmap": "PENDING ..."` early row), `fit.png` and
+`parity.json` sit beside it, `parity_witness.py --check` passes on it, and its
+`library_revisions` match the pinned checkout. Before copying, PR B moves each superseded row
+(and its figure and witness) to the cell's `history/<release_pin>_<date>/`, then regenerates
+the catalogue and coverage.

@@ -15,7 +15,12 @@
 #
 # CELLS. Every leg runs one cell script at the standard size (--standard-size: Delaunay
 # 1250 Hilbert vertices, rectangular 35x35; MGE has no mesh) and writes its row, fit.png and
-# parity.json into the mirrored cell named by --output-path.
+# parity.json into the mirrored cell named by --output-path under the gitignored
+# output/p2a_batch1/ scratch tree, never in place over committed rows (PR B copies complete rows into results/).
+#
+# MEMORY. --mem=32gb from the dataset size (euclid; masked pixels euclid 3848):
+# 4 GB + eight fp64 arrays of masked pixels x 1340 mapping columns, doubled, rounded up
+# to 16/32/64/128 GB (imaging_p2a.mem_gb). batch 0's sacct MaxRSS replaces the estimate.
 # One A100 job runs this instrument's hpc_a100 cells in turn. The jax_cpu_sparse legs
 # run on the GPU node's CPU inside this GPU job (JAX_PLATFORMS=cpu, NPROC=8) — the
 # hpc_a100 host class's CPU setup, never a CPU array on the gpu partition.
@@ -38,7 +43,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=128gb
+#SBATCH --mem=32gb
 #SBATCH --time=2-00:00:00
 #SBATCH -o output/output.%A.out
 #SBATCH -e error/error.%A.err
@@ -137,6 +142,8 @@ run_leg() {
     echo "  cell script: scripts/${CELLS[$I]}.py ${FLAGS[$I]} -> $RESULTS_ROOT/${OUTS[$I]}"
     echo "  JAX_PLATFORMS=$JAX_PLATFORMS  NPROC=$NPROC  log=$LOG"
     local T0=$(date +%s)
+    # A START line first, so a leg killed at --time (which never reaches its WALL line) still shows.
+    printf 'START\t%s\t%s\t%s\t%s\n' "${SLURM_JOB_ID:-local}" "$I" "$T0" "${CELLNAMES[$I]}" >> "$AP_ROOT/output/p2a_logs/walls.tsv"
     python3 -u scripts/${CELLS[$I]}.py --instrument ${INSTS[$I]} ${FLAGS[$I]} --output-path "$RESULTS_ROOT/${OUTS[$I]}" > "$LOG" 2>&1 \
         || { echo "LEG $I FAILED (rc $?), see $LOG"; tail -20 "$LOG"; STATUS=4; }
     local WALL=$(( $(date +%s) - T0 ))
@@ -245,7 +252,7 @@ OUTS=(
     results/imaging/rectangular/euclid/jax_gpu_sparse_fp64/hpc_a100/breakdown.json
     results/imaging/rectangular/euclid/jax_gpu_sparse_fp64/hpc_a100/runtime.json
 )
-RESULTS_ROOT="$AP_ROOT"
+RESULTS_ROOT="$AP_ROOT/output/p2a_batch1"
 
 nvidia-smi || true
 for I in "${!CELLS[@]}"; do
