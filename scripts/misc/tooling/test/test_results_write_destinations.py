@@ -12,8 +12,10 @@ Heuristic (source text, no execution):
 - **Python** (``scripts/**/*.py`` and ``_profile_cli.py``), parsed with ``ast``. Every path
   expression is flattened into its segments: ``/`` joins, ``<path>.joinpath(a, b)``,
   ``os.path.join(a, b)``, ``Path(a, b)`` / ``PurePosixPath(a, b)``, ``"a/b"`` constants split on
-  ``/``, and a bare name bound earlier in the same module by a simple ``NAME = <path>``
-  assignment (the variable-root alias ``R = ROOT / "results"; R / "runtime"``). A segment
+  ``/``, a bare name bound earlier in the same module by a simple ``NAME = <path>``
+  assignment (the variable-root alias ``R = ROOT / "results"; R / "runtime"``), and inside a
+  function a parameter whose default is a path (``def f(r=RESULTS_ROOT): r / "breakdown"``);
+  a parameter without a default shadows a module alias of the same name. A segment
   ``results`` that starts the path or follows an unknown root (a name, call or parameter --
   not another constant folder, so ``.../jax_profiling/results/jit`` is someone else's tree)
   must be followed by ``misc``, ``lens`` or a ``scripts/`` dataset folder, and a dataset folder
@@ -21,7 +23,7 @@ Heuristic (source text, no execution):
   f-string part holding ``results/<top>[/<variant>]`` at a path boundary (start, whitespace,
   quote, ``(``, ``=``, ``}/`` or ``)/``) is held to the same rule.
 - Not followed: names bound in another module or by a non-trivial expression (a function
-  parameter, ``x = a if c else b``, attribute assignments, loop targets), and dynamic segments
+  parameter without a path default, ``x = a if c else b``, attribute assignments, loop targets), and dynamic segments
   (the check accepts what it cannot read). These need execution to resolve; the placement
   helpers and code review cover them.
 - **Shell** (``hpc/**`` submit scripts and ``scripts/**/*.sh``): a non-comment line holding
@@ -188,18 +190,50 @@ def _excluded_nodes(tree: ast.AST) -> set[int]:
     return {id(n) for root in roots for n in ast.walk(root)}
 
 
+def _scoped_aliases(tree: ast.AST, aliases: dict[str, list]) -> dict[int, dict[str, list]]:
+    """Per node id inside a function, the aliases with that function's parameters bound.
+
+    A parameter whose default is a path (``def f(r=RESULTS_ROOT)``) aliases the default's
+    segments in the body (#449 review residual); one without a default shadows a module alias of
+    the same name. ``ast.walk`` is breadth-first, so an inner function's binding wins.
+    """
+    scoped: dict[int, dict[str, list]] = {}
+    for fn in ast.walk(tree):
+        if not isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
+            continue
+        outer = scoped.get(id(fn), aliases)
+        a = fn.args
+        positional = a.posonlyargs + a.args
+        defaults = [None] * (len(positional) - len(a.defaults)) + list(a.defaults)
+        pairs = list(zip(positional, defaults)) + list(zip(a.kwonlyargs, a.kw_defaults))
+        pairs += [(arg, None) for arg in (a.vararg, a.kwarg) if arg is not None]
+        local = dict(outer)
+        for arg, default in pairs:
+            segs = _segments(default, outer) if default is not None else [UNKNOWN]
+            if any(seg is not UNKNOWN for seg in segs):
+                local[arg.arg] = segs
+            else:
+                local.pop(arg.arg, None)
+        body = fn.body if isinstance(fn.body, list) else [fn.body]
+        for stmt in body:
+            for node in ast.walk(stmt):
+                scoped[id(node)] = local
+    return scoped
+
+
 def python_hits(source: str) -> list[tuple[int, str]]:
     """``(line, offending text)`` of every results path outside the mirrored tree."""
     tree = ast.parse(source)
     skip = _excluded_nodes(tree)
     aliases = _aliases(tree)
+    scoped = _scoped_aliases(tree, aliases)
     hits: list[tuple[int, str]] = []
     for node in ast.walk(tree):
         if id(node) in skip:
             continue
         is_join = isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div)
         if is_join or (isinstance(node, ast.Call) and _call_name(node) in PATH_CALLS):
-            found = _path_violation(_segments(node, aliases))
+            found = _path_violation(_segments(node, scoped.get(id(node), aliases)))
             if found:
                 hits.append((node.lineno, found))
         elif isinstance(node, ast.Constant) and isinstance(node.value, str):
@@ -268,6 +302,24 @@ def test_the_matcher_catches_a_legacy_write_and_spares_the_exclusions():
     assert python_hits('p = "results/interferometer/nonsense/x.json"\n') == [
         (1, "results/interferometer/nonsense")
     ]
+    # a results root passed as a default argument (#449 review residual)
+    assert python_hits(
+        'RESULTS_ROOT = ROOT / "results"\ndef f(r=RESULTS_ROOT):\n    return r / "breakdown"\n'
+    ) == [(3, "results/breakdown")]
+    assert python_hits('def f(*, r=ROOT / "results"):\n    return r.joinpath("runtime")\n') == [
+        (2, "results/runtime")
+    ]
+    assert python_hits('g = lambda r=Path("results"): r / "latent"\n') == [(1, "results/latent")]
+    assert (
+        python_hits(
+            'RESULTS_ROOT = ROOT / "results"\n'
+            "def f(r=RESULTS_ROOT):\n"
+            '    return r / "misc" / "hazards"\n'
+            "def g(RESULTS_ROOT):\n"
+            '    return RESULTS_ROOT / "runtime"\n'  # a parameter without a default shadows
+        )
+        == []
+    )
     spared = (
         '"""Rows were written to results/breakdown/imaging/ before #442."""\n'
         "# results/runtime/ was the old home\n"
