@@ -93,6 +93,7 @@ from _profile_cli import (  # noqa: E402
     auto_simulate_if_missing,
     device_info_dict,
     parse_profile_cli,
+    record_pinned_check,
     resolve_output_paths,
 )
 
@@ -745,17 +746,36 @@ print(f"  Bar chart saved to:    {chart_path}")
 # gradient issues. That changes the over-sampled light-profile grid, so every
 # pinned likelihood on this cell moved. Measured on this host (WSL, fp64,
 # OMP_NUM_THREADS=1) from one eager run per instrument.
-EXPECTED_LOG_LIKELIHOOD_HST = 27373.152646517723  # was 27379.38890685539
+EXPECTED_LOG_LIKELIHOOD = {
+    "hst": 27373.152646517723,  # was 27379.38890685539
+}
 
-np.testing.assert_allclose(
-    log_likelihood_ref,
-    EXPECTED_LOG_LIKELIHOOD_HST,
-    rtol=1e-4,
-    err_msg=(
-        f"imaging/mge[{instrument}]: regression — eager log_likelihood drifted "
-        f"(got {log_likelihood_ref}, expected {EXPECTED_LOG_LIKELIHOOD_HST})"
-    ),
-)
-print(
-    f"  Eager regression assertion PASSED: log_likelihood matches {EXPECTED_LOG_LIKELIHOOD_HST:.6f}"
-)
+# Only hst has a pin. The old module-level EXPECTED_LOG_LIKELIHOOD_HST was
+# asserted for every --instrument, so any non-hst breakdown failed by
+# construction (ao: 659642.47 against the hst 27373.15 — ao masks ~25x more
+# pixels, so its chi-squared sum is ~25x larger; autolens_profiling#456 batch 0).
+# likelihood_runtime.py dropped the same bug in #54; this mirrors it. Another
+# instrument's correctness is the runtime's parity.json (eager NumPy reference)
+# plus the eager == JIT agreement above, so it is skipped here and the row
+# records ``pinned_expected: null`` to say nothing checked it.
+_pinned_expected = EXPECTED_LOG_LIKELIHOOD.get(instrument)
+
+if _pinned_expected is None:
+    print(
+        f"  Eager regression assertion SKIPPED for {instrument} (no pinned value; "
+        f"pins exist for {sorted(EXPECTED_LOG_LIKELIHOOD)}). "
+        f"Eager log_likelihood = {log_likelihood_ref!r}"
+    )
+else:
+    np.testing.assert_allclose(
+        log_likelihood_ref,
+        _pinned_expected,
+        rtol=1e-4,
+        err_msg=(
+            f"imaging/mge[{instrument}]: regression — eager log_likelihood drifted "
+            f"(got {log_likelihood_ref}, expected {_pinned_expected})"
+        ),
+    )
+    print(f"  Eager regression assertion PASSED: log_likelihood matches {_pinned_expected:.6f}")
+
+record_pinned_check(dict_path, _pinned_expected, [])

@@ -503,8 +503,17 @@ if _cli.standard_size:
         dataset,
         dataset_path,
         standard_size_preset(STANDARD_FAMILY["rectangular"], instrument),
-        _cli.sparse_batch_size if _cli.use_sparse_operator else None,
+        None,
     )
+    if _cli.use_sparse_operator:
+        # The w-tilde operator is applied here rather than inside
+        # ``standard_jax_dataset`` (where it is the last step, so the dataset is
+        # identical) so its one-off build is timed and recorded like the
+        # fiducial path's: left to the helper, ``sparse_operator_build_s`` stayed
+        # None and the row write crashed on float(None) (autolens_profiling#456).
+        with timer.section("sparse_operator_build"):
+            dataset = dataset.apply_sparse_operator(batch_size=_cli.sparse_batch_size)
+        sparse_operator_build_s = timer.records[-1][1]
     _std = standard_jax_cell(
         "rectangular",
         instrument,
@@ -794,7 +803,11 @@ with timer.section("extract_inversion_matrices"):
     neighbors_array = jnp.array(np.asarray(neighbors))
     neighbors_sizes = jnp.array(neighbors.sizes)
 
-    reg_coefficient = pixelization_obj.regularization.coefficient
+    # ``--standard-size`` builds the production cell, whose regularization is
+    # ``Adapt`` (no single ``coefficient``); only ``Constant`` has the isolated
+    # constant-assembly diagnostic below (autolens_profiling#456).
+    _reg_is_constant = isinstance(pixelization_obj.regularization, al.reg.Constant)
+    reg_coefficient = pixelization_obj.regularization.coefficient if _reg_is_constant else None
 
 if not _cli.use_sparse_operator:
     print(f"  operated_mapping_matrix shape: {bmm_ref.shape}")
@@ -1045,6 +1058,7 @@ if _cli.use_sparse_operator:
     _slim_index_for_sub = jnp.asarray(inv_mapper.slim_index_for_sub_slim_index)
     _fft_index = jnp.asarray(dataset.mask.fft_index_for_masked_pixel)
     _sub_fraction = jnp.asarray(inv_mapper.over_sampler.sub_fraction.array)
+    _pix_sizes = jnp.asarray(inv_mapper.pix_sizes_for_sub_slim_index)
 
     _, _triplets = jit_profile(
         sparse_steps.sparse_triplets,
@@ -1054,6 +1068,7 @@ if _cli.use_sparse_operator:
         _slim_index_for_sub,
         _fft_index,
         _sub_fraction,
+        _pix_sizes,
     )
     sparse_setup_rows["Sparse triplets (data + curvature)"] = timer.records[-1][1] / 10
 
@@ -1325,15 +1340,25 @@ def compute_regularization_matrix(neighbors_array, neighbors_sizes):
 
 
 # The isolated assembly cost — what this row reported before 2026-09-10. Kept as
-# a JSON field so the historic number stays recoverable, not as a step row.
-jit_profile(
-    compute_regularization_matrix,
-    "regularization_matrix_assembly_jit",
-    neighbors_array,
-    neighbors_sizes,
-)
-reg_matrix_assembly_per_call = timer.records[-1][1] / 10
-print(f"  isolated H assembly per-call:    {reg_matrix_assembly_per_call * 1000:9.3f} ms")
+# a JSON field so the historic number stays recoverable, not as a step row. It is
+# the constant-regularization formula, so it only describes a ``Constant`` cell;
+# the standard-size cell's ``Adapt`` H is timed by the params->H row above and
+# this field is written null.
+if _reg_is_constant:
+    jit_profile(
+        compute_regularization_matrix,
+        "regularization_matrix_assembly_jit",
+        neighbors_array,
+        neighbors_sizes,
+    )
+    reg_matrix_assembly_per_call = timer.records[-1][1] / 10
+    print(f"  isolated H assembly per-call:    {reg_matrix_assembly_per_call * 1000:9.3f} ms")
+else:
+    reg_matrix_assembly_per_call = None
+    print(
+        f"  isolated H assembly SKIPPED: {type(pixelization_obj.regularization).__name__} "
+        f"regularization has no constant-assembly equivalent"
+    )
 
 # Full block-diagonal regularization matrix from the inversion: (1581, 1581)
 # with a zero (60, 60) linear-bulge block at indices [0..59]. Step 12 (F+H
@@ -1860,7 +1885,8 @@ print("=" * 70)
 
 print(f"  Regularization matrix (H) — params->H prefix:  {reg_matrix_prefix_per_call:.6f} s")
 print(f"  Regularization matrix (H) — interp. prefix:    {_prefix_per_call[6]:.6f} s")
-print(f"  Regularization matrix (H) — isolated assembly: {reg_matrix_assembly_per_call:.6f} s")
+if reg_matrix_assembly_per_call is not None:
+    print(f"  Regularization matrix (H) — isolated assembly: {reg_matrix_assembly_per_call:.6f} s")
 
 if _setup_split is not None or _vmap_split is not None:
     print("-" * 70)
@@ -1966,7 +1992,9 @@ breakdown_summary = {
     # row: the row is ``regularization_matrix_prefix_s - interpolator_prefix_s``.
     "regularization_matrix_prefix_s": float(reg_matrix_prefix_per_call),
     "interpolator_prefix_s": float(_prefix_per_call[6]),
-    "regularization_matrix_assembly_s": float(reg_matrix_assembly_per_call),
+    "regularization_matrix_assembly_s": (
+        None if reg_matrix_assembly_per_call is None else float(reg_matrix_assembly_per_call)
+    ),
     # lower / compile / first-call / steady per label, for every timed JIT.
     "jit_phases": jit_records,
 }
@@ -2110,7 +2138,19 @@ EXPECTED_LOG_EVIDENCE_HST = {
     "rtu": 28505.343980143432,
 }[_cli.rect_mesh]
 
-if not PIN_IS_FIDUCIAL:
+# The pins also describe hst at flat-1 over-sampling and nothing else (as the
+# delaunay / delaunay_nn breakdowns already gate): another instrument or
+# ``--over-sampling production`` fits a different likelihood, so comparing it
+# to the hst number would flag drift that is not drift (autolens_profiling#456).
+if instrument != "hst" or _cli.over_sampling != "flat1":
+    print(
+        f"  Eager regression check SKIPPED: the pin describes hst at --over-sampling flat1, "
+        f"this run is {instrument} at --over-sampling {_cli.over_sampling}. "
+        f"Eager log_evidence = {log_evidence_ref!r}"
+    )
+    _pin_drift = None
+    _pinned_expected = None
+elif not PIN_IS_FIDUCIAL:
     print(
         f"  Eager regression check SKIPPED: a requested {_requested_pixels} source pixels builds a "
         f"{mesh_pixels_yx}x{mesh_pixels_yx} = {n_source_pixels}-pixel mesh, not the "
