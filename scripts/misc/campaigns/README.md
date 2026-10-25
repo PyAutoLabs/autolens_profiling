@@ -66,7 +66,8 @@ parity reference, and working copies) plus 4 GB, doubled and rounded up: 128 GB 
 batch 1 uses batch 0's `sacct --format=MaxRSS` instead (`mem_gb_measured`): the peak was 10.2 GiB
 on hst (412877_5) and 35.1 GiB on ao (412877_1), jwst is interpolated linearly in masked pixels
 and euclid takes the hst peak, and the request is the next 16/32/64/128 GB step at or above 1.5x
-that peak (ao 64 GB, jwst 32 GB, hst and euclid 16 GB; 32 GB minimum for the A100 jobs).
+that peak, never below 32 GB (`BATCH1_MEM_FLOOR_GB`: the hst and euclid rectangular and delaunay
+legs were never measured on their own instrument): ao 64 GB, every other submit 32 GB.
 
 **Batch 0 (timing arm).** Run the two `batch0` submits first. They run the cells that bound
 every other instrument: ao (by far the most masked pixels at the 3.5" mask: about 385k,
@@ -91,9 +92,10 @@ Done for 2026.10.23.1: the generator's `BATCH0_WALLS` holds every batch-0 leg (R
 A100 412884, breakdown re-runs 412911 / 412915 after PR #458) as its `walls.tsv` WALL, its task's
 sacct Elapsed, and the task; a batch-1 leg takes the larger of the two from its batch-0 leg of
 the same script, setup and host class on the bounding instrument (`basis_leg`: ao, or hst for
-delaunay_nn), so jwst, hst and euclid run under the ao upper bound. `--time` is 1.25x that,
-rounded up to the next half hour: 1:00:00 for every RAL array, 2:30:00 for the ao, euclid and
-jwst A100 jobs and 3:00:00 for hst (its six delaunay_nn legs on top).
+delaunay_nn), so jwst, hst and euclid run under the ao upper bound. `--time` is 1.25x that plus
+15 min of slack (`WALL_MIN_SLACK_S`: an A100 job that overruns loses every leg still to run),
+rounded up to the next half hour: 1:00:00 for every RAL array, 3:00:00 for the ao, euclid and
+jwst A100 jobs and 3:30:00 for hst (its six delaunay_nn legs on top).
 
 The ao `jax_gpu_dense_fp64@hpc_a100 [breakdown]` legs of rectangular and delaunay are a known
 limitation (`BATCH0_LIMITATIONS`; human ruling): the 384,753 x 1,280 fp64 blurred mapping

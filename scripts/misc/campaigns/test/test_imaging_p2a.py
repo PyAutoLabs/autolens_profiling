@@ -172,7 +172,9 @@ def test_memory_follows_the_dataset_size():
     for path in RAL1 + A1001:
         text = (ROOT / path).read_text()
         instrument = path.rsplit("_", 2)[-2]
-        floor = 16 if path in RAL1 else 32
+        floor = p2a.BATCH1_MEM_FLOOR_GB
+        expected = {"ao": "64gb", "euclid": "32gb", "hst": "32gb", "jwst": "32gb"}[instrument]
+        assert sbatch(text, "mem") == expected
         assert sbatch(text, "mem") == f"{p2a.mem_gb_measured([instrument], minimum=floor)}gb"
         assert "# MEMORY." in text and "MaxRSS" in text
     for path in BATCH0:  # the bounding slice holds ao
@@ -244,7 +246,7 @@ def test_batch1_walls_are_measured_by_batch0():
             wall, elapsed, _ = p2a.BATCH0_WALLS[basis.cell]
             assert p2a.measured_wall(t)[0] == max(wall, elapsed)
             walls.append(max(wall, elapsed))
-        need = 1.25 * (max(walls) if path in RAL1 else sum(walls))
+        need = 1.25 * (max(walls) if path in RAL1 else sum(walls)) + p2a.WALL_MIN_SLACK_S
         assert check_submits.parse_slurm_time(sbatch(text, "time")) >= need, path
         for row in check_submits.parse_basis_rows(text):
             assert row["source"] == "measured-wall" and float(row["headroom"]) >= 1.25

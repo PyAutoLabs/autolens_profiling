@@ -21,7 +21,7 @@
 # MEMORY. --mem=32gb from batch 0's sacct MaxRSS (hst 10.2 GiB in 412877_5, ao 35.1 GiB in 412877_1).
 # The peak at this dataset size (jwst 42760 masked pixels; jwst interpolated linearly
 # in masked pixels, euclid takes the hst peak) x 1.5, rounded up to
-# 16/32/64/128 GB, at least 16 GB (imaging_p2a.mem_gb_measured).
+# 16/32/64/128 GB, at least 32 GB (imaging_p2a.mem_gb_measured).
 # One cell per array task on `ral` (CPU work never goes on `gpu`). numba cells pin their
 # BLAS threads to 1 (production per-worker cost); JAX CPU cells get NPROC=8.
 #
@@ -31,7 +31,7 @@
 # the task's sacct Elapsed, so smaller instruments run under an ao upper bound. The walls
 # include the headline median (same scripts and release). Each row's wall is
 # its slowest leg's wall (one leg per array task); --time is 1.25x the submit's total (1967s),
-# rounded up to the next 30 min.
+# plus 15 min of slack, rounded up to the next 30 min.
 #   2 leg(s): delaunay jax_cpu_sparse_fp64 breakdown, delaunay jax_cpu_sparse_fp64 runtime
 #   cell: imaging/delaunay/jwst  device: ral_cpu  precision: fp64
 #   source: measured-wall  wall: 1428  ref: 412877_1,412911_0  measured-on: ao  headroom: 1.25  median: included

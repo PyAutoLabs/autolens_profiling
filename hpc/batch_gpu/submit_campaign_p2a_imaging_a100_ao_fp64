@@ -32,7 +32,7 @@
 # the task's sacct Elapsed, so smaller instruments run under an ao upper bound. The walls
 # include the headline median (same scripts and release). Each row's wall is
 # the sum of its legs' walls (they run in turn); --time is 1.25x the submit's total (6948s),
-# rounded up to the next 30 min.
+# plus 15 min of slack, rounded up to the next 30 min.
 #   6 leg(s): delaunay jax_cpu_sparse_fp64 breakdown, delaunay jax_cpu_sparse_fp64 runtime, delaunay jax_gpu_dense_fp64 breakdown, delaunay jax_gpu_dense_fp64 runtime, delaunay jax_gpu_sparse_fp64 breakdown, delaunay jax_gpu_sparse_fp64 runtime
 #   KNOWN LIMITATION, kept in - delaunay jax_gpu_dense_fp64 breakdown (A100 out of memory, the 384,753 x 1,280 fp64 blurred mapping matrix does not fit; batch 0 task 412884_2); it fails fast
 #   cell: imaging/delaunay/ao  device: a100  precision: fp64
@@ -51,7 +51,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64gb
-#SBATCH --time=2:30:00
+#SBATCH --time=3:00:00
 #SBATCH -o output/output.%A.out
 #SBATCH -e error/error.%A.err
 

@@ -150,6 +150,12 @@ BATCH0_LIMITATIONS = {
 #: up to the next half hour.
 WALL_HEADROOM = 1.25
 WALL_ROUND_S = 1800
+#: Slack kept above WALL_HEADROOM x the wall after rounding: an A100 job that overruns loses
+#: every leg still to run, so a rounding that lands just above 1.25x is pushed to the next step.
+WALL_MIN_SLACK_S = 900
+#: Batch 1's smallest ``--mem``: the hst and euclid rectangular / delaunay legs were never
+#: measured on their own instrument, and an out-of-memory kill loses the leg.
+BATCH1_MEM_FLOOR_GB = 32
 #: ``measured`` once the batch-1 WALL-BASIS rows cite batch 0 (README "Setting batch 1's
 #: --time"); while ``provisional``, batch 1 renders unmeasured rows, the placeholder ``--time``
 #: below, and a submit that refuses to run.
@@ -353,10 +359,12 @@ def batch1_wall_s(tasks: list[Task], *, sequential: bool) -> int:
 
 
 def slurm_time(seconds: float) -> str:
-    """``H:MM:SS`` at WALL_HEADROOM x ``seconds``, rounded up to the next WALL_ROUND_S."""
+    """``H:MM:SS`` at WALL_HEADROOM x ``seconds`` plus WALL_MIN_SLACK_S, rounded up to the next
+    WALL_ROUND_S."""
     import math
 
-    total = math.ceil(WALL_HEADROOM * seconds / WALL_ROUND_S) * WALL_ROUND_S
+    need = WALL_HEADROOM * seconds + WALL_MIN_SLACK_S
+    total = math.ceil(need / WALL_ROUND_S) * WALL_ROUND_S
     return f"{total // 3600}:{total % 3600 // 60:02d}:00"
 
 
@@ -583,7 +591,7 @@ def render(name: str, tasks: list[Task], *, kind: str, batch: int, title: str) -
     # Never in place over committed rows: PR B copies complete rows into results/ (README).
     results_root = f"$AP_ROOT/output/p2a_batch{batch}"
     instruments = sorted({t.instrument for t in tasks})
-    floor = 16 if kind == "ral_cpu" else 32
+    floor = BATCH1_MEM_FLOOR_GB if batch == 1 else (16 if kind == "ral_cpu" else 32)
     mem = mem_gb_measured(instruments, floor) if batch == 1 else mem_gb(instruments, floor)
     pixels = ", ".join(f"{i} {masked_pixels(i)}" for i in instruments)
     header = [
@@ -668,7 +676,7 @@ def render(name: str, tasks: list[Task], *, kind: str, batch: int, title: str) -
             "# the task's sacct Elapsed, so smaller instruments run under an ao upper bound. The walls",
             "# include the headline median (same scripts and release). Each row's wall is",
             f"# {rule}; --time is {WALL_HEADROOM}x the submit's total ({time_basis_s}s),",
-            f"# rounded up to the next {WALL_ROUND_S // 60} min.",
+            f"# plus {WALL_MIN_SLACK_S // 60} min of slack, rounded up to the next {WALL_ROUND_S // 60} min.",
         ]
     else:
         header += [
