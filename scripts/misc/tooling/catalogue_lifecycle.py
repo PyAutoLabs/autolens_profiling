@@ -418,7 +418,14 @@ def _sig(value: float) -> float:
 
 
 def project(resources: dict, seconds, source: str, device: str, host_class: str, hosts: dict):
-    """``projected_node_throughput`` for one runtime record on every declared host.
+    """``projected_node_throughput`` for one runtime record on the host it was measured on.
+
+    The record is projected only onto the declared reference host whose ``host_class`` is the
+    record's measured host class (human ruling 2026-10-25: a per-call time is never carried to
+    another machine). A record measured on a class with no declared reference host, or a GPU
+    record on a host with no GPUs, is ``not_projected`` with a reason. A CPU record measured on a
+    GPU host (the ``jax_cpu_sparse@hpc_a100`` legs) is projected as CPU workers on that node's
+    cores and memory.
 
     CPU: workers = min(floor(cores / cpus_per_eval), floor(mem_gb / peak_rss_gb)). GPU: one
     process per device, also capped by the host's cores and memory. Throughput = workers x the
@@ -438,6 +445,15 @@ def project(resources: dict, seconds, source: str, device: str, host_class: str,
         "hosts": [],
     }
     cpus, rss = _positive(resources.get("cpus_per_eval")), _positive(resources.get("peak_rss_gb"))
+    matches = sorted(
+        name
+        for name, host in hosts.get("hosts", {}).items()
+        if host.get("host_class") == host_class
+    )
+    if len(matches) > 1:
+        raise ValueError(f"{NODE_HOSTS}: more than one reference host for {host_class}: {matches}")
+    name = matches[0] if matches else None
+    host = hosts["hosts"][name] if name else {}
     missing = [
         why
         for why, ok in (
@@ -450,7 +466,11 @@ def project(resources: dict, seconds, source: str, device: str, host_class: str,
                 ),
                 rss is not None,
             ),
-            ("no declared reference hosts", bool(hosts.get("hosts"))),
+            (f"no declared reference host has host_class {host_class}", name is not None),
+            (
+                f"a gpu record and reference host {name} declares no GPUs",
+                device != "gpu" or name is None or bool(host.get("gpus")),
+            ),
         )
         if not ok
     ]
@@ -458,25 +478,21 @@ def project(resources: dict, seconds, source: str, device: str, host_class: str,
         block.update(status="not_projected", reason="; ".join(missing))
         return block
     block["status"] = "projected"
-    for name, host in sorted(hosts["hosts"].items()):
-        if device == "gpu" and not host.get("gpus"):
-            continue
-        limits = {}
-        if device == "gpu":
-            limits["gpus"] = host["gpus"]
-        limits["cores"] = int(host["cores"] // cpus)
-        limits["memory"] = int(host["mem_gb"] // rss)
-        bound_by = min(limits, key=lambda k: limits[k])
-        workers = limits[bound_by]
-        block["hosts"].append(
-            {
-                "host": name,
-                "host_class": host.get("host_class"),
-                "workers": workers,
-                "bound_by": bound_by,
-                "limits": limits,
-                "calls_per_s": _sig(workers * eta.get("value", 1.0) / seconds),
-                "per_call_measured_on_host": host.get("host_class") == host_class,
-            }
-        )
+    limits = {}
+    if device == "gpu":
+        limits["gpus"] = host["gpus"]
+    limits["cores"] = int(host["cores"] // cpus)
+    limits["memory"] = int(host["mem_gb"] // rss)
+    bound_by = min(limits, key=lambda k: limits[k])
+    workers = limits[bound_by]
+    block["hosts"].append(
+        {
+            "host": name,
+            "host_class": host_class,
+            "workers": workers,
+            "bound_by": bound_by,
+            "limits": limits,
+            "calls_per_s": _sig(workers * eta.get("value", 1.0) / seconds),
+        }
+    )
     return block

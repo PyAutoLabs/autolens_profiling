@@ -900,8 +900,9 @@ V3_LIMITATIONS = [
     "resources (cpus_per_eval, peak_rss_gb) comes from the row's own resources block, or for "
     "rows measured before it existed from catalogue/peak_rss_backfill.json (sacct MaxRSS: "
     "per leg for RAL array tasks, a job-level upper bound for multi-leg A100 jobs).",
-    "projected_node_throughput on runtime records is basis projected, not measured: workers per "
-    "declared host (catalogue/reference_hosts.json) = min(cores / cpus_per_eval, memory / "
+    "projected_node_throughput on runtime records is basis projected, not measured, and only "
+    "onto the declared host (catalogue/reference_hosts.json) whose host_class the row was "
+    "measured on (other host classes: not_projected): workers = min(cores / cpus_per_eval, memory / "
     "peak_rss_gb), and one per GPU on a GPU host, times the declared parallel efficiency 1.0 "
     "(an upper bound, unmeasured; phase 4 measures it), over the per-call time (numba warm iid "
     "median, JAX vmap per-call). The sampler's batch ceiling (Nautilus n_batch) is not modelled.",

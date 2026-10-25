@@ -118,7 +118,8 @@ the catalogue and coverage.
 **Comparing CPU and GPU setups.** A per-call time is per device, not per node: numba runs one
 serial likelihood per core under Nautilus multiprocessing, so never headline a CPU-vs-GPU
 ratio from per-call latency. The catalogue's `projected_node_throughput` (autolens_profiling#462)
-projects calls per second per declared node (`catalogue/reference_hosts.json`): workers =
+projects calls per second onto the declared node (`catalogue/reference_hosts.json`) the row was
+measured on, never onto another machine: workers =
 min(cores / `cpus_per_eval`, memory / `peak_rss_gb`), one per GPU on a GPU node, times the
 declared parallel efficiency 1.0 (an upper bound, unmeasured until phase 4) over the per-call
 time; Nautilus `n_batch` is not modelled. From 2a:

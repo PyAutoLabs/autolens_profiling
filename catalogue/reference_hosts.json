@@ -1,7 +1,7 @@
 {
  "schema": "reference-hosts",
  "version": 1,
- "note": "Declared hosts the catalogue projects per-node likelihood throughput onto (build_catalogue.py, projected_node_throughput). Values from sinfo on RAL, 2026-10-25. A projection is basis projected: workers per node capped by cores and by memory, times the declared parallel efficiency, over the measured per-call time. It is not a measurement; phase 4 of the likelihood-lifecycle epic measures the parallel efficiency.",
+ "note": "Declared hosts the catalogue projects per-node likelihood throughput onto (build_catalogue.py, projected_node_throughput). Each runtime record is projected only onto the host whose host_class is the class it was measured on; a record from any other host class is not projected. Values from sinfo on RAL, 2026-10-25. A projection is basis projected: workers per node capped by cores and by memory, times the declared parallel efficiency, over the measured per-call time. It is not a measurement; phase 4 of the likelihood-lifecycle epic measures the parallel efficiency.",
  "measured_on": "2026-10-25",
  "hosts": {
   "ral_cpu_node": {
