@@ -62,8 +62,12 @@ killed at `--time` shows as a `START` with no `WALL`.
 (ao 384845, jwst 42760, hst 15393, euclid 3848) times 1340 dense-mapping columns, eight fp64
 arrays of that size (the cell's mapping and blurred mapping matrices, the same two of the
 parity reference, and working copies) plus 4 GB, doubled and rounded up: 128 GB for ao,
-16 GB for the other RAL arrays, 32 GB minimum for the A100 jobs. It is an estimate; replace
-it with batch 0's `sacct --format=MaxRSS`.
+16 GB for the other RAL arrays, 32 GB minimum for the A100 jobs. That estimate sized batch 0;
+batch 1 uses batch 0's `sacct --format=MaxRSS` instead (`mem_gb_measured`): the peak was 10.2 GiB
+on hst (412877_5) and 35.1 GiB on ao (412877_1), jwst is interpolated linearly in masked pixels
+and euclid takes the hst peak, and the request is the next 16/32/64/128 GB step at or above 1.5x
+that peak, never below 32 GB (`BATCH1_MEM_FLOOR_GB`: the hst and euclid rectangular and delaunay
+legs were never measured on their own instrument): ao 64 GB, every other submit 32 GB.
 
 **Batch 0 (timing arm).** Run the two `batch0` submits first. They run the cells that bound
 every other instrument: ao (by far the most masked pixels at the 3.5" mask: about 385k,
@@ -83,6 +87,21 @@ Then change the generator's batch-1 WALL-BASIS rows to `source: measured-wall` (
 and `ref:` the batch-0 job), set `WALL_BASIS_STATUS=measured`, run `--write`, and confirm
 `python scripts/misc/wall/check_submits.py --check` passes. Until then the batch-1 submits refuse
 to run (`WALL_BASIS_STATUS=provisional`; `P2A_ALLOW_PROVISIONAL_WALL=1` overrides it).
+
+Done for 2026.10.23.1: the generator's `BATCH0_WALLS` holds every batch-0 leg (RAL 412877,
+A100 412884, breakdown re-runs 412911 / 412915 after PR #458) as its `walls.tsv` WALL, its task's
+sacct Elapsed, and the task; a batch-1 leg takes the larger of the two from its batch-0 leg of
+the same script, setup and host class on the bounding instrument (`basis_leg`: ao, or hst for
+delaunay_nn), so jwst, hst and euclid run under the ao upper bound. `--time` is 1.25x that plus
+15 min of slack (`WALL_MIN_SLACK_S`: an A100 job that overruns loses every leg still to run),
+rounded up to the next half hour: 1:00:00 for every RAL array, 3:00:00 for the ao, euclid and
+jwst A100 jobs and 3:30:00 for hst (its six delaunay_nn legs on top).
+
+The ao `jax_gpu_dense_fp64@hpc_a100 [breakdown]` legs of rectangular and delaunay are a known
+limitation (`BATCH0_LIMITATIONS`; human ruling): the 384,753 x 1,280 fp64 blurred mapping
+matrix does not fit on the A100. Batch 1 keeps them in the ao A100 job, where they fail in under
+two minutes and the job carries on; their WALL-BASIS rows say so. jwst (43k masked pixels) and
+the smaller instruments fit.
 
 **Batch 1.** Submit the four RAL arrays and the four A100 jobs from the private RAL checkout of
 this repo. Rows go to the gitignored `output/p2a_batch1/results/...` scratch tree, never in
