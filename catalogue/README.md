@@ -51,6 +51,19 @@ The rules live in [`catalogue_lifecycle.py`](../scripts/misc/tooling/catalogue_l
   `identity.library_version` are that tag, and `identity.software.release_pin_basis` says so.
   A `parity.json` takes the release of its cell's row when both stamp the same version. Add a
   tag there when a campaign measures on it.
+- **resources** (autolens_profiling#462): what one evaluation occupies, `cpus_per_eval` and
+  `peak_rss_gb`. It comes from the row's own `resources` block (written by every
+  runtime/breakdown writer since #462), else from
+  [peak_rss_backfill.json](peak_rss_backfill.json) for rows measured before it (2a, from
+  sacct MaxRSS: `basis: sacct_maxrss` per leg, `job_maxrss` a job-level upper bound), else
+  null with a reason.
+- **projected_node_throughput** (runtime records): calls per second per declared host in
+  [reference_hosts.json](reference_hosts.json), `basis: projected`. CPU workers =
+  min(cores / `cpus_per_eval`, memory / `peak_rss_gb`); on a GPU host one process per GPU,
+  also capped by cores and memory; times the declared parallel efficiency (1.0, an upper bound,
+  unmeasured until phase 4) over the per-call time (numba warm iid median, JAX vmap per call).
+  `bound_by` names the limit. The sampler's batch ceiling (Nautilus `n_batch`) is not
+  modelled. Compare CPU and GPU setups per node with it, never per call.
 
 ## Regenerate and validate
 
