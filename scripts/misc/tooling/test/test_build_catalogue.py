@@ -807,7 +807,7 @@ def test_a_source_checkout_row_takes_its_release_from_the_tag_revisions(tree):
     """A tag checkout stamps the stale built __version__; the revisions name the release."""
     write(
         tree,
-        cat.RELEASE_REVISIONS,
+        cat.lc.RELEASE_REVISIONS,
         {"schema": "release-revisions", "version": 1, "releases": {"2026.10.23.1": TAG_SHAS}},
     )
     write(tree, f"{A100}/runtime.json", tagged_row())

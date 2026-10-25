@@ -257,35 +257,6 @@ def settings(payload, context):
     return result
 
 
-#: Released tags and their library SHAs: {tag: {repo: sha}}. A library source checkout reports
-#: the last *built* ``__version__`` (2026.8.17.1 at every later tag), so a row run from a tag
-#: checkout stamps a stale ``autolens_version``; its ``library_revisions`` name the release.
-RELEASE_REVISIONS = "catalogue/release_revisions.json"
-
-
-def release_revisions(root):
-    path = source_path(root, RELEASE_REVISIONS)
-    if not path.is_file():
-        return {}
-    doc = load_json(path)
-    if doc.get("schema") != "release-revisions" or not isinstance(doc.get("releases"), dict):
-        raise ValueError(f"Unsupported {RELEASE_REVISIONS}")
-    return doc["releases"]
-
-
-def release_from_revisions(payload, releases):
-    """The tag whose every library SHA the row's ``library_revisions`` records, else None."""
-    device = payload.get("device") if isinstance(payload.get("device"), dict) else {}
-    provenance = device.get("provenance") if isinstance(device.get("provenance"), dict) else {}
-    revisions = provenance.get("library_revisions")
-    if not isinstance(revisions, dict):
-        return None
-    for tag, shas in sorted((releases or {}).items()):
-        if shas and all(revisions.get(repo) == sha for repo, sha in shas.items()):
-            return tag
-    return None
-
-
 def identity(payload, path, releases=None, revisions_from=None):
     """``revisions_from``: the payload whose provenance names the release (default ``payload``)."""
     device = payload.get("device") if isinstance(payload.get("device"), dict) else {}
@@ -300,10 +271,10 @@ def identity(payload, path, releases=None, revisions_from=None):
         if isinstance(values, dict):
             software.update({name: val for name, val in values.items() if text(val)})
     version = payload.get("autolens_version") or payload.get("release_version")
-    tag = release_from_revisions(payload if revisions_from is None else revisions_from, releases)
+    tag = lc.release_from_revisions(payload if revisions_from is None else revisions_from, releases)
     if tag is not None and tag != version:
         software["release_pin_basis"] = (
-            f"library_revisions equal tag {tag}'s SHAs ({RELEASE_REVISIONS}); the source "
+            f"library_revisions equal tag {tag}'s SHAs ({lc.RELEASE_REVISIONS}); the source "
             f"checkout stamped autolens_version {version}"
         )
         version = tag
@@ -1240,7 +1211,7 @@ def build_lifecycle(root, generated, revision, dates=None):
     root = Path(root).resolve()
     reg = registry(root)
     dates = commit_dates(root) if dates is None else dates
-    releases = release_revisions(root)
+    releases = lc.release_revisions(root)
     undated = []
     planned = planned_baseline_cells(reg)
     refs = {r["path"] for r in reg["references"]}

@@ -52,6 +52,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as _dt
+import functools
 import html
 import json
 import math
@@ -676,6 +677,11 @@ def result_files(root: Path) -> list[str]:
     return sorted(out)
 
 
+@functools.cache
+def _releases(root: Path) -> dict:
+    return lc.release_revisions(root)
+
+
 def native_points(root: Path, rel: str, index: dict) -> list[tuple[str, str, str, dict]]:
     """``(series id, version, source, payload)`` the mirrored tree itself gives one file.
 
@@ -694,7 +700,9 @@ def native_points(root: Path, rel: str, index: dict) -> list[tuple[str, str, str
         payload = _load(root / rel)
         if payload is None or "autolens_version" not in payload:
             return []
-        return [(series_key(facts), str(payload["autolens_version"]), rel, payload)]
+        # A tag checkout stamps a stale autolens_version; its library revisions name the release.
+        version = lc.release_from_revisions(payload, _releases(root))
+        return [(series_key(facts), version or str(payload["autolens_version"]), rel, payload)]
     if name == "comparison.json" and _comparison_cell(rel):
         payload = _load(root / rel)
         configs = payload.get("configs") if payload else None
