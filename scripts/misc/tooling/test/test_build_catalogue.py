@@ -784,3 +784,50 @@ def test_a_row_that_asked_for_the_standard_count_is_standard_whatever_it_built(t
     ]
     assert record["regime"] == "standard"
     assert not any(n.startswith("size_fallback") for n in record["limitations"])
+
+
+#: Fixture SHAs for one released tag (not real revisions).
+TAG_SHAS = {"PyAutoLens": "a" * 40, "PyAutoGalaxy": "b" * 40}
+
+
+def tagged_row(**revisions):
+    return row(
+        autolens_version="2026.8.17.1",
+        device={
+            "backend": "gpu",
+            "provenance": {
+                "captured_at": "2026-10-25T01:02:03Z",
+                "library_revisions": {**TAG_SHAS, **revisions},
+            },
+        },
+    )
+
+
+def test_a_source_checkout_row_takes_its_release_from_the_tag_revisions(tree):
+    """A tag checkout stamps the stale built __version__; the revisions name the release."""
+    write(
+        tree,
+        cat.RELEASE_REVISIONS,
+        {"schema": "release-revisions", "version": 1, "releases": {"2026.10.23.1": TAG_SHAS}},
+    )
+    write(tree, f"{A100}/runtime.json", tagged_row())
+    write(tree, f"{A100}/parity.json", parity(autolens_version="2026.8.17.1"))
+    write(tree, f"{LAPTOP}/runtime.json", tagged_row(PyAutoLens="c" * 40))
+    doc = lifecycle(tree)
+    records = by_path(doc)
+    runtime = records[f"{A100}/runtime.json"]
+    assert runtime["release_pin"] == runtime["identity"]["library_version"] == "2026.10.23.1"
+    assert "2026.8.17.1" in runtime["identity"]["software"]["release_pin_basis"]
+    [witness] = [r for r in doc["records"] if r["measurement"] == "parity"]
+    assert witness["release_pin"] == "2026.10.23.1"
+    # One differing SHA: no release is claimed, the stamp stands.
+    local = records[f"{LAPTOP}/runtime.json"]
+    assert local["release_pin"] == "2026.8.17.1"
+    assert "release_pin_basis" not in local["identity"]["software"]
+    assert pulse_classify()(json.loads(json.dumps(doc)), ("profiling-summary", 3)) == ("ok", [])
+
+
+def test_without_a_release_map_the_stamped_version_stands(tree):
+    write(tree, f"{A100}/runtime.json", tagged_row())
+    record = by_path(lifecycle(tree))[f"{A100}/runtime.json"]
+    assert record["release_pin"] == "2026.8.17.1"

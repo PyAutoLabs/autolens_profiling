@@ -257,7 +257,37 @@ def settings(payload, context):
     return result
 
 
-def identity(payload, path):
+#: Released tags and their library SHAs: {tag: {repo: sha}}. A library source checkout reports
+#: the last *built* ``__version__`` (2026.8.17.1 at every later tag), so a row run from a tag
+#: checkout stamps a stale ``autolens_version``; its ``library_revisions`` name the release.
+RELEASE_REVISIONS = "catalogue/release_revisions.json"
+
+
+def release_revisions(root):
+    path = source_path(root, RELEASE_REVISIONS)
+    if not path.is_file():
+        return {}
+    doc = load_json(path)
+    if doc.get("schema") != "release-revisions" or not isinstance(doc.get("releases"), dict):
+        raise ValueError(f"Unsupported {RELEASE_REVISIONS}")
+    return doc["releases"]
+
+
+def release_from_revisions(payload, releases):
+    """The tag whose every library SHA the row's ``library_revisions`` records, else None."""
+    device = payload.get("device") if isinstance(payload.get("device"), dict) else {}
+    provenance = device.get("provenance") if isinstance(device.get("provenance"), dict) else {}
+    revisions = provenance.get("library_revisions")
+    if not isinstance(revisions, dict):
+        return None
+    for tag, shas in sorted((releases or {}).items()):
+        if shas and all(revisions.get(repo) == sha for repo, sha in shas.items()):
+            return tag
+    return None
+
+
+def identity(payload, path, releases=None, revisions_from=None):
+    """``revisions_from``: the payload whose provenance names the release (default ``payload``)."""
     device = payload.get("device") if isinstance(payload.get("device"), dict) else {}
     provenance = device.get("provenance") if isinstance(device.get("provenance"), dict) else {}
     software = {}
@@ -270,6 +300,13 @@ def identity(payload, path):
         if isinstance(values, dict):
             software.update({name: val for name, val in values.items() if text(val)})
     version = payload.get("autolens_version") or payload.get("release_version")
+    tag = release_from_revisions(payload if revisions_from is None else revisions_from, releases)
+    if tag is not None and tag != version:
+        software["release_pin_basis"] = (
+            f"library_revisions equal tag {tag}'s SHAs ({RELEASE_REVISIONS}); the source "
+            f"checkout stamped autolens_version {version}"
+        )
+        version = tag
     if text(version):
         software["PyAutoLens"] = version
     else:
@@ -903,7 +940,7 @@ def planned_baseline_cells(reg):
     return cells
 
 
-def lifecycle_candidates(root, reg, path, doc, adapter, dates=None, undated=None):
+def lifecycle_candidates(root, reg, path, doc, adapter, dates=None, undated=None, releases=None):
     """(v3 records, reasons) for one mirrored source file; nothing is labelled yet."""
     cell = lc.mirrored(path)
     out, reasons = [], []
@@ -936,7 +973,7 @@ def lifecycle_candidates(root, reg, path, doc, adapter, dates=None, undated=None
             )
         if not groups:
             continue
-        ident, prov = identity(payload, path)
+        ident, prov = identity(payload, path, releases)
         if not ident["software"]:
             reasons.append(f"{base or '/'}: no measured software version; no v3 record.")
             continue
@@ -1006,7 +1043,7 @@ def lifecycle_candidates(root, reg, path, doc, adapter, dates=None, undated=None
     return out, reasons
 
 
-def parity_candidate(root, path, doc):
+def parity_candidate(root, path, doc, releases=None):
     """(v3 records, witness entry) for one mirrored ``parity.json`` (parity_witness.py)."""
     cell = lc.mirrored(path)
     errors = parity_witness.validate(doc)
@@ -1028,7 +1065,17 @@ def parity_candidate(root, path, doc):
     cls, notes = lc.record_class(
         cell["dataset_type"], cell["variant"], cell["host_class"], cell["setup_id"]
     )
-    ident, prov = identity(doc, path)
+    # A witness records no library revisions: its release is the one its cell's rows name,
+    # when they stamp the same autolens_version (the same run wrote them).
+    sibling = None
+    for name in ("runtime.json", "breakdown.json"):
+        candidate = source_path(root, path).with_name(name)
+        if candidate.is_file():
+            payload = load_json(candidate)
+            if payload.get("autolens_version") == doc["autolens_version"]:
+                sibling = payload
+                break
+    ident, prov = identity(doc, path, releases, revisions_from=sibling or {})
     prov = {**prov, "measured_at": doc["measured_at"]}
     prov["unknowns"] = {k: v for k, v in prov["unknowns"].items() if k != "measured_at"}
     pixels = lc.size_pixels(cell["variant"], doc)
@@ -1052,7 +1099,7 @@ def parity_candidate(root, path, doc):
         "day_zero": None,
         "figures": [],
         "decision_id": None,
-        "release_pin": doc["autolens_version"],
+        "release_pin": ident["library_version"],
         "measured_at": doc["measured_at"],
         "identity": ident,
         "method": {
@@ -1193,6 +1240,7 @@ def build_lifecycle(root, generated, revision, dates=None):
     root = Path(root).resolve()
     reg = registry(root)
     dates = commit_dates(root) if dates is None else dates
+    releases = release_revisions(root)
     undated = []
     planned = planned_baseline_cells(reg)
     refs = {r["path"] for r in reg["references"]}
@@ -1212,11 +1260,11 @@ def build_lifecycle(root, generated, revision, dates=None):
                 continue
             cell = lc.mirrored(path)
             if cell is not None and cell["file_measurement"] == "parity":
-                found, witness = parity_candidate(root, path, doc)
+                found, witness = parity_candidate(root, path, doc, releases)
                 witnesses.append(witness)
             else:
                 found, _reasons = lifecycle_candidates(
-                    root, reg, path, doc, adapter, dates, undated
+                    root, reg, path, doc, adapter, dates, undated, releases
                 )
             candidates.extend(found)
     if undated:
