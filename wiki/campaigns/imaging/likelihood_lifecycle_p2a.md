@@ -160,8 +160,9 @@ The tables above are per call. They do not say which setup does more work per no
 Nautilus multiprocessing, numba runs one serial likelihood per core, so a CPU node runs many
 calls side by side while an A100 runs one process per GPU. Compare setups by projected node
 throughput (`projected_node_throughput` on every runtime record of
-[`dashboard/catalogue.json`](../../../dashboard/catalogue.json), autolens_profiling#462):
-workers per node = min(cores / cores per call, node memory / peak memory per worker), and one
+[`dashboard/catalogue.json`](../../../dashboard/catalogue.json), autolens_profiling#462). Each
+row is projected only onto the node class it was measured on (#464): a ral-node row onto a ral
+node, an A100 row onto a gpu node, never across machines. Workers per node = min(cores / cores per call, node memory / peak memory per worker), and one
 per GPU on a GPU node, times the parallel efficiency over the per-call time. The parallel
 efficiency is declared 1.0, an upper bound, unmeasured (phase 4 measures it), and the
 sampler's batch ceiling (Nautilus `n_batch`) is not modelled, so every number here is a
@@ -237,8 +238,8 @@ fit: lens-core residuals and a low-level ring pattern are expected.
 Phase 2x attached `cpus_per_eval` and `peak_rss_gb` to the 104 committed rows through
 `catalogue/peak_rss_backfill.json` (sacct MaxRSS: 37 exact per leg, 60 A100 legs at their
 job's peak as an upper bound, 7 short RAL tasks sacct never sampled, left null) and added
-`projected_node_throughput` to the catalogue's runtime records. Rows were not edited and
-nothing was re-run. See [Comparing CPU and GPU setups](#comparing-cpu-and-gpu-setups).
+`projected_node_throughput` to the catalogue's runtime records, each projected only onto the
+node class it was measured on (#464). Rows were not edited and nothing was re-run. See [Comparing CPU and GPU setups](#comparing-cpu-and-gpu-setups).
 
 ### 2026-10-25 — batch 1 committed
 

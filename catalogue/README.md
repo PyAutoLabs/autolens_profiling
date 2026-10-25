@@ -57,8 +57,11 @@ The rules live in [`catalogue_lifecycle.py`](../scripts/misc/tooling/catalogue_l
   [peak_rss_backfill.json](peak_rss_backfill.json) for rows measured before it (2a, from
   sacct MaxRSS: `basis: sacct_maxrss` per leg, `job_maxrss` a job-level upper bound), else
   null with a reason.
-- **projected_node_throughput** (runtime records): calls per second per declared host in
-  [reference_hosts.json](reference_hosts.json), `basis: projected`. CPU workers =
+- **projected_node_throughput** (runtime records): calls per second on the one declared host
+  in [reference_hosts.json](reference_hosts.json) whose `host_class` the row was measured on
+  (`hpc_ral_cpu` on the ral node, `hpc_a100` on the gpu node, including its CPU legs,
+  `local_laptop` on the laptop), `basis: projected`. A per-call time is never carried to
+  another machine: a row from any other host class is `not_projected` with a reason. CPU workers =
   min(cores / `cpus_per_eval`, memory / `peak_rss_gb`); on a GPU host one process per GPU,
   also capped by cores and memory; times the declared parallel efficiency (1.0, an upper bound,
   unmeasured until phase 4) over the per-call time (numba warm iid median, JAX vmap per call).
