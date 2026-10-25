@@ -18,28 +18,33 @@
 # parity.json into the mirrored cell named by --output-path under the gitignored
 # output/p2a_batch1/ scratch tree, never in place over committed rows (PR B copies complete rows into results/).
 #
-# MEMORY. --mem=32gb from the dataset size (hst; masked pixels hst 15393):
-# 4 GB + eight fp64 arrays of masked pixels x 1340 mapping columns, doubled, rounded up
-# to 16/32/64/128 GB (imaging_p2a.mem_gb). batch 0's sacct MaxRSS replaces the estimate.
+# MEMORY. --mem=32gb from batch 0's sacct MaxRSS (hst 10.2 GiB in 412877_5, ao 35.1 GiB in 412877_1).
+# The peak at this dataset size (hst 15393 masked pixels; jwst interpolated linearly
+# in masked pixels, euclid takes the hst peak) x 1.5, rounded up to
+# 16/32/64/128 GB, at least 32 GB (imaging_p2a.mem_gb_measured).
 # One A100 job runs this instrument's hpc_a100 cells in turn. The jax_cpu_sparse legs
 # run on the GPU node's CPU inside this GPU job (JAX_PLATFORMS=cpu, NPROC=8) — the
 # hpc_a100 host class's CPU setup, never a CPU array on the gpu partition.
 #
-# WALL-BASIS: PROVISIONAL. No cell has a standard-size wall yet; batch 0 measures them.
-# Every row is `unmeasured` until batch 0 lands, and the job refuses to run while
-# WALL_BASIS_STATUS=provisional (export P2A_ALLOW_PROVISIONAL_WALL=1 overrides it).
+# WALL-BASIS: measured by batch 0 (RAL 412877 / 412884, breakdown re-runs 412911 / 412915).
+# Each leg's wall is that of its batch-0 leg of the same script, setup and host class on
+# the bounding instrument (ao; hst for delaunay_nn), the larger of the walls.tsv WALL and
+# the task's sacct Elapsed, so smaller instruments run under an ao upper bound. The walls
+# include the headline median (same scripts and release). Each row's wall is
+# the sum of its legs' walls (they run in turn); --time is 1.25x the submit's total (8094s),
+# rounded up to the next 30 min.
 #   6 leg(s): delaunay jax_cpu_sparse_fp64 breakdown, delaunay jax_cpu_sparse_fp64 runtime, delaunay jax_gpu_dense_fp64 breakdown, delaunay jax_gpu_dense_fp64 runtime, delaunay jax_gpu_sparse_fp64 breakdown, delaunay jax_gpu_sparse_fp64 runtime
 #   cell: imaging/delaunay/hst  device: a100  precision: fp64
-#   source: unmeasured  probe-first: yes
+#   source: measured-wall  wall: 3698  ref: 412884_1,412884_2,412884_3,412884_5,412915_0,412915_4  measured-on: ao  headroom: 1.25  median: included
 #   6 leg(s): delaunay_nn jax_cpu_sparse_fp64 breakdown, delaunay_nn jax_cpu_sparse_fp64 runtime, delaunay_nn jax_gpu_dense_fp64 breakdown, delaunay_nn jax_gpu_dense_fp64 runtime, delaunay_nn jax_gpu_sparse_fp64 breakdown, delaunay_nn jax_gpu_sparse_fp64 runtime
 #   cell: imaging/delaunay_nn/hst  device: a100  precision: fp64
-#   source: unmeasured  probe-first: yes
+#   source: measured-wall  wall: 1146  ref: 412884_11,412884_7,412884_8,412884_9,412915_10,412915_6  measured-on: hst  headroom: 1.25  median: included
 #   2 leg(s): mge jax_gpu_dense_fp64 breakdown, mge jax_gpu_dense_fp64 runtime
 #   cell: imaging/mge/hst  device: a100  precision: fp64
-#   source: unmeasured  probe-first: yes
+#   source: measured-wall  wall: 126  ref: 412884_13,412915_12  measured-on: ao  headroom: 1.25  median: included
 #   6 leg(s): rectangular jax_cpu_sparse_fp64 breakdown, rectangular jax_cpu_sparse_fp64 runtime, rectangular jax_gpu_dense_fp64 breakdown, rectangular jax_gpu_dense_fp64 runtime, rectangular jax_gpu_sparse_fp64 breakdown, rectangular jax_gpu_sparse_fp64 runtime
 #   cell: imaging/pixelization/hst  device: a100  precision: fp64
-#   source: unmeasured  probe-first: yes
+#   source: measured-wall  wall: 3124  ref: 412884_15,412884_17,412884_19,412915_14,412915_16,412915_18  measured-on: ao  headroom: 1.25  median: included
 
 #SBATCH -J p2a_b1_a100_hst_fp64
 #SBATCH --partition=gpu
@@ -47,14 +52,14 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=32gb
-#SBATCH --time=2-00:00:00
+#SBATCH --time=3:00:00
 #SBATCH -o output/output.%A.out
 #SBATCH -e error/error.%A.err
 
 # Submit from hpc/batch_cpu/ or hpc/batch_gpu/ (the -o/-e paths are relative).
 # Batch 1 runs only once batch 0's walls have replaced the provisional WALL-BASIS rows above
-# (source: measured-wall, --time from the measurement) and this flips to "measured".
-WALL_BASIS_STATUS=provisional
+# (source: measured-wall, --time from the measurement) and this reads "measured".
+WALL_BASIS_STATUS=measured
 if [ "$WALL_BASIS_STATUS" != measured ] && [ "${P2A_ALLOW_PROVISIONAL_WALL:-0}" != 1 ]; then
     echo "REFUSING: WALL_BASIS_STATUS=$WALL_BASIS_STATUS. Run batch 0, set --time from its walls"
     echo "and mark the WALL-BASIS rows measured-wall first (scripts/misc/campaigns/README.md)."

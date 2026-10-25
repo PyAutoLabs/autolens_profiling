@@ -90,8 +90,71 @@ BATCH0_INSTRUMENTS = {
 #: Batch 0's declared per-task wall guess (``source: unmeasured``, 3x floor) and its ``--time``.
 BATCH0_WALL_GUESS_S = 14000
 BATCH0_TIME = "12:00:00"
-#: Batch 1's placeholder ``--time`` until batch 0's walls replace the WALL-BASIS rows.
-BATCH1_TIME = {"ral_cpu": "12:00:00", "a100": "2-00:00:00"}
+
+#: Batch 0's measured legs, on tag 2026.10.23.1: RAL CPU array 412877, A100 array 412884, and the
+#: breakdown legs re-run after PR #458 as 412911 (CPU tasks 0, 4, 8, 10) and 412915 (A100 tasks
+#: 0, 4, 6, 10, 12, 14, 16, 18). Per leg: the ``walls.tsv`` WALL (the cell script alone), the
+#: sacct Elapsed of its array task (preamble, dataset preparation, script and revision check),
+#: and that task. Batch 1's walls rest on the larger of the two.
+BATCH0_WALLS = {
+    "imaging/delaunay/ao jax_cpu_sparse_fp64@hpc_ral_cpu [breakdown]": (1326, 1330, "412911_0"),
+    "imaging/delaunay/ao jax_cpu_sparse_fp64@hpc_ral_cpu [runtime]": (1338, 1428, "412877_1"),
+    "imaging/delaunay/ao numba_cpu_sparse_fp64@hpc_ral_cpu [breakdown]": (1329, 1419, "412877_2"),
+    "imaging/delaunay/ao numba_cpu_sparse_fp64@hpc_ral_cpu [runtime]": (1877, 1967, "412877_3"),
+    "imaging/delaunay_nn/hst jax_cpu_sparse_fp64@hpc_ral_cpu [breakdown]": (212, 216, "412911_4"),
+    "imaging/delaunay_nn/hst jax_cpu_sparse_fp64@hpc_ral_cpu [runtime]": (308, 357, "412877_5"),
+    "imaging/delaunay_nn/hst numba_cpu_sparse_fp64@hpc_ral_cpu [breakdown]": (81, 84, "412877_6"),
+    "imaging/delaunay_nn/hst numba_cpu_sparse_fp64@hpc_ral_cpu [runtime]": (67, 69, "412877_7"),
+    "imaging/mge/ao jax_cpu_dense_fp64@hpc_ral_cpu [breakdown]": (36, 40, "412911_8"),
+    "imaging/mge/ao jax_cpu_dense_fp64@hpc_ral_cpu [runtime]": (125, 128, "412877_9"),
+    "imaging/rectangular/ao jax_cpu_sparse_fp64@hpc_ral_cpu [breakdown]": (1142, 1145, "412911_10"),
+    "imaging/rectangular/ao jax_cpu_sparse_fp64@hpc_ral_cpu [runtime]": (1172, 1174, "412877_11"),
+    "imaging/rectangular/ao numba_cpu_sparse_fp64@hpc_ral_cpu [breakdown]": (
+        1375,
+        1377,
+        "412877_12",
+    ),
+    "imaging/rectangular/ao numba_cpu_sparse_fp64@hpc_ral_cpu [runtime]": (1836, 1838, "412877_13"),
+    "imaging/delaunay/ao jax_cpu_sparse_fp64@hpc_a100 [breakdown]": (1523, 1533, "412915_0"),
+    "imaging/delaunay/ao jax_cpu_sparse_fp64@hpc_a100 [runtime]": (1432, 1522, "412884_1"),
+    "imaging/delaunay/ao jax_gpu_dense_fp64@hpc_a100 [breakdown]": (103, 107, "412884_2"),
+    "imaging/delaunay/ao jax_gpu_dense_fp64@hpc_a100 [runtime]": (210, 214, "412884_3"),
+    "imaging/delaunay/ao jax_gpu_sparse_fp64@hpc_a100 [breakdown]": (121, 131, "412915_4"),
+    "imaging/delaunay/ao jax_gpu_sparse_fp64@hpc_a100 [runtime]": (187, 191, "412884_5"),
+    "imaging/delaunay_nn/hst jax_cpu_sparse_fp64@hpc_a100 [breakdown]": (225, 228, "412915_6"),
+    "imaging/delaunay_nn/hst jax_cpu_sparse_fp64@hpc_a100 [runtime]": (329, 334, "412884_7"),
+    "imaging/delaunay_nn/hst jax_gpu_dense_fp64@hpc_a100 [breakdown]": (59, 63, "412884_8"),
+    "imaging/delaunay_nn/hst jax_gpu_dense_fp64@hpc_a100 [runtime]": (94, 97, "412884_9"),
+    "imaging/delaunay_nn/hst jax_gpu_sparse_fp64@hpc_a100 [breakdown]": (99, 102, "412915_10"),
+    "imaging/delaunay_nn/hst jax_gpu_sparse_fp64@hpc_a100 [runtime]": (318, 322, "412884_11"),
+    "imaging/mge/ao jax_gpu_dense_fp64@hpc_a100 [breakdown]": (35, 38, "412915_12"),
+    "imaging/mge/ao jax_gpu_dense_fp64@hpc_a100 [runtime]": (85, 88, "412884_13"),
+    "imaging/rectangular/ao jax_cpu_sparse_fp64@hpc_a100 [breakdown]": (1324, 1327, "412915_14"),
+    "imaging/rectangular/ao jax_cpu_sparse_fp64@hpc_a100 [runtime]": (1264, 1268, "412884_15"),
+    "imaging/rectangular/ao jax_gpu_dense_fp64@hpc_a100 [breakdown]": (74, 77, "412915_16"),
+    "imaging/rectangular/ao jax_gpu_dense_fp64@hpc_a100 [runtime]": (174, 178, "412884_17"),
+    "imaging/rectangular/ao jax_gpu_sparse_fp64@hpc_a100 [breakdown]": (99, 103, "412915_18"),
+    "imaging/rectangular/ao jax_gpu_sparse_fp64@hpc_a100 [runtime]": (168, 171, "412884_19"),
+}
+#: Batch-0 legs that cannot run, by human ruling a known limitation rather than a bug. Batch 1
+#: keeps them (each fails in under two minutes and the job carries on); their wall above is that
+#: failure, so the A100 job's ``--time`` still holds them.
+BATCH0_LIMITATIONS = {
+    cell: "A100 out of memory, the 384,753 x 1,280 fp64 blurred mapping matrix does not fit"
+    for cell in (
+        "imaging/delaunay/ao jax_gpu_dense_fp64@hpc_a100 [breakdown]",
+        "imaging/rectangular/ao jax_gpu_dense_fp64@hpc_a100 [breakdown]",
+    )
+}
+#: ``--time`` = WALL_HEADROOM x the measured wall (README "Setting batch 1's --time"), rounded
+#: up to the next half hour.
+WALL_HEADROOM = 1.25
+WALL_ROUND_S = 1800
+#: ``measured`` once the batch-1 WALL-BASIS rows cite batch 0 (README "Setting batch 1's
+#: --time"); while ``provisional``, batch 1 renders unmeasured rows, the placeholder ``--time``
+#: below, and a submit that refuses to run.
+WALL_BASIS_STATUS = "measured"
+BATCH1_PROVISIONAL_TIME = {"ral_cpu": "12:00:00", "a100": "2-00:00:00"}
 
 #: Pixel scale per instrument (arcsec / pixel; ``scripts/misc/simulators/imaging.INSTRUMENTS``,
 #: pinned equal by the campaign test) and the cells' 3.5" circular mask: the masked image size
@@ -123,6 +186,35 @@ def mem_gb(instruments, minimum: int = 16) -> int:
     """
     peak = max(4.0 + 8 * masked_pixels(i) * MAPPING_COLUMNS * 8 / 1e9 for i in instruments)
     return next(step for step in MEM_STEPS_GB if step >= max(minimum, 2 * peak))
+
+
+#: Batch 0's peak resident memory (sacct MaxRSS, KiB) on the two instruments it ran, the largest
+#: of any leg there (CPU array or A100 job), and the task that reached it.
+BATCH0_PEAK_RSS_KIB = {"hst": (10652884, "412877_5"), "ao": (36762308, "412877_1")}
+#: Batch 1's ``--mem`` is at least MEM_HEADROOM x the measured (or interpolated) peak.
+MEM_HEADROOM = 1.5
+
+
+def peak_rss_gib(instrument: str) -> float:
+    """Batch 0's peak MaxRSS (GiB) at ``instrument``'s dataset size.
+
+    Measured on hst (15k masked pixels) and ao (385k); jwst is interpolated linearly in masked
+    pixels between them, and euclid (below hst) takes the hst peak: the peak is mostly a fixed
+    ~9 GiB plus a part that grows with the image, and nothing smaller than hst was measured.
+    """
+    (lo, (lo_kib, _)), (hi, (hi_kib, _)) = sorted(
+        BATCH0_PEAK_RSS_KIB.items(), key=lambda kv: masked_pixels(kv[0])
+    )
+    lo_gib, hi_gib = lo_kib / 2**20, hi_kib / 2**20
+    slope = (hi_gib - lo_gib) / (masked_pixels(hi) - masked_pixels(lo))
+    return lo_gib + slope * max(0, masked_pixels(instrument) - masked_pixels(lo))
+
+
+def mem_gb_measured(instruments, minimum: int = 16) -> int:
+    """Batch 1's ``--mem``: the next 16 / 32 / 64 / 128 / 256 GB step at or above MEM_HEADROOM x
+    the largest instrument's :func:`peak_rss_gib` (SLURM's ``gb`` is GiB)."""
+    peak = max(peak_rss_gib(i) for i in instruments)
+    return next(step for step in MEM_STEPS_GB if step >= max(minimum, MEM_HEADROOM * peak))
 
 
 _ROUTES = {row["path"]: row["legacy"] for row in load_routes(ROOT)["routes"]}
@@ -240,6 +332,34 @@ def batch0_a100() -> list[Task]:
     return _batch0([t for t in planned_tasks() if t.host_class == "hpc_a100"])
 
 
+def basis_leg(task: Task) -> Task:
+    """The batch-0 leg that bounds ``task``: same script, setup, host class and measurement on
+    the bounding instrument (ao; hst for delaunay_nn). A wall on ao bounds every smaller one."""
+    instrument = BATCH0_INSTRUMENTS[task.variant][0]
+    return Task(task.variant, instrument, task.setup_id, task.host_class, task.measurement)
+
+
+def measured_wall(task: Task) -> tuple[int, str]:
+    """(seconds, batch-0 task) for ``task``: the larger of its basis leg's WALL and Elapsed."""
+    wall, elapsed, ref = BATCH0_WALLS[basis_leg(task).cell]
+    return max(wall, elapsed), ref
+
+
+def batch1_wall_s(tasks: list[Task], *, sequential: bool) -> int:
+    """The measured wall a batch-1 submit must hold: the slowest leg of an array (one leg per
+    task), or the sum of the legs of a job that runs them in turn."""
+    walls = [measured_wall(t)[0] for t in tasks]
+    return sum(walls) if sequential else max(walls)
+
+
+def slurm_time(seconds: float) -> str:
+    """``H:MM:SS`` at WALL_HEADROOM x ``seconds``, rounded up to the next WALL_ROUND_S."""
+    import math
+
+    total = math.ceil(WALL_HEADROOM * seconds / WALL_ROUND_S) * WALL_ROUND_S
+    return f"{total // 3600}:{total % 3600 // 60:02d}:00"
+
+
 # --------------------------------------------------------------------------- dataset preflight
 
 
@@ -296,14 +416,34 @@ def prepare_dataset(instrument: str, root: Path = ROOT) -> None:
 # --------------------------------------------------------------------------- submit rendering
 
 
-def _wall_rows(tasks: list[Task], device: str, guess: int | None) -> list[str]:
+def _wall_rows(
+    tasks: list[Task], device: str, guess: int | None, *, measured: bool, sequential: bool
+) -> list[str]:
+    """One WALL-BASIS row per (gate cell, instrument). Batch 0 declares its guess; batch 1 cites
+    the batch-0 legs that bound it (:func:`basis_leg`): the slowest leg of an array task, or the
+    sum of the legs a sequential job runs. Prose lines carry no ``key: value`` pairs."""
     rows = []
     for gate_cell, instrument in sorted({(t.gate_cell, t.instrument) for t in tasks}):
         legs = [t for t in tasks if (t.gate_cell, t.instrument) == (gate_cell, instrument)]
         names = ", ".join(f"{t.variant} {t.setup_id} {t.measurement}" for t in legs)
         rows.append(f"#   {len(legs)} leg(s): {names}")
+        for t in legs if measured else []:
+            if t.cell in BATCH0_LIMITATIONS:
+                ref = BATCH0_WALLS[t.cell][2]
+                rows.append(
+                    f"#   KNOWN LIMITATION, kept in - {t.variant} {t.setup_id} {t.measurement} "
+                    f"({BATCH0_LIMITATIONS[t.cell]}; batch 0 task {ref}); it fails fast"
+                )
         rows.append(f"#   cell: {gate_cell}/{instrument}  device: {device}  precision: fp64")
-        if guess is None:
+        if measured:
+            wall = batch1_wall_s(legs, sequential=sequential)
+            refs = ",".join(sorted({measured_wall(t)[1] for t in legs}))
+            on = ",".join(sorted({basis_leg(t).instrument for t in legs}))
+            rows.append(
+                f"#   source: measured-wall  wall: {wall}  ref: {refs}  measured-on: {on}  "
+                f"headroom: {WALL_HEADROOM}  median: included"
+            )
+        elif guess is None:
             rows.append("#   source: unmeasured  probe-first: yes")
         else:
             rows.append(f"#   source: unmeasured  probe-first: yes  wall: {guess}  headroom: 3.0")
@@ -418,8 +558,8 @@ run_leg() {
 
 _PROVISIONAL_GUARD = r"""
 # Batch 1 runs only once batch 0's walls have replaced the provisional WALL-BASIS rows above
-# (source: measured-wall, --time from the measurement) and this flips to "measured".
-WALL_BASIS_STATUS=provisional
+# (source: measured-wall, --time from the measurement) and this reads "measured".
+WALL_BASIS_STATUS=@WALL_BASIS_STATUS@
 if [ "$WALL_BASIS_STATUS" != measured ] && [ "${P2A_ALLOW_PROVISIONAL_WALL:-0}" != 1 ]; then
     echo "REFUSING: WALL_BASIS_STATUS=$WALL_BASIS_STATUS. Run batch 0, set --time from its walls"
     echo "and mark the WALL-BASIS rows measured-wall first (scripts/misc/campaigns/README.md)."
@@ -432,11 +572,20 @@ def render(name: str, tasks: list[Task], *, kind: str, batch: int, title: str) -
     """One submit script. ``kind``: ``ral_cpu`` (array) / ``a100_job`` / ``a100_array``."""
     device = "ral_cpu" if kind == "ral_cpu" else "a100"
     guess = BATCH0_WALL_GUESS_S if batch == 0 else None
-    time = BATCH0_TIME if batch == 0 else BATCH1_TIME[device]
+    sequential = kind == "a100_job"
+    measured = batch == 1 and WALL_BASIS_STATUS == "measured"
+    time_basis_s = batch1_wall_s(tasks, sequential=sequential) if measured else None
+    if measured:
+        time = slurm_time(time_basis_s)
+    else:
+        time = BATCH0_TIME if batch == 0 else BATCH1_PROVISIONAL_TIME[device]
     n = len(tasks)
     # Never in place over committed rows: PR B copies complete rows into results/ (README).
     results_root = f"$AP_ROOT/output/p2a_batch{batch}"
-    mem = mem_gb({t.instrument for t in tasks}, minimum=16 if kind == "ral_cpu" else 32)
+    instruments = sorted({t.instrument for t in tasks})
+    floor = 16 if kind == "ral_cpu" else 32
+    mem = mem_gb_measured(instruments, floor) if batch == 1 else mem_gb(instruments, floor)
+    pixels = ", ".join(f"{i} {masked_pixels(i)}" for i in instruments)
     header = [
         "#!/bin/bash -l",
         "#",
@@ -459,13 +608,24 @@ def render(name: str, tasks: list[Task], *, kind: str, batch: int, title: str) -
         f"# output/p2a_batch{batch}/ scratch tree, never in place over committed rows"
         + (" (PR B copies complete rows into results/)." if batch == 1 else "."),
         "#",
-        f"# MEMORY. --mem={mem_gb({t.instrument for t in tasks}, minimum=16 if kind == 'ral_cpu' else 32)}gb from the dataset size "
-        f"({', '.join(sorted({t.instrument for t in tasks}))}; masked pixels "
-        + ", ".join(f"{i} {masked_pixels(i)}" for i in sorted({t.instrument for t in tasks}))
-        + "):",
-        "# 4 GB + eight fp64 arrays of masked pixels x 1340 mapping columns, doubled, rounded up",
-        "# to 16/32/64/128 GB (imaging_p2a.mem_gb). batch 0's sacct MaxRSS replaces the estimate.",
     ]
+    if batch == 1:
+        rss = ", ".join(
+            f"{i} {kib / 2**20:.1f} GiB in {ref}" for i, (kib, ref) in BATCH0_PEAK_RSS_KIB.items()
+        )
+        header += [
+            f"# MEMORY. --mem={mem}gb from batch 0's sacct MaxRSS ({rss}).",
+            f"# The peak at this dataset size ({pixels} masked pixels; jwst interpolated linearly",
+            f"# in masked pixels, euclid takes the hst peak) x {MEM_HEADROOM}, rounded up to",
+            f"# 16/32/64/128 GB, at least {floor} GB (imaging_p2a.mem_gb_measured).",
+        ]
+    else:
+        header += [
+            f"# MEMORY. --mem={mem}gb from the dataset size ({', '.join(instruments)}; masked pixels "
+            f"{pixels}):",
+            "# 4 GB + eight fp64 arrays of masked pixels x 1340 mapping columns, doubled, rounded up",
+            "# to 16/32/64/128 GB (imaging_p2a.mem_gb). batch 0's sacct MaxRSS replaces the estimate.",
+        ]
     if kind == "ral_cpu":
         header += [
             "# One cell per array task on `ral` (CPU work never goes on `gpu`). numba cells pin their",
@@ -495,13 +655,28 @@ def render(name: str, tasks: list[Task], *, kind: str, batch: int, title: str) -
             "# a declared guess (3x floor), and the ao legs may run well past it — the timing arm",
             "# exists to find out.",
         ]
+    elif measured:
+        rule = (
+            "the sum of its legs' walls (they run in turn)"
+            if sequential
+            else "its slowest leg's wall (one leg per array task)"
+        )
+        header += [
+            "# WALL-BASIS: measured by batch 0 (RAL 412877 / 412884, breakdown re-runs 412911 / 412915).",
+            "# Each leg's wall is that of its batch-0 leg of the same script, setup and host class on",
+            "# the bounding instrument (ao; hst for delaunay_nn), the larger of the walls.tsv WALL and",
+            "# the task's sacct Elapsed, so smaller instruments run under an ao upper bound. The walls",
+            "# include the headline median (same scripts and release). Each row's wall is",
+            f"# {rule}; --time is {WALL_HEADROOM}x the submit's total ({time_basis_s}s),",
+            f"# rounded up to the next {WALL_ROUND_S // 60} min.",
+        ]
     else:
         header += [
             "# WALL-BASIS: PROVISIONAL. No cell has a standard-size wall yet; batch 0 measures them.",
             "# Every row is `unmeasured` until batch 0 lands, and the job refuses to run while",
             "# WALL_BASIS_STATUS=provisional (export P2A_ALLOW_PROVISIONAL_WALL=1 overrides it).",
         ]
-    header += _wall_rows(tasks, device, guess)
+    header += _wall_rows(tasks, device, guess, measured=measured, sequential=sequential)
     sbatch = [f"#SBATCH -J p2a_{'b0' if batch == 0 else 'b1'}_{name.split('imaging_', 1)[1]}"]
     if kind == "ral_cpu":
         throttle = "%8" if batch == 0 else "%16"
@@ -567,7 +742,11 @@ def render(name: str, tasks: list[Task], *, kind: str, batch: int, title: str) -
         "\n".join(sbatch),
         "",
         "# Submit from hpc/batch_cpu/ or hpc/batch_gpu/ (the -o/-e paths are relative).",
-        *([_PROVISIONAL_GUARD.strip("\n")] if batch == 1 else []),
+        *(
+            [_PROVISIONAL_GUARD.strip("\n").replace("@WALL_BASIS_STATUS@", WALL_BASIS_STATUS)]
+            if batch == 1
+            else []
+        ),
         body.rstrip("\n"),
         "",
         "\n".join(arrays),

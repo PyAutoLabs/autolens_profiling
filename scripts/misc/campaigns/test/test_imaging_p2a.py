@@ -159,12 +159,22 @@ def test_memory_follows_the_dataset_size():
         "hst": 16,
         "jwst": 16,
     }
+    # Batch 1 requests at least 1.5x batch 0's measured MaxRSS (jwst interpolated, euclid at hst).
+    assert {i: p2a.mem_gb_measured([i]) for i in p2a.INSTRUMENTS} == {
+        "ao": 64,
+        "euclid": 16,
+        "hst": 16,
+        "jwst": 32,
+    }
+    for instrument, (kib, _) in p2a.BATCH0_PEAK_RSS_KIB.items():
+        assert abs(p2a.peak_rss_gib(instrument) - kib / 2**20) < 1e-9
+        assert p2a.mem_gb_measured([instrument]) >= 1.5 * kib / 2**20
     for path in RAL1 + A1001:
         text = (ROOT / path).read_text()
         instrument = path.rsplit("_", 2)[-2]
         floor = 16 if path in RAL1 else 32
-        assert sbatch(text, "mem") == f"{p2a.mem_gb([instrument], minimum=floor)}gb"
-        assert "# MEMORY." in text
+        assert sbatch(text, "mem") == f"{p2a.mem_gb_measured([instrument], minimum=floor)}gb"
+        assert "# MEMORY." in text and "MaxRSS" in text
     for path in BATCH0:  # the bounding slice holds ao
         assert sbatch((ROOT / path).read_text(), "mem") == "128gb"
 
@@ -214,13 +224,32 @@ def test_every_submit_passes_the_wall_gate_with_a_row_per_cell_and_instrument():
         assert {i for *_, i in declared} == instruments
 
 
-def test_batch1_is_guarded_until_batch0_measures_its_walls():
+def test_batch1_walls_are_measured_by_batch0():
+    """README "Setting batch 1's --time": every batch-1 row is measured-wall citing batch 0, and
+    --time holds 1.25x the slowest leg of a RAL array or the sum of an A100 job's legs."""
+    assert p2a.WALL_BASIS_STATUS == "measured"
+    assert set(p2a.BATCH0_WALLS) == {t.cell for t in p2a.batch0_ral_cpu() + p2a.batch0_a100()}
+    assert set(p2a.BATCH0_LIMITATIONS) <= set(p2a.BATCH0_WALLS)
     for path in BATCH1:
-        text = (ROOT / path).read_text()
-        assert "WALL_BASIS_STATUS=provisional" in text
-        assert all(r["source"] == "unmeasured" for r in check_submits.parse_basis_rows(text))
-        guard = text.index("WALL_BASIS_STATUS=provisional")
+        text, names = legs(path)
+        assert "WALL_BASIS_STATUS=measured" in text
+        guard = text.index("WALL_BASIS_STATUS=measured")
         assert guard < text.index('source "$AP_ROOT/activate.sh"')
+        tasks = [t for t in p2a.planned_tasks() if t.cell in set(names)]
+        walls = []
+        for t in tasks:
+            basis = p2a.basis_leg(t)
+            assert basis.cell in p2a.BATCH0_WALLS  # a leg of the same script and setup
+            assert basis.script == t.script and basis.instrument in ("ao", "hst")
+            wall, elapsed, _ = p2a.BATCH0_WALLS[basis.cell]
+            assert p2a.measured_wall(t)[0] == max(wall, elapsed)
+            walls.append(max(wall, elapsed))
+        need = 1.25 * (max(walls) if path in RAL1 else sum(walls))
+        assert check_submits.parse_slurm_time(sbatch(text, "time")) >= need, path
+        for row in check_submits.parse_basis_rows(text):
+            assert row["source"] == "measured-wall" and float(row["headroom"]) >= 1.25
+            refs = row["ref"].split(",")
+            assert all(r.split("_")[0] in {"412877", "412884", "412911", "412915"} for r in refs)
 
 
 def test_batch0_is_the_bounding_slice_and_writes_outside_results():

@@ -774,6 +774,12 @@ iteration counts, budgets in iterations, geometry or formatting, not a measured 
 - `scripts/misc/likelihood_breakdown/test/test_matrix_free_steps.py::test_jacobi_diag_estimate_is_positive_and_exact_on_the_func_block`
   and `scripts/misc/likelihood_breakdown/test/test_matrix_free_steps.py::test_pdip_matrix_free_matches_the_cell_nnls`:
   a diagonal ratio and an iteration-count difference.
+- `scripts/misc/campaigns/imaging_p2a.py::WALL_HEADROOM` and
+  `scripts/misc/campaigns/test/test_imaging_p2a.py::test_batch1_walls_are_measured_by_batch0`
+  (autolens_profiling#456): the generator sizes batch 1's `--time` at 1.25x batch 0's measured
+  walls, and the test checks it. It is S1's `measured-wall` floor applied when the submit is
+  written; S1 is the gate. `scripts/misc/campaigns/imaging_p2a.py::MEM_HEADROOM` is a `--mem`
+  multiplier on measured MaxRSS, not a time.
 - `scripts/misc/tooling/build_readme.py::_format_time` and
   `scripts/misc/tooling/build_readme.py::_render_runtime_table`: unit formatting.
 
