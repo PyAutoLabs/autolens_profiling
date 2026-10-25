@@ -17,6 +17,7 @@ HOSTS = {
     "hosts": {
         "cpu_node": {"cores": 236, "mem_gb": 921, "gpus": 0, "host_class": "hpc_ral_cpu"},
         "gpu_node": {"cores": 124, "mem_gb": 885, "gpus": 4, "host_class": "hpc_a100"},
+        "laptop": {"cores": 8, "mem_gb": 32, "gpus": 0, "host_class": "local_laptop"},
     },
     "parallel_efficiency": {"value": 1.0, "kind": "upper bound", "source": "declared"},
     "not_modelled": "Nautilus n_batch",
@@ -28,7 +29,9 @@ def _res(cpus, rss, **kw):
 
 
 def _host(block, name):
-    return next(h for h in block["hosts"] if h["host"] == name)
+    """The record's single projected host, which must be ``name``."""
+    assert [h["host"] for h in block["hosts"]] == [name]
+    return block["hosts"][0]
 
 
 def test_cores_bound_numba():
@@ -38,8 +41,40 @@ def test_cores_bound_numba():
     assert cpu["workers"] == 236 and cpu["bound_by"] == "cores"
     assert cpu["limits"] == {"cores": 236, "memory": 1078}
     assert cpu["calls_per_s"] == pytest.approx(236 / 0.95, rel=1e-3)
-    assert cpu["per_call_measured_on_host"] is True
-    assert _host(block, "gpu_node")["per_call_measured_on_host"] is False
+    assert cpu["host_class"] == "hpc_ral_cpu"
+    assert "per_call_measured_on_host" not in cpu
+
+
+def test_projects_only_onto_the_measured_host_class():
+    for host_class, device, name in (
+        ("hpc_ral_cpu", "cpu", "cpu_node"),
+        ("hpc_a100", "gpu", "gpu_node"),
+        ("local_laptop", "cpu", "laptop"),
+    ):
+        block = lc.project(_res(1, 1.0), 1.0, "warm_iid_median_s", device, host_class, HOSTS)
+        assert block["status"] == "projected"
+        assert _host(block, name)["host_class"] == host_class
+
+
+def test_a100_cpu_leg_uses_the_gpu_node_cores_as_cpu_workers():
+    # jax_cpu_sparse@hpc_a100: a CPU leg measured on the A100 node's CPUs.
+    block = lc.project(_res(8, 3.2), 1.9, "vmap.per_call", "cpu", "hpc_a100", HOSTS)
+    gpu = _host(block, "gpu_node")
+    assert gpu["limits"] == {"cores": 15, "memory": 276}
+    assert gpu["workers"] == 15 and gpu["bound_by"] == "cores"
+    assert gpu["calls_per_s"] == pytest.approx(15 / 1.9, rel=1e-3)
+
+
+def test_unmatched_host_class_is_not_projected():
+    block = lc.project(_res(1, 1.0), 1.0, "vmap.per_call", "gpu", "local_gpu", HOSTS)
+    assert block["status"] == "not_projected" and block["hosts"] == []
+    assert block["reason"] == "no declared reference host has host_class local_gpu"
+
+
+def test_gpu_record_on_a_host_without_gpus_is_not_projected():
+    block = lc.project(_res(1, 1.0), 1.0, "vmap.per_call", "gpu", "local_laptop", HOSTS)
+    assert block["status"] == "not_projected" and block["hosts"] == []
+    assert "declares no GPUs" in block["reason"]
 
 
 def test_memory_bound_numba():
@@ -54,10 +89,9 @@ def test_jax_cpu_uses_its_threads():
     assert _host(block, "cpu_node")["workers"] == 29
 
 
-def test_gpu_is_one_process_per_device_on_gpu_hosts_only():
+def test_gpu_is_one_process_per_device():
     block = lc.project(_res(8, 10.7), 0.035, "vmap.per_call", "gpu", "hpc_a100", HOSTS)
-    assert [h["host"] for h in block["hosts"]] == ["gpu_node"]
-    gpu = block["hosts"][0]
+    gpu = _host(block, "gpu_node")
     assert gpu["workers"] == 4 and gpu["bound_by"] == "gpus"
     assert gpu["limits"] == {"gpus": 4, "cores": 15, "memory": 82}
     assert gpu["calls_per_s"] == pytest.approx(4 / 0.035, rel=1e-3)
@@ -133,3 +167,17 @@ def test_committed_catalogue_carries_2a_resources_and_projections():
             assert block["parallel_efficiency"]["source"].startswith("declared, unmeasured")
             assert (block["status"] == "projected") == (backfill[path]["peak_rss_gb"] is not None)
     assert seen == set(backfill)
+
+
+def test_committed_catalogue_projects_each_record_only_onto_its_host_class():
+    doc = json.loads((ROOT / "dashboard/catalogue.json").read_text())
+    hosts = lc.node_hosts(ROOT)["hosts"]
+    for record in doc["records"]:
+        block = record.get("projected_node_throughput")
+        if block is None:
+            continue
+        assert len(block["hosts"]) == (1 if block["status"] == "projected" else 0)
+        for entry in block["hosts"]:
+            assert entry["host_class"] == record["host_class"]
+            assert hosts[entry["host"]]["host_class"] == record["host_class"]
+            assert "per_call_measured_on_host" not in entry
