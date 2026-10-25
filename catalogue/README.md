@@ -44,6 +44,13 @@ The rules live in [`catalogue_lifecycle.py`](../scripts/misc/tooling/catalogue_l
   [measured_at_first_commit.json](measured_at_first_commit.json), and says so in
   `limitations`. Refresh that file with `build_catalogue.py --refresh-commit-dates` (needs full
   git history); `--check` fails when an undated file is missing from it.
+- **release_pin**: a library source checkout reports the last built `__version__` (2026.8.17.1
+  at every later tag), so a row run from a tag checkout stamps a stale `autolens_version`. When
+  a row's `device.provenance.library_revisions` equal every SHA of one tag in
+  [release_revisions.json](release_revisions.json), the record's `release_pin` and
+  `identity.library_version` are that tag, and `identity.software.release_pin_basis` says so.
+  A `parity.json` takes the release of its cell's row when both stamp the same version. Add a
+  tag there when a campaign measures on it.
 
 ## Regenerate and validate
 

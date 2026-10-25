@@ -3,29 +3,75 @@
   "device": {
     "backend": "gpu",
     "device": "cuda:0",
-    "hostname": "euclid-ral-gpu-2",
+    "hostname": "euclid-ral-gpu-1",
     "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
-    "omp_num_threads": null,
+    "omp_num_threads": "1",
     "cpu_count": 124,
-    "jax_compilation_cache_dir": "/mnt/ral/jnightin/autolens_profiling_wt/a100-pixelized-baseline/output/jax_cache/baseline_342623",
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2a/output/jax_cache/p2a_412944_16",
     "autotune_cache_entries_at_start": 0,
     "cache_fresh": true,
-    "nvidia_smi": "NVIDIA A100 80GB PCIe, 41479 MiB, 81920 MiB"
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-10-25T14:44:09Z",
+      "host": "euclid-ral-gpu-1",
+      "slurm": {
+        "job_id": "412944",
+        "array_job_id": null,
+        "array_task_id": null
+      },
+      "loadavg_at_import": [
+        3.45,
+        3.81,
+        4.08
+      ],
+      "loadavg_at_write": [
+        3.86,
+        3.86,
+        4.08
+      ],
+      "profiling_revision": "86c287d1fc90f7595b2106dbb6b55102c4d7c800",
+      "library_revisions": {
+        "autolens_profiling": "86c287d1fc90f7595b2106dbb6b55102c4d7c800",
+        "PyAutoNerves": "f116f70077e442db19a2a152f5ee78d57294c504",
+        "PyAutoFit": "d3a7721294652f81ec726b92931ab610ed27e3ac",
+        "PyAutoArray": "d99ec2b30224ac021e39628b9904d01c44f33b29",
+        "PyAutoGalaxy": "e00b5e7d554d6958a6c8821edef6afdf01188e6d",
+        "PyAutoLens": "f791ac77d136d664346fff21cc36079f8f9b1196"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.10.2",
+        "jaxlib": "0.10.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.65.1",
+        "nufftax": "0.6.1"
+      }
+    },
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 4635 MiB, 81920 MiB"
   },
   "instrument": "hst",
   "configuration": {
     "pixel_scale_arcsec": 0.05,
     "mask_radius_arcsec": 3.5,
     "image_pixels_masked": 15361,
-    "over_sampled_pixels": 62752,
+    "over_sampled_pixels": 61600,
     "mesh_shape": [
-      39,
-      39
+      35,
+      35
     ],
     "rect_mesh": "bilinear",
-    "source_pixels": 1521,
+    "source_pixels": 1225,
+    "source_pixels_requested": 1225,
+    "standard_size": true,
     "inversion_path": "dense",
-    "total_params": 1581,
+    "total_params": 1285,
     "thread_env": {
       "n_threads": null,
       "vars": [
@@ -36,7 +82,11 @@
         "NUMEXPR_NUM_THREADS"
       ],
       "set_to": null,
-      "preexisting": {},
+      "preexisting": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1"
+      },
       "overridden": {},
       "note": "Not pinned (legacy variant): recorded as found."
     },
@@ -56,176 +106,275 @@
         0.0
       ],
       "note": "Outer sub-size 1 retired repo-wide on 2026-09-08 (autolens_profiling#235): it leaves the outermost annulus un-over-sampled and causes gradient issues."
+    },
+    "production_preset": {
+      "preset": "hst_rect_adapt_standard",
+      "variant": "production",
+      "provenance": "subhalo_validation/scripts/pipelines/rectangular_adapt.py (rect_adapt source_pix[2], job 342311): RectangularBilinearAdaptImage shape (32, 32) (MESH_PIXELS_YX :38), regularization Adapt; the rest of the stage (adapt S/N cap, over-sampling, MGE, threads) as hst_source_pix_2 \u2014 production data (human ruling 2026-10-24): subtracted S/N adapt image, uncapped over-sampling cut; RectangularBilinearAdaptImage mesh; standard size (human ruling 2026-10-23): rectangular 32x32 -> 35x35",
+      "mesh_kind": "rectangular",
+      "adapt_snr_cap": 3.0,
+      "over_sample_size_lp_rule": {
+        "sub_size_list": [
+          4,
+          2,
+          2
+        ],
+        "radial_list": [
+          0.1,
+          0.3
+        ],
+        "centre": [
+          0.0,
+          0.0
+        ]
+      },
+      "over_sample_size_pixelization_rule": {
+        "source_snr_cut": 3.0,
+        "sub_size_above": 4,
+        "sub_size_below": 2
+      },
+      "regularization": {
+        "scheme": "adapt",
+        "free": false,
+        "coefficient": 1.0
+      },
+      "positions_penalty": null,
+      "lens_light": "mge_60_linear_2_basis",
+      "mge_total_gaussians": 30,
+      "mge_gaussian_per_basis": 2,
+      "sequence": {
+        "kind": "iid",
+        "unit_low": 0.4,
+        "unit_high": 0.6,
+        "seed": 235
+      },
+      "memo": "off",
+      "size_override": "production data (human ruling 2026-10-24): subtracted S/N adapt image, uncapped over-sampling cut; RectangularBilinearAdaptImage mesh; standard size (human ruling 2026-10-23): rectangular 32x32 -> 35x35",
+      "mesh": {
+        "kind": "rectangular",
+        "shape": [
+          35,
+          35
+        ],
+        "source_pixels": 1225,
+        "class": "RectangularBilinearAdaptImage",
+        "free_weights": {
+          "weight_power": {
+            "type": "Uniform",
+            "lower": 0.0,
+            "upper": 10.0
+          },
+          "weight_floor": {
+            "type": "LogUniform",
+            "lower": 1e-05,
+            "upper": 1.0
+          }
+        }
+      },
+      "production_data": {
+        "enabled": true,
+        "lens_light_source": "truth"
+      },
+      "production_source": {
+        "adapt_image": "PyAutoGalaxy@7472211 autogalaxy/analysis/adapt_images/adapt_images.py:138 galaxy_name_image_dict_via_result_from: the source's subtracted S/N map (data minus the other galaxies' model images, over the noise map), floored at adapt_minimum_percent (0.01, subhalo_validation config/general.yaml:28) x max",
+        "mesh_and_regularization_adapt_image": "subhalo_validation scripts/pipelines/spec.py:9-36 capped_galaxy_name_image_dict_from (S/N capped at 3.0); used by delaunay_adapt_split.py:123,:165 and rectangular_adapt.py:109",
+        "over_sampling": "subhalo_validation scripts/imaging.py:213-255 apply_adaptive_pixelization_over_sampling: sub-size 4 where the UNCAPPED source S/N > 3.0, else 2; light-profile bins :175-184",
+        "rectangular_mesh": "subhalo_validation scripts/pipelines/rectangular_adapt.py:74-96 (source_pix[2]): af.Model(al.mesh.RectangularBilinearAdaptImage, shape) with al.reg.Adapt; weight priors config/priors/mesh/rectangular.yaml:43-61",
+        "model_stand_in": "no previous-stage fit exists in a profiling cell: the dataset's truth tracer (tracer.json) stands in for the maximum-likelihood model whose lens light is subtracted"
+      },
+      "instance": "iid draw 0 of the preset sequence (seeded)"
+    },
+    "production_data_record": {
+      "over_sampling_preset": "hst_rect_adapt_standard",
+      "over_sample_size_lp_rule": {
+        "sub_size_list": [
+          4,
+          2,
+          2
+        ],
+        "radial_list": [
+          0.1,
+          0.3
+        ],
+        "centre": [
+          0.0,
+          0.0
+        ]
+      },
+      "over_sample_size_pixelization_rule": {
+        "source_snr_cut": 3.0,
+        "sub_size_above": 4,
+        "sub_size_below": 2,
+        "threshold_map": "uncapped subtracted S/N (production)",
+        "pixels_above": 2068,
+        "pixels_below": 13293
+      },
+      "adapt_image": "subtracted S/N (truth tracer), floored",
+      "lens_light_source": "truth",
+      "adapt_minimum_percent": 0.01,
+      "mesh_adapt_snr_cap": 3.0
     }
   },
   "regularization": {
-    "scheme": "constant",
+    "scheme": "adapt",
+    "free": false,
     "coefficient": 1.0
   },
   "steps": {
-    "Ray-trace grids": 0.00021120181772857905,
-    "Lens light images (pre-PSF)": 0.00014497220981866122,
-    "Blurred image (PSF convolution)": 0.0012804747093468904,
-    "Profile-subtracted image": 0.0001564471051096916,
-    "Overlay grid (source pixel centres)": 0.00016691701021045446,
-    "Inversion setup (steps 4-8 combined)": 0.014148143189959227,
-    "Data vector (D)": 0.0003741658991202712,
-    "Curvature matrix (F)": 0.004826227691955865,
-    "Regularization matrix (H)": -0.0005675188032910228,
-    "Regularized reconstruction": 0.036935892701148984,
-    "Mapped recon + log evidence": 0.002344023808836937
+    "Ray-trace grids": 0.00019036290177609771,
+    "Lens light images (pre-PSF)": 0.0001258055999642238,
+    "Blurred image (PSF convolution)": 0.0008095960016362369,
+    "Profile-subtracted image": 0.00011732270068023353,
+    "Overlay grid (source pixel centres)": 0.00012657160114031284,
+    "Inversion setup (steps 4-8 combined)": 0.01219986920186784,
+    "Data vector (D)": 0.00028213569894433024,
+    "Curvature matrix (F)": 0.0037277972005540505,
+    "Regularization matrix (H)": 0.0005989042983856054,
+    "Regularized reconstruction": 0.02955390819988679,
+    "Mapped recon + log evidence": 0.0019432097004028037
   },
-  "total_step_by_step": 0.06002094733994453,
-  "regularization_matrix_prefix_s": 0.0015397032955661416,
-  "interpolator_prefix_s": 0.0021072220988571644,
-  "regularization_matrix_assembly_s": 0.00017950301989912986,
+  "total_step_by_step": 0.04967548310523853,
+  "regularization_matrix_prefix_s": 0.002535062999231741,
+  "interpolator_prefix_s": 0.0019361587008461356,
+  "regularization_matrix_assembly_s": null,
   "jit_phases": {
     "ray_trace_jit": {
-      "lower_s": 0.08455163217149675,
-      "compile_s": 0.34881274215877056,
-      "first_call_s": 0.0015522618778049946,
-      "steady_per_call_s": 0.00021120181772857905
+      "lower_s": 0.09078051900723949,
+      "compile_s": 0.3121507700125221,
+      "first_call_s": 0.0015087539795786142,
+      "steady_per_call_s": 0.00019036290177609771
     },
     "lens_image_jit": {
-      "lower_s": 0.06335432315245271,
-      "compile_s": 0.03995680483058095,
-      "first_call_s": 0.0006555060390383005,
-      "steady_per_call_s": 0.00014497220981866122
+      "lower_s": 0.06478349599638022,
+      "compile_s": 0.03852252499200404,
+      "first_call_s": 0.0006385739834513515,
+      "steady_per_call_s": 0.0001258055999642238
     },
     "blurred_image_jit": {
-      "lower_s": 0.09171309322118759,
-      "compile_s": 0.21056109201163054,
-      "first_call_s": 0.005175481084734201,
-      "steady_per_call_s": 0.0012804747093468904
+      "lower_s": 0.059427805012091994,
+      "compile_s": 0.1760838399932254,
+      "first_call_s": 0.007127221004338935,
+      "steady_per_call_s": 0.0008095960016362369
     },
     "profile_subtract_jit": {
-      "lower_s": 0.0061908450443297625,
-      "compile_s": 0.027675213990733027,
-      "first_call_s": 0.0007710258942097425,
-      "steady_per_call_s": 0.0001564471051096916
+      "lower_s": 0.004494330991292372,
+      "compile_s": 0.024519279977539554,
+      "first_call_s": 0.0005945430020801723,
+      "steady_per_call_s": 0.00011732270068023353
     },
     "overlay_grid_jit": {
-      "lower_s": 0.014095329912379384,
-      "compile_s": 0.12934190104715526,
-      "first_call_s": 0.000791874947026372,
-      "steady_per_call_s": 0.00016691701021045446
+      "lower_s": 0.013757438020547852,
+      "compile_s": 0.11475520400563255,
+      "first_call_s": 0.0007565609994344413,
+      "steady_per_call_s": 0.00012657160114031284
     },
     "inversion_setup_jit": {
-      "lower_s": 3.0060683640185744,
-      "compile_s": 11.482677872059867,
-      "first_call_s": 0.11829374195076525,
-      "steady_per_call_s": 0.014148143189959227
-    },
-    "setup_prefix_5": {
-      "lower_s": 0.15137091698125005,
-      "compile_s": 0.8009119618218392,
-      "first_call_s": 0.0050594310741871595,
-      "steady_per_call_s": 0.0010881858877837657
+      "lower_s": 3.602577713987557,
+      "compile_s": 10.261709901009453,
+      "first_call_s": 0.2976402079802938,
+      "steady_per_call_s": 0.01219986920186784
     },
     "setup_prefix_6": {
-      "lower_s": 0.13918555597774684,
-      "compile_s": 2.3367433710955083,
-      "first_call_s": 0.007493217941373587,
-      "steady_per_call_s": 0.0021072220988571644
-    },
-    "setup_prefix_7": {
-      "lower_s": 0.22491983091458678,
-      "compile_s": 2.5982590639032423,
-      "first_call_s": 0.010446862084791064,
-      "steady_per_call_s": 0.002282569115050137
-    },
-    "setup_prefix_8": {
-      "lower_s": 0.2402057049330324,
-      "compile_s": 2.16101787192747,
-      "first_call_s": 0.01585779106244445,
-      "steady_per_call_s": 0.009774237894453109
+      "lower_s": 0.2287568980245851,
+      "compile_s": 2.2726487269974314,
+      "first_call_s": 0.00892693901550956,
+      "steady_per_call_s": 0.0019361587008461356
     },
     "data_vector_jit": {
-      "lower_s": 0.006018045824021101,
-      "compile_s": 0.06489590392448008,
-      "first_call_s": 0.0009562538471072912,
-      "steady_per_call_s": 0.0003741658991202712
+      "lower_s": 0.006341686996165663,
+      "compile_s": 0.05412727000657469,
+      "first_call_s": 0.0013328049972187728,
+      "steady_per_call_s": 0.00028213569894433024
     },
     "curvature_matrix_jit": {
-      "lower_s": 0.011398706119507551,
-      "compile_s": 0.05577281606383622,
-      "first_call_s": 0.005556069081649184,
-      "steady_per_call_s": 0.004826227691955865
+      "lower_s": 0.010798956005601212,
+      "compile_s": 0.05213786297827028,
+      "first_call_s": 0.0041687029879540205,
+      "steady_per_call_s": 0.0037277972005540505
     },
     "regularization_matrix_jit": {
-      "lower_s": 0.15344954491592944,
-      "compile_s": 2.324347289977595,
-      "first_call_s": 0.007174220168963075,
-      "steady_per_call_s": 0.0015397032955661416
-    },
-    "regularization_matrix_assembly_jit": {
-      "lower_s": 0.016725184861570597,
-      "compile_s": 0.052170384908095,
-      "first_call_s": 0.000795725965872407,
-      "steady_per_call_s": 0.00017950301989912986
-    },
-    "setup_prefix_5_vmap16": {
-      "first_call_s": 0.8761977669782937,
-      "batch_per_call_s": 0.001491596596315503,
-      "steady_per_call_s": 9.322478726971894e-05
-    },
-    "setup_prefix_6_vmap16": {
-      "first_call_s": 2.889568251091987,
-      "batch_per_call_s": 0.0022511173970997333,
-      "steady_per_call_s": 0.00014069483731873333
-    },
-    "setup_prefix_7_vmap16": {
-      "first_call_s": 2.471585768973455,
-      "batch_per_call_s": 0.005369059788063168,
-      "steady_per_call_s": 0.000335566236753948
-    },
-    "setup_prefix_8_vmap16": {
-      "first_call_s": 3.073150706011802,
-      "batch_per_call_s": 0.14138881049584598,
-      "steady_per_call_s": 0.008836800655990374
-    },
-    "setup_prefix_11_vmap16": {
-      "first_call_s": 3.0443955389782786,
-      "batch_per_call_s": 0.002883549616672099,
-      "steady_per_call_s": 0.00018022185104200618
-    },
-    "inversion_setup_vmap16": {
-      "first_call_s": 17.188223081175238,
-      "batch_per_call_s": 0.1457370299147442,
-      "steady_per_call_s": 0.009108564369671512
+      "lower_s": 0.267320496001048,
+      "compile_s": 2.6156295349937864,
+      "first_call_s": 0.010114023985806853,
+      "steady_per_call_s": 0.002535062999231741
     },
     "reconstruction_jit": {
-      "lower_s": 0.028627038933336735,
-      "compile_s": 0.4587273020297289,
-      "first_call_s": 0.0385237829759717,
-      "steady_per_call_s": 0.036935892701148984
+      "lower_s": 0.030102946009719744,
+      "compile_s": 0.3345210550178308,
+      "first_call_s": 0.03116737201344222,
+      "steady_per_call_s": 0.02955390819988679
+    },
+    "cholesky_curvature_reg_jit": {
+      "lower_s": 0.01014842398581095,
+      "compile_s": 0.10787055402761325,
+      "first_call_s": 0.001633992011193186,
+      "steady_per_call_s": 0.0010684649023460224
+    },
+    "cholesky_solve_jit": {
+      "lower_s": 0.010793886001920328,
+      "compile_s": 0.07923096200102009,
+      "first_call_s": 0.0018235790194012225,
+      "steady_per_call_s": 0.0013502004003385082
+    },
+    "nnls_pdip_jit": {
+      "lower_s": 0.024042294011451304,
+      "compile_s": 0.3218194310029503,
+      "first_call_s": 0.030683588003739715,
+      "steady_per_call_s": 0.029193526299786755
+    },
+    "nnls_pdip_one_iteration_jit": {
+      "lower_s": 0.023810228012735024,
+      "compile_s": 0.34007971099345013,
+      "first_call_s": 0.0043655089975800365,
+      "steady_per_call_s": 0.0026842983003007247
     },
     "log_evidence_jit": {
-      "lower_s": 0.02055455301888287,
-      "compile_s": 0.23516573407687247,
-      "first_call_s": 0.003354232059791684,
-      "steady_per_call_s": 0.002344023808836937
+      "lower_s": 0.02155874398886226,
+      "compile_s": 0.17969121999340132,
+      "first_call_s": 0.002902476000599563,
+      "steady_per_call_s": 0.0019432097004028037
+    },
+    "log_det_curvature_reg_jit": {
+      "lower_s": 0.012713903997791931,
+      "compile_s": 0.08940074499696493,
+      "first_call_s": 0.0018528890213929117,
+      "steady_per_call_s": 0.000989219598704949
+    },
+    "log_det_regularization_jit": {
+      "lower_s": 0.0005017350194975734,
+      "compile_s": 1.2779986718669534e-05,
+      "first_call_s": 0.0014860119845252484,
+      "steady_per_call_s": 0.0010196052986430003
     }
   },
-  "setup_split": {
-    "Border relocation": 0.0010881858877837657,
-    "Overlay grid + interpolation": 0.0010190362110733986,
-    "Mapping matrix": 0.0001753470161929725,
-    "Blurred mapping matrix (PSF)": 0.007491668779402972
+  "steps_reconstruction_sub_rows": {
+    "Cholesky (F+\u03bbH)": 0.0010684649023460224,
+    "Cholesky solve (unconstrained)": 0.0013502004003385082,
+    "NNLS PDIP (cell-driven, max_iter 50)": 0.029193526299786755,
+    "NNLS PDIP one iteration": 0.0026842983003007247,
+    "Log det Cholesky (F+\u03bbH reduced)": 0.000989219598704949,
+    "Log det Cholesky (H reduced)": 0.0010196052986430003
   },
-  "vmap_batch": 16,
-  "steps_vmap_per_call": {
-    "Inversion setup (steps 4-8 combined)": 0.009108564369671512,
-    "Regularization matrix (H)": 3.9527013723272847e-05
+  "nnls": {
+    "iterations": 20,
+    "converged": true,
+    "ms_per_iteration": 1.4596763149893377,
+    "one_iteration_ms": 2.684298300300725,
+    "max_iter": 50,
+    "solver_tol": "jaxnnls default",
+    "jacobi_preconditioning": true,
+    "reconstruction_max_abs_diff_vs_library": 5.258016244624741e-12,
+    "reconstruction_tolerance": 1e-08,
+    "drift": null
   },
-  "setup_split_vmap": {
-    "Border relocation": 9.322478726971894e-05,
-    "Overlay grid + interpolation": 4.747005004901439e-05,
-    "Mapping matrix": 0.0001948713994352147,
-    "Blurred mapping matrix (PSF)": 0.008501234419236425
+  "log_evidence_terms": {
+    "chi_squared": 22969.35726041024,
+    "regularization_term": 273.4362956628719,
+    "log_det_curvature_reg": 3721.825180624779,
+    "log_det_regularization": 1511.089058880517,
+    "noise_normalization": -79635.26723742482,
+    "log_evidence": 27090.86877980372
   },
-  "regularization_matrix_prefix_vmap_per_call_s": 0.00018022185104200618,
-  "interpolator_prefix_vmap_per_call_s": 0.00014069483731873333,
-  "pinned_expected": 28621.128714095972,
+  "pinned_expected": null,
   "pinned_drift": []
 }

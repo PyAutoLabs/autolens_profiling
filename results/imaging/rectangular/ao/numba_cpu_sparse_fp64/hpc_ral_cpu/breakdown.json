@@ -1,0 +1,315 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "hostname": "euclid-ral-compute-1",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 252,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2a/output/jax_cache/p2a_412936_8",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-10-25T14:35:38Z",
+      "host": "euclid-ral-compute-1",
+      "slurm": {
+        "job_id": "412936",
+        "array_job_id": "412923",
+        "array_task_id": "8"
+      },
+      "loadavg_at_import": [
+        7.79,
+        6.88,
+        6.62
+      ],
+      "loadavg_at_write": [
+        13.93,
+        15.74,
+        15.77
+      ],
+      "profiling_revision": "86c287d1fc90f7595b2106dbb6b55102c4d7c800",
+      "library_revisions": {
+        "autolens_profiling": "86c287d1fc90f7595b2106dbb6b55102c4d7c800",
+        "PyAutoNerves": "f116f70077e442db19a2a152f5ee78d57294c504",
+        "PyAutoFit": "d3a7721294652f81ec726b92931ab610ed27e3ac",
+        "PyAutoArray": "d99ec2b30224ac021e39628b9904d01c44f33b29",
+        "PyAutoGalaxy": "e00b5e7d554d6958a6c8821edef6afdf01188e6d",
+        "PyAutoLens": "f791ac77d136d664346fff21cc36079f8f9b1196"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.10.2",
+        "jaxlib": "0.10.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.65.1",
+        "nufftax": "0.6.1"
+      }
+    }
+  },
+  "instrument": "ao",
+  "configuration": {
+    "preset": "hst_rect_adapt_standard_ao",
+    "variant": "production",
+    "provenance": "subhalo_validation/scripts/pipelines/rectangular_adapt.py (rect_adapt source_pix[2], job 342311): RectangularBilinearAdaptImage shape (32, 32) (MESH_PIXELS_YX :38), regularization Adapt; the rest of the stage (adapt S/N cap, over-sampling, MGE, threads) as hst_source_pix_2 \u2014 production data (human ruling 2026-10-24): subtracted S/N adapt image, uncapped over-sampling cut; RectangularBilinearAdaptImage mesh; no ao production reference: borrows the hst preset 'hst_rect_adapt' with the ao dataset; standard size (human ruling 2026-10-23): rectangular 32x32 -> 35x35",
+    "mesh_kind": "rectangular",
+    "adapt_snr_cap": 3.0,
+    "over_sample_size_lp_rule": {
+      "sub_size_list": [
+        4,
+        2,
+        2
+      ],
+      "radial_list": [
+        0.1,
+        0.3
+      ],
+      "centre": [
+        0.0,
+        0.0
+      ]
+    },
+    "over_sample_size_pixelization_rule": {
+      "source_snr_cut": 3.0,
+      "sub_size_above": 4,
+      "sub_size_below": 2
+    },
+    "regularization": {
+      "scheme": "adapt",
+      "free": false,
+      "coefficient": 1.0
+    },
+    "positions_penalty": null,
+    "lens_light": "mge_60_linear_2_basis",
+    "mge_total_gaussians": 30,
+    "mge_gaussian_per_basis": 2,
+    "sequence": {
+      "kind": "iid",
+      "unit_low": 0.4,
+      "unit_high": 0.6,
+      "seed": 235
+    },
+    "memo": "off",
+    "size_override": "production data (human ruling 2026-10-24): subtracted S/N adapt image, uncapped over-sampling cut; RectangularBilinearAdaptImage mesh; no ao production reference: borrows the hst preset 'hst_rect_adapt' with the ao dataset; standard size (human ruling 2026-10-23): rectangular 32x32 -> 35x35",
+    "mesh": {
+      "kind": "rectangular",
+      "shape": [
+        35,
+        35
+      ],
+      "source_pixels": 1225,
+      "class": "RectangularBilinearAdaptImage",
+      "free_weights": {
+        "weight_power": {
+          "type": "Uniform",
+          "lower": 0.0,
+          "upper": 10.0
+        },
+        "weight_floor": {
+          "type": "LogUniform",
+          "lower": 1e-05,
+          "upper": 1.0
+        }
+      }
+    },
+    "production_data": {
+      "enabled": true,
+      "lens_light_source": "truth"
+    },
+    "production_source": {
+      "adapt_image": "PyAutoGalaxy@7472211 autogalaxy/analysis/adapt_images/adapt_images.py:138 galaxy_name_image_dict_via_result_from: the source's subtracted S/N map (data minus the other galaxies' model images, over the noise map), floored at adapt_minimum_percent (0.01, subhalo_validation config/general.yaml:28) x max",
+      "mesh_and_regularization_adapt_image": "subhalo_validation scripts/pipelines/spec.py:9-36 capped_galaxy_name_image_dict_from (S/N capped at 3.0); used by delaunay_adapt_split.py:123,:165 and rectangular_adapt.py:109",
+      "over_sampling": "subhalo_validation scripts/imaging.py:213-255 apply_adaptive_pixelization_over_sampling: sub-size 4 where the UNCAPPED source S/N > 3.0, else 2; light-profile bins :175-184",
+      "rectangular_mesh": "subhalo_validation scripts/pipelines/rectangular_adapt.py:74-96 (source_pix[2]): af.Model(al.mesh.RectangularBilinearAdaptImage, shape) with al.reg.Adapt; weight priors config/priors/mesh/rectangular.yaml:43-61",
+      "model_stand_in": "no previous-stage fit exists in a profiling cell: the dataset's truth tracer (tracer.json) stands in for the maximum-likelihood model whose lens light is subtracted"
+    },
+    "pixel_scale_arcsec": 0.01,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 384753,
+    "over_sampled_pixels": 1542816,
+    "mesh_shape": [
+      35,
+      35
+    ],
+    "rect_mesh": "bilinear",
+    "source_pixels": 1225,
+    "source_pixels_requested": 1225,
+    "standard_size": true,
+    "production_data_record": {
+      "over_sampling_preset": "hst_rect_adapt_standard_ao",
+      "over_sample_size_lp_rule": {
+        "sub_size_list": [
+          4,
+          2,
+          2
+        ],
+        "radial_list": [
+          0.1,
+          0.3
+        ],
+        "centre": [
+          0.0,
+          0.0
+        ]
+      },
+      "over_sample_size_pixelization_rule": {
+        "source_snr_cut": 3.0,
+        "sub_size_above": 4,
+        "sub_size_below": 2,
+        "threshold_map": "uncapped subtracted S/N (production)",
+        "pixels_above": 47431,
+        "pixels_below": 337322
+      },
+      "adapt_image": "subtracted S/N (truth tracer), floored",
+      "lens_light_source": "truth",
+      "adapt_minimum_percent": 0.01,
+      "mesh_adapt_snr_cap": 3.0
+    },
+    "inversion_path": "sparse_numba",
+    "use_jax": false,
+    "n_instances": 20,
+    "thread_env": {
+      "n_threads": 1,
+      "vars": [
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+        "NUMEXPR_NUM_THREADS"
+      ],
+      "set_to": "1",
+      "preexisting": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1"
+      },
+      "overridden": {},
+      "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+    },
+    "memo_provenance": {
+      "requested": "off",
+      "settings_nnls_warm_start_memo": false,
+      "env_AUTOARRAY_NNLS_WARM_START": "0",
+      "env_before": null,
+      "note": "Both gates are set for memo=off: the Settings flag and the AUTOARRAY_NNLS_WARM_START env kill-switch (autoarray/inversion/inversion/nnls_memo.py:63). settings_nnls_warm_start_memo is read back off the constructed Settings, so it records what took effect. The library default is true and both production projects leave it unset."
+    },
+    "omp_num_threads": "1"
+  },
+  "steps": {
+    "FitImaging construct": 0.00012706086999969557,
+    "Blurred image (FFT convolve)": 0.15555231875441677,
+    "Profile subtracted image": 0.000991840242932085,
+    "Inversion build (trace+mesh+mapper)": 0.7640862818716414,
+    "PSF-weighted data [numba]": 0.18700942743998894,
+    "MGE: image_2d_from(grid) x60 [numpy]": 1.4886886964977748,
+    "MGE: image_2d_from(blurring_grid) x60 [numpy]": 0.05793469131458551,
+    "MGE: batched PSF convolution [real-space np]": 0.7788998856885883,
+    "MGE operated mapping matrix [residual: dict assembly]": 0.14798870231606998,
+    "Mapper sparse triplets": 0.7476414140619454,
+    "Data vector D [numba]": 0.2870435871882364,
+    "F: mapper\u00d7mapper block [sparse-op]": 4.870388052684575,
+    "F: mapper\u00d7linear-func block [FFT conv + scatter]": 0.9004130030643864,
+    "F: linear-func\u00d7linear-func block [BLAS]": 0.09671374218487472,
+    "Curvature matrix F [residual: mirror + diag-add]": -0.006679683685433702,
+    "Regularization matrix H": 0.02021812594102812,
+    "F + H": 0.0012444223102647811,
+    "Reconstruction solve (BLAS)": 0.2373659360619058,
+    "Mapped reconstruction [numba+FFT]": 0.08473746988056519,
+    "Model data + chi^2": 0.08546069875228568,
+    "log det (F+H) [Cholesky]": 0.025199274999977206,
+    "log det H [Cholesky]": 0.011697484498654376,
+    "Regularization term s'Hs": 0.0005019769378122874,
+    "Log evidence (figure of merit)": 0.03652525643519766
+  },
+  "total_step_by_step": 10.979749666312273,
+  "curvature_matrix_f_total_s": 5.8608351142484025,
+  "mge_operated_mapping_matrix_total_s": 2.4735119758170185,
+  "mge_operated_mapping_matrix_split_note": "The four 'MGE: ...' / 'MGE operated mapping matrix' rows sum to mge_operated_mapping_matrix_total_s, the raw un-split cost of the inversion.linear_func_operated_mapping_matrix_dict step. The three piece rows re-run, uncached, the three parts of LightProfileLinearObjFuncList.operated_mapping_matrix_override (60 profile images on the data grid, 60 on the blurring grid, one batched real-space PSF convolution); the residual row is the step minus those three. mge_split_reproduces_step records that the three pieces reconstruct the step's output bit-identically. PyAutoArray#507 step 0.",
+  "mge_split_reproduces_step": true,
+  "mge_blurring_stack_path": "shared_geometry",
+  "geometry": {
+    "psf_shape_native": [
+      21,
+      21
+    ],
+    "image_pixels_masked": 384753,
+    "psf_precision_pairs_stored": 314352701,
+    "psf_precision_lengths_sum": 314352701,
+    "psf_precision_lengths_mean": 817.0246911655009,
+    "psf_precision_lengths_max": 841,
+    "mappers": [
+      {
+        "params": 1225,
+        "data_to_pix_unique_shape": [
+          384753,
+          64
+        ],
+        "pix_lengths_mean": 4.364696311659688,
+        "pix_lengths_max": 22,
+        "pix_lengths_sum": 1679330,
+        "mapper_mapper_inner_ops": 6119219294,
+        "two_stage_stage_1_scatter_ops": 1374785450,
+        "two_stage_stage_2_axpy_ops": 2057179250,
+        "two_stage_clear_ops": 471322425,
+        "two_stage_total_ops": 3903287125
+      }
+    ]
+  },
+  "curvature_matrix_f_split_note": "The four 'F: ...' / 'Curvature matrix F' rows sum to curvature_matrix_f_total_s, the raw un-split cost of the inversion.curvature_matrix step. The three block rows are direct measurements of the (uncached) per-block helpers in imaging_numba/sparse.py; the 'Curvature matrix F [residual: ...]' row is t(curvature_matrix) minus those three, i.e. the global mirror, the no-regularization diagonal add and assembly overhead, and it carries the combined noise of the four timings. PyAutoArray#505 step 0.",
+  "direct_log_likelihood_function_per_call": 10.43034435500158,
+  "protocol": "instance 0 discarded (numba compile / cold-cache hazard); the next n_cold evaluations are cold evals comparable to PyAutoFit's logged 'Log Likelihood Function Evaluation Time'; the rest are warm iid evaluations.",
+  "warmup_incl_numba_compile_s": 28.39957542598131,
+  "cold_eval_s": [
+    10.627817469998263,
+    10.51241777400719,
+    10.348107309022453
+  ],
+  "cold_eval_median_s": 10.51241777400719,
+  "warm_iid_median_s": 10.43034435500158,
+  "warm_iid_mean_s": 10.43147252818926,
+  "n_warm": 16,
+  "n_cold": 3,
+  "witness": {
+    "verdict": "not_applicable",
+    "instrument": "ao",
+    "host_class": "hpc_ral_cpu_fp64",
+    "measured_cold_eval_median_s": 10.51241777400719,
+    "reason": "size_override: production data (human ruling 2026-10-24): subtracted S/N adapt image, uncapped over-sampling cut; RectangularBilinearAdaptImage mesh; no ao production reference: borrows the hst preset 'hst_rect_adapt' with the ao dataset; standard size (human ruling 2026-10-23): rectangular 32x32 -> 35x35"
+  },
+  "positions_penalty_in_steps": false,
+  "positions_penalty_note": "The positions penalty (Euclid preset only) is an analysis-level term: it is inside direct_log_likelihood_function_per_call and the cold/warm numbers, but NOT inside the per-step decomposition, which times FitImaging properties.",
+  "decomposition_warmup_incl_numba_compile_s": 28.39957542598131,
+  "log_likelihood": 659023.65203159,
+  "log_likelihood_sequence": [
+    579354.4256568635,
+    320323.5066171676,
+    634324.8211847423,
+    -12084.595832668245,
+    456323.2572848031,
+    -62572.15515960357,
+    716494.1967641129,
+    544462.0874319405,
+    556051.4981874274,
+    462490.3659603768,
+    371660.6262157677,
+    607669.7978003488,
+    678517.3695457313,
+    724422.5803584585,
+    165951.466359057,
+    638109.8113479243,
+    555764.3656990447,
+    485520.9731103192,
+    543002.5100847755,
+    659023.65203159
+  ],
+  "pinned_expected": null,
+  "pinned_drift": []
+}

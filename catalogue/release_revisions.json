@@ -1,0 +1,14 @@
+{
+ "schema": "release-revisions",
+ "version": 1,
+ "note": "Each released tag's library SHAs (git rev-parse <tag>^{commit}). A row run from a library source checkout stamps the last built autolens_version (2026.8.17.1 at every later tag); when its device.provenance.library_revisions equal every SHA of one tag here, build_catalogue.py publishes that tag as the record's release_pin and library_version and says so in identity.software.release_pin_basis. Add a tag when a campaign measures on it.",
+ "releases": {
+  "2026.10.23.1": {
+   "PyAutoNerves": "f116f70077e442db19a2a152f5ee78d57294c504",
+   "PyAutoFit": "d3a7721294652f81ec726b92931ab610ed27e3ac",
+   "PyAutoArray": "d99ec2b30224ac021e39628b9904d01c44f33b29",
+   "PyAutoGalaxy": "e00b5e7d554d6958a6c8821edef6afdf01188e6d",
+   "PyAutoLens": "f791ac77d136d664346fff21cc36079f8f9b1196"
+  }
+ }
+}

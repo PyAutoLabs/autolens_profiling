@@ -42,10 +42,25 @@ VERSION = 1
 LEGACY_SECTIONS = ("runtime", "breakdown", "simulators", "lens")
 
 
+def followed(root: Path, entry: dict) -> str:
+    """Where a day-zero file lives now: its mapped path, or, once a newer row took that cell
+    slot, the ``history/<release_pin>_<date>/`` copy with the same content (sha256)."""
+    new = entry["new"]
+    sha = entry.get("sha256")
+    if not sha or not (root / new).is_file() or mm.sha256(root, new) == sha:
+        return new
+    target = PurePosixPath(new)
+    for moved in sorted((root / target.parent / "history").glob(f"*/{target.name}")):
+        rel = moved.relative_to(root).as_posix()
+        if mm.sha256(root, rel) == sha:
+            return rel
+    return new
+
+
 def legacy_files(root: Path) -> list[tuple[str, str]]:
     """``(old path, current path)`` of every result JSON the day-zero map knows, by old path."""
     doc = json.loads((root / mm.MAP_PATH).read_text())
-    pairs = {e["old"]: e["new"] for e in doc.get("entries", [])}
+    pairs = {e["old"]: followed(root, e) for e in doc.get("entries", [])}
     pairs.update({u["old"]: u["old"] for u in doc.get("unresolved", [])})
     return sorted(
         (old, new) for old, new in pairs.items() if old.endswith(".json") and (root / new).is_file()

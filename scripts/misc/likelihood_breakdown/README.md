@@ -20,29 +20,73 @@ For *how long the likelihood actually takes* on production hardware — i.e. a s
 | `datacube/delaunay` | alma_high | _not recorded_ | hpc_a100_mp | dense (mapping) | — | v2026.7.6.649 |
 | `datacube/inversion` | alma_high | _not recorded_ | hpc_a100_fp64 | dense (mapping) | — | v2026.7.6.649 |
 | `datacube/inversion` | alma_high | _not recorded_ | hpc_a100_mp | dense (mapping) | — | v2026.7.6.649 |
-| `imaging/delaunay` | hst | `jax_gpu_dense_fp64` | hpc_a100 | dense (mapping) | 67.5 ms | v2026.8.17.1 |
+| `imaging/delaunay` | ao | `jax_cpu_sparse_fp64` | hpc_ral_cpu | sparse (w-tilde) | 54.92 s | v2026.8.17.1 |
+| `imaging/delaunay` | ao | `numba_cpu_sparse_fp64` | hpc_ral_cpu | sparse (numba) | 10.52 s | v2026.8.17.1 |
+| `imaging/delaunay` | ao | `jax_cpu_sparse_fp64` | hpc_a100 | sparse (w-tilde) | 57.52 s | v2026.8.17.1 |
+| `imaging/delaunay` | ao | `jax_gpu_sparse_fp64` | hpc_a100 | sparse (w-tilde) | 900.4 ms | v2026.8.17.1 |
+| `imaging/delaunay` | euclid | `jax_cpu_sparse_fp64` | hpc_ral_cpu | sparse (w-tilde) | 1.37 s | v2026.8.17.1 |
+| `imaging/delaunay` | euclid | `numba_cpu_sparse_fp64` | hpc_ral_cpu | sparse (numba) | 736.7 ms | v2026.8.17.1 |
+| `imaging/delaunay` | euclid | `jax_cpu_sparse_fp64` | hpc_a100 | sparse (w-tilde) | 1.19 s | v2026.8.17.1 |
+| `imaging/delaunay` | euclid | `jax_gpu_dense_fp64` | hpc_a100 | dense (mapping) | 47.3 ms | v2026.8.17.1 |
+| `imaging/delaunay` | euclid | `jax_gpu_sparse_fp64` | hpc_a100 | sparse (w-tilde) | 51.0 ms | v2026.8.17.1 |
+| `imaging/delaunay` | hst | `jax_cpu_sparse_fp64` | hpc_ral_cpu | sparse (w-tilde) | 2.34 s | v2026.8.17.1 |
+| `imaging/delaunay` | hst | `numba_cpu_sparse_fp64` | hpc_ral_cpu | sparse (numba) | 1.22 s | v2026.8.17.1 |
+| `imaging/delaunay` | hst | `jax_cpu_sparse_fp64` | hpc_a100 | sparse (w-tilde) | 2.65 s | v2026.8.17.1 |
+| `imaging/delaunay` | hst | `jax_gpu_dense_fp64` | hpc_a100 | dense (mapping) | 64.5 ms | v2026.8.17.1 |
 | `imaging/delaunay` | hst | `jax_gpu_dense_mixed` | hpc_a100 | dense (mapping) | 96.8 ms | v2026.7.6.649 |
-| `imaging/delaunay` | hst | `jax_gpu_sparse_fp64` | hpc_a100 | sparse (w-tilde) | 73.7 ms | v2026.8.17.1 |
+| `imaging/delaunay` | hst | `jax_gpu_sparse_fp64` | hpc_a100 | sparse (w-tilde) | 80.4 ms | v2026.8.17.1 |
 | `imaging/delaunay` | hst | `jax_gpu_sparse_mixed` | hpc_a100 | sparse (w-tilde) | 95.5 ms | v2026.7.6.649 |
 | `imaging/delaunay` | hst | _not recorded_ | local_cpu_fp64 | dense (mapping) | 3.34 s | v2026.8.17.1 (archived) |
 | `imaging/delaunay` | hst | _not recorded_ | local_cpu_fp64 | sparse (w-tilde) | 8.81 s | v2026.7.6.649 (archived) |
+| `imaging/delaunay` | jwst | `jax_cpu_sparse_fp64` | hpc_ral_cpu | sparse (w-tilde) | 4.74 s | v2026.8.17.1 |
+| `imaging/delaunay` | jwst | `numba_cpu_sparse_fp64` | hpc_ral_cpu | sparse (numba) | 2.05 s | v2026.8.17.1 |
+| `imaging/delaunay` | jwst | `jax_cpu_sparse_fp64` | hpc_a100 | sparse (w-tilde) | 5.05 s | v2026.8.17.1 |
+| `imaging/delaunay` | jwst | `jax_gpu_dense_fp64` | hpc_a100 | dense (mapping) | 89.9 ms | v2026.8.17.1 |
+| `imaging/delaunay` | jwst | `jax_gpu_sparse_fp64` | hpc_a100 | sparse (w-tilde) | 127.4 ms | v2026.8.17.1 |
 | `imaging/delaunay/light_fixed` | hst | `jax_gpu_dense_fp64` | hpc_a100 | dense (mapping) | — | v2026.8.17.1 |
-| `imaging/delaunay_nn` | hst | `jax_gpu_dense_fp64` | hpc_a100 | dense (mapping) | 74.9 ms | v2026.8.17.1 |
-| `imaging/delaunay_nn` | hst | `jax_gpu_sparse_fp64` | hpc_a100 | sparse (w-tilde) | 84.7 ms | v2026.8.17.1 |
+| `imaging/delaunay_nn` | hst | `jax_cpu_sparse_fp64` | hpc_ral_cpu | sparse (w-tilde) | 6.98 s | v2026.8.17.1 |
+| `imaging/delaunay_nn` | hst | `numba_cpu_sparse_fp64` | hpc_ral_cpu | sparse (numba) | 1.46 s | v2026.8.17.1 |
+| `imaging/delaunay_nn` | hst | `jax_cpu_sparse_fp64` | hpc_a100 | sparse (w-tilde) | 6.23 s | v2026.8.17.1 |
+| `imaging/delaunay_nn` | hst | `jax_gpu_dense_fp64` | hpc_a100 | dense (mapping) | 90.2 ms | v2026.8.17.1 |
+| `imaging/delaunay_nn` | hst | `jax_gpu_sparse_fp64` | hpc_a100 | sparse (w-tilde) | 1.20 s | v2026.8.17.1 |
 | `imaging/delaunay_nn` | hst | _not recorded_ | local_cpu_fp64 | dense (mapping) | 4.49 s | v2026.8.17.1 (archived) |
 | `imaging/delaunay_nn/light_fixed` | hst | `jax_gpu_dense_fp64` | hpc_a100 | dense (mapping) | — | v2026.8.17.1 |
 | `imaging/delaunay_numba` | euclid | _not recorded_ | local_cpu_fp64 | sparse (numba) | 255.0 ms | v2026.8.17.1 (archived) |
 | `imaging/delaunay_numba` | hst | _not recorded_ | local_cpu_fp64 | sparse (numba) | 2.04 s | v2026.8.17.1 (archived) |
-| `imaging/mge` | hst | `jax_gpu_dense_fp64` | hpc_a100 | dense (mapping) | 7.8 ms | v2026.7.6.649 |
+| `imaging/mge` | ao | `jax_cpu_dense_fp64` | hpc_ral_cpu | dense (mapping) | 776.0 ms | v2026.8.17.1 |
+| `imaging/mge` | ao | `jax_gpu_dense_fp64` | hpc_a100 | dense (mapping) | 23.2 ms | v2026.8.17.1 |
+| `imaging/mge` | euclid | `jax_cpu_dense_fp64` | hpc_ral_cpu | dense (mapping) | 16.4 ms | v2026.8.17.1 |
+| `imaging/mge` | euclid | `jax_gpu_dense_fp64` | hpc_a100 | dense (mapping) | 8.6 ms | v2026.8.17.1 |
+| `imaging/mge` | hst | `jax_cpu_dense_fp64` | hpc_ral_cpu | dense (mapping) | 33.3 ms | v2026.8.17.1 |
+| `imaging/mge` | hst | `jax_gpu_dense_fp64` | hpc_a100 | dense (mapping) | 9.0 ms | v2026.8.17.1 |
 | `imaging/mge` | hst | _not recorded_ | local_cpu_fp64 | dense (mapping) | 40.3 ms | v2026.8.17.1 (archived) |
+| `imaging/mge` | jwst | `jax_cpu_dense_fp64` | hpc_ral_cpu | dense (mapping) | 66.5 ms | v2026.8.17.1 |
+| `imaging/mge` | jwst | `jax_gpu_dense_fp64` | hpc_a100 | dense (mapping) | 10.5 ms | v2026.8.17.1 |
 | `imaging/pixelization` | hst | _not recorded_ | local_cpu_fp64 | dense (mapping) | 3.40 s | v2026.8.17.1 (archived) |
 | `imaging/pixelization` | hst | _not recorded_ | local_cpu_fp64 | sparse (w-tilde) | 10.17 s | v2026.7.6.649 (archived) |
 | `imaging/pixelization_numba` | euclid | _not recorded_ | local_cpu_fp64 | sparse (numba) | 611.9 ms | v2026.8.17.1 (archived) |
 | `imaging/pixelization_numba` | hst | _not recorded_ | local_cpu_fp64 | sparse (numba) | 1.30 s | v2026.8.17.1 (archived) |
-| `imaging/rectangular` | hst | `jax_gpu_dense_fp64` | hpc_a100 | dense (mapping) | 60.0 ms | v2026.8.17.1 |
+| `imaging/rectangular` | ao | `jax_cpu_sparse_fp64` | hpc_ral_cpu | sparse (w-tilde) | 52.36 s | v2026.8.17.1 |
+| `imaging/rectangular` | ao | `numba_cpu_sparse_fp64` | hpc_ral_cpu | sparse (numba) | 10.98 s | v2026.8.17.1 |
+| `imaging/rectangular` | ao | `jax_cpu_sparse_fp64` | hpc_a100 | sparse (w-tilde) | 51.62 s | v2026.8.17.1 |
+| `imaging/rectangular` | ao | `jax_gpu_sparse_fp64` | hpc_a100 | sparse (w-tilde) | 988.4 ms | v2026.8.17.1 |
+| `imaging/rectangular` | euclid | `jax_cpu_sparse_fp64` | hpc_ral_cpu | sparse (w-tilde) | 935.7 ms | v2026.8.17.1 |
+| `imaging/rectangular` | euclid | `numba_cpu_sparse_fp64` | hpc_ral_cpu | sparse (numba) | 408.0 ms | v2026.8.17.1 |
+| `imaging/rectangular` | euclid | `jax_cpu_sparse_fp64` | hpc_a100 | sparse (w-tilde) | 961.7 ms | v2026.8.17.1 |
+| `imaging/rectangular` | euclid | `jax_gpu_dense_fp64` | hpc_a100 | dense (mapping) | 33.8 ms | v2026.8.17.1 |
+| `imaging/rectangular` | euclid | `jax_gpu_sparse_fp64` | hpc_a100 | sparse (w-tilde) | 43.2 ms | v2026.8.17.1 |
+| `imaging/rectangular` | hst | `jax_cpu_sparse_fp64` | hpc_ral_cpu | sparse (w-tilde) | 2.31 s | v2026.8.17.1 |
+| `imaging/rectangular` | hst | `numba_cpu_sparse_fp64` | hpc_ral_cpu | sparse (numba) | 739.5 ms | v2026.8.17.1 |
+| `imaging/rectangular` | hst | `jax_cpu_sparse_fp64` | hpc_a100 | sparse (w-tilde) | 2.20 s | v2026.8.17.1 |
+| `imaging/rectangular` | hst | `jax_gpu_dense_fp64` | hpc_a100 | dense (mapping) | 49.7 ms | v2026.8.17.1 |
 | `imaging/rectangular` | hst | `jax_gpu_dense_mixed` | hpc_a100 | dense (mapping) | 56.4 ms | v2026.7.6.649 |
-| `imaging/rectangular` | hst | `jax_gpu_sparse_fp64` | hpc_a100 | sparse (w-tilde) | 70.8 ms | v2026.8.17.1 |
+| `imaging/rectangular` | hst | `jax_gpu_sparse_fp64` | hpc_a100 | sparse (w-tilde) | 70.4 ms | v2026.8.17.1 |
 | `imaging/rectangular` | hst | `jax_gpu_sparse_mixed` | hpc_a100 | sparse (w-tilde) | 55.5 ms | v2026.7.6.649 |
+| `imaging/rectangular` | jwst | `jax_cpu_sparse_fp64` | hpc_ral_cpu | sparse (w-tilde) | 4.17 s | v2026.8.17.1 |
+| `imaging/rectangular` | jwst | `numba_cpu_sparse_fp64` | hpc_ral_cpu | sparse (numba) | 1.76 s | v2026.8.17.1 |
+| `imaging/rectangular` | jwst | `jax_cpu_sparse_fp64` | hpc_a100 | sparse (w-tilde) | 4.35 s | v2026.8.17.1 |
+| `imaging/rectangular` | jwst | `jax_gpu_dense_fp64` | hpc_a100 | dense (mapping) | 75.4 ms | v2026.8.17.1 |
+| `imaging/rectangular` | jwst | `jax_gpu_sparse_fp64` | hpc_a100 | sparse (w-tilde) | 125.6 ms | v2026.8.17.1 |
 | `imaging/rectangular/light_fixed` | hst | `jax_gpu_dense_fp64` | hpc_a100 | dense (mapping) | — | v2026.8.17.1 |
 | `interferometer/delaunay` | alma | `jax_cpu_sparse_fp64_wtilde` | local_laptop | sparse (w-tilde) | 4.18 s | v2026.8.17.1 |
 | `interferometer/delaunay` | alma | `jax_cpu_sparse_fp64_wtilde` | hpc_ral_cpu | sparse (w-tilde) | 2.88 s | v2026.8.17.1 |

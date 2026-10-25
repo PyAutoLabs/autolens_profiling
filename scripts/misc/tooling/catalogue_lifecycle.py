@@ -104,6 +104,36 @@ HEADLINES["gradient"] = HEADLINES["runtime"]
 FILE_ORDER = {"runtime": 0, "breakdown": 1, "gradient": 2, "parity": 3}
 
 
+#: Released tags and their library SHAs: {tag: {repo: sha}}. A library source checkout reports
+#: the last *built* ``__version__`` (2026.8.17.1 at every later tag), so a row run from a tag
+#: checkout stamps a stale ``autolens_version``; its ``library_revisions`` name the release.
+RELEASE_REVISIONS = "catalogue/release_revisions.json"
+
+
+def release_revisions(root) -> dict:
+    """``{tag: {repo: sha}}`` from ``catalogue/release_revisions.json`` ({} when absent)."""
+    path = Path(root) / RELEASE_REVISIONS
+    if not path.is_file():
+        return {}
+    doc = json.loads(path.read_text())
+    if doc.get("schema") != "release-revisions" or not isinstance(doc.get("releases"), dict):
+        raise ValueError(f"Unsupported {RELEASE_REVISIONS}")
+    return doc["releases"]
+
+
+def release_from_revisions(payload, releases) -> str | None:
+    """The tag whose every library SHA the row's ``library_revisions`` records, else None."""
+    device = payload.get("device") if isinstance(payload.get("device"), dict) else {}
+    provenance = device.get("provenance") if isinstance(device.get("provenance"), dict) else {}
+    revisions = provenance.get("library_revisions")
+    if not isinstance(revisions, dict):
+        return None
+    for tag, shas in sorted((releases or {}).items()):
+        if shas and all(revisions.get(repo) == sha for repo, sha in shas.items()):
+            return tag
+    return None
+
+
 def mirrored(path: str) -> dict | None:
     """The cell facts of a repo-relative path in the mirrored tree, else None."""
     parts = PurePosixPath(path).parts
