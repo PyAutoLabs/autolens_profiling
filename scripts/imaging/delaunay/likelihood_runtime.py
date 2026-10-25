@@ -125,6 +125,7 @@ from _profile_cli import (
     render_fit_png,
     requested_source_pixels,
     resolve_output_paths,
+    resources_dict,
     write_parity_json,
 )
 
@@ -588,6 +589,7 @@ if _cli.use_sparse_operator:
 _early_summary = {
     "autolens_version": al.__version__,
     "device": device_info_dict(),
+    "resources": resources_dict("jax"),
     "instrument": instrument,
     "configuration": {
         "pixel_scale_arcsec": pixel_scale,
@@ -796,6 +798,7 @@ print("=" * 70)
 likelihood_summary = {
     "autolens_version": al_version,
     "device": device_info_dict(),
+    "resources": resources_dict("jax"),
     "instrument": instrument,
     "configuration": {
         "pixel_scale_arcsec": pixel_scale,

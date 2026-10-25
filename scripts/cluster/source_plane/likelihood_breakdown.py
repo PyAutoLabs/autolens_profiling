@@ -119,6 +119,7 @@ from _profile_cli import (  # noqa: E402
     parse_profile_cli,
     render_fit_png,
     resolve_output_paths,
+    resources_dict,
 )
 
 _cli = parse_profile_cli()
@@ -543,6 +544,7 @@ print("=" * 70)
 breakdown_summary = {
     "autolens_version": al_version,
     "device": device_info_dict(),
+    "resources": resources_dict("jax"),
     "configuration": {
         "n_systems": len(dataset_list),
         "n_images_total": int(sum(len(p) for p in positions_list)),

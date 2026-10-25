@@ -1,0 +1,39 @@
+{
+ "schema": "reference-hosts",
+ "version": 1,
+ "note": "Declared hosts the catalogue projects per-node likelihood throughput onto (build_catalogue.py, projected_node_throughput). Values from sinfo on RAL, 2026-10-25. A projection is basis projected: workers per node capped by cores and by memory, times the declared parallel efficiency, over the measured per-call time. It is not a measurement; phase 4 of the likelihood-lifecycle epic measures the parallel efficiency.",
+ "measured_on": "2026-10-25",
+ "hosts": {
+  "ral_cpu_node": {
+   "label": "RAL ral node (smallest)",
+   "cores": 236,
+   "mem_gb": 921,
+   "gpus": 0,
+   "host_class": "hpc_ral_cpu",
+   "source": "sinfo 2026-10-25: ral nodes have 236-252 cores and 921-976 GB; the smallest is declared"
+  },
+  "ral_gpu_node": {
+   "label": "RAL gpu node (4x A100 80GB)",
+   "cores": 124,
+   "mem_gb": 885,
+   "gpus": 4,
+   "gpu_model": "NVIDIA A100 80GB PCIe",
+   "host_class": "hpc_a100",
+   "source": "sinfo 2026-10-25"
+  },
+  "laptop": {
+   "label": "Laptop (illustrative)",
+   "cores": 8,
+   "mem_gb": 32,
+   "gpus": 0,
+   "host_class": "local_laptop",
+   "source": "illustrative, human may revise"
+  }
+ },
+ "parallel_efficiency": {
+  "value": 1.0,
+  "kind": "upper bound",
+  "source": "declared, unmeasured (phase 4 measures)"
+ },
+ "not_modelled": "The sampler's batch ceiling: Nautilus evaluates at most n_batch points in parallel per batch, so a node cannot use more workers than n_batch. Shared memory bandwidth and caches between workers are also not modelled; the declared parallel efficiency stands in for them."
+}

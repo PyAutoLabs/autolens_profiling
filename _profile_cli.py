@@ -741,6 +741,83 @@ def device_info_dict() -> dict:
     return info
 
 
+#: ``resources.cpus_per_eval`` per engine: what one likelihood evaluation occupies, the
+#: input to the catalogue's projected per-node throughput (``catalogue/reference_hosts.json``).
+RESOURCES_SCHEMA = 1
+
+
+def _nproc_env() -> int | None:
+    """``NPROC`` (sizes XLA's CPU intra-op pool; the submits set it to SLURM_CPUS_PER_TASK)."""
+    try:
+        value = int(os.environ.get("NPROC", ""))
+    except ValueError:
+        return None
+    return value if value > 0 else None
+
+
+def peak_rss_gb() -> float | None:
+    """This process's peak resident set so far, in GB (1e9 bytes); None where unavailable.
+
+    ``resource.getrusage(RUSAGE_SELF).ru_maxrss`` is KiB on Linux (bytes on macOS); child
+    processes are excluded. Never raises: a missing measurement must not lose the row.
+    """
+    try:
+        import resource
+
+        kib = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    except Exception:  # noqa: BLE001 — see the docstring
+        return None
+    scale = 1 if sys.platform == "darwin" else 1024
+    return round(kib * scale / 1e9, 6)
+
+
+def resources_dict(engine: str) -> dict:
+    """The ``resources`` block of a runtime / breakdown row (likelihood-lifecycle phase 2x).
+
+    ``engine`` is ``"numba"`` or ``"jax"``. Records what one likelihood evaluation occupies,
+    so the catalogue can project how many run side by side on a node
+    (``build_catalogue.py``, ``catalogue/reference_hosts.json``):
+
+    - ``cpus_per_eval``: numba 1 (BLAS and numba threads pinned to 1; one serial process per
+      core under Nautilus multiprocessing); JAX on CPU ``NPROC`` (XLA's intra-op pool); JAX on
+      GPU ``NPROC`` host threads beside ``devices_per_eval`` 1.
+    - ``peak_rss_gb``: :func:`peak_rss_gb` at the row write (in-process ``ru_maxrss``), so a
+      leg inside a multi-leg job gets its own peak without sacct.
+
+    Call it when the row is built, after the timed regions. Never raises.
+    """
+    device = "cpu"
+    if engine == "jax":
+        try:
+            import jax
+
+            device = "gpu" if jax.default_backend() == "gpu" else "cpu"
+        except Exception:  # noqa: BLE001 — an unknown backend is recorded as cpu
+            device = "cpu"
+    nproc = _nproc_env()
+    if engine == "numba":
+        cpus, basis = 1, "numba: one serial evaluation, numba and BLAS threads pinned to 1"
+    elif device == "gpu":
+        cpus, basis = nproc, "jax gpu: one device; cpus_per_eval = NPROC host threads"
+    else:
+        cpus, basis = nproc, "jax cpu: NPROC threads in XLA's CPU intra-op pool"
+    peak = peak_rss_gb()
+    return {
+        "resources_schema": RESOURCES_SCHEMA,
+        "engine": engine,
+        "device": device,
+        "cpus_per_eval": cpus,
+        "cpus_per_eval_basis": basis if cpus is not None else f"{basis} (NPROC unset)",
+        "devices_per_eval": 1 if device == "gpu" else 0,
+        "peak_rss_gb": peak,
+        "peak_rss_basis": "in_process_ru_maxrss" if peak is not None else None,
+        "peak_rss_note": (
+            "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's "
+            "peak resident set (children excluded), GB = 1e9 bytes"
+        ),
+    }
+
+
 #: The two DISJOINT thread-knob families a CPU timing depends on. ``NPROC``
 #: sizes XLA's CPU intra-op thread pool — it is what throttles a JAX-CPU row
 #: (autolens_profiling `reference_nproc_throttles_jax_cpu`) — while the BLAS

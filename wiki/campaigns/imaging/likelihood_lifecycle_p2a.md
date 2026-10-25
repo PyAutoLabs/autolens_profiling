@@ -4,7 +4,7 @@
 **Question:** What does every planned imaging/{mge, rectangular, delaunay, delaunay_nn} cell cost at the standard source size (Delaunay 1250, rectangular 35x35) on the pinned release 2026.10.23.1, measured from the production pipeline, and does each cell's log-likelihood match an independent reference?
 **Pre-registered rule:** every planned cell lands `current`, with runtime and breakdown, provenance, `fit.png` and a `parity.json` whose status is `match` against the eager NumPy dense-mapping reference (tolerance 1e-4 x |reference|, fp64). Any `diverged` witness blocks that setup until explained. Recorded in the Mind prompt before batch 1 ran (2026-10-24).
 **Verdict:** 104 of 106 planned imaging cells current, 53/53 parity witnesses `match`; no setup blocked. The 2 missing cells are the known limitation below (ao `jax_gpu_dense_fp64@hpc_a100` breakdowns out of A100 memory). Class designations (optimal / secondary) are phase 3's decision, not this page's.
-**Headline:** fastest per call on every likelihood x instrument is `jax_gpu_dense_fp64@hpc_a100`; e.g. hst Delaunay 35.05 ms per call at vmap 16 (A100 euclid-ral-gpu-1, job 412944) against 951.7 ms warm for numba on RAL CPU (job 412925).
+**Headline:** fastest per call on every likelihood x instrument is `jax_gpu_dense_fp64@hpc_a100` (e.g. hst Delaunay 35.05 ms per call at vmap 16, job 412944). Per call is per device, not per node: numba runs one serial call per core, so per node a ral node is projected at ≈248 calls/s on hst Delaunay against ≈114 for a 4×A100 node, and on ao Delaunay ≈4.6 against ≈10.9 (upper bounds, parallel efficiency unmeasured; [Comparing CPU and GPU setups](#comparing-cpu-and-gpu-setups)).
 **Library PRs:** none (measurement only, tag 2026.10.23.1)
 **Profiling PRs:** PR A (`--standard-size`, parity writer, submits) #457, batch-1 walls #460, this PR B (rows, catalogue, coverage, this page)
 **Ledger:** this page; rows under `results/imaging/{mge,rectangular,delaunay,delaunay_nn}/`; work list [`scripts/misc/campaigns/imaging_p2a.py`](../../../scripts/misc/campaigns/imaging_p2a.py) and its [README](../../../scripts/misc/campaigns/README.md)
@@ -135,7 +135,8 @@ catalogue and coverage do not use that cap.
 ### Fastest per call, by likelihood x instrument
 
 Fastest = the lowest vmap per call (JAX) or warm iid median (numba). This is evidence for
-phase 3, not a designation.
+phase 3, not a designation, and it is per call: per node, see
+[Comparing CPU and GPU setups](#comparing-cpu-and-gpu-setups).
 
 | likelihood | instrument | fastest setup (per call, ms) | fastest CPU-only setup (per call, ms) |
 |---|---|---|---|
@@ -152,6 +153,40 @@ phase 3, not a designation.
 | delaunay | jwst | `jax_gpu_dense_fp64@hpc_a100` (72.29) | `numba_cpu_sparse_fp64@hpc_ral_cpu` (1,745) |
 | delaunay | ao | `jax_gpu_dense_fp64@hpc_a100` (366.93) | `numba_cpu_sparse_fp64@hpc_ral_cpu` (8,671) |
 | delaunay_nn | hst | `jax_gpu_dense_fp64@hpc_a100` (42.74) | `numba_cpu_sparse_fp64@hpc_ral_cpu` (1,295) |
+
+### Comparing CPU and GPU setups
+
+The tables above are per call. They do not say which setup does more work per node: under
+Nautilus multiprocessing, numba runs one serial likelihood per core, so a CPU node runs many
+calls side by side while an A100 runs one process per GPU. Compare setups by projected node
+throughput (`projected_node_throughput` on every runtime record of
+[`dashboard/catalogue.json`](../../../dashboard/catalogue.json), autolens_profiling#462):
+workers per node = min(cores / cores per call, node memory / peak memory per worker), and one
+per GPU on a GPU node, times the parallel efficiency over the per-call time. The parallel
+efficiency is declared 1.0, an upper bound, unmeasured (phase 4 measures it), and the
+sampler's batch ceiling (Nautilus `n_batch`) is not modelled, so every number here is a
+projection, not a measurement, and the CPU numbers (hundreds of workers sharing memory
+bandwidth) are the most optimistic. Peak memory is the leg's sacct MaxRSS
+([`catalogue/peak_rss_backfill.json`](../../../catalogue/peak_rss_backfill.json)): exact per leg on
+RAL CPU, the multi-leg A100 job's peak (an upper bound) on A100. Hosts are
+[`catalogue/reference_hosts.json`](../../../catalogue/reference_hosts.json): a ral node with 236
+cores and 921 GB, a gpu node with 124 cores, 885 GB and 4 A100s.
+
+| cell | setup @ node | per call | cores per call | peak memory per worker | workers (bound by) | projected calls/s per node |
+|---|---|---|---|---|---|---|
+| hst Delaunay | `numba_cpu_sparse_fp64` @ ral node | 951.7 ms | 1 | 0.85 GB | 236 (cores) | ≈248 |
+| hst Delaunay | `jax_cpu_sparse_fp64` @ ral node | 1,895 ms | 8 | 3.2 GB | 29 (cores) | ≈15 |
+| hst Delaunay | `jax_gpu_dense_fp64` @ gpu node | 35.05 ms | 1 GPU | ≤10.7 GB | 4 (GPUs) | ≈114 |
+| hst Delaunay | `jax_gpu_sparse_fp64` @ gpu node | 47.93 ms | 1 GPU | ≤10.7 GB | 4 (GPUs) | ≈83 |
+| ao Delaunay | `numba_cpu_sparse_fp64` @ ral node | 8,671 ms | 1 | 23.0 GB | 40 (memory) | ≈4.6 |
+| ao Delaunay | `jax_cpu_sparse_fp64` @ ral node | 55,292 ms | 8 | 19.5 GB | 29 (cores) | ≈0.52 |
+| ao Delaunay | `jax_gpu_dense_fp64` @ gpu node | 366.93 ms | 1 GPU | ≤39.8 GB | 4 (GPUs) | ≈10.9 |
+| ao Delaunay | `jax_gpu_sparse_fp64` @ gpu node | 935.34 ms | 1 GPU | ≤39.8 GB | 4 (GPUs) | ≈4.3 |
+
+On hst Delaunay a ral node is projected to do more calls per second than a 4×A100 node; on ao
+Delaunay, where each numba worker needs 23 GB and memory caps the node at 40 workers, the
+A100 node is projected ahead. Which hardware a fit should use is phase 3's decision, made per
+node and with the parallel efficiency phase 4 measures.
 
 ## What shipped and where it is
 
@@ -196,6 +231,14 @@ fit: lens-core residuals and a low-level ring pattern are expected.
   changed each file before the day-zero move.
 
 ## Journal
+
+### 2026-10-25 — cores per call, peak memory and node throughput (#462)
+
+Phase 2x attached `cpus_per_eval` and `peak_rss_gb` to the 104 committed rows through
+`catalogue/peak_rss_backfill.json` (sacct MaxRSS: 37 exact per leg, 60 A100 legs at their
+job's peak as an upper bound, 7 short RAL tasks sacct never sampled, left null) and added
+`projected_node_throughput` to the catalogue's runtime records. Rows were not edited and
+nothing was re-run. See [Comparing CPU and GPU setups](#comparing-cpu-and-gpu-setups).
 
 ### 2026-10-25 — batch 1 committed
 

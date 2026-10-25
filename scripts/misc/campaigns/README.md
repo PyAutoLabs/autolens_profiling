@@ -8,6 +8,7 @@ the same list.
 | Module | Campaign | Submits |
 |--------|----------|---------|
 | [`imaging_p2a.py`](imaging_p2a.py) | Phase 2a, `imaging/{mge, rectangular, delaunay, delaunay_nn}` at the standard size on 2026.10.23.1 (autolens_profiling#456) | `hpc/batch_cpu/submit_campaign_p2a_imaging_*`, `hpc/batch_gpu/submit_campaign_p2a_imaging_*` |
+| [`peak_rss_backfill.py`](peak_rss_backfill.py) | Phase 2x backfill of 2a's peak memory and cores per call from sacct (autolens_profiling#462) | writes `catalogue/peak_rss_backfill.json`, no submits |
 
 ```bash
 python scripts/misc/campaigns/imaging_p2a.py --list    # the 106 cells, script and flags
@@ -113,6 +114,30 @@ JSON exists and is the final write (no `"vmap": "PENDING ..."` early row), `fit.
 `library_revisions` match the pinned checkout. Before copying, PR B moves each superseded row
 (and its figure and witness) to the cell's `history/<release_pin>_<date>/`, then regenerates
 the catalogue and coverage.
+
+**Comparing CPU and GPU setups.** A per-call time is per device, not per node: numba runs one
+serial likelihood per core under Nautilus multiprocessing, so never headline a CPU-vs-GPU
+ratio from per-call latency. The catalogue's `projected_node_throughput` (autolens_profiling#462)
+projects calls per second per declared node (`catalogue/reference_hosts.json`): workers =
+min(cores / `cpus_per_eval`, memory / `peak_rss_gb`), one per GPU on a GPU node, times the
+declared parallel efficiency 1.0 (an upper bound, unmeasured until phase 4) over the per-call
+time; Nautilus `n_batch` is not modelled. From 2a:
+
+| cell | setup @ node | per call | workers (bound by) | projected calls/s per node |
+|---|---|---|---|---|
+| hst Delaunay | `numba_cpu_sparse_fp64` @ ral node (236 cores, 921 GB) | 951.7 ms | 236 (cores; 0.85 GB each) | ≈248 |
+| hst Delaunay | `jax_gpu_dense_fp64` @ gpu node (4×A100) | 35.05 ms | 4 (GPUs) | ≈114 |
+| ao Delaunay | `numba_cpu_sparse_fp64` @ ral node | 8,671 ms | 40 (memory; 23.0 GB each) | ≈4.6 |
+| ao Delaunay | `jax_gpu_dense_fp64` @ gpu node | 366.93 ms | 4 (GPUs) | ≈10.9 |
+
+The full table and caveats are on the
+[2a campaign page](../../../wiki/campaigns/imaging/likelihood_lifecycle_p2a.md#comparing-cpu-and-gpu-setups).
+
+**Peak memory backfill.** Rows written before #462 have no `resources` block.
+`peak_rss_backfill.py --sacct <dump> --write` maps each committed batch-1 row to its task
+(`batch1_ral_cpu(instrument)[i]` for RAL array task `i`; every leg of an A100 job), checked
+against `walls.tsv`, and records the `.batch` step's MaxRSS. New rows record their own
+in-process peak (`_profile_cli.resources_dict`), so later campaigns need no backfill.
 
 **For PR B's campaign wiki page.**
 

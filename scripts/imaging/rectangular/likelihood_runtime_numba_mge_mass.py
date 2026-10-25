@@ -82,6 +82,7 @@ from _profile_cli import (  # noqa: E402
     rect_mesh_classes,
     render_fit_png,
     resolve_output_paths,
+    resources_dict,
 )
 
 _cli = parse_profile_cli()
@@ -311,6 +312,7 @@ al_version = al.__version__
 summary = {
     "autolens_version": al_version,
     "device": device_info_dict(),
+    "resources": resources_dict("numba"),
     "instrument": instrument,
     "configuration": {
         "pixel_scale_arcsec": pixel_scale,

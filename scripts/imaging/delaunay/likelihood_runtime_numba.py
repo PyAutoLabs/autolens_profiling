@@ -116,6 +116,7 @@ from _profile_cli import (  # noqa: E402
     render_fit_png,
     requested_source_pixels,
     resolve_output_paths,
+    resources_dict,
     write_parity_json,
 )
 
@@ -471,6 +472,7 @@ print("=" * 70)
 likelihood_summary = {
     "autolens_version": al_version,
     "device": device_info_dict(),
+    "resources": resources_dict("numba"),
     "instrument": instrument,
     "configuration": {
         **preset.as_json(),

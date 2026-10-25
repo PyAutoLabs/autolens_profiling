@@ -120,6 +120,7 @@ from _profile_cli import (
     parse_profile_cli,
     record_pinned_check,  # noqa: E402
     resolve_output_paths,
+    resources_dict,
 )
 
 _cli = parse_profile_cli()
@@ -510,6 +511,7 @@ likelihood_summary = {
     # average at import, SLURM job id, library revisions) the run-time
     # dashboard qualifies a row on.
     "device": device_info_dict(),
+    "resources": resources_dict("jax"),
     "dataset": instrument,
     "fit_positions_cls": "FitPositionsSourceSolved",
     "configuration": {

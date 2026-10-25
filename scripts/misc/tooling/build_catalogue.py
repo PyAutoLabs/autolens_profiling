@@ -897,6 +897,14 @@ V3_LIMITATIONS = [
     "abs_delta_log_likelihood = |log L - reference log L| beside its tolerance, the signed "
     "values and the witness status in the record's parity block. A not_assessed witness has no "
     "value and yields no record; parity_witnesses lists every witness file.",
+    "resources (cpus_per_eval, peak_rss_gb) comes from the row's own resources block, or for "
+    "rows measured before it existed from catalogue/peak_rss_backfill.json (sacct MaxRSS: "
+    "per leg for RAL array tasks, a job-level upper bound for multi-leg A100 jobs).",
+    "projected_node_throughput on runtime records is basis projected, not measured: workers per "
+    "declared host (catalogue/reference_hosts.json) = min(cores / cpus_per_eval, memory / "
+    "peak_rss_gb), and one per GPU on a GPU host, times the declared parallel efficiency 1.0 "
+    "(an upper bound, unmeasured; phase 4 measures it), over the per-call time (numba warm iid "
+    "median, JAX vmap per-call). The sampler's batch ceiling (Nautilus n_batch) is not modelled.",
 ]
 
 
@@ -911,7 +919,9 @@ def planned_baseline_cells(reg):
     return cells
 
 
-def lifecycle_candidates(root, reg, path, doc, adapter, dates=None, undated=None, releases=None):
+def lifecycle_candidates(
+    root, reg, path, doc, adapter, dates=None, undated=None, releases=None, nodes=None
+):
     """(v3 records, reasons) for one mirrored source file; nothing is labelled yet."""
     cell = lc.mirrored(path)
     out, reasons = [], []
@@ -932,6 +942,7 @@ def lifecycle_candidates(root, reg, path, doc, adapter, dates=None, undated=None
     cls, notes = lc.record_class(
         cell["dataset_type"], cell["variant"], cell["host_class"], cell["setup_id"]
     )
+    hosts, backfill = nodes or ({}, {})
     for payload, base, _context in rows(doc, adapter):
         groups = {}
         for axis, metric, unit, value, anchor, statistic, n in metrics(payload, adapter, base):
@@ -963,10 +974,22 @@ def lifecycle_candidates(root, reg, path, doc, adapter, dates=None, undated=None
                 "file was first committed to git, an upper bound on the measurement date"
             )
         pixels = lc.size_pixels(cell["variant"], payload)
+        resources = lc.row_resources(payload, path, base, backfill)
         for measurement, found in sorted(groups.items()):
             values = {k: v[0] for k, v in sorted(found.items())}
             head = lc.headline(measurement, values)
             _value, _anchor, statistic, n, unit = found[head]
+            extra = {"resources": resources}
+            if measurement == "runtime":
+                seconds, source = lc.per_call(payload, cell["setup"]["backend"])
+                extra["projected_node_throughput"] = lc.project(
+                    resources,
+                    seconds,
+                    source,
+                    cell["setup"]["device"],
+                    cell["host_class"],
+                    hosts,
+                )
             out.append(
                 {
                     "id": "lifecycle/" + digest([path, base, measurement]),
@@ -1004,6 +1027,7 @@ def lifecycle_candidates(root, reg, path, doc, adapter, dates=None, undated=None
                     "pointers": {k: v[1] for k, v in sorted(found.items())},
                     "location": cell["location"],
                     "limitations": list(row_notes),
+                    **extra,
                     "_rank": (
                         lc.size_rank(cell["variant"], pixels),
                         lc.FILE_ORDER[cell["file_measurement"]],
@@ -1212,6 +1236,7 @@ def build_lifecycle(root, generated, revision, dates=None):
     reg = registry(root)
     dates = commit_dates(root) if dates is None else dates
     releases = lc.release_revisions(root)
+    nodes = (lc.node_hosts(root), lc.peak_rss_backfill(root))
     undated = []
     planned = planned_baseline_cells(reg)
     refs = {r["path"] for r in reg["references"]}
@@ -1235,7 +1260,7 @@ def build_lifecycle(root, generated, revision, dates=None):
                 witnesses.append(witness)
             else:
                 found, _reasons = lifecycle_candidates(
-                    root, reg, path, doc, adapter, dates, undated, releases
+                    root, reg, path, doc, adapter, dates, undated, releases, nodes
                 )
             candidates.extend(found)
     if undated:

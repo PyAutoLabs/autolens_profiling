@@ -330,3 +330,153 @@ def planned_setups(dataset_type: str, variant: str, host_class: str) -> dict[str
     plan = {sid: "secondary" for sid in secondary}
     plan.update({sid: "optimal" for sid in optimal})
     return {sid: plan[sid] for sid in sorted(plan) if not sid.endswith(_REGIME_ONLY)}
+
+
+# ---- likelihood-lifecycle phase 2x: resources per evaluation and projected node throughput ----
+
+#: Declared reference hosts and the declared parallel efficiency (sinfo 2026-10-25).
+NODE_HOSTS = "catalogue/reference_hosts.json"
+#: ``resources`` for rows measured before the writers recorded it (2a; sacct MaxRSS).
+PEAK_RSS_BACKFILL = "catalogue/peak_rss_backfill.json"
+#: Where a runtime record's per-call time comes from: numba's warm iid median, JAX's vmap
+#: per-call (the batched cost a sampler pays per point).
+PER_CALL_SOURCES = {"numba": ("warm_iid_median_s",), "jax": ("vmap", "per_call")}
+RESOURCE_KEYS = (
+    "cpus_per_eval",
+    "cpus_per_eval_basis",
+    "devices_per_eval",
+    "peak_rss_gb",
+    "peak_rss_basis",
+    "peak_rss_reason",
+    "peak_rss_note",
+)
+
+
+def _sidecar(root, rel: str, schema: str, key: str) -> dict:
+    path = Path(root) / rel
+    if not path.is_file():
+        return {}
+    doc = json.loads(path.read_text())
+    if doc.get("schema") != schema or not isinstance(doc.get(key), dict):
+        raise ValueError(f"Unsupported {rel}")
+    return doc
+
+
+def node_hosts(root) -> dict:
+    """``catalogue/reference_hosts.json`` ({} when absent)."""
+    return _sidecar(root, NODE_HOSTS, "reference-hosts", "hosts")
+
+
+def peak_rss_backfill(root) -> dict:
+    """``{row path: entry}`` from ``catalogue/peak_rss_backfill.json`` ({} when absent)."""
+    return _sidecar(root, PEAK_RSS_BACKFILL, "peak-rss-backfill", "rows").get("rows", {})
+
+
+def _positive(value):
+    return (
+        value
+        if isinstance(value, int | float) and not isinstance(value, bool) and value > 0
+        else None
+    )
+
+
+def row_resources(payload: dict, path: str, base: str, backfill: dict) -> dict:
+    """The record's ``resources``: the row's own block, else its backfill entry, else unknown."""
+    own = payload.get("resources")
+    if isinstance(own, dict):
+        block = {k: own.get(k) for k in RESOURCE_KEYS if k in own}
+        block["source"] = "row"
+        return block
+    entry = backfill.get(path) if not base else None
+    if isinstance(entry, dict):
+        block = {k: entry.get(k) for k in RESOURCE_KEYS if k in entry}
+        block["source"] = PEAK_RSS_BACKFILL
+        block["sacct_job"] = entry.get("sacct_job")
+        return block
+    return {
+        "cpus_per_eval": None,
+        "peak_rss_gb": None,
+        "source": None,
+        "reason": "The row predates the resources block (#462) and has no backfill entry.",
+    }
+
+
+def per_call(payload: dict, backend: str) -> tuple[float | None, str]:
+    """(seconds, source) of one likelihood call as a sampler pays it, else (None, reason)."""
+    keys = PER_CALL_SOURCES[backend]
+    value = payload
+    for key in keys:
+        value = value.get(key) if isinstance(value, dict) else None
+    source = ".".join(keys)
+    if _positive(value) is None:
+        return None, f"no finite positive {source} in the row"
+    return value, source
+
+
+def _sig(value: float) -> float:
+    return float(f"{value:.4g}")
+
+
+def project(resources: dict, seconds, source: str, device: str, host_class: str, hosts: dict):
+    """``projected_node_throughput`` for one runtime record on every declared host.
+
+    CPU: workers = min(floor(cores / cpus_per_eval), floor(mem_gb / peak_rss_gb)). GPU: one
+    process per device, also capped by the host's cores and memory. Throughput = workers x the
+    declared parallel efficiency / per-call seconds. A projection, never a measurement.
+    """
+    eta = hosts.get("parallel_efficiency", {})
+    block = {
+        "basis": "projected",
+        "per_call_s": seconds,
+        "per_call_source": source,
+        "cpus_per_eval": resources.get("cpus_per_eval"),
+        "devices_per_eval": resources.get("devices_per_eval"),
+        "peak_rss_gb": resources.get("peak_rss_gb"),
+        "peak_rss_basis": resources.get("peak_rss_basis"),
+        "parallel_efficiency": eta,
+        "not_modelled": hosts.get("not_modelled"),
+        "hosts": [],
+    }
+    cpus, rss = _positive(resources.get("cpus_per_eval")), _positive(resources.get("peak_rss_gb"))
+    missing = [
+        why
+        for why, ok in (
+            (f"per-call time: {source}", seconds is not None),
+            ("cpus_per_eval not recorded", cpus is not None),
+            (
+                "peak_rss_gb not recorded"
+                + (
+                    f" ({resources['peak_rss_reason']})" if resources.get("peak_rss_reason") else ""
+                ),
+                rss is not None,
+            ),
+            ("no declared reference hosts", bool(hosts.get("hosts"))),
+        )
+        if not ok
+    ]
+    if missing:
+        block.update(status="not_projected", reason="; ".join(missing))
+        return block
+    block["status"] = "projected"
+    for name, host in sorted(hosts["hosts"].items()):
+        if device == "gpu" and not host.get("gpus"):
+            continue
+        limits = {}
+        if device == "gpu":
+            limits["gpus"] = host["gpus"]
+        limits["cores"] = int(host["cores"] // cpus)
+        limits["memory"] = int(host["mem_gb"] // rss)
+        bound_by = min(limits, key=lambda k: limits[k])
+        workers = limits[bound_by]
+        block["hosts"].append(
+            {
+                "host": name,
+                "host_class": host.get("host_class"),
+                "workers": workers,
+                "bound_by": bound_by,
+                "limits": limits,
+                "calls_per_s": _sig(workers * eta.get("value", 1.0) / seconds),
+                "per_call_measured_on_host": host.get("host_class") == host_class,
+            }
+        )
+    return block

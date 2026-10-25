@@ -132,6 +132,7 @@ from _profile_cli import (  # noqa: E402
     device_info_dict,
     parse_profile_cli,
     resolve_output_paths,
+    resources_dict,
 )
 
 _cli = parse_profile_cli()
@@ -1281,6 +1282,7 @@ print("=" * 70)
 likelihood_summary = {
     "autolens_version": al_version,
     "device": device_info_dict(),
+    "resources": resources_dict("jax"),
     "instrument": instrument,
     "model": "delaunay",
     "n_channels": n_channels,

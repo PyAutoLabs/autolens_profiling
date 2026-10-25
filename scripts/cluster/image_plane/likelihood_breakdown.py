@@ -115,6 +115,7 @@ from _profile_cli import (  # noqa: E402
     parse_profile_cli,
     render_fit_png,
     resolve_output_paths,
+    resources_dict,
 )
 
 _cli = parse_profile_cli()
@@ -641,6 +642,7 @@ breakdown_summary = {
     "source_revisions": source_revisions(_workspace_root),
     "config_name": config_name,
     "device": device_info_dict(),
+    "resources": resources_dict("jax"),
     "thread_environment": thread_environment(),
     "n_repeats": N_REPEATS,
     "configuration": {

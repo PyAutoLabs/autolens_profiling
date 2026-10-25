@@ -66,6 +66,7 @@ from _profile_cli import (  # noqa: E402
     device_info_dict,
     parse_profile_cli,
     resolve_output_paths,
+    resources_dict,
 )
 
 _cli = parse_profile_cli()
@@ -381,6 +382,7 @@ summary = {
     "instrument": INSTRUMENT,
     "config_name": config_name,
     "device": device_info_dict(),
+    "resources": resources_dict("jax"),
     "thread_environment": thread_environment(),
     "precision": {
         "jax_enable_x64": bool(jax.config.jax_enable_x64),
