@@ -69,7 +69,7 @@ const root = path.resolve(__dirname, "../../../../dashboard");
     assert.ok(
       (await page.locator(".metric-panel[open] .metric-value").count()) > 0,
     );
-    assert.match(await page.locator(".context").innerText(), /1500/);
+    assert.match(await page.locator(".context").innerText(), /source pixels: 1280/);
     const original = page.url();
     await page.locator("#instrument").selectOption("euclid");
     await page
