@@ -2,9 +2,16 @@
   "schema_version": 1,
   "organ": "autolens_profiling",
   "repo": "autolens_profiling",
-  "status": "green",
-  "headline": "145 series across 51 cells and 5 releases; none drifted >= 2x (single-sample endpoints: not a measured null)",
-  "updated": "2026-10-24T13:12:04Z",
+  "status": "yellow",
+  "headline": "1 of 189 series drifted >= 2x at the last release",
+  "updated": "2026-10-25T16:24:51Z",
   "pages_url": "https://pyautolabs.github.io/autolens_profiling/",
-  "items": []
+  "items": [
+    {
+      "severity": "yellow",
+      "text": "breakdown/imaging/delaunay_nn/hst hpc_a100_fp64 sparse: 14.216x from 2026.8.17.1 to 2026.10.23.1",
+      "url": "https://github.com/PyAutoLabs/autolens_profiling/blob/main/results/imaging/delaunay_nn/hst/jax_gpu_sparse_fp64/hpc_a100/breakdown.json",
+      "prompt": "/profiling triage imaging/delaunay_nn/hst hpc_a100_fp64 \u2014 14.216x from 2026.8.17.1 to 2026.10.23.1 (dashboard drift badge)"
+    }
+  ]
 }
