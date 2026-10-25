@@ -170,6 +170,7 @@ def sparse_triplets(
     slim_index_for_sub,
     fft_index_for_masked_pixel,
     sub_fraction_slim,
+    pix_sizes_for_sub,
 ):
     """Both triplet representations of the mapper's sparse mapping operator.
 
@@ -181,6 +182,14 @@ def sparse_triplets(
     the library — the second is what the two curvature blocks and the mapped
     reconstruction all read.
 
+    ``pix_sizes_for_sub`` is the mapper's ``pix_sizes_for_sub_slim_index``,
+    passed exactly as the two ``Mapper`` properties pass it (PyAutoArray #643).
+    It masks every stencil slot ``mapping_matrix_from`` drops — slots past a
+    sub-pixel's used count, and the ``-1`` padding Delaunay meshes write into
+    unused slots — to value 0 and column 0. Without it the raw ``-1`` columns
+    reach the scatter-adds: ``np.bincount`` refuses them and a JAX ``.at[-1]``
+    silently wraps onto the last source pixel.
+
     Returns ``(rows_data, cols, vals, rows_curvature)``.
     """
     rows_data, cols, vals = mapper_util.sparse_triplets_from(
@@ -189,6 +198,7 @@ def sparse_triplets(
         slim_index_for_sub=slim_index_for_sub,
         fft_index_for_masked_pixel=fft_index_for_masked_pixel,
         sub_fraction_slim=sub_fraction_slim,
+        pix_sizes_for_sub=pix_sizes_for_sub,
         xp=jnp,
     )
     rows_curvature, _, _ = mapper_util.sparse_triplets_from(
@@ -197,6 +207,7 @@ def sparse_triplets(
         slim_index_for_sub=slim_index_for_sub,
         fft_index_for_masked_pixel=fft_index_for_masked_pixel,
         sub_fraction_slim=sub_fraction_slim,
+        pix_sizes_for_sub=pix_sizes_for_sub,
         xp=jnp,
         return_rows_slim=False,
     )
@@ -250,6 +261,7 @@ def data_vector(
         cols=cols,
         vals=vals,
         S=ctx.mapper_params,
+        xp=jnp,
     )
     out = out.at[ctx.mapper_start : ctx.mapper_end].set(mapper_block)
 
@@ -379,6 +391,7 @@ def mapped_reconstructed_operated_data(
         vals=vals,
         fft_index_for_masked_pixel=ctx.fft_index_for_masked_pixel,
         data_shape=ctx.mask.shape_native,
+        xp=jnp,
     )
     mapped = ctx.psf.convolved_image_from(
         image=Array2D(values=mapped, mask=ctx.mask),

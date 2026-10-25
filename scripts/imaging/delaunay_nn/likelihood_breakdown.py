@@ -708,8 +708,17 @@ if _cli.standard_size:
         dataset,
         dataset_path,
         standard_size_preset(STANDARD_FAMILY["delaunay_nn"], instrument),
-        _cli.sparse_batch_size if _cli.use_sparse_operator else None,
+        None,
     )
+    if _cli.use_sparse_operator:
+        # The w-tilde operator is applied here rather than inside
+        # ``standard_jax_dataset`` (where it is the last step, so the dataset is
+        # identical) so its one-off build is timed and recorded like the
+        # fiducial path's: left to the helper, ``sparse_operator_build_s`` stayed
+        # None and the row write crashed on float(None) (autolens_profiling#456).
+        with timer.section("sparse_operator_build"):
+            dataset = dataset.apply_sparse_operator(batch_size=_cli.sparse_batch_size)
+        sparse_operator_build_s = timer.records[-1][1]
     _std = standard_jax_cell(
         "delaunay_nn",
         instrument,
@@ -1358,6 +1367,7 @@ if _cli.use_sparse_operator:
     _slim_index_for_sub = jnp.asarray(inv_mapper.slim_index_for_sub_slim_index)
     _fft_index = jnp.asarray(dataset.mask.fft_index_for_masked_pixel)
     _sub_fraction = jnp.asarray(inv_mapper.over_sampler.sub_fraction.array)
+    _pix_sizes = jnp.asarray(inv_mapper.pix_sizes_for_sub_slim_index)
 
     _, _triplets = jit_profile(
         sparse_steps.sparse_triplets,
@@ -1367,6 +1377,7 @@ if _cli.use_sparse_operator:
         _slim_index_for_sub,
         _fft_index,
         _sub_fraction,
+        _pix_sizes,
     )
     sparse_setup_rows["Sparse triplets (data + curvature)"] = timer.records[-1][1] / 10
 
