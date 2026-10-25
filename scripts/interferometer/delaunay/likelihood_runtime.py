@@ -148,6 +148,7 @@ from _profile_cli import (
     record_pinned_check,  # noqa: E402
     render_fit_png,
     resolve_output_paths,
+    resources_dict,
 )
 
 _cli = parse_profile_cli()
@@ -649,6 +650,7 @@ else:
 likelihood_summary = {
     "autolens_version": al_version,
     "device": device_info_dict(),
+    "resources": resources_dict("jax"),
     "instrument": instrument,
     "model": "delaunay",
     "configuration": {

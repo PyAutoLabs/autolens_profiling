@@ -355,6 +355,7 @@ from _profile_cli import (  # noqa: E402
     record_pinned_check,
     requested_source_pixels,
     resolve_output_paths,
+    resources_dict,
 )
 
 _cli = parse_profile_cli()
@@ -2281,6 +2282,7 @@ if _cli.use_sparse_operator:
 breakdown_summary = {
     "autolens_version": al_version,
     "device": device_info_dict(),
+    "resources": resources_dict("jax"),
     "instrument": instrument,
     "configuration": {
         "pixel_scale_arcsec": pixel_scale,

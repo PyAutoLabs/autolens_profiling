@@ -212,6 +212,7 @@ from _profile_cli import (  # noqa: E402
     parse_profile_cli,
     record_pinned_check,
     resolve_output_paths,
+    resources_dict,
 )
 from instruments.interferometer import transformer_chunk_size_for  # noqa: E402
 
@@ -1097,6 +1098,7 @@ def write_results(stage: str):
         "stage": stage,
         "autolens_version": al_version,
         "device": device_info_dict(),
+        "resources": resources_dict("jax"),
         "instrument": instrument,
         "model": "mge",
         "transformer": transformer_name,

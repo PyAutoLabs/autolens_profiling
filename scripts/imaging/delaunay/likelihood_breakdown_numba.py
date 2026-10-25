@@ -137,6 +137,7 @@ from _profile_cli import (  # noqa: E402
     record_pinned_check,
     requested_source_pixels,
     resolve_output_paths,
+    resources_dict,
 )
 
 instrument = _cli.instrument or "euclid"  # default; override via --instrument
@@ -800,6 +801,7 @@ print("=" * 70)
 breakdown_summary = {
     "autolens_version": al_version,
     "device": device_info_dict(),
+    "resources": resources_dict("numba"),
     "instrument": instrument,
     "configuration": {
         **preset.as_json(),
