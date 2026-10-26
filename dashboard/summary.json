@@ -3,11 +3,11 @@
  "version": 1,
  "project": "autolens_profiling",
  "scope": "release-runtime",
- "generated_at": "2026-10-26T12:12:39Z",
+ "generated_at": "2026-10-26T12:27:37Z",
  "evidence_updated_at": "2026-10-25T00:00:00Z",
  "evidence_updated_at_reason": null,
  "valid_until": null,
- "producer_revision": "08d45eb8c5b3ab1954865c61ef34419727d56d59",
+ "producer_revision": "5b1a93df280e5233f239258526e2e968595295ef",
  "comparison_policy": {
   "id": "runtime-drift-2x-1ms",
   "ratio": 2.0,
@@ -34,7 +34,7 @@
   },
   "excluded": [
    {
-    "id": "runtime:imaging/delaunay:ao:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "runtime:imaging/delaunay:ao:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 8.6 above the cap 8",
     "evidence": {
      "path": "results/imaging/delaunay/ao/jax_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
@@ -42,7 +42,7 @@
     }
    },
    {
-    "id": "runtime:imaging/delaunay:euclid:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "runtime:imaging/delaunay:euclid:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 8.6 above the cap 8",
     "evidence": {
      "path": "results/imaging/delaunay/euclid/jax_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
@@ -50,7 +50,7 @@
     }
    },
    {
-    "id": "runtime:imaging/delaunay:euclid:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "runtime:imaging/delaunay:euclid:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 8.6 above the cap 8",
     "evidence": {
      "path": "results/imaging/delaunay/euclid/numba_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
@@ -58,7 +58,7 @@
     }
    },
    {
-    "id": "runtime:imaging/delaunay:euclid:jax_gpu_dense_fp64:hpc_a100:default@2026.10.23.1",
+    "id": "runtime:imaging/delaunay:euclid:jax_gpu_dense_fp64:hpc_a100:default@2026.10.25.1",
     "reason": "loadavg 12.3 above the cap 8",
     "evidence": {
      "path": "results/imaging/delaunay/euclid/jax_gpu_dense_fp64/hpc_a100/runtime.json",
@@ -66,7 +66,7 @@
     }
    },
    {
-    "id": "runtime:imaging/delaunay:euclid:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+    "id": "runtime:imaging/delaunay:euclid:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
     "reason": "loadavg 10.4 above the cap 8",
     "evidence": {
      "path": "results/imaging/delaunay/euclid/jax_gpu_sparse_fp64/hpc_a100/runtime.json",
@@ -74,7 +74,7 @@
     }
    },
    {
-    "id": "runtime:imaging/delaunay:hst:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "runtime:imaging/delaunay:hst:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 19.7 above the cap 8",
     "evidence": {
      "path": "results/imaging/delaunay/hst/jax_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
@@ -82,7 +82,7 @@
     }
    },
    {
-    "id": "runtime:imaging/delaunay:hst:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "runtime:imaging/delaunay:hst:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 23.7 above the cap 8",
     "evidence": {
      "path": "results/imaging/delaunay/hst/numba_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
@@ -90,7 +90,7 @@
     }
    },
    {
-    "id": "runtime:imaging/delaunay:hst:jax_gpu_dense_fp64:hpc_a100:default@2026.10.23.1",
+    "id": "runtime:imaging/delaunay:hst:jax_gpu_dense_fp64:hpc_a100:default@2026.10.25.1",
     "reason": "loadavg 11.4 above the cap 8",
     "evidence": {
      "path": "results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100/runtime.json",
@@ -98,7 +98,7 @@
     }
    },
    {
-    "id": "runtime:imaging/delaunay:jwst:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "runtime:imaging/delaunay:jwst:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 32.0 above the cap 8",
     "evidence": {
      "path": "results/imaging/delaunay/jwst/jax_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
@@ -106,7 +106,7 @@
     }
    },
    {
-    "id": "runtime:imaging/delaunay:jwst:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "runtime:imaging/delaunay:jwst:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 34.4 above the cap 8",
     "evidence": {
      "path": "results/imaging/delaunay/jwst/numba_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
@@ -114,7 +114,7 @@
     }
    },
    {
-    "id": "runtime:imaging/delaunay:jwst:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+    "id": "runtime:imaging/delaunay:jwst:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
     "reason": "loadavg 10.8 above the cap 8",
     "evidence": {
      "path": "results/imaging/delaunay/jwst/jax_cpu_sparse_fp64/hpc_a100/runtime.json",
@@ -122,7 +122,7 @@
     }
    },
    {
-    "id": "runtime:imaging/delaunay_nn:hst:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "runtime:imaging/delaunay_nn:hst:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 29.4 above the cap 8",
     "evidence": {
      "path": "results/imaging/delaunay_nn/hst/jax_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
@@ -130,7 +130,7 @@
     }
    },
    {
-    "id": "runtime:imaging/delaunay_nn:hst:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "runtime:imaging/delaunay_nn:hst:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 28.8 above the cap 8",
     "evidence": {
      "path": "results/imaging/delaunay_nn/hst/numba_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
@@ -138,7 +138,7 @@
     }
    },
    {
-    "id": "runtime:imaging/mge:ao:jax_cpu_dense_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "runtime:imaging/mge:ao:jax_cpu_dense_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 8.6 above the cap 8",
     "evidence": {
      "path": "results/imaging/mge/ao/jax_cpu_dense_fp64/hpc_ral_cpu/runtime.json",
@@ -146,7 +146,7 @@
     }
    },
    {
-    "id": "runtime:imaging/mge:euclid:jax_cpu_dense_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "runtime:imaging/mge:euclid:jax_cpu_dense_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 8.6 above the cap 8",
     "evidence": {
      "path": "results/imaging/mge/euclid/jax_cpu_dense_fp64/hpc_ral_cpu/runtime.json",
@@ -154,7 +154,7 @@
     }
    },
    {
-    "id": "runtime:imaging/mge:euclid:jax_gpu_dense_fp64:hpc_a100:default@2026.10.23.1",
+    "id": "runtime:imaging/mge:euclid:jax_gpu_dense_fp64:hpc_a100:default@2026.10.25.1",
     "reason": "loadavg 8.8 above the cap 8",
     "evidence": {
      "path": "results/imaging/mge/euclid/jax_gpu_dense_fp64/hpc_a100/runtime.json",
@@ -162,7 +162,7 @@
     }
    },
    {
-    "id": "runtime:imaging/mge:hst:jax_cpu_dense_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "runtime:imaging/mge:hst:jax_cpu_dense_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 28.8 above the cap 8",
     "evidence": {
      "path": "results/imaging/mge/hst/jax_cpu_dense_fp64/hpc_ral_cpu/runtime.json",
@@ -170,7 +170,7 @@
     }
    },
    {
-    "id": "runtime:imaging/mge:jwst:jax_cpu_dense_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "runtime:imaging/mge:jwst:jax_cpu_dense_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 36.8 above the cap 8",
     "evidence": {
      "path": "results/imaging/mge/jwst/jax_cpu_dense_fp64/hpc_ral_cpu/runtime.json",
@@ -178,7 +178,7 @@
     }
    },
    {
-    "id": "runtime:imaging/rectangular:ao:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "runtime:imaging/rectangular:ao:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 8.6 above the cap 8",
     "evidence": {
      "path": "results/imaging/rectangular/ao/jax_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
@@ -186,7 +186,7 @@
     }
    },
    {
-    "id": "runtime:imaging/rectangular:euclid:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "runtime:imaging/rectangular:euclid:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 20.6 above the cap 8",
     "evidence": {
      "path": "results/imaging/rectangular/euclid/jax_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
@@ -194,7 +194,7 @@
     }
    },
    {
-    "id": "runtime:imaging/rectangular:euclid:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "runtime:imaging/rectangular:euclid:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 19.7 above the cap 8",
     "evidence": {
      "path": "results/imaging/rectangular/euclid/numba_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
@@ -202,7 +202,7 @@
     }
    },
    {
-    "id": "runtime:imaging/rectangular:hst:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "runtime:imaging/rectangular:hst:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 32.3 above the cap 8",
     "evidence": {
      "path": "results/imaging/rectangular/hst/jax_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
@@ -210,7 +210,7 @@
     }
    },
    {
-    "id": "runtime:imaging/rectangular:hst:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "runtime:imaging/rectangular:hst:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 32.3 above the cap 8",
     "evidence": {
      "path": "results/imaging/rectangular/hst/numba_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
@@ -218,7 +218,7 @@
     }
    },
    {
-    "id": "runtime:imaging/rectangular:jwst:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "runtime:imaging/rectangular:jwst:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 37.3 above the cap 8",
     "evidence": {
      "path": "results/imaging/rectangular/jwst/jax_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
@@ -226,7 +226,7 @@
     }
    },
    {
-    "id": "runtime:imaging/rectangular:jwst:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "runtime:imaging/rectangular:jwst:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 34.4 above the cap 8",
     "evidence": {
      "path": "results/imaging/rectangular/jwst/numba_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
@@ -250,7 +250,7 @@
     }
    },
    {
-    "id": "breakdown:imaging/delaunay:ao:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "breakdown:imaging/delaunay:ao:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 8.6 above the cap 8",
     "evidence": {
      "path": "results/imaging/delaunay/ao/jax_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
@@ -258,7 +258,7 @@
     }
    },
    {
-    "id": "breakdown:imaging/delaunay:euclid:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "breakdown:imaging/delaunay:euclid:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 8.6 above the cap 8",
     "evidence": {
      "path": "results/imaging/delaunay/euclid/jax_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
@@ -266,7 +266,7 @@
     }
    },
    {
-    "id": "breakdown:imaging/delaunay:euclid:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "breakdown:imaging/delaunay:euclid:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 8.6 above the cap 8",
     "evidence": {
      "path": "results/imaging/delaunay/euclid/numba_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
@@ -274,7 +274,7 @@
     }
    },
    {
-    "id": "breakdown:imaging/delaunay:euclid:jax_gpu_dense_fp64:hpc_a100:default@2026.10.23.1",
+    "id": "breakdown:imaging/delaunay:euclid:jax_gpu_dense_fp64:hpc_a100:default@2026.10.25.1",
     "reason": "loadavg 10.8 above the cap 8",
     "evidence": {
      "path": "results/imaging/delaunay/euclid/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
@@ -282,7 +282,7 @@
     }
    },
    {
-    "id": "breakdown:imaging/delaunay:euclid:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+    "id": "breakdown:imaging/delaunay:euclid:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
     "reason": "loadavg 12.4 above the cap 8",
     "evidence": {
      "path": "results/imaging/delaunay/euclid/jax_gpu_sparse_fp64/hpc_a100/breakdown.json",
@@ -290,7 +290,7 @@
     }
    },
    {
-    "id": "breakdown:imaging/delaunay:hst:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "breakdown:imaging/delaunay:hst:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 19.7 above the cap 8",
     "evidence": {
      "path": "results/imaging/delaunay/hst/jax_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
@@ -298,7 +298,7 @@
     }
    },
    {
-    "id": "breakdown:imaging/delaunay:hst:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "breakdown:imaging/delaunay:hst:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 23.7 above the cap 8",
     "evidence": {
      "path": "results/imaging/delaunay/hst/numba_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
@@ -306,7 +306,7 @@
     }
    },
    {
-    "id": "breakdown:imaging/delaunay:hst:jax_gpu_dense_fp64:hpc_a100:default@2026.10.23.1",
+    "id": "breakdown:imaging/delaunay:hst:jax_gpu_dense_fp64:hpc_a100:default@2026.10.25.1",
     "reason": "loadavg 12.9 above the cap 8",
     "evidence": {
      "path": "results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
@@ -314,7 +314,7 @@
     }
    },
    {
-    "id": "breakdown:imaging/delaunay:hst:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+    "id": "breakdown:imaging/delaunay:hst:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
     "reason": "loadavg 9.2 above the cap 8",
     "evidence": {
      "path": "results/imaging/delaunay/hst/jax_gpu_sparse_fp64/hpc_a100/breakdown.json",
@@ -322,7 +322,7 @@
     }
    },
    {
-    "id": "breakdown:imaging/delaunay:jwst:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "breakdown:imaging/delaunay:jwst:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 32.0 above the cap 8",
     "evidence": {
      "path": "results/imaging/delaunay/jwst/jax_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
@@ -330,7 +330,7 @@
     }
    },
    {
-    "id": "breakdown:imaging/delaunay:jwst:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "breakdown:imaging/delaunay:jwst:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 34.4 above the cap 8",
     "evidence": {
      "path": "results/imaging/delaunay/jwst/numba_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
@@ -338,7 +338,7 @@
     }
    },
    {
-    "id": "breakdown:imaging/delaunay_nn:hst:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "breakdown:imaging/delaunay_nn:hst:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 25.8 above the cap 8",
     "evidence": {
      "path": "results/imaging/delaunay_nn/hst/jax_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
@@ -346,7 +346,7 @@
     }
    },
    {
-    "id": "breakdown:imaging/delaunay_nn:hst:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "breakdown:imaging/delaunay_nn:hst:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 28.8 above the cap 8",
     "evidence": {
      "path": "results/imaging/delaunay_nn/hst/numba_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
@@ -354,7 +354,7 @@
     }
    },
    {
-    "id": "breakdown:imaging/mge:ao:jax_cpu_dense_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "breakdown:imaging/mge:ao:jax_cpu_dense_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 8.6 above the cap 8",
     "evidence": {
      "path": "results/imaging/mge/ao/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json",
@@ -362,7 +362,7 @@
     }
    },
    {
-    "id": "breakdown:imaging/mge:euclid:jax_cpu_dense_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "breakdown:imaging/mge:euclid:jax_cpu_dense_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 8.6 above the cap 8",
     "evidence": {
      "path": "results/imaging/mge/euclid/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json",
@@ -370,7 +370,7 @@
     }
    },
    {
-    "id": "breakdown:imaging/mge:euclid:jax_gpu_dense_fp64:hpc_a100:default@2026.10.23.1",
+    "id": "breakdown:imaging/mge:euclid:jax_gpu_dense_fp64:hpc_a100:default@2026.10.25.1",
     "reason": "loadavg 8.9 above the cap 8",
     "evidence": {
      "path": "results/imaging/mge/euclid/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
@@ -378,7 +378,7 @@
     }
    },
    {
-    "id": "breakdown:imaging/mge:hst:jax_cpu_dense_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "breakdown:imaging/mge:hst:jax_cpu_dense_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 28.8 above the cap 8",
     "evidence": {
      "path": "results/imaging/mge/hst/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json",
@@ -386,7 +386,7 @@
     }
    },
    {
-    "id": "breakdown:imaging/mge:jwst:jax_cpu_dense_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "breakdown:imaging/mge:jwst:jax_cpu_dense_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 34.4 above the cap 8",
     "evidence": {
      "path": "results/imaging/mge/jwst/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json",
@@ -394,7 +394,7 @@
     }
    },
    {
-    "id": "breakdown:imaging/rectangular:ao:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "breakdown:imaging/rectangular:ao:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 8.6 above the cap 8",
     "evidence": {
      "path": "results/imaging/rectangular/ao/jax_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
@@ -402,7 +402,7 @@
     }
    },
    {
-    "id": "breakdown:imaging/rectangular:euclid:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "breakdown:imaging/rectangular:euclid:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 19.7 above the cap 8",
     "evidence": {
      "path": "results/imaging/rectangular/euclid/jax_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
@@ -410,7 +410,7 @@
     }
    },
    {
-    "id": "breakdown:imaging/rectangular:euclid:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "breakdown:imaging/rectangular:euclid:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 19.7 above the cap 8",
     "evidence": {
      "path": "results/imaging/rectangular/euclid/numba_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
@@ -418,7 +418,7 @@
     }
    },
    {
-    "id": "breakdown:imaging/rectangular:hst:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "breakdown:imaging/rectangular:hst:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 32.3 above the cap 8",
     "evidence": {
      "path": "results/imaging/rectangular/hst/jax_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
@@ -426,7 +426,7 @@
     }
    },
    {
-    "id": "breakdown:imaging/rectangular:hst:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "breakdown:imaging/rectangular:hst:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 32.3 above the cap 8",
     "evidence": {
      "path": "results/imaging/rectangular/hst/numba_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
@@ -434,7 +434,7 @@
     }
    },
    {
-    "id": "breakdown:imaging/rectangular:jwst:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "breakdown:imaging/rectangular:jwst:jax_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 36.8 above the cap 8",
     "evidence": {
      "path": "results/imaging/rectangular/jwst/jax_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
@@ -442,7 +442,7 @@
     }
    },
    {
-    "id": "breakdown:imaging/rectangular:jwst:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+    "id": "breakdown:imaging/rectangular:jwst:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
     "reason": "loadavg 34.4 above the cap 8",
     "evidence": {
      "path": "results/imaging/rectangular/jwst/numba_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
@@ -501,7 +501,7 @@
  },
  "records": [
   {
-   "id": "runtime:imaging/delaunay:ao:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+   "id": "runtime:imaging/delaunay:ao:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -537,7 +537,7 @@
    }
   },
   {
-   "id": "runtime:imaging/delaunay:ao:jax_gpu_dense_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "runtime:imaging/delaunay:ao:jax_gpu_dense_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -574,7 +574,7 @@
    }
   },
   {
-   "id": "runtime:imaging/delaunay:ao:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "runtime:imaging/delaunay:ao:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -610,7 +610,7 @@
    }
   },
   {
-   "id": "runtime:imaging/delaunay:ao:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "runtime:imaging/delaunay:ao:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -647,7 +647,7 @@
    }
   },
   {
-   "id": "runtime:imaging/delaunay:euclid:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "runtime:imaging/delaunay:euclid:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -894,7 +894,7 @@
    }
   },
   {
-   "id": "runtime:imaging/delaunay:hst:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "runtime:imaging/delaunay:hst:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -965,7 +965,7 @@
    }
   },
   {
-   "id": "runtime:imaging/delaunay:hst:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "runtime:imaging/delaunay:hst:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -1142,7 +1142,7 @@
    }
   },
   {
-   "id": "runtime:imaging/delaunay:jwst:jax_gpu_dense_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "runtime:imaging/delaunay:jwst:jax_gpu_dense_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -1179,7 +1179,7 @@
    }
   },
   {
-   "id": "runtime:imaging/delaunay:jwst:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "runtime:imaging/delaunay:jwst:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -1286,7 +1286,7 @@
    }
   },
   {
-   "id": "runtime:imaging/delaunay_nn:hst:jax_gpu_dense_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "runtime:imaging/delaunay_nn:hst:jax_gpu_dense_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -1323,7 +1323,7 @@
    }
   },
   {
-   "id": "runtime:imaging/delaunay_nn:hst:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "runtime:imaging/delaunay_nn:hst:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -1394,7 +1394,7 @@
    }
   },
   {
-   "id": "runtime:imaging/delaunay_nn:hst:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "runtime:imaging/delaunay_nn:hst:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -1571,7 +1571,7 @@
    }
   },
   {
-   "id": "runtime:imaging/mge:ao:jax_gpu_dense_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "runtime:imaging/mge:ao:jax_gpu_dense_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -1783,7 +1783,7 @@
    }
   },
   {
-   "id": "runtime:imaging/mge:hst:jax_gpu_dense_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "runtime:imaging/mge:hst:jax_gpu_dense_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -1960,7 +1960,7 @@
    }
   },
   {
-   "id": "runtime:imaging/mge:jwst:jax_gpu_dense_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "runtime:imaging/mge:jwst:jax_gpu_dense_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -2102,7 +2102,7 @@
    }
   },
   {
-   "id": "runtime:imaging/rectangular:ao:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+   "id": "runtime:imaging/rectangular:ao:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -2138,7 +2138,7 @@
    }
   },
   {
-   "id": "runtime:imaging/rectangular:ao:jax_gpu_dense_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "runtime:imaging/rectangular:ao:jax_gpu_dense_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -2175,7 +2175,7 @@
    }
   },
   {
-   "id": "runtime:imaging/rectangular:ao:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "runtime:imaging/rectangular:ao:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -2211,7 +2211,7 @@
    }
   },
   {
-   "id": "runtime:imaging/rectangular:ao:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "runtime:imaging/rectangular:ao:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -2248,7 +2248,7 @@
    }
   },
   {
-   "id": "runtime:imaging/rectangular:euclid:jax_gpu_dense_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "runtime:imaging/rectangular:euclid:jax_gpu_dense_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -2285,7 +2285,7 @@
    }
   },
   {
-   "id": "runtime:imaging/rectangular:euclid:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "runtime:imaging/rectangular:euclid:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -2322,7 +2322,7 @@
    }
   },
   {
-   "id": "runtime:imaging/rectangular:euclid:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "runtime:imaging/rectangular:euclid:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -2569,7 +2569,7 @@
    }
   },
   {
-   "id": "runtime:imaging/rectangular:hst:jax_gpu_dense_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "runtime:imaging/rectangular:hst:jax_gpu_dense_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -2606,7 +2606,7 @@
    }
   },
   {
-   "id": "runtime:imaging/rectangular:hst:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "runtime:imaging/rectangular:hst:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -2678,7 +2678,7 @@
    }
   },
   {
-   "id": "runtime:imaging/rectangular:hst:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "runtime:imaging/rectangular:hst:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -2890,7 +2890,7 @@
    }
   },
   {
-   "id": "runtime:imaging/rectangular:jwst:jax_gpu_dense_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "runtime:imaging/rectangular:jwst:jax_gpu_dense_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -2927,7 +2927,7 @@
    }
   },
   {
-   "id": "runtime:imaging/rectangular:jwst:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "runtime:imaging/rectangular:jwst:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -2963,7 +2963,7 @@
    }
   },
   {
-   "id": "runtime:imaging/rectangular:jwst:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "runtime:imaging/rectangular:jwst:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -3631,7 +3631,7 @@
    }
   },
   {
-   "id": "breakdown:imaging/delaunay:ao:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+   "id": "breakdown:imaging/delaunay:ao:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -3667,7 +3667,7 @@
    }
   },
   {
-   "id": "breakdown:imaging/delaunay:ao:jax_gpu_dense_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "breakdown:imaging/delaunay:ao:jax_gpu_dense_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -3703,7 +3703,7 @@
    }
   },
   {
-   "id": "breakdown:imaging/delaunay:ao:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "breakdown:imaging/delaunay:ao:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -3739,7 +3739,7 @@
    }
   },
   {
-   "id": "breakdown:imaging/delaunay:ao:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "breakdown:imaging/delaunay:ao:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -3775,7 +3775,7 @@
    }
   },
   {
-   "id": "breakdown:imaging/delaunay:euclid:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "breakdown:imaging/delaunay:euclid:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -4021,7 +4021,7 @@
    }
   },
   {
-   "id": "breakdown:imaging/delaunay:hst:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "breakdown:imaging/delaunay:hst:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -4162,7 +4162,7 @@
    }
   },
   {
-   "id": "breakdown:imaging/delaunay:jwst:jax_gpu_dense_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "breakdown:imaging/delaunay:jwst:jax_gpu_dense_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -4198,7 +4198,7 @@
    }
   },
   {
-   "id": "breakdown:imaging/delaunay:jwst:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "breakdown:imaging/delaunay:jwst:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -4234,7 +4234,7 @@
    }
   },
   {
-   "id": "breakdown:imaging/delaunay:jwst:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "breakdown:imaging/delaunay:jwst:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -4340,7 +4340,7 @@
    }
   },
   {
-   "id": "breakdown:imaging/delaunay_nn:hst:jax_gpu_dense_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "breakdown:imaging/delaunay_nn:hst:jax_gpu_dense_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -4376,7 +4376,7 @@
    }
   },
   {
-   "id": "breakdown:imaging/delaunay_nn:hst:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "breakdown:imaging/delaunay_nn:hst:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -4447,7 +4447,7 @@
    }
   },
   {
-   "id": "breakdown:imaging/delaunay_nn:hst:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "breakdown:imaging/delaunay_nn:hst:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -4553,7 +4553,7 @@
    }
   },
   {
-   "id": "breakdown:imaging/mge:ao:jax_gpu_dense_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "breakdown:imaging/mge:ao:jax_gpu_dense_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -4729,7 +4729,7 @@
    }
   },
   {
-   "id": "breakdown:imaging/mge:hst:jax_gpu_dense_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "breakdown:imaging/mge:hst:jax_gpu_dense_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -4765,7 +4765,7 @@
    }
   },
   {
-   "id": "breakdown:imaging/mge:jwst:jax_gpu_dense_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "breakdown:imaging/mge:jwst:jax_gpu_dense_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -5046,7 +5046,7 @@
    }
   },
   {
-   "id": "breakdown:imaging/rectangular:ao:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.23.1",
+   "id": "breakdown:imaging/rectangular:ao:numba_cpu_sparse_fp64:hpc_ral_cpu:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -5082,7 +5082,7 @@
    }
   },
   {
-   "id": "breakdown:imaging/rectangular:ao:jax_gpu_dense_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "breakdown:imaging/rectangular:ao:jax_gpu_dense_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -5118,7 +5118,7 @@
    }
   },
   {
-   "id": "breakdown:imaging/rectangular:ao:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "breakdown:imaging/rectangular:ao:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -5154,7 +5154,7 @@
    }
   },
   {
-   "id": "breakdown:imaging/rectangular:ao:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "breakdown:imaging/rectangular:ao:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -5190,7 +5190,7 @@
    }
   },
   {
-   "id": "breakdown:imaging/rectangular:euclid:jax_gpu_dense_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "breakdown:imaging/rectangular:euclid:jax_gpu_dense_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -5226,7 +5226,7 @@
    }
   },
   {
-   "id": "breakdown:imaging/rectangular:euclid:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "breakdown:imaging/rectangular:euclid:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -5262,7 +5262,7 @@
    }
   },
   {
-   "id": "breakdown:imaging/rectangular:euclid:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "breakdown:imaging/rectangular:euclid:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -5333,7 +5333,7 @@
    }
   },
   {
-   "id": "breakdown:imaging/rectangular:hst:jax_gpu_dense_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "breakdown:imaging/rectangular:hst:jax_gpu_dense_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -5369,7 +5369,7 @@
    }
   },
   {
-   "id": "breakdown:imaging/rectangular:hst:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "breakdown:imaging/rectangular:hst:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -5440,7 +5440,7 @@
    }
   },
   {
-   "id": "breakdown:imaging/rectangular:hst:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "breakdown:imaging/rectangular:hst:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -5546,7 +5546,7 @@
    }
   },
   {
-   "id": "breakdown:imaging/rectangular:jwst:jax_gpu_dense_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "breakdown:imaging/rectangular:jwst:jax_gpu_dense_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -5582,7 +5582,7 @@
    }
   },
   {
-   "id": "breakdown:imaging/rectangular:jwst:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "breakdown:imaging/rectangular:jwst:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
@@ -5618,7 +5618,7 @@
    }
   },
   {
-   "id": "breakdown:imaging/rectangular:jwst:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
+   "id": "breakdown:imaging/rectangular:jwst:jax_gpu_sparse_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
    "measurement": {
