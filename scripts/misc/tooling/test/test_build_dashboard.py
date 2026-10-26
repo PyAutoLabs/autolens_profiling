@@ -664,3 +664,76 @@ def test_real_tree_series_history_is_continuous():
         assert set(entry["releases"]) <= held, f"{old} lost releases"
     published = sum(bool(v["releases"]) for v in committed["series"].values())
     assert published == committed["counts"]["published_series"] <= len(series)
+
+
+#: Fixture tag SHAs (not real revisions) for the carry-forward tests.
+_MEASURED_SHAS = {"PyAutoLens": "a" * 40}
+_LATER_SHAS = {"PyAutoLens": "d" * 40}
+
+
+def _carry_tree(tmp_path: Path) -> Path:
+    root = _tree(tmp_path)
+    _write(
+        root / "catalogue" / "release_revisions.json",
+        {
+            "schema": "release-revisions",
+            "version": 2,
+            "releases": {"2026.10.23.1": _MEASURED_SHAS, "2026.10.25.1": _LATER_SHAS},
+            "carry_forward": [
+                {
+                    "from": "2026.10.23.1",
+                    "to": "2026.10.25.1",
+                    "domains": ["imaging"],
+                    "basis": {"PyAutoArray": "fixture"},
+                }
+            ],
+        },
+    )
+    prov = dict(_prov(), library_revisions=_MEASURED_SHAS)
+    _write(
+        root / "results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100/runtime.json",
+        _row("2026.8.17.1", 0.07, vmap=0.04, prov=prov),
+    )
+    _write(
+        root / "results/interferometer/mge/sma/jax_gpu_dense_fp64/hpc_a100/runtime.json",
+        _row("2026.8.17.1", 0.05, vmap=0.03, prov=prov, instrument="sma"),
+    )
+    return root
+
+
+def test_dashboard_publishes_the_catalogues_carried_pin(tmp_path):
+    root = _carry_tree(tmp_path)
+    conf = bd.read_release_sweep_conf(root)
+    series, refused = bd.build_series(root, conf)
+    points = {s["key"]: s["points"] for s in series}
+    [carried] = [p for p in points[A100_RT] if p.get("measured_version")]
+    assert carried["version"] == "2026.10.25.1"
+    assert carried["measured_version"] == "2026.10.23.1"
+    s = bd.build_summary(series, refused, conf, "2026-09-27T00:00:00Z", None)
+    record = next(r for r in s["records"] if r["id"] == f"{A100_RT}@2026.10.23.1")
+    assert record["identity"]["library_version"] == "2026.10.25.1"
+    assert record["identity"]["measured_library_version"] == "2026.10.23.1"
+    # Interferometer is not a declared domain: it stays at its measured pin.
+    uv = [p for k, ps in points.items() if "interferometer" in k for p in ps]
+    assert [p["version"] for p in uv] == ["2026.10.23.1"]
+    assert not any("measured_version" in p for p in uv)
+    assert bd.validate_summary(s) == []
+
+
+def test_a_point_measured_on_a_release_beats_one_carried_to_it(tmp_path):
+    root = _carry_tree(tmp_path)
+    prov = dict(_prov(), library_revisions=_LATER_SHAS)
+    cell = root / "results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100"
+    _write(
+        cell / "history" / "r2026_10_25_1" / "runtime.json",
+        _row("2026.8.17.1", 0.06, vmap=0.035, prov=prov),
+    )
+    series, _ = bd.build_series(root, bd.read_release_sweep_conf(root))
+    [point] = [
+        p
+        for s in series
+        if s["key"] == A100_RT
+        for p in s["points"]
+        if p["version"] == "2026.10.25.1"
+    ]
+    assert "measured_version" not in point and point["single_jit_s"] == 0.06
