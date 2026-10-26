@@ -57,9 +57,11 @@ in `release_revisions.json` publishes every imaging record measured on 2026.10.2
 The catalogue and the run-time dashboard both publish 2026.10.25.1 (one rule,
 `catalogue_lifecycle.carried_pin`): `dashboard/summary.json` records carry
 `identity.library_version` 2026.10.25.1 beside `measured_library_version` 2026.10.23.1, the
-dashboard tables show "2026.10.25.1 (measured 2026.10.23.1)", and record ids keep the measured
-pin (`…@2026.10.23.1`) so they stay stable. Interferometer and datacube are not carried. Phase
-2b measures on 2026.10.25.1.
+dashboard tables show "2026.10.25.1 (measured 2026.10.23.1)", and record ids carry the published
+pin (`…@2026.10.25.1`), the grammar Pulse pairs comparisons by. When 2b measures a cell on
+2026.10.25.1, that row takes the id and the carried row is published back at 2026.10.23.1, so
+its history stays. Interferometer and datacube are not carried. Phase 2b measures on
+2026.10.25.1.
 
 ## Per-call evidence (batch 1, tag 2026.10.23.1)
 
