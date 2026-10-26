@@ -26,7 +26,7 @@ one pinned tag so phase 3 can choose setups from like-for-like evidence.
 | PR A | 2026-10-24 | Can every setup measure the same production likelihood at the standard size, with a parity witness? | JAX and numba cells of one likelihood x instrument build the same production preset | `--standard-size`, parity writer, campaign submits | — | #457 |
 | Batch 0 | 2026-10-24 | How long and how large are the bounding legs? | `--time` >= 1.25 x the slowest batch-0 leg | walls and MaxRSS set batch 1's `--time` / `--mem` | 412877, 412884, 412911, 412915 | #460 |
 | Batch 1 | 2026-10-25 | All 106 cells | every cell current with parity `match` | 104/106 legs complete, 53/53 `match`; 2 known OOMs | 412923–412926 (RAL CPU), 412927, 412943, 412944, 412945 (A100) | this PR |
-| ao rerun | 2026-10-26 | Do the 2 ao dense breakdowns fit once the duplicate device copies are freed? | both legs complete on one A100 | 2/2 complete (delaunay 131 s, rectangular 111 s; step-by-step 0.36 / 0.32 s); 106/106 current | 413033 (A100) | #466 |
+| ao rerun | 2026-10-26 | Do the 2 ao dense breakdowns fit once the duplicate device copies are freed? | both legs complete on one A100 | 2/2 complete (delaunay 131 s, rectangular 111 s; step-by-step 0.36 / 0.32 s); 106/106 current; measured on the 2026.10.23.1 libraries (the batch-1 SHAs), published at 2026.10.25.1 by carry-forward, not by measurement | 413033 (A100) | #466 |
 
 ## Coverage after this PR
 
@@ -35,17 +35,18 @@ one pinned tag so phase 3 can choose setups from like-for-like evidence.
 | | current | stale | missing |
 |---|---|---|---|
 | before | 2 | 6 | 238 |
-| after | 104 | 7 | 135 |
+| after | 106 | 7 | 133 |
 
-Imaging (106 planned): 104 current, 2 missing, 0 stale. The catalogue pin moves from
-2026.10.17.1 to 2026.10.23.1, so the two point-source rows that were current on 2026.10.17.1 now
-count as stale; the 2b–2g campaigns re-measure them, as the plan says.
+Imaging (106 planned): 106 current, 0 missing, 0 stale, at catalogue pin 2026.10.25.1 (the
+newest record pin, reached by the carry-forward below; it was 2026.10.17.1 before this phase).
+The two point-source rows that were current on 2026.10.17.1 therefore count as stale; the 2b–2g
+campaigns re-measure them, as the plan says.
 
 **Release pin.** A library tag checkout still reports the last built `__version__`, so every
 batch-1 row stamps `autolens_version: 2026.8.17.1`. Their `library_revisions` equal tag
 2026.10.23.1's SHAs, and [`catalogue/release_revisions.json`](../../../catalogue/release_revisions.json)
-lets the catalogue and the dashboard publish them as 2026.10.23.1
-(`identity.software.release_pin_basis` says so). Without it every new row would read as stale.
+names them as measured on 2026.10.23.1 (`identity.software.release_pin_basis` says so). Without
+it every new row would read as stale.
 
 **Carried to 2026.10.25.1 (2026-10-26, #466).** Human ruling: re-stamp, don't rerun, "so we're
 all in sync". The release diff 2026.10.23.1..2026.10.25.1 touches no per-call imaging likelihood
@@ -53,7 +54,12 @@ all in sync". The release diff 2026.10.23.1..2026.10.25.1 touches no per-call im
 PyAutoFit search/fork-side fixes; PyAutoNerves Colab bootstrap), so the declared `carry_forward`
 in `release_revisions.json` publishes every imaging record measured on 2026.10.23.1 as
 `release_pin: 2026.10.25.1`, keeping `measured_release_pin: 2026.10.23.1` and the measured SHAs.
-Interferometer and datacube are not carried. Phase 2b measures on 2026.10.25.1.
+The catalogue and the run-time dashboard both publish 2026.10.25.1 (one rule,
+`catalogue_lifecycle.carried_pin`): `dashboard/summary.json` records carry
+`identity.library_version` 2026.10.25.1 beside `measured_library_version` 2026.10.23.1, the
+dashboard tables show "2026.10.25.1 (measured 2026.10.23.1)", and record ids keep the measured
+pin (`…@2026.10.23.1`) so they stay stable. Interferometer and datacube are not carried. Phase
+2b measures on 2026.10.25.1.
 
 ## Per-call evidence (batch 1, tag 2026.10.23.1)
 

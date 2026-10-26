@@ -102,7 +102,12 @@ The ao `jax_gpu_dense_fp64@hpc_a100 [breakdown]` legs of rectangular and delauna
 A100 memory in batches 0 and 1 and were first recorded as a known limitation
 (`BATCH0_LIMITATIONS`). The cause was the breakdown holding duplicate device copies of the
 384,753 x 1,280 fp64 mapping matrices; autolens_profiling#466 frees them and both legs ran
-(RAL 413033), so `BATCH0_LIMITATIONS` is now empty.
+(RAL 413033), so `BATCH0_LIMITATIONS` is now empty. The rerun loaded the same private
+2026.10.23.1 checkout as batch 1 (the same library SHAs), deliberately, so its rows are
+like-for-like with the rest of 2a: they were **measured on 2026.10.23.1** and are published at
+`release_pin` 2026.10.25.1 only by the declared carry-forward in
+`catalogue/release_revisions.json` (`measured_release_pin` 2026.10.23.1), not by a measurement
+on 2026.10.25.1.
 
 **Batch 1.** Submit the four RAL arrays and the four A100 jobs from the private RAL checkout of
 this repo. Rows go to the gitignored `output/p2a_batch1/results/...` scratch tree, never in
