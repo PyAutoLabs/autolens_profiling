@@ -706,8 +706,16 @@ def carried(root: Path, rel: str, point: dict | None) -> dict | None:
 
 
 def point_id(key: str, point: dict) -> str:
-    """``<series key>@<measured pin>``: a carried point keeps the id it was measured under."""
-    return f"{key}@{point.get('measured_version', point['version'])}"
+    """``<series key>@<published pin>``: the contract's record-id grammar, which a comparison's
+    ``baseline``/``candidate`` pins resolve against (PyAutoPulse ``pulse.summary.pair``)."""
+    return f"{key}@{point['version']}"
+
+
+def uncarried(point: dict) -> dict:
+    """A carried point published back at its measured pin (no carry)."""
+    out = {k: v for k, v in point.items() if k != "measured_version"}
+    out["version"] = point["measured_version"]
+    return out
 
 
 def native_points(root: Path, rel: str, index: dict) -> list[tuple[str, str, str, dict]]:
@@ -926,6 +934,39 @@ def drift(points: list[dict]) -> dict:
     }
 
 
+def offer(by_version: dict, displaced: list, point: dict) -> None:
+    """Keep one point per published release.
+
+    Prefer a provenance-carrying row, then one carrying a repeat summary (fix phase 10: a sweep
+    row is scanned both as its comparison.json entry, which lists the repeat runs, and as its raw
+    config-tagged file, which does not), then the first seen. A point measured on a release beats
+    one carried forward to it; the carried one goes to ``displaced`` (republished at its measured
+    pin by the caller), so at most one point holds each ``<series>@<published pin>`` id.
+    """
+    cur = by_version.get(point["version"])
+    carried_point, carried_cur = (
+        "measured_version" in point,
+        cur is not None and ("measured_version" in cur),
+    )
+    if cur is not None and carried_point != carried_cur:
+        if carried_cur:
+            by_version[point["version"]] = point
+            displaced.append(cur)
+        else:
+            displaced.append(point)
+        return
+    if (
+        cur is None
+        or (point["has_provenance"] and not cur["has_provenance"])
+        or (
+            point["has_provenance"] == cur["has_provenance"]
+            and has_repeat_summary(point)
+            and not has_repeat_summary(cur)
+        )
+    ):
+        by_version[point["version"]] = point
+
+
 def build_series(root: Path, conf: dict) -> tuple[list[dict], list[dict]]:
     """Series (one per key, points de-duplicated per version) and the refused rows."""
     raw = scan(root)
@@ -941,6 +982,7 @@ def build_series(root: Path, conf: dict) -> tuple[list[dict], list[dict]]:
         fields = parse_key(key)
         section, cell, config, sparse = (fields[k] for k in ("section", "cell", "config", "sparse"))
         by_version: dict[str, dict] = {}
+        displaced: list[dict] = []
         for point in raw[key]:
             ok, reason, is_refused = qualify(point, config, conf)
             point = dict(point, qualified=ok, reason=reason)
@@ -949,26 +991,11 @@ def build_series(root: Path, conf: dict) -> tuple[list[dict], list[dict]]:
                     dict(point, key=key, section=section, cell=cell, config=config, sparse=sparse)
                 )
                 continue
-            cur = by_version.get(point["version"])
-            # One point per release: prefer a provenance-carrying row, then one carrying a repeat
-            # summary (fix phase 10: a sweep row is scanned both as its comparison.json entry,
-            # which lists the repeat runs, and as its raw config-tagged file, which does not),
-            # then the first seen. A point measured on a release beats one carried forward to it.
-            same_basis = cur is not None and ("measured_version" in point) == (
-                "measured_version" in cur
-            )
-            if (
-                cur is None
-                or ("measured_version" in cur and "measured_version" not in point)
-                or (same_basis and point["has_provenance"] and not cur["has_provenance"])
-                or (
-                    same_basis
-                    and point["has_provenance"] == cur["has_provenance"]
-                    and has_repeat_summary(point)
-                    and not has_repeat_summary(cur)
-                )
-            ):
-                by_version[point["version"]] = point
+            offer(by_version, displaced, point)
+        # A carried point a release's own measurement displaced keeps its history: it is
+        # published at its measured pin instead (no carry), under the same rules.
+        while displaced:
+            offer(by_version, displaced, uncarried(displaced.pop(0)))
         if not by_version:
             continue
         points = [by_version[v] for v in sorted(by_version, key=_version_key)]

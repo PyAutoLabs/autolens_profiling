@@ -710,7 +710,7 @@ def test_dashboard_publishes_the_catalogues_carried_pin(tmp_path):
     assert carried["version"] == "2026.10.25.1"
     assert carried["measured_version"] == "2026.10.23.1"
     s = bd.build_summary(series, refused, conf, "2026-09-27T00:00:00Z", None)
-    record = next(r for r in s["records"] if r["id"] == f"{A100_RT}@2026.10.23.1")
+    record = next(r for r in s["records"] if r["id"] == f"{A100_RT}@2026.10.25.1")
     assert record["identity"]["library_version"] == "2026.10.25.1"
     assert record["identity"]["measured_library_version"] == "2026.10.23.1"
     # Interferometer is not a declared domain: it stays at its measured pin.
@@ -721,6 +721,7 @@ def test_dashboard_publishes_the_catalogues_carried_pin(tmp_path):
 
 
 def test_a_point_measured_on_a_release_beats_one_carried_to_it(tmp_path):
+    """The carried point is not dropped: it is published back at its measured pin."""
     root = _carry_tree(tmp_path)
     prov = dict(_prov(), library_revisions=_LATER_SHAS)
     cell = root / "results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100"
@@ -728,12 +729,73 @@ def test_a_point_measured_on_a_release_beats_one_carried_to_it(tmp_path):
         cell / "history" / "r2026_10_25_1" / "runtime.json",
         _row("2026.8.17.1", 0.06, vmap=0.035, prov=prov),
     )
-    series, _ = bd.build_series(root, bd.read_release_sweep_conf(root))
-    [point] = [
-        p
-        for s in series
-        if s["key"] == A100_RT
-        for p in s["points"]
-        if p["version"] == "2026.10.25.1"
-    ]
-    assert "measured_version" not in point and point["single_jit_s"] == 0.06
+    conf = bd.read_release_sweep_conf(root)
+    series, refused = bd.build_series(root, conf)
+    points = {p["version"]: p for s in series if s["key"] == A100_RT for p in s["points"]}
+    assert "measured_version" not in points["2026.10.25.1"]
+    assert points["2026.10.25.1"]["single_jit_s"] == 0.06
+    assert "measured_version" not in points["2026.10.23.1"]
+    assert points["2026.10.23.1"]["single_jit_s"] == 0.07
+    summary = bd.build_summary(series, refused, conf, "2026-09-27T00:00:00Z", None)
+    ids = {r["id"] for r in summary["records"]}
+    assert {f"{A100_RT}@2026.10.25.1", f"{A100_RT}@2026.10.23.1"} <= ids
+    assert bd.validate_summary(summary) == []
+
+
+def _pulse_pair():
+    for base in _TOOLING.parents[3], _TOOLING.parents[3].parent / "organs":
+        if (base / "PyAutoPulse/pulse/summary.py").is_file():
+            sys.path.insert(0, str(base / "PyAutoPulse"))
+            from pulse.summary import pair
+
+            return pair
+    pytest.skip("PyAutoPulse checkout not beside this repo")
+
+
+def _missing_endpoint_refusals(doc, pair):
+    return {
+        p.key: [r for r in p.refused if "is not in records" in r]
+        for p in pair(doc)
+        if any("is not in records" in r for r in p.refused)
+    }
+
+
+def test_carried_points_pair_under_the_pulse_contract(tmp_path):
+    root = _carry_tree(tmp_path)
+    conf = bd.read_release_sweep_conf(root)
+    series, refused = bd.build_series(root, conf)
+    summary = bd.build_summary(series, refused, conf, "2026-09-27T00:00:00Z", None)
+    assert f"{A100_RT}@2026.10.25.1" in {r["id"] for r in summary["records"]}
+    assert _missing_endpoint_refusals(summary, _pulse_pair()) == {}
+
+
+def test_every_committed_comparison_endpoint_resolves_to_a_record():
+    """Pulse joins a comparison to ``<comparison_key>@<pin>``; no endpoint may dangle."""
+    doc = json.loads((_TOOLING.parents[2] / "dashboard/summary.json").read_text())
+    assert _missing_endpoint_refusals(doc, _pulse_pair()) == {}
+
+
+#: The comparisons Pulse refused at ae55ed31 (before the dashboard carry-forward), all for a
+#: host change between their endpoints. No other comparison may be refused now.
+_REFUSED_AT_AE55ED31 = {
+    f"{kind}:imaging/{cell}:hst:{setup}:hpc_a100:default"
+    for kind, cell, setup in (
+        ("breakdown", "delaunay_nn", "jax_gpu_dense_fp64"),
+        ("breakdown", "delaunay_nn", "jax_gpu_sparse_fp64"),
+        ("breakdown", "rectangular", "jax_gpu_dense_fp64"),
+        ("breakdown", "rectangular", "jax_gpu_sparse_fp64"),
+        ("runtime", "delaunay", "jax_gpu_sparse_fp64"),
+        ("runtime", "delaunay_nn", "jax_gpu_dense_fp64"),
+        ("runtime", "delaunay_nn", "jax_gpu_sparse_fp64"),
+        ("runtime", "rectangular", "jax_gpu_dense_fp64"),
+        ("runtime", "rectangular", "jax_gpu_sparse_fp64"),
+    )
+}
+
+
+def test_no_committed_comparison_that_paired_before_the_carry_is_refused():
+    doc = json.loads((_TOOLING.parents[2] / "dashboard/summary.json").read_text())
+    refused = {p.key: p.refused for p in _pulse_pair()(doc) if p.refused}
+    assert set(refused) <= _REFUSED_AT_AE55ED31
+    for reasons in refused.values():
+        assert all(r.startswith("hardware identity changed (host ") for r in reasons), reasons
