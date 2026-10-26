@@ -46,6 +46,14 @@ batch-1 row stamps `autolens_version: 2026.8.17.1`. Their `library_revisions` eq
 lets the catalogue and the dashboard publish them as 2026.10.23.1
 (`identity.software.release_pin_basis` says so). Without it every new row would read as stale.
 
+**Carried to 2026.10.25.1 (2026-10-26, #466).** Human ruling: re-stamp, don't rerun, "so we're
+all in sync". The release diff 2026.10.23.1..2026.10.25.1 touches no per-call imaging likelihood
+(PyAutoArray finufft is on the NumPy NUFFT path; PyAutoLens PointSolver; PyAutoGalaxy docstrings;
+PyAutoFit search/fork-side fixes; PyAutoNerves Colab bootstrap), so the declared `carry_forward`
+in `release_revisions.json` publishes every imaging record measured on 2026.10.23.1 as
+`release_pin: 2026.10.25.1`, keeping `measured_release_pin: 2026.10.23.1` and the measured SHAs.
+Interferometer and datacube are not carried. Phase 2b measures on 2026.10.25.1.
+
 ## Per-call evidence (batch 1, tag 2026.10.23.1)
 
 JAX: `single-jit median` is the median of 200 individually timed calls after 5 warm calls; †

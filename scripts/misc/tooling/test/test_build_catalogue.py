@@ -36,6 +36,10 @@ def tree(tmp_path):
     reg["cells"] = [reg["cells"][0]]
     write(tmp_path, cat.REGISTRY, reg)
     write(tmp_path, "dashboard/summary.json", {"generated_at": STAMP, "producer_revision": "abc"})
+    # The declared reference hosts: Pulse validates every runtime record's node projection
+    # (parallel_efficiency, not_modelled), which come from this file.
+    hosts = json.loads((TOOLING.parents[2] / cat.lc.NODE_HOSTS).read_text())
+    write(tmp_path, cat.lc.NODE_HOSTS, hosts)
     return tmp_path
 
 
@@ -825,6 +829,117 @@ def test_a_source_checkout_row_takes_its_release_from_the_tag_revisions(tree):
     assert local["release_pin"] == "2026.8.17.1"
     assert "release_pin_basis" not in local["identity"]["software"]
     assert pulse_classify()(json.loads(json.dumps(doc)), ("profiling-summary", 3)) == ("ok", [])
+
+
+#: Fixture SHAs for a later tag the 2026.10.23.1 records are carried forward to.
+LATER_SHAS = {"PyAutoLens": "d" * 40, "PyAutoGalaxy": "e" * 40}
+
+
+def carry_map(**entry):
+    return {
+        "schema": "release-revisions",
+        "version": 2,
+        "releases": {"2026.10.23.1": TAG_SHAS, "2026.10.25.1": LATER_SHAS},
+        "carry_forward": [
+            {
+                "from": "2026.10.23.1",
+                "to": "2026.10.25.1",
+                "domains": ["imaging"],
+                "basis": {"PyAutoArray": "NumPy NUFFT path only"},
+                "ruling": "fixture",
+                **entry,
+            }
+        ],
+    }
+
+
+def test_a_declared_carry_forward_restamps_imaging_and_keeps_the_measured_pin(tree):
+    write(tree, cat.lc.RELEASE_REVISIONS, carry_map())
+    write(tree, f"{A100}/runtime.json", tagged_row())
+    write(tree, f"{A100}/parity.json", parity(autolens_version="2026.8.17.1"))
+    write(tree, f"{LAPTOP}/runtime.json", tagged_row(PyAutoLens="c" * 40))
+    doc = lifecycle(tree)
+    runtime = by_path(doc)[f"{A100}/runtime.json"]
+    assert runtime["release_pin"] == runtime["identity"]["library_version"] == "2026.10.25.1"
+    assert runtime["measured_release_pin"] == "2026.10.23.1"
+    software = runtime["identity"]["software"]
+    assert software["measured_release_pin"] == "2026.10.23.1"
+    assert software["release_pin_basis"].startswith("carried_forward")
+    # The measured SHAs stay as provenance; the raw row is not rewritten.
+    assert software["PyAutoLens.library_revisions"] == TAG_SHAS["PyAutoLens"]
+    assert json.loads((tree / f"{A100}/runtime.json").read_text()) == tagged_row()
+    [witness] = [r for r in doc["records"] if r["measurement"] == "parity"]
+    assert witness["release_pin"] == "2026.10.25.1"
+    assert witness["measured_release_pin"] == "2026.10.23.1"
+    # A row that names no release is not carried.
+    local = by_path(doc)[f"{LAPTOP}/runtime.json"]
+    assert local["release_pin"] == "2026.8.17.1" and "measured_release_pin" not in local
+    assert pulse_classify()(json.loads(json.dumps(doc)), ("profiling-summary", 3)) == ("ok", [])
+
+
+def test_a_carry_forward_skips_domains_it_does_not_declare(tree):
+    write(tree, cat.lc.RELEASE_REVISIONS, carry_map())
+    releases = cat.lc.release_revisions(tree)
+    carries = cat.lc.carry_forwards(tree)
+    interferometer = "results/interferometer/mge/sma/jax_gpu_dense_fp64_nufft/hpc_a100/runtime.json"
+    ident, _prov = cat.identity(tagged_row(), interferometer, releases, carries=carries)
+    assert ident["library_version"] == "2026.10.23.1"
+    assert "measured_release_pin" not in ident["software"]
+    assert not ident["software"]["release_pin_basis"].startswith("carried_forward")
+    imaging, _prov = cat.identity(tagged_row(), f"{A100}/runtime.json", releases, carries=carries)
+    assert imaging["library_version"] == "2026.10.25.1"
+
+
+@pytest.mark.parametrize(
+    "entry",
+    [{"to": "2026.11.1.1"}, {"domains": ["galaxies"]}, {"domains": []}, {"basis": {}}],
+)
+def test_an_undeclared_or_unexplained_carry_forward_is_refused(tree, entry):
+    write(tree, cat.lc.RELEASE_REVISIONS, carry_map(**entry))
+    with pytest.raises(ValueError, match="carry_forward"):
+        cat.lc.carry_forwards(tree)
+
+
+NUMBA = "results/imaging/delaunay/hst/numba_cpu_sparse_fp64/hpc_ral_cpu"
+
+
+def test_numba_cpu_runtime_records_carry_the_12_core_estimate(tree):
+    write(tree, f"{NUMBA}/runtime.json", row(warm_iid_median_s=1.2))
+    write(tree, f"{NUMBA}/breakdown.json", row(warm_iid_median_s=1.2))
+    write(tree, f"{A100}/runtime.json", row(device={"backend": "gpu"}, vmap={"per_call": 0.01}))
+    doc = lifecycle(tree)
+    carrying = [r for r in doc["records"] if "estimated_12_core" in r]
+    assert [(r["setup_id"], r["measurement"]) for r in carrying] == [
+        ("numba_cpu_sparse_fp64", "runtime")
+    ]
+    block = carrying[0]["estimated_12_core"]
+    assert block["value_s"] == pytest.approx(1.2 / 6)
+    assert block["divisor"] == 6 and block["cores"] == 12 and block["basis"] == "estimate"
+    assert block["per_call_s"] == 1.2 and block["per_call_source"] == "warm_iid_median_s"
+    # Beside, not instead of, the node-throughput projection.
+    assert "projected_node_throughput" in carrying[0]
+    assert pulse_classify()(json.loads(json.dumps(doc)), ("profiling-summary", 3)) == ("ok", [])
+
+
+def test_no_12_core_estimate_without_a_per_call_time():
+    assert cat.lc.estimate_12_core("numba_cpu_sparse_fp64", None, "x") is None
+    assert cat.lc.estimate_12_core("jax_cpu_dense_fp64", 1.0, "x") is None
+
+
+def test_committed_catalogue_carries_2a_imaging_to_2026_10_25_1():
+    root = TOOLING.parents[2]
+    doc = json.loads((root / "dashboard/catalogue.json").read_text())
+    carried = [r for r in doc["records"] if r.get("measured_release_pin") == "2026.10.23.1"]
+    assert carried
+    assert {r["likelihood"]["dataset_type"] for r in carried} == {"imaging"}
+    assert {r["release_pin"] for r in carried} == {"2026.10.25.1"}
+    assert not [r for r in doc["records"] if r["release_pin"] == "2026.10.23.1"]
+    for record in doc["records"]:
+        if record["setup_id"].startswith("numba_cpu") and record["measurement"] == "runtime":
+            per_call = record["projected_node_throughput"]["per_call_s"]
+            assert record["estimated_12_core"]["value_s"] == pytest.approx(per_call / 6)
+        else:
+            assert "estimated_12_core" not in record
 
 
 def test_without_a_release_map_the_stamped_version_stands(tree):

@@ -257,8 +257,14 @@ def settings(payload, context):
     return result
 
 
-def identity(payload, path, releases=None, revisions_from=None):
-    """``revisions_from``: the payload whose provenance names the release (default ``payload``)."""
+def identity(payload, path, releases=None, revisions_from=None, carries=None):
+    """``revisions_from``: the payload whose provenance names the release (default ``payload``).
+
+    ``carries``: the declared carry-forwards (``lc.carry_forwards``). A record whose resolved
+    release is a carry-forward's ``from`` tag, in one of its domains, publishes the ``to`` tag
+    as its library_version; ``software.measured_release_pin`` keeps the measured tag and the
+    library SHAs stay as recorded.
+    """
     device = payload.get("device") if isinstance(payload.get("device"), dict) else {}
     provenance = device.get("provenance") if isinstance(device.get("provenance"), dict) else {}
     software = {}
@@ -278,6 +284,19 @@ def identity(payload, path, releases=None, revisions_from=None):
             f"checkout stamped autolens_version {version}"
         )
         version = tag
+    cell = lc.mirrored(path)
+    carry = lc.carried_pin(version, cell["dataset_type"] if cell else None, carries)
+    if carry is not None:
+        measured_basis = software.get("release_pin_basis")
+        software["measured_release_pin"] = version
+        software["release_pin_basis"] = (
+            f"carried_forward: measured on {version}"
+            + (f" ({measured_basis})" if measured_basis else "")
+            + f"; carried to {carry['to']} without a rerun by the declared carry_forward "
+            f"({lc.RELEASE_REVISIONS}, domains {', '.join(carry['domains'])}): the release diff "
+            f"{carry['from']}..{carry['to']} touches no per-call likelihood there"
+        )
+        version = carry["to"]
     if text(version):
         software["PyAutoLens"] = version
     else:
@@ -288,7 +307,6 @@ def identity(payload, path, releases=None, revisions_from=None):
     backend = device.get("backend") or payload.get("backend")
     # Only explicit, documented config/hardware labels are used as hints; a mirrored cell's
     # folder names are its setup and host class.
-    cell = lc.mirrored(path)
     stem = f"{cell['setup_id']}_{cell['host_class']}" if cell else Path(path).stem
     label = next((x for x in (payload.get("_config_label"), hardware, stem) if text(x)), "")
     precision = None
@@ -337,6 +355,12 @@ def identity(payload, path, releases=None, revisions_from=None):
     # Source validity and scientific acceptance are separate. No legacy row is
     # promoted by this exporter, even when it carries provenance/passing pins.
     return ident, prov
+
+
+def measured_pin(ident):
+    """``{measured_release_pin}`` for a carried-forward record (``identity``), else ``{}``."""
+    pin = ident["software"].get("measured_release_pin")
+    return {"measured_release_pin": pin} if pin else {}
 
 
 def method(payload, axis, metric, statistic, repeats):
@@ -906,6 +930,14 @@ V3_LIMITATIONS = [
     "peak_rss_gb), and one per GPU on a GPU host, times the declared parallel efficiency 1.0 "
     "(an upper bound, unmeasured; phase 4 measures it), over the per-call time (numba warm iid "
     "median, JAX vmap per-call). The sampler's batch ceiling (Nautilus n_batch) is not modelled.",
+    "estimated_12_core on numba CPU runtime records (setup_id numba_cpu*) is basis estimate, "
+    "not measured: value_s = the per-call time (numba warm iid median) / 6, the human's "
+    "estimate of one call at 12 cores (ruling 2026-10-26). Nothing ran at 12 cores.",
+    "Carried-forward pins (catalogue/release_revisions.json carry_forward): a record measured "
+    "on a declared 'from' tag in a declared domain publishes the 'to' tag as release_pin without "
+    "a rerun; measured_release_pin and its library SHAs stay as provenance and "
+    "identity.software.release_pin_basis starts 'carried_forward' (2026.10.23.1 -> 2026.10.25.1, "
+    "imaging only, human ruling 2026-10-26).",
 ]
 
 
@@ -921,7 +953,16 @@ def planned_baseline_cells(reg):
 
 
 def lifecycle_candidates(
-    root, reg, path, doc, adapter, dates=None, undated=None, releases=None, nodes=None
+    root,
+    reg,
+    path,
+    doc,
+    adapter,
+    dates=None,
+    undated=None,
+    releases=None,
+    nodes=None,
+    carries=None,
 ):
     """(v3 records, reasons) for one mirrored source file; nothing is labelled yet."""
     cell = lc.mirrored(path)
@@ -956,7 +997,7 @@ def lifecycle_candidates(
             )
         if not groups:
             continue
-        ident, prov = identity(payload, path, releases)
+        ident, prov = identity(payload, path, releases, carries=carries)
         if not ident["software"]:
             reasons.append(f"{base or '/'}: no measured software version; no v3 record.")
             continue
@@ -991,6 +1032,9 @@ def lifecycle_candidates(
                     cell["host_class"],
                     hosts,
                 )
+                twelve = lc.estimate_12_core(cell["setup_id"], seconds, source)
+                if twelve is not None:
+                    extra["estimated_12_core"] = twelve
             out.append(
                 {
                     "id": "lifecycle/" + digest([path, base, measurement]),
@@ -1016,6 +1060,7 @@ def lifecycle_candidates(
                     "figures": figures,
                     "decision_id": None,
                     "release_pin": ident["library_version"],
+                    **measured_pin(ident),
                     "measured_at": measured_at,
                     "identity": ident,
                     "method": method(payload, measurement, head, statistic, n),
@@ -1039,7 +1084,7 @@ def lifecycle_candidates(
     return out, reasons
 
 
-def parity_candidate(root, path, doc, releases=None):
+def parity_candidate(root, path, doc, releases=None, carries=None):
     """(v3 records, witness entry) for one mirrored ``parity.json`` (parity_witness.py)."""
     cell = lc.mirrored(path)
     errors = parity_witness.validate(doc)
@@ -1071,7 +1116,7 @@ def parity_candidate(root, path, doc, releases=None):
             if payload.get("autolens_version") == doc["autolens_version"]:
                 sibling = payload
                 break
-    ident, prov = identity(doc, path, releases, revisions_from=sibling or {})
+    ident, prov = identity(doc, path, releases, revisions_from=sibling or {}, carries=carries)
     prov = {**prov, "measured_at": doc["measured_at"]}
     prov["unknowns"] = {k: v for k, v in prov["unknowns"].items() if k != "measured_at"}
     pixels = lc.size_pixels(cell["variant"], doc)
@@ -1096,6 +1141,7 @@ def parity_candidate(root, path, doc, releases=None):
         "figures": [],
         "decision_id": None,
         "release_pin": ident["library_version"],
+        **measured_pin(ident),
         "measured_at": doc["measured_at"],
         "identity": ident,
         "method": {
@@ -1237,6 +1283,7 @@ def build_lifecycle(root, generated, revision, dates=None):
     reg = registry(root)
     dates = commit_dates(root) if dates is None else dates
     releases = lc.release_revisions(root)
+    carries = lc.carry_forwards(root)
     nodes = (lc.node_hosts(root), lc.peak_rss_backfill(root))
     undated = []
     planned = planned_baseline_cells(reg)
@@ -1257,11 +1304,11 @@ def build_lifecycle(root, generated, revision, dates=None):
                 continue
             cell = lc.mirrored(path)
             if cell is not None and cell["file_measurement"] == "parity":
-                found, witness = parity_candidate(root, path, doc, releases)
+                found, witness = parity_candidate(root, path, doc, releases, carries)
                 witnesses.append(witness)
             else:
                 found, _reasons = lifecycle_candidates(
-                    root, reg, path, doc, adapter, dates, undated, releases, nodes
+                    root, reg, path, doc, adapter, dates, undated, releases, nodes, carries
                 )
             candidates.extend(found)
     if undated:
