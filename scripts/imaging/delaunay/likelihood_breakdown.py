@@ -893,11 +893,15 @@ with timer.section("extract_inversion_matrices"):
     # The w-tilde path never builds the operated mapping matrix; only the dense
     # leg reads it.
     if not _cli.use_sparse_operator:
-        bmm_ref = jnp.array(inversion.operated_mapping_matrix)
-        mapping_matrix_ref = jnp.array(inversion.mapping_matrix)
+        # ``asarray``, not ``array``: the inversion already holds this matrix on the
+        # device, and a second copy (~4 GB fp64 at ao size) is what pushed the eager
+        # step-8 convolution out of A100 memory (autolens_profiling#466). Same values.
+        bmm_ref = jnp.asarray(inversion.operated_mapping_matrix)
+        # Only its shape is reported; no device copy is kept (#466).
+        mapping_matrix_ref_shape = np.shape(inversion.mapping_matrix)
     else:
         bmm_ref = None
-        mapping_matrix_ref = None
+        mapping_matrix_ref_shape = None
 
     inv_mapper = inversion.cls_list_from(cls=al.Mapper)[0]
     neighbors = inv_mapper.neighbors
@@ -906,7 +910,7 @@ with timer.section("extract_inversion_matrices"):
 
 if not _cli.use_sparse_operator:
     print(f"  operated_mapping_matrix shape: {bmm_ref.shape}")
-    print(f"  mapping_matrix shape: {mapping_matrix_ref.shape}")
+    print(f"  mapping_matrix shape: {mapping_matrix_ref_shape}")
 
 # ---------------------------------------------------------------------------
 # Step 7: Mapping matrix
@@ -934,7 +938,11 @@ if not _cli.use_sparse_operator:
         )
         block(blurred_mapping_matrix)
 
-    print(f"  blurred_mapping_matrix shape: {blurred_mapping_matrix.shape}")
+    blurred_mapping_matrix_shape = blurred_mapping_matrix.shape
+    print(f"  blurred_mapping_matrix shape: {blurred_mapping_matrix_shape}")
+    # The eager step-7/8 arrays are timed and then only their shapes are read; free the
+    # device buffers before the JIT-profiled setup rows (autolens_profiling#466).
+    del mapping_matrix, blurred_mapping_matrix
 
 # JIT-profile the full inversion setup pipeline (steps 5-8 combined):
 # border relocation → Delaunay triangulation → interpolation → mapper → mapping matrix → PSF convolution.
@@ -1263,7 +1271,7 @@ if _cli.use_sparse_operator:
     )
     sparse_setup_rows["PSF-weighted data"] = timer.records[-1][1] / 10
 else:
-    print(f"  blurred_mapping_matrix shape: {blurred_mapping_matrix.shape}")
+    print(f"  blurred_mapping_matrix shape: {blurred_mapping_matrix_shape}")
 
 # ---------------------------------------------------------------------------
 # Step 9: Data vector (D)
