@@ -45,6 +45,9 @@ BATCH0 = [
     "hpc/batch_cpu/submit_campaign_p2a_imaging_batch0_ral_cpu_fp64",
     "hpc/batch_gpu/submit_campaign_p2a_imaging_batch0_a100_fp64",
 ]
+RECT28_RAL = "hpc/batch_cpu/submit_campaign_p2a_rect28_ral_cpu_fp64"
+RECT28_A100 = "hpc/batch_gpu/submit_campaign_p2a_rect28_a100_fp64"
+RECT28 = [RECT28_RAL, RECT28_A100]
 
 
 def planned_imaging_cells():
@@ -113,7 +116,7 @@ def test_numba_and_jax_scripts_by_setup():
 
 def test_submits_are_what_the_generator_renders():
     assert p2a.main(["--check"]) == 0
-    assert set(p2a.submits()) == set(BATCH1 + BATCH0)
+    assert set(p2a.submits()) == set(BATCH1 + BATCH0 + RECT28)
 
 
 def legs(path):
@@ -333,3 +336,116 @@ def test_every_script_a_leg_runs_honours_instrument_and_standard_size():
         for task in (t for t in p2a.planned_tasks() if t.script == script):
             cli = pc.parse_profile_cli(argv=["--instrument", task.instrument, *task.flags.split()])
             assert cli.instrument == task.instrument
+
+
+# ---------------------------------------------------- 28x28 rectangular size variant (#468)
+
+
+def test_rect28_cells_are_the_inference_setups_at_784_in_their_size_folder():
+    tasks = p2a.rect28_tasks()
+    assert [t.cell for t in tasks] == sorted(
+        f"imaging/rectangular/hst {sid}@{host} [{m}] source_pixels_784"
+        for sid, host in (
+            ("numba_cpu_sparse_fp64", "hpc_ral_cpu"),
+            ("jax_cpu_sparse_fp64", "hpc_a100"),
+            ("jax_gpu_sparse_fp64", "hpc_a100"),
+            ("jax_gpu_dense_fp64", "hpc_a100"),
+        )
+        for m in ("breakdown", "runtime")
+    )
+    assert "784" in json.dumps(json.loads((ROOT / lc.SIZE_VARIANTS).read_text()))
+    for task in tasks:
+        # The 2a standard cell of the same setup, plus the declared size: the same preset.
+        standard = p2a.Task(
+            *[getattr(task, f) for f in ("variant", "instrument", "setup_id")],
+            task.host_class,
+            task.measurement,
+        )
+        assert standard in p2a.planned_tasks() and task.script == standard.script
+        assert task.flags == standard.flags.replace(
+            "--standard-size", "--standard-size --source-pixels 784"
+        )
+        cli = pc.parse_profile_cli(argv=["--instrument", "hst", *task.flags.split()])
+        assert cli.standard_size and cli.source_pixels == 784
+        assert pc.requested_source_pixels(cli, "rectangular") == 784
+        facts = lc.mirrored(task.output)
+        assert (facts["location"], facts["model_variant"]) == ("cell", "default")
+        assert facts["size_variant"] == "source_pixels_784"
+        assert (facts["setup_id"], facts["host_class"], facts["file_measurement"]) == (
+            task.setup_id,
+            task.host_class,
+            task.measurement,
+        )
+        assert p2a.basis_leg(task) == p2a.basis_leg(standard)  # the standard's measured wall
+
+
+def test_rect28_preset_is_the_standard_production_cell_at_28x28():
+    import _production_config as prod
+
+    standard = prod.standard_size_preset("pixelization_numba", "hst")
+    sized = prod.standard_size_preset("pixelization_numba", "hst", 784)
+    assert (standard.rect_pixels_yx, sized.rect_pixels_yx) == (35, 28)
+    assert prod.standard_size_preset("pixelization_numba", "hst", 1225) == standard
+    differs = {
+        f for f in standard.__dataclass_fields__ if getattr(standard, f) != getattr(sized, f)
+    }
+    assert differs == {"rect_pixels_yx", "name", "provenance", "size_override"}
+    assert sized.production_data and "declared size variant" in sized.size_override
+
+
+def test_rect28_flags_outside_the_declared_variants_are_refused():
+    import pytest
+
+    with pytest.raises(SystemExit):
+        pc.parse_profile_cli(argv=["--standard-size", "--source-pixels", "1250"])
+    cli = pc.parse_profile_cli(argv=["--standard-size", "--source-pixels", "784"])
+    with pytest.raises(ValueError, match="not a declared size variant"):
+        pc.requested_source_pixels(cli, "delaunay")
+
+
+def test_rect28_submits_partition_pin_scratch_tree_and_legs():
+    ral, ral_names = legs(RECT28_RAL)
+    gpu, gpu_names = legs(RECT28_A100)
+    assert ral_names == [t.cell for t in p2a.rect28_tasks("hpc_ral_cpu")]
+    assert gpu_names == [t.cell for t in p2a.rect28_tasks("hpc_a100")]
+    assert len(ral_names) == 2 and len(gpu_names) == 6
+    assert sbatch(ral, "partition") == "ral" and "--gres" not in ral
+    assert sbatch(ral, "array") == "0-1%16"
+    assert sbatch(gpu, "partition") == "gpu" and sbatch(gpu, "gres") == "gpu:1"
+    assert sbatch(gpu, "array") is None  # one job, legs in turn
+    platforms = dict(zip(gpu_names, bash_array(gpu, "PLATFORMS"), strict=True))
+    for name, platform in platforms.items():
+        assert platform == ("cpu" if "jax_cpu_sparse" in name else "cuda,cpu")
+    for text, tasks in (
+        (ral, p2a.rect28_tasks("hpc_ral_cpu")),
+        (gpu, p2a.rect28_tasks("hpc_a100")),
+    ):
+        assert bash_array(text, "FLAGS") == [t.flags for t in tasks]
+        assert bash_array(text, "OUTS") == [t.output for t in tasks]
+        assert all("/source_pixels_784/" in o for o in bash_array(text, "OUTS"))
+        assert all("--standard-size --source-pixels 784" in f for f in bash_array(text, "FLAGS"))
+        assert p2a.RECT28_PIN == "2026.10.25.1"
+        assert "export P2A_PIN=2026.10.25.1" in text and "2026.10.23.1" not in text
+        assert (
+            'PYAUTO_PRIVATE_BASE="${PYAUTO_PRIVATE_BASE:-'
+            '/mnt/ral/jnightin/profiling/PyAuto_2026.10.25.1}"' in text
+        )
+        assert "REFUSING" in text and "check_revisions" in text and "describe --tags" in text
+        assert 'RESULTS_ROOT="$AP_ROOT/output/p2a_rect28"' in text
+        assert "HPCPullPyAuto" not in text and "/mnt/ral/jnightin/PyAuto/PyAuto" not in text
+        assert check_submits.check_text(text) == []
+        assert sbatch(text, "mem") == f"{p2a.mem_gb_measured(['hst'], minimum=32)}gb" == "32gb"
+        for row in check_submits.parse_basis_rows(text):
+            assert row["source"] == "measured-wall" and row["measured-on"] == "ao"
+        assert "upper bounds" in text
+
+
+def test_rect28_time_holds_the_standard_walls():
+    for path, sequential in ((RECT28_RAL, False), (RECT28_A100, True)):
+        text, names = legs(path)
+        tasks = [t for t in p2a.rect28_tasks() if t.cell in set(names)]
+        walls = [p2a.measured_wall(t)[0] for t in tasks]
+        need = 1.25 * (sum(walls) if sequential else max(walls)) + p2a.WALL_MIN_SLACK_S
+        assert check_submits.parse_slurm_time(sbatch(text, "time")) >= need, path
+    assert sbatch((ROOT / RECT28_RAL).read_text(), "time") == "1:00:00"
+    assert sbatch((ROOT / RECT28_A100).read_text(), "time") == "1:30:00"

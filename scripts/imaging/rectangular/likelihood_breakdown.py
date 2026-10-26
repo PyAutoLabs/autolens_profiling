@@ -503,7 +503,7 @@ if _cli.standard_size:
     dataset, adapt_image, _over_sampling_record = standard_jax_dataset(
         dataset,
         dataset_path,
-        standard_size_preset(STANDARD_FAMILY["rectangular"], instrument),
+        standard_size_preset(STANDARD_FAMILY["rectangular"], instrument, _requested_pixels),
         None,
     )
     if _cli.use_sparse_operator:
@@ -525,6 +525,7 @@ if _cli.standard_size:
         memo=_cli.memo,
         use_mixed_precision=_cli.use_mixed_precision,
         rect_mesh_cls=rect_mesh_classes(_cli)[0],
+        source_pixels=_requested_pixels,
     )
     model, instance = _std["model"], _std["instance"]
     _register_model_pytrees(model)

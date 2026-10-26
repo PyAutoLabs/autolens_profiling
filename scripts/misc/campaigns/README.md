@@ -8,10 +8,11 @@ the same list.
 | Module | Campaign | Submits |
 |--------|----------|---------|
 | [`imaging_p2a.py`](imaging_p2a.py) | Phase 2a, `imaging/{mge, rectangular, delaunay, delaunay_nn}` at the standard size on 2026.10.23.1 (autolens_profiling#456) | `hpc/batch_cpu/submit_campaign_p2a_imaging_*`, `hpc/batch_gpu/submit_campaign_p2a_imaging_*` |
+| [`imaging_p2a.py`](imaging_p2a.py) (`rect28_tasks`) | Phase 2a size variant: hst rectangular at 28x28 = 784 source pixels on 2026.10.25.1 (autolens_profiling#468) | `hpc/batch_cpu/submit_campaign_p2a_rect28_ral_cpu_fp64`, `hpc/batch_gpu/submit_campaign_p2a_rect28_a100_fp64` |
 | [`peak_rss_backfill.py`](peak_rss_backfill.py) | Phase 2x backfill of 2a's peak memory and cores per call from sacct (autolens_profiling#462) | writes `catalogue/peak_rss_backfill.json`, no submits |
 
 ```bash
-python scripts/misc/campaigns/imaging_p2a.py --list    # the 106 cells, script and flags
+python scripts/misc/campaigns/imaging_p2a.py --list    # the 106 cells + 8 28x28 legs, script and flags
 python scripts/misc/campaigns/imaging_p2a.py --write   # re-render the submits after an edit
 python scripts/misc/campaigns/imaging_p2a.py --check   # exit 1 if a submit is out of date
 pytest scripts/misc/campaigns/test -q
@@ -155,3 +156,54 @@ in-process peak (`_profile_cli.resources_dict`), so later campaigns need no back
   over-sampling cut (so on hst, jwst and ao the cut never fires and every pixel gets sub-size 2),
   and the rectangular presets use `RectangularBilinearAdaptDensity`. Production does neither;
   only the standard-size cells match production.
+
+## Rectangular 28x28 size variant
+
+**Why.** The SLaM inference runs fit rectangular sources on a 28x28 mesh (784 source pixels),
+while the profiling standard is 35x35 (1225, human size rule 2026-10-23), so every
+autolens_inference wall-time row paired with a profiling runtime row of another size
+(autolens_inference#47, `size_match: false`). This batch measures hst rectangular at 784 beside
+the 35x35 standard, which stays the coverage cell (human 2026-10-26, autolens_profiling#468).
+Delaunay needs nothing: its runs use 1250, the standard.
+
+**Cells.** Eight legs, `rect28_tasks()`: runtime and breakdown of `numba_cpu_sparse_fp64@hpc_ral_cpu`,
+`jax_cpu_sparse_fp64@hpc_a100`, `jax_gpu_sparse_fp64@hpc_a100` and `jax_gpu_dense_fp64@hpc_a100`,
+the setups the inference runs record. Each leg runs the 2a standard cell's script and flags plus
+`--source-pixels 784`: `--standard-size --source-pixels 784` builds the same standard-size
+production cell (the hst preset, production data, MGE, regularization, settings, positions
+penalty) with the mesh resized to 28x28 instead of 35x35. `--standard-size` accepts
+`--source-pixels` only for a count declared in
+[`catalogue/size_variants.json`](../../../catalogue/size_variants.json) (rectangular 784);
+any other count is still refused. `--source-pixels 784` alone would not do: the JAX cells would
+build their legacy fiducial cell at 28x28 and the numba cells ignore it.
+
+**Submits.**
+
+| Submit | Partition | Tasks |
+|--------|-----------|-------|
+| `batch_cpu/submit_campaign_p2a_rect28_ral_cpu_fp64` | `ral`, array `0-1%16` | 2 numba legs, `--time=1:00:00`, `--mem=32gb` |
+| `batch_gpu/submit_campaign_p2a_rect28_a100_fp64` | `gpu`, `--gres=gpu:1` | 6 legs in turn, `--time=1:30:00`, `--mem=32gb` |
+
+The two `jax_cpu_sparse_fp64@hpc_a100` legs run on the A100 node's CPU inside the GPU job
+(`JAX_PLATFORMS=cpu`, `NPROC=8`). Both submits load the private checkout at tag
+**2026.10.25.1** (`PYAUTO_PRIVATE_BASE`, default
+`/mnt/ral/jnightin/profiling/PyAuto_2026.10.25.1`, `P2A_PIN=2026.10.25.1`) with the same
+import-origin, tag and `library_revisions` guards as 2a, so the rows publish `release_pin`
+2026.10.25.1 by exact SHA match (`catalogue/release_revisions.json`), with no carry-forward.
+
+**Walls and memory.** Nothing ran at 28x28 yet, and batch 0 measured no hst rectangular leg, so
+each leg takes its 2a standard leg's batch-0 wall on ao (`basis_leg`) and `--mem` takes the hst
+MaxRSS (`mem_gb_measured`, 32 GB floor). The 784-pixel mesh is smaller than 1225 and hst has 4%
+of ao's masked pixels, so both are upper bounds.
+
+**Rows.** They go to the gitignored `output/p2a_rect28/results/...` tree. Copy complete cells
+(row, `fit.png`, `parity.json`, revisions checked) into the cell's `source_pixels_784/` folder,
+e.g. `results/imaging/rectangular/hst/jax_gpu_dense_fp64/hpc_a100/source_pixels_784/runtime.json`.
+The catalogue reads that folder as the declared size variant: its rows are keyed on their own,
+`regime: source_pixels_784`, `current` beside the standard row with a `size_variant` limitation
+and no `size_fallback` note. Coverage and the trend dashboard stay standard-only.
+
+**Before committing the rows:** PyAutoPulse's v3 validator allows one `current` record per
+(likelihood, instrument, setup_id, host_class, model_variant, measurement), with no regime, so
+`build_catalogue.py --check --validate-with ../PyAutoPulse` rejects the second current record
+until Pulse keys on the regime too.

@@ -172,7 +172,9 @@ instrument = _cli.instrument or "euclid"  # default; override via --instrument
 if _cli.standard_size:
     if _cli.variant != "production":
         raise SystemExit("--standard-size resizes the production preset; it has no legacy form")
-    preset = standard_size_preset("pixelization_numba", instrument)
+    preset = standard_size_preset(
+        "pixelization_numba", instrument, requested_source_pixels(_cli, "rectangular")
+    )
 else:
     preset = preset_for("pixelization_numba", instrument=instrument, variant=_cli.variant)
 _requested_pixels = requested_source_pixels(_cli, "rectangular") if _cli.standard_size else None

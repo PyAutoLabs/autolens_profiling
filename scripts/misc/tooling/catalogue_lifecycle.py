@@ -18,6 +18,11 @@ The rules, in one place:
   rectangular 35² = 1225. A standard-size candidate wins; otherwise the candidate nearest the
   standard (then one whose size is not recorded) is current with a ``size_fallback``
   limitation, and coverage later reports the standard size missing.
+- **Size variants** (``catalogue/size_variants.json``, autolens_profiling#468): a declared
+  count measured beside the standard one (rectangular 784 = 28x28, the SLaM production mesh).
+  Its rows live in the cell's ``source_pixels_<n>/`` folder, their key adds ``size_variant``
+  so they are current beside the standard row, without a ``size_fallback`` note, and they
+  carry a ``size_variant`` limitation. Coverage and the trend dashboard stay standard-only.
 - **Superseded**: every other record on a key with a current record; a ``local_*`` row is
   superseded by the current record of its key on the reference host for its device. Records
   whose key has no current record cannot honestly be superseded and stay out of
@@ -186,8 +191,62 @@ def release_from_revisions(payload, releases) -> str | None:
     return None
 
 
+#: Declared size variants measured beside the standard size: ``{schema, version, variants}``
+#: where each variant is ``{dataset_type, variant, source_pixels, reason, ruling}``.
+SIZE_VARIANTS = "catalogue/size_variants.json"
+SIZE_VARIANT_PREFIX = "source_pixels_"
+
+
+def _size_variants() -> dict[str, dict]:
+    """``{folder: entry}`` of the declared size variants (``source_pixels_<n>``)."""
+    path = Path(__file__).resolve().parents[3] / SIZE_VARIANTS
+    if not path.is_file():
+        return {}
+    doc = json.loads(path.read_text())
+    if doc.get("schema") != "size-variants" or doc.get("version") != 1:
+        raise ValueError(f"Unsupported {SIZE_VARIANTS}")
+    out = {}
+    for entry in doc["variants"]:
+        ok = (
+            entry.get("dataset_type") in DATASET_TYPES
+            and entry.get("variant") in STANDARD_SOURCE_PIXELS
+            and type(entry.get("source_pixels")) is int
+            and entry["source_pixels"] > 0
+            and entry["source_pixels"] != STANDARD_SOURCE_PIXELS[entry["variant"]]
+            and isinstance(entry.get("reason"), str)
+            and isinstance(entry.get("ruling"), str)
+        )
+        if not ok:
+            raise ValueError(f"{SIZE_VARIANTS}: invalid size variant {entry!r}")
+        out[f"{SIZE_VARIANT_PREFIX}{entry['source_pixels']}"] = entry
+    return out
+
+
+SIZE_VARIANT_FOLDERS = _size_variants()
+
+
+def size_variant_of(dataset_type: str, variant: str, folder: str) -> dict | None:
+    """The declared size variant a cell sub-folder names for this likelihood, else None."""
+    entry = SIZE_VARIANT_FOLDERS.get(folder)
+    if entry and (entry["dataset_type"], entry["variant"]) == (dataset_type, variant):
+        return entry
+    return None
+
+
+def size_variant_note(entry: dict) -> str:
+    return (
+        f"size_variant: a declared size measured beside the standard "
+        f"{STANDARD_SOURCE_PIXELS[entry['variant']]} source pixels ({SIZE_VARIANTS}, "
+        f"{entry['ruling']}): {entry['source_pixels']} source pixels, {entry['reason']}"
+    )
+
+
 def mirrored(path: str) -> dict | None:
-    """The cell facts of a repo-relative path in the mirrored tree, else None."""
+    """The cell facts of a repo-relative path in the mirrored tree, else None.
+
+    ``size_variant`` is the declared size folder (``source_pixels_<n>``, directly under the host
+    class or the model variant) a cell file sits in, else None.
+    """
     parts = PurePosixPath(path).parts
     if len(parts) < 7 or parts[0] != "results" or parts[1] not in DATASET_TYPES:
         return None
@@ -197,8 +256,15 @@ def mirrored(path: str) -> dict | None:
         return None
     rest = list(parts[6:])
     model_variant = "default"
-    if len(rest) > 1 and rest[0] not in LOCATIONS:
+    if (
+        len(rest) > 1
+        and rest[0] not in LOCATIONS
+        and not size_variant_of(dataset_type, variant, rest[0])
+    ):
         model_variant, rest = rest[0], rest[1:]
+    size_variant = None
+    if len(rest) > 1 and size_variant_of(dataset_type, variant, rest[0]):
+        size_variant, rest = rest[0], rest[1:]
     location, run = "cell", None
     if len(rest) > 1 and rest[0] in LOCATIONS:
         location, run = rest[0], "/".join(rest[1:-1]) or None
@@ -218,6 +284,7 @@ def mirrored(path: str) -> dict | None:
         "location": location,
         "run": run,
         "file_measurement": stem if stem in FILE_MEASUREMENTS else None,
+        "size_variant": size_variant,
     }
 
 

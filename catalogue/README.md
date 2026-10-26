@@ -39,6 +39,12 @@ The rules live in [`catalogue_lifecycle.py`](../scripts/misc/tooling/catalogue_l
 - **Coverage**: `coverage_matrix.py` renders [`dashboard/coverage.md`](../dashboard/coverage.md)
   (current / stale / superseded / missing per likelihood x class x measurement; a cell
   covered only by a `size_fallback` row is missing). Re-run it after `build_catalogue.py`.
+- **size variants** ([size_variants.json](size_variants.json), autolens_profiling#468): a
+  declared source-pixel count measured beside the standard size (rectangular 784 = 28x28, the
+  SLaM inference mesh). Its rows live in the cell's `source_pixels_<n>/` folder, are keyed on
+  their own (`regime: source_pixels_<n>`) and are `current` there beside the standard row, with
+  a `size_variant` limitation and no `size_fallback` note. Coverage and the trend dashboard
+  read only the standard rows.
 - **measured_at**: a row with no recorded timestamp is dated by the UTC day its file was first
   committed to git (an upper bound on the measurement date), from
   [measured_at_first_commit.json](measured_at_first_commit.json), and says so in

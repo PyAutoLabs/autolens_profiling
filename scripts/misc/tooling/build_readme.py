@@ -274,6 +274,7 @@ def _scan_breakdown_rows(results_root: Path = RESULTS_ROOT) -> list[BreakdownRow
         if f is None or f["location"] != "cell":
             continue
         mv = f"/{f['model_variant']}" if f["model_variant"] != "default" else ""
+        mv += f"/{f['size_variant']}" if f["size_variant"] else ""
         rows.append(
             BreakdownRow(
                 path=p,

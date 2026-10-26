@@ -1,0 +1,14 @@
+{
+ "schema": "size-variants",
+ "version": 1,
+ "note": "Declared source-pixel sizes measured beside the standard size (human size rule 2026-10-23: rectangular 35x35 = 1225, Delaunay 1250). A size variant is the standard-size production cell (--standard-size) built at the declared count instead (--standard-size --source-pixels <n>); its rows live in the cell's source_pixels_<n>/ folder, are keyed on their own (regime source_pixels_<n>) and are current there beside the standard row, without a size_fallback note. Coverage and the trend dashboard stay standard-only. Read by _profile_cli.py (which counts --source-pixels may join --standard-size) and scripts/misc/tooling/catalogue_lifecycle.py (keys and status).",
+ "variants": [
+  {
+   "dataset_type": "imaging",
+   "variant": "rectangular",
+   "source_pixels": 784,
+   "reason": "the rectangular mesh the SLaM inference runs use (mesh_shape 28x28 = 784; the standard-size production cell is otherwise unchanged: hst_rect_adapt 32x32 resized to 28x28 instead of 35x35), so the autolens_inference wall-time rows pair with a profiling runtime row of the same size (autolens_inference#47 size_match)",
+   "ruling": "human 2026-10-26, autolens_profiling#468 (\"Profile 28² too\")"
+  }
+ ]
+}
