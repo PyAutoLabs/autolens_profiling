@@ -3,11 +3,11 @@
  "version": 1,
  "project": "autolens_profiling",
  "scope": "release-runtime",
- "generated_at": "2026-10-26T11:44:47Z",
- "evidence_updated_at": "2026-10-23T00:00:00Z",
+ "generated_at": "2026-10-26T12:12:39Z",
+ "evidence_updated_at": "2026-10-25T00:00:00Z",
  "evidence_updated_at_reason": null,
  "valid_until": null,
- "producer_revision": "65b17065a66486ed8f5661d720afc18c31c6afd8",
+ "producer_revision": "08d45eb8c5b3ab1954865c61ef34419727d56d59",
  "comparison_policy": {
   "id": "runtime-drift-2x-1ms",
   "ratio": 2.0,
@@ -518,8 +518,9 @@
     "backend": "cpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -554,8 +555,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -589,8 +591,9 @@
     "backend": "cpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -625,8 +628,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -661,8 +665,9 @@
     "backend": "cpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -906,8 +911,9 @@
     "backend": "cpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -977,8 +983,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -1153,8 +1160,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -1189,8 +1197,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -1295,8 +1304,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -1330,8 +1340,9 @@
     "backend": "cpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -1401,8 +1412,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -1577,8 +1589,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -1788,8 +1801,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -1964,8 +1978,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -2104,8 +2119,9 @@
     "backend": "cpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -2140,8 +2156,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -2175,8 +2192,9 @@
     "backend": "cpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -2211,8 +2229,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -2247,8 +2266,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -2283,8 +2303,9 @@
     "backend": "cpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -2319,8 +2340,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -2565,8 +2587,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -2601,8 +2624,9 @@
     "backend": "cpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -2672,8 +2696,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -2883,8 +2908,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -2918,8 +2944,9 @@
     "backend": "cpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -2954,8 +2981,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -3620,8 +3648,9 @@
     "backend": "cpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -3655,8 +3684,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -3690,8 +3720,9 @@
     "backend": "cpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -3725,8 +3756,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -3760,8 +3792,9 @@
     "backend": "cpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -4005,8 +4038,9 @@
     "backend": "cpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -4145,8 +4179,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -4180,8 +4215,9 @@
     "backend": "cpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -4215,8 +4251,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -4320,8 +4357,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -4355,8 +4393,9 @@
     "backend": "cpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -4425,8 +4464,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -4530,8 +4570,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -4705,8 +4746,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -4740,8 +4782,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -5020,8 +5063,9 @@
     "backend": "cpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -5055,8 +5099,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -5090,8 +5135,9 @@
     "backend": "cpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -5125,8 +5171,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -5160,8 +5207,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -5195,8 +5243,9 @@
     "backend": "cpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -5230,8 +5279,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -5300,8 +5350,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -5335,8 +5386,9 @@
     "backend": "cpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -5405,8 +5457,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -5510,8 +5563,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -5545,8 +5599,9 @@
     "backend": "cpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -5580,8 +5635,9 @@
     "backend": "gpu",
     "precision": "float64",
     "library": "PyAutoLens",
-    "library_version": "2026.10.23.1",
-    "release_date": "2026-10-23",
+    "library_version": "2026.10.25.1",
+    "measured_library_version": "2026.10.23.1",
+    "release_date": "2026-10-25",
     "reason": null
    },
    "provenance": {
@@ -8211,7 +8267,7 @@
    "axis": "runtime",
    "metric": "single_jit_s",
    "baseline": "2026.8.17.1",
-   "candidate": "2026.10.23.1",
+   "candidate": "2026.10.25.1",
    "ratio": null,
    "status": "insufficient",
    "qualified": false,
@@ -8325,7 +8381,7 @@
    "axis": "runtime",
    "metric": "single_jit_s",
    "baseline": "2026.8.17.1",
-   "candidate": "2026.10.23.1",
+   "candidate": "2026.10.25.1",
    "ratio": null,
    "status": "insufficient",
    "qualified": false,
@@ -8355,7 +8411,7 @@
    "axis": "runtime",
    "metric": "single_jit_s",
    "baseline": "2026.8.17.1",
-   "candidate": "2026.10.23.1",
+   "candidate": "2026.10.25.1",
    "ratio": null,
    "status": "insufficient",
    "qualified": false,
@@ -8781,7 +8837,7 @@
    "axis": "runtime",
    "metric": "single_jit_s",
    "baseline": "2026.8.17.1",
-   "candidate": "2026.10.23.1",
+   "candidate": "2026.10.25.1",
    "ratio": null,
    "status": "insufficient",
    "qualified": false,
@@ -8811,7 +8867,7 @@
    "axis": "runtime",
    "metric": "single_jit_s",
    "baseline": "2026.8.17.1",
-   "candidate": "2026.10.23.1",
+   "candidate": "2026.10.25.1",
    "ratio": null,
    "status": "insufficient",
    "qualified": false,
@@ -9381,7 +9437,7 @@
    "axis": "runtime",
    "metric": "single_jit_s",
    "baseline": "2026.8.17.1",
-   "candidate": "2026.10.23.1",
+   "candidate": "2026.10.25.1",
    "ratio": 1.204,
    "status": "insufficient",
    "qualified": false,
@@ -9411,7 +9467,7 @@
    "axis": "runtime",
    "metric": "single_jit_s",
    "baseline": "2026.8.17.1",
-   "candidate": "2026.10.23.1",
+   "candidate": "2026.10.25.1",
    "ratio": 14.216,
    "status": "drifted",
    "qualified": false,
@@ -9485,7 +9541,7 @@
    "axis": "runtime",
    "metric": "single_jit_s",
    "baseline": "2026.7.6.649",
-   "candidate": "2026.10.23.1",
+   "candidate": "2026.10.25.1",
    "ratio": 1.154,
    "status": "insufficient",
    "qualified": false,
@@ -9673,7 +9729,7 @@
    "axis": "runtime",
    "metric": "single_jit_s",
    "baseline": "2026.8.17.1",
-   "candidate": "2026.10.23.1",
+   "candidate": "2026.10.25.1",
    "ratio": 0.828,
    "status": "insufficient",
    "qualified": false,
@@ -9703,7 +9759,7 @@
    "axis": "runtime",
    "metric": "single_jit_s",
    "baseline": "2026.8.17.1",
-   "candidate": "2026.10.23.1",
+   "candidate": "2026.10.25.1",
    "ratio": 0.994,
    "status": "insufficient",
    "qualified": false,

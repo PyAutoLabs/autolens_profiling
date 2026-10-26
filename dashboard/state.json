@@ -4,14 +4,14 @@
   "repo": "autolens_profiling",
   "status": "yellow",
   "headline": "1 of 191 series drifted >= 2x at the last release",
-  "updated": "2026-10-26T11:44:47Z",
+  "updated": "2026-10-26T12:12:39Z",
   "pages_url": "https://pyautolabs.github.io/autolens_profiling/",
   "items": [
     {
       "severity": "yellow",
-      "text": "breakdown/imaging/delaunay_nn/hst hpc_a100_fp64 sparse: 14.216x from 2026.8.17.1 to 2026.10.23.1",
+      "text": "breakdown/imaging/delaunay_nn/hst hpc_a100_fp64 sparse: 14.216x from 2026.8.17.1 to 2026.10.25.1",
       "url": "https://github.com/PyAutoLabs/autolens_profiling/blob/main/results/imaging/delaunay_nn/hst/jax_gpu_sparse_fp64/hpc_a100/breakdown.json",
-      "prompt": "/profiling triage imaging/delaunay_nn/hst hpc_a100_fp64 \u2014 14.216x from 2026.8.17.1 to 2026.10.23.1 (dashboard drift badge)"
+      "prompt": "/profiling triage imaging/delaunay_nn/hst hpc_a100_fp64 \u2014 14.216x from 2026.8.17.1 to 2026.10.25.1 (dashboard drift badge)"
     }
   ]
 }
