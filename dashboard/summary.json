@@ -3,11 +3,11 @@
  "version": 1,
  "project": "autolens_profiling",
  "scope": "release-runtime",
- "generated_at": "2026-10-26T11:14:56Z",
+ "generated_at": "2026-10-26T11:44:47Z",
  "evidence_updated_at": "2026-10-23T00:00:00Z",
  "evidence_updated_at_reason": null,
  "valid_until": null,
- "producer_revision": "828a85d038f17f64e29631ea0430f59e11e0cd21",
+ "producer_revision": "65b17065a66486ed8f5661d720afc18c31c6afd8",
  "comparison_policy": {
   "id": "runtime-drift-2x-1ms",
   "ratio": 2.0,
@@ -27,8 +27,8 @@
    "reason": "no declared cell matrix; the results/ scan is the inventory"
   },
   "observed": {
-   "series": 189,
-   "points": 213,
+   "series": 191,
+   "points": 215,
    "releases": 6,
    "cells": 55
   },
@@ -3638,6 +3638,41 @@
    }
   },
   {
+   "id": "breakdown:imaging/delaunay:ao:jax_gpu_dense_fp64:hpc_a100:default@2026.10.23.1",
+   "axis": "runtime",
+   "unit": "s",
+   "measurement": {
+    "single_jit_s": 0.3607076287007658,
+    "vmap_per_call_s": null
+   },
+   "identity": {
+    "section": "breakdown",
+    "cell": "imaging/delaunay/ao",
+    "config": "hpc_a100_fp64",
+    "sparse": false,
+    "tier": "hpc",
+    "device": "a100",
+    "backend": "gpu",
+    "precision": "float64",
+    "library": "PyAutoLens",
+    "library_version": "2026.10.23.1",
+    "release_date": "2026-10-23",
+    "reason": null
+   },
+   "provenance": {
+    "host": "euclid-ral-gpu-1",
+    "job": "413034",
+    "loadavg": 0.52,
+    "has_provenance": true,
+    "qualified": false,
+    "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+   },
+   "evidence": {
+    "path": "results/imaging/delaunay/ao/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
+    "fragment": null
+   }
+  },
+  {
    "id": "breakdown:imaging/delaunay:ao:jax_cpu_sparse_fp64:hpc_a100:default@2026.10.23.1",
    "axis": "runtime",
    "unit": "s",
@@ -4999,6 +5034,41 @@
    },
    "evidence": {
     "path": "results/imaging/rectangular/ao/numba_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
+    "fragment": null
+   }
+  },
+  {
+   "id": "breakdown:imaging/rectangular:ao:jax_gpu_dense_fp64:hpc_a100:default@2026.10.23.1",
+   "axis": "runtime",
+   "unit": "s",
+   "measurement": {
+    "single_jit_s": 0.3165426333027426,
+    "vmap_per_call_s": null
+   },
+   "identity": {
+    "section": "breakdown",
+    "cell": "imaging/rectangular/ao",
+    "config": "hpc_a100_fp64",
+    "sparse": false,
+    "tier": "hpc",
+    "device": "a100",
+    "backend": "gpu",
+    "precision": "float64",
+    "library": "PyAutoLens",
+    "library_version": "2026.10.23.1",
+    "release_date": "2026-10-23",
+    "reason": null
+   },
+   "provenance": {
+    "host": "euclid-ral-gpu-1",
+    "job": "413033",
+    "loadavg": 0.52,
+    "has_provenance": true,
+    "qualified": false,
+    "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+   },
+   "evidence": {
+    "path": "results/imaging/rectangular/ao/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
     "fragment": null
    }
   },
@@ -9092,6 +9162,20 @@
    ]
   },
   {
+   "comparison_key": "breakdown:imaging/delaunay:ao:jax_gpu_dense_fp64:hpc_a100:default",
+   "policy": "runtime-drift-2x-1ms",
+   "axis": "runtime",
+   "metric": "single_jit_s",
+   "baseline": null,
+   "candidate": null,
+   "ratio": null,
+   "status": "insufficient",
+   "qualified": false,
+   "reasons": [
+    "one release only"
+   ]
+  },
+  {
    "comparison_key": "breakdown:imaging/delaunay:ao:jax_cpu_sparse_fp64:hpc_a100:default",
    "policy": "runtime-drift-2x-1ms",
    "axis": "runtime",
@@ -9487,6 +9571,20 @@
   },
   {
    "comparison_key": "breakdown:imaging/rectangular:ao:numba_cpu_sparse_fp64:hpc_ral_cpu:default",
+   "policy": "runtime-drift-2x-1ms",
+   "axis": "runtime",
+   "metric": "single_jit_s",
+   "baseline": null,
+   "candidate": null,
+   "ratio": null,
+   "status": "insufficient",
+   "qualified": false,
+   "reasons": [
+    "one release only"
+   ]
+  },
+  {
+   "comparison_key": "breakdown:imaging/rectangular:ao:jax_gpu_dense_fp64:hpc_a100:default",
    "policy": "runtime-drift-2x-1ms",
    "axis": "runtime",
    "metric": "single_jit_s",

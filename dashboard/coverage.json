@@ -1,5 +1,5 @@
 {
- "catalogue_generated_at": "2026-10-26T11:14:56Z",
+ "catalogue_generated_at": "2026-10-26T11:44:47Z",
  "catalogue_release_pin": "2026.10.25.1",
  "cells": [
   {
@@ -504,10 +504,10 @@
    "likelihood": "imaging/delaunay",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/0efae964d03019eb0af1",
    "setup_id": "jax_gpu_dense_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "imaging/delaunay/ao jax_gpu_dense_fp64@hpc_a100 [runtime]",
@@ -1362,10 +1362,10 @@
    "likelihood": "imaging/rectangular",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/67b767fb16a18f785d5b",
    "setup_id": "jax_gpu_dense_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "imaging/rectangular/ao jax_gpu_dense_fp64@hpc_a100 [runtime]",
@@ -3259,10 +3259,10 @@
   },
   {
    "class": "optimal",
-   "current": 7,
+   "current": 8,
    "likelihood": "imaging/delaunay",
    "measurement": "breakdown",
-   "missing": 1,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
@@ -3349,10 +3349,10 @@
   },
   {
    "class": "optimal",
-   "current": 7,
+   "current": 8,
    "likelihood": "imaging/rectangular",
    "measurement": "breakdown",
-   "missing": 1,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
@@ -4489,12 +4489,12 @@
   "designations": "catalogue/provisional_designations.json"
  },
  "totals": {
-  "current": 104,
+  "current": 106,
   "current_records_unplanned": 116,
-  "missing": 135,
+  "missing": 133,
   "missing_size_fallback": 20,
   "planned_cells": 246,
-  "records_superseded": 379,
+  "records_superseded": 381,
   "stale": 7,
   "superseded": 0
  },

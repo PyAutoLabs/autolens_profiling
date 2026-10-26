@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "generated": "2026-10-26T11:14:56Z",
+ "generated": "2026-10-26T11:44:47Z",
  "reference_host": "euclid-ral-gpu-2",
  "loadavg_cap": 8.0,
  "drift_ratio": 2.0,
@@ -2904,6 +2904,42 @@
    }
   },
   {
+   "key": "breakdown:imaging/delaunay:ao:jax_gpu_dense_fp64:hpc_a100:default",
+   "section": "breakdown",
+   "cell": "imaging/delaunay/ao",
+   "config": "hpc_a100_fp64",
+   "sparse": false,
+   "identity": {
+    "likelihood": "imaging/delaunay",
+    "instrument": "ao",
+    "setup_id": "jax_gpu_dense_fp64",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.10.23.1",
+     "single_jit_s": 0.3607076287007658,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413034",
+     "loadavg": 0.52,
+     "has_provenance": true,
+     "source": "results/imaging/delaunay/ao/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
    "key": "breakdown:imaging/delaunay:ao:jax_cpu_sparse_fp64:hpc_a100:default",
    "section": "breakdown",
    "cell": "imaging/delaunay/ao",
@@ -3975,6 +4011,42 @@
      "source": "results/imaging/rectangular/ao/numba_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-compute-1 != euclid-ral-gpu-2)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:imaging/rectangular:ao:jax_gpu_dense_fp64:hpc_a100:default",
+   "section": "breakdown",
+   "cell": "imaging/rectangular/ao",
+   "config": "hpc_a100_fp64",
+   "sparse": false,
+   "identity": {
+    "likelihood": "imaging/rectangular",
+    "instrument": "ao",
+    "setup_id": "jax_gpu_dense_fp64",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.10.23.1",
+     "single_jit_s": 0.3165426333027426,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413033",
+     "loadavg": 0.52,
+     "has_provenance": true,
+     "source": "results/imaging/rectangular/ao/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {

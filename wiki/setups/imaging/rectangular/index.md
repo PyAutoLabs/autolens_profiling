@@ -23,6 +23,7 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 | [2661de29c036ba138bdb](0e19015b76de01dca0e1.md) | results/imaging/rectangular/ao/jax_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json | 110 |
 | [2af69bb415dc440ac674](0e84960289ee639f42b8.md) | results/imaging/rectangular/ao/numba_cpu_sparse_fp64/hpc_ral_cpu/runtime.json | 1 |
 | [31c848a67f5aa7df8a70](3fb358d094c6b351a88e.md) | results/imaging/rectangular/ao/jax_gpu_sparse_fp64/hpc_a100/breakdown.json | 110 |
+| [4ab6b310015b7c210dbf](2719f197413b6698da7d.md) | results/imaging/rectangular/ao/jax_gpu_dense_fp64/hpc_a100/breakdown.json | 86 |
 | [69eb6a80fac5369cf07c](bcc514b639ec1c478391.md) | results/imaging/rectangular/ao/jax_gpu_dense_fp64/hpc_a100/runtime.json | 7 |
 | [b044845149caeb1d4b1d](37e0714d2d7e1c6ac0ec.md) | results/imaging/rectangular/ao/jax_cpu_sparse_fp64/hpc_a100/breakdown.json | 110 |
 | [b0ef63434a814c2fabdb](e8f9b363269cb66c528a.md) | results/imaging/rectangular/ao/numba_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json | 25 |

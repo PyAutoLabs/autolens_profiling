@@ -138,14 +138,11 @@ BATCH0_WALLS = {
 }
 #: Batch-0 legs that cannot run, by human ruling a known limitation rather than a bug. Batch 1
 #: keeps them (each fails in under two minutes and the job carries on); their wall above is that
-#: failure, so the A100 job's ``--time`` still holds them.
-BATCH0_LIMITATIONS = {
-    cell: "A100 out of memory, the 384,753 x 1,280 fp64 blurred mapping matrix does not fit"
-    for cell in (
-        "imaging/delaunay/ao jax_gpu_dense_fp64@hpc_a100 [breakdown]",
-        "imaging/rectangular/ao jax_gpu_dense_fp64@hpc_a100 [breakdown]",
-    )
-}
+#: failure, so the A100 job's ``--time`` still holds them. Empty since autolens_profiling#466:
+#: the two ao ``jax_gpu_dense_fp64@hpc_a100 [breakdown]`` legs ran out of A100 memory only
+#: because the breakdown held duplicate device copies of the mapping matrices; freed, both run
+#: (RAL 413033, 131 s and 111 s).
+BATCH0_LIMITATIONS: dict = {}
 #: ``--time`` = WALL_HEADROOM x the measured wall (README "Setting batch 1's --time"), rounded
 #: up to the next half hour.
 WALL_HEADROOM = 1.25
