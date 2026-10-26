@@ -892,11 +892,25 @@ def test_a_carry_forward_skips_domains_it_does_not_declare(tree):
 
 @pytest.mark.parametrize(
     "entry",
-    [{"to": "2026.11.1.1"}, {"domains": ["galaxies"]}, {"domains": []}, {"basis": {}}],
+    [
+        {"to": "2026.11.1.1"},
+        {"to": "2026.10.23.1"},
+        {"domains": ["galaxies"]},
+        {"domains": []},
+        {"basis": {}},
+    ],
 )
 def test_an_undeclared_or_unexplained_carry_forward_is_refused(tree, entry):
     write(tree, cat.lc.RELEASE_REVISIONS, carry_map(**entry))
     with pytest.raises(ValueError, match="carry_forward"):
+        cat.lc.carry_forwards(tree)
+
+
+def test_two_carry_forwards_from_one_measured_tag_are_refused(tree):
+    doc = carry_map()
+    doc["carry_forward"].append(dict(doc["carry_forward"][0], domains=["interferometer"]))
+    write(tree, cat.lc.RELEASE_REVISIONS, doc)
+    with pytest.raises(ValueError, match="one carry_forward per measured tag"):
         cat.lc.carry_forwards(tree)
 
 
@@ -932,6 +946,24 @@ def test_committed_catalogue_carries_2a_imaging_to_2026_10_25_1():
     carried = [r for r in doc["records"] if r.get("measured_release_pin") == "2026.10.23.1"]
     assert carried
     assert {r["likelihood"]["dataset_type"] for r in carried} == {"imaging"}
+    # Derived, not hard-coded: every imaging record measured on 2026.10.23.1 (its library SHAs
+    # equal the tag's, or it is a parity witness of such a cell) is carried, and nothing else.
+    shas = cat.lc.release_revisions(root)["2026.10.23.1"]
+
+    def on_tag(record):
+        software = record["identity"]["software"]
+        return all(software.get(f"{repo}.library_revisions") == sha for repo, sha in shas.items())
+
+    measured = {r["id"] for r in doc["records"] if on_tag(r)}
+    cells = {r["evidence"]["path"].rsplit("/", 1)[0] for r in doc["records"] if r["id"] in measured}
+    measured |= {
+        r["id"]
+        for r in doc["records"]
+        if r["measurement"] == "parity" and r["evidence"]["path"].rsplit("/", 1)[0] in cells
+    }
+    imaging = {r["id"] for r in doc["records"] if r["likelihood"]["dataset_type"] == "imaging"}
+    assert {r["id"] for r in carried} == measured & imaging
+    assert len(carried) >= 231  # 2a batch 1 + the ao rerun (#466), at the time of the carry
     assert {r["release_pin"] for r in carried} == {"2026.10.25.1"}
     assert not [r for r in doc["records"] if r["release_pin"] == "2026.10.23.1"]
     for record in doc["records"]:
