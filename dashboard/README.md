@@ -58,7 +58,12 @@ unique within the file. Each record has:
   whose headline is the median also carries `single_jit_block_mean_s`, the legacy block mean;
 - `identity`: `section`, `cell`, `config`, `sparse`, `tier` / `device` / `precision` parsed from
   the sweep config label (`null` + `reason` outside the grammar), `backend` as the row recorded it,
-  `library: "PyAutoLens"`, `library_version`, `release_date`;
+  `library: "PyAutoLens"`, `library_version`, `release_date`; a point carried forward by a
+  declared `carry_forward` (`catalogue/release_revisions.json`, the catalogue's rule) publishes
+  the `to` tag as `library_version` and adds `measured_library_version` (the tag it ran on); its
+  record `id` is `<series>@<published tag>`, the grammar a comparison's `baseline`/`candidate`
+  pins resolve against. Where the `to` release has its own measurement, that point holds the id
+  and the carried point is published back at its measured tag (no carry), so its history stays;
 - `provenance`: `host`, `job`, `loadavg`, `has_provenance`, `qualified`, `reason` — exactly what the
   page plots hollow or solid, and why. Only a reference-host-class row (`hpc_*`) with a host and a
   load average, on the pinned node, can be qualified; laptop rows never qualify as trend points;

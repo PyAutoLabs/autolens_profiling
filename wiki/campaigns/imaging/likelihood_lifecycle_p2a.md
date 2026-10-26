@@ -3,7 +3,7 @@
 **Status:** open
 **Question:** What does every planned imaging/{mge, rectangular, delaunay, delaunay_nn} cell cost at the standard source size (Delaunay 1250, rectangular 35x35) on the pinned release 2026.10.23.1, measured from the production pipeline, and does each cell's log-likelihood match an independent reference?
 **Pre-registered rule:** every planned cell lands `current`, with runtime and breakdown, provenance, `fit.png` and a `parity.json` whose status is `match` against the eager NumPy dense-mapping reference (tolerance 1e-4 x |reference|, fp64). Any `diverged` witness blocks that setup until explained. Recorded in the Mind prompt before batch 1 ran (2026-10-24).
-**Verdict:** 104 of 106 planned imaging cells current, 53/53 parity witnesses `match`; no setup blocked. The 2 missing cells are the known limitation below (ao `jax_gpu_dense_fp64@hpc_a100` breakdowns out of A100 memory). Class designations (optimal / secondary) are phase 3's decision, not this page's.
+**Verdict:** 106 of 106 planned imaging cells current, 53/53 parity witnesses `match`; no setup blocked. The 2 ao `jax_gpu_dense_fp64@hpc_a100` breakdowns that first ran out of A100 memory were a script bug (duplicate device copies of the mapping matrices), fixed and rerun in #466. Class designations (optimal / secondary) are phase 3's decision, not this page's.
 **Headline:** fastest per call on every likelihood x instrument is `jax_gpu_dense_fp64@hpc_a100` (e.g. hst Delaunay 35.05 ms per call at vmap 16, job 412944). Per call is per device, not per node: numba runs one serial call per core, so per node a ral node is projected at ≈248 calls/s on hst Delaunay against ≈114 for a 4×A100 node, and on ao Delaunay ≈4.6 against ≈10.9 (upper bounds, parallel efficiency unmeasured; [Comparing CPU and GPU setups](#comparing-cpu-and-gpu-setups)).
 **Library PRs:** none (measurement only, tag 2026.10.23.1)
 **Profiling PRs:** PR A (`--standard-size`, parity writer, submits) #457, batch-1 walls #460, this PR B (rows, catalogue, coverage, this page)
@@ -26,6 +26,7 @@ one pinned tag so phase 3 can choose setups from like-for-like evidence.
 | PR A | 2026-10-24 | Can every setup measure the same production likelihood at the standard size, with a parity witness? | JAX and numba cells of one likelihood x instrument build the same production preset | `--standard-size`, parity writer, campaign submits | — | #457 |
 | Batch 0 | 2026-10-24 | How long and how large are the bounding legs? | `--time` >= 1.25 x the slowest batch-0 leg | walls and MaxRSS set batch 1's `--time` / `--mem` | 412877, 412884, 412911, 412915 | #460 |
 | Batch 1 | 2026-10-25 | All 106 cells | every cell current with parity `match` | 104/106 legs complete, 53/53 `match`; 2 known OOMs | 412923–412926 (RAL CPU), 412927, 412943, 412944, 412945 (A100) | this PR |
+| ao rerun | 2026-10-26 | Do the 2 ao dense breakdowns fit once the duplicate device copies are freed? | both legs complete on one A100 | 2/2 complete (delaunay 131 s, rectangular 111 s; step-by-step 0.36 / 0.32 s); 106/106 current; measured on the 2026.10.23.1 libraries (the batch-1 SHAs), published at 2026.10.25.1 by carry-forward, not by measurement | 413033 (A100) | #466 |
 
 ## Coverage after this PR
 
@@ -34,17 +35,33 @@ one pinned tag so phase 3 can choose setups from like-for-like evidence.
 | | current | stale | missing |
 |---|---|---|---|
 | before | 2 | 6 | 238 |
-| after | 104 | 7 | 135 |
+| after | 106 | 7 | 133 |
 
-Imaging (106 planned): 104 current, 2 missing, 0 stale. The catalogue pin moves from
-2026.10.17.1 to 2026.10.23.1, so the two point-source rows that were current on 2026.10.17.1 now
-count as stale; the 2b–2g campaigns re-measure them, as the plan says.
+Imaging (106 planned): 106 current, 0 missing, 0 stale, at catalogue pin 2026.10.25.1 (the
+newest record pin, reached by the carry-forward below; it was 2026.10.17.1 before this phase).
+The two point-source rows that were current on 2026.10.17.1 therefore count as stale; the 2b–2g
+campaigns re-measure them, as the plan says.
 
 **Release pin.** A library tag checkout still reports the last built `__version__`, so every
 batch-1 row stamps `autolens_version: 2026.8.17.1`. Their `library_revisions` equal tag
 2026.10.23.1's SHAs, and [`catalogue/release_revisions.json`](../../../catalogue/release_revisions.json)
-lets the catalogue and the dashboard publish them as 2026.10.23.1
-(`identity.software.release_pin_basis` says so). Without it every new row would read as stale.
+names them as measured on 2026.10.23.1 (`identity.software.release_pin_basis` says so). Without
+it every new row would read as stale.
+
+**Carried to 2026.10.25.1 (2026-10-26, #466).** Human ruling: re-stamp, don't rerun, "so we're
+all in sync". The release diff 2026.10.23.1..2026.10.25.1 touches no per-call imaging likelihood
+(PyAutoArray finufft is on the NumPy NUFFT path; PyAutoLens PointSolver; PyAutoGalaxy docstrings;
+PyAutoFit search/fork-side fixes; PyAutoNerves Colab bootstrap), so the declared `carry_forward`
+in `release_revisions.json` publishes every imaging record measured on 2026.10.23.1 as
+`release_pin: 2026.10.25.1`, keeping `measured_release_pin: 2026.10.23.1` and the measured SHAs.
+The catalogue and the run-time dashboard both publish 2026.10.25.1 (one rule,
+`catalogue_lifecycle.carried_pin`): `dashboard/summary.json` records carry
+`identity.library_version` 2026.10.25.1 beside `measured_library_version` 2026.10.23.1, the
+dashboard tables show "2026.10.25.1 (measured 2026.10.23.1)", and record ids carry the published
+pin (`…@2026.10.25.1`), the grammar Pulse pairs comparisons by. When 2b measures a cell on
+2026.10.25.1, that row takes the id and the carried row is published back at 2026.10.23.1, so
+its history stays. Interferometer and datacube are not carried. Phase 2b measures on
+2026.10.25.1.
 
 ## Per-call evidence (batch 1, tag 2026.10.23.1)
 
@@ -199,12 +216,11 @@ node and with the parallel efficiency phase 4 measures.
 
 ## Open / parked / drafts
 
-- **Known limitation (human ruling): ao `jax_gpu_dense_fp64@hpc_a100` breakdown, rectangular
-  and delaunay.** The 384,753 x 1,280 fp64 blurred mapping matrix (10.76 / 10.29 GiB
-  allocations) does not fit on the A100 in the breakdown's step-by-step decomposition. Both
-  legs failed in under two minutes and the job carried on; their runtime legs completed and
-  are current. Coverage shows these 2 cells as missing; that is expected and not a re-run
-  target unless the breakdown learns to stream the matrix.
+- **Resolved (#466): ao `jax_gpu_dense_fp64@hpc_a100` breakdown, rectangular and delaunay.**
+  Batches 0 and 1 ran out of A100 memory in step 8's eager PSF convolution (10.76 / 10.29 GiB
+  allocations) and were first recorded as a limitation. The breakdown was holding `jnp.array`
+  copies of the operated and mapping matrices (~4 GB each); #466 frees them and both legs ran
+  on RAL 413033 with unchanged non-timing values (checked on hst). Both cells are now current.
 - `delaunay_nn` `jax_gpu_sparse_fp64@hpc_a100`: 1,149 ms per call against 42.74 ms dense, and
   against 80 ms for the 2026-09 1500-pixel row (history/). The standard-size cell is the
   production preset (MGE lens light, adapt split regularisation, uncapped over-sampling cut),

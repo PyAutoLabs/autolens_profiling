@@ -34,14 +34,12 @@
 # the sum of its legs' walls (they run in turn); --time is 1.25x the submit's total (6948s),
 # plus 15 min of slack, rounded up to the next 30 min.
 #   6 leg(s): delaunay jax_cpu_sparse_fp64 breakdown, delaunay jax_cpu_sparse_fp64 runtime, delaunay jax_gpu_dense_fp64 breakdown, delaunay jax_gpu_dense_fp64 runtime, delaunay jax_gpu_sparse_fp64 breakdown, delaunay jax_gpu_sparse_fp64 runtime
-#   KNOWN LIMITATION, kept in - delaunay jax_gpu_dense_fp64 breakdown (A100 out of memory, the 384,753 x 1,280 fp64 blurred mapping matrix does not fit; batch 0 task 412884_2); it fails fast
 #   cell: imaging/delaunay/ao  device: a100  precision: fp64
 #   source: measured-wall  wall: 3698  ref: 412884_1,412884_2,412884_3,412884_5,412915_0,412915_4  measured-on: ao  headroom: 1.25  median: included
 #   2 leg(s): mge jax_gpu_dense_fp64 breakdown, mge jax_gpu_dense_fp64 runtime
 #   cell: imaging/mge/ao  device: a100  precision: fp64
 #   source: measured-wall  wall: 126  ref: 412884_13,412915_12  measured-on: ao  headroom: 1.25  median: included
 #   6 leg(s): rectangular jax_cpu_sparse_fp64 breakdown, rectangular jax_cpu_sparse_fp64 runtime, rectangular jax_gpu_dense_fp64 breakdown, rectangular jax_gpu_dense_fp64 runtime, rectangular jax_gpu_sparse_fp64 breakdown, rectangular jax_gpu_sparse_fp64 runtime
-#   KNOWN LIMITATION, kept in - rectangular jax_gpu_dense_fp64 breakdown (A100 out of memory, the 384,753 x 1,280 fp64 blurred mapping matrix does not fit; batch 0 task 412915_16); it fails fast
 #   cell: imaging/pixelization/ao  device: a100  precision: fp64
 #   source: measured-wall  wall: 3124  ref: 412884_15,412884_17,412884_19,412915_14,412915_16,412915_18  measured-on: ao  headroom: 1.25  median: included
 

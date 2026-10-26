@@ -25,6 +25,7 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 | [9cf20dd9138bf67dc9e7](2a8e925d7f7a5fb1fc7b.md) | results/imaging/delaunay/ao/jax_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json | 109 |
 | [b698b6fd32042d2d476f](523e7ff2a335bcd03d58.md) | results/imaging/delaunay/ao/jax_cpu_sparse_fp64/hpc_a100/runtime.json | 6 |
 | [b93e78a277742022db4d](c648370b01477abab0ec.md) | results/imaging/delaunay/ao/jax_cpu_sparse_fp64/hpc_a100/breakdown.json | 109 |
+| [c32356eecb53b512cdd2](f9439b559fbc4d60cf05.md) | results/imaging/delaunay/ao/jax_gpu_dense_fp64/hpc_a100/breakdown.json | 86 |
 | [e4b34382b2dabf048c38](46d46f0471197f3a23ec.md) | results/imaging/delaunay/ao/jax_cpu_sparse_fp64/hpc_ral_cpu/runtime.json | 6 |
 
 ## euclid

@@ -51,6 +51,14 @@ The rules live in [`catalogue_lifecycle.py`](../scripts/misc/tooling/catalogue_l
   `identity.library_version` are that tag, and `identity.software.release_pin_basis` says so.
   A `parity.json` takes the release of its cell's row when both stamp the same version. Add a
   tag there when a campaign measures on it.
+- **carry_forward** (release_revisions.json version 2, autolens_profiling#466): a declared,
+  human-ruled pin move without a rerun. A record whose resolved pin is the entry's `from` tag and
+  whose likelihood `dataset_type` is in its `domains` publishes the `to` tag as `release_pin`,
+  keeps `measured_release_pin` (and `identity.software.measured_release_pin`) and its measured
+  library SHAs, and `identity.software.release_pin_basis` starts `carried_forward`. `basis`
+  gives the per-library reason the release diff touches no per-call likelihood in those
+  domains. Raw `results/**` rows are never edited. Declared: 2026.10.23.1 -> 2026.10.25.1,
+  imaging only (the PyAutoArray finufft change is on the NumPy NUFFT path).
 - **resources** (autolens_profiling#462): what one evaluation occupies, `cpus_per_eval` and
   `peak_rss_gb`. It comes from the row's own `resources` block (written by every
   runtime/breakdown writer since #462), else from
@@ -67,6 +75,10 @@ The rules live in [`catalogue_lifecycle.py`](../scripts/misc/tooling/catalogue_l
   unmeasured until phase 4) over the per-call time (numba warm iid median, JAX vmap per call).
   `bound_by` names the limit. The sampler's batch ceiling (Nautilus `n_batch`) is not
   modelled. Compare CPU and GPU setups per node with it, never per call.
+- **estimated_12_core** (numba CPU runtime records, setup_id `numba_cpu*`): `value_s` = the
+  per-call time (numba warm iid median) / `divisor` 6, the human's estimate of one call at 12
+  cores (ruling 2026-10-26), `basis: estimate`. Nothing ran at 12 cores; it sits beside
+  `projected_node_throughput`, it does not replace it.
 
 ## Regenerate and validate
 

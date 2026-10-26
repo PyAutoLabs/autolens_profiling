@@ -110,15 +110,67 @@ FILE_ORDER = {"runtime": 0, "breakdown": 1, "gradient": 2, "parity": 3}
 RELEASE_REVISIONS = "catalogue/release_revisions.json"
 
 
-def release_revisions(root) -> dict:
-    """``{tag: {repo: sha}}`` from ``catalogue/release_revisions.json`` ({} when absent)."""
+#: Supported ``release_revisions.json`` versions (2 adds the declared ``carry_forward`` list).
+RELEASE_REVISIONS_VERSIONS = (1, 2)
+
+
+def _release_doc(root) -> dict:
     path = Path(root) / RELEASE_REVISIONS
     if not path.is_file():
-        return {}
+        return {"releases": {}, "carry_forward": []}
     doc = json.loads(path.read_text())
-    if doc.get("schema") != "release-revisions" or not isinstance(doc.get("releases"), dict):
+    if (
+        doc.get("schema") != "release-revisions"
+        or doc.get("version") not in RELEASE_REVISIONS_VERSIONS
+        or not isinstance(doc.get("releases"), dict)
+    ):
         raise ValueError(f"Unsupported {RELEASE_REVISIONS}")
-    return doc["releases"]
+    return doc
+
+
+def release_revisions(root) -> dict:
+    """``{tag: {repo: sha}}`` from ``catalogue/release_revisions.json`` ({} when absent)."""
+    return _release_doc(root)["releases"]
+
+
+def carry_forwards(root) -> list[dict]:
+    """The declared pin carry-forwards of ``catalogue/release_revisions.json`` ([] when none).
+
+    Each entry ``{from, to, domains, basis, ruling}`` says a record measured on tag ``from``
+    whose likelihood dataset_type is in ``domains`` publishes ``to`` as its release_pin without
+    a rerun: the release diff ``from..to`` (``basis``, per library) touches no per-call
+    likelihood in those domains. The measured pin and SHAs stay on the record as provenance.
+    """
+    doc = _release_doc(root)
+    entries = doc.get("carry_forward", [])
+    if not isinstance(entries, list):
+        raise ValueError(f"{RELEASE_REVISIONS}: carry_forward must be a list")
+    releases = doc["releases"]
+    for entry in entries:
+        ok = (
+            isinstance(entry, dict)
+            and entry.get("from") in releases
+            and entry.get("to") in releases
+            and entry.get("from") != entry.get("to")
+            and isinstance(entry.get("domains"), list)
+            and bool(entry["domains"])
+            and set(entry["domains"]) <= set(DATASET_TYPES)
+            and isinstance(entry.get("basis"), dict)
+            and bool(entry["basis"])
+        )
+        if not ok:
+            raise ValueError(f"{RELEASE_REVISIONS}: invalid carry_forward entry {entry!r}")
+    if len({e["from"] for e in entries}) != len(entries):
+        raise ValueError(f"{RELEASE_REVISIONS}: one carry_forward per measured tag")
+    return entries
+
+
+def carried_pin(pin, dataset_type, carries) -> dict | None:
+    """The carry-forward entry that applies to a record measured on ``pin``, else None."""
+    for entry in carries or ():
+        if entry["from"] == pin and dataset_type in entry["domains"]:
+            return entry
+    return None
 
 
 def release_from_revisions(payload, releases) -> str | None:
@@ -411,6 +463,30 @@ def per_call(payload: dict, backend: str) -> tuple[float | None, str]:
     if _positive(value) is None:
         return None, f"no finite positive {source} in the row"
     return value, source
+
+
+#: The 12-core estimate on numba CPU runtime records (human ruling 2026-10-26).
+TWELVE_CORE_DIVISOR = 6
+TWELVE_CORE_SETUP_PREFIX = "numba_cpu"
+
+
+def estimate_12_core(setup_id: str, seconds, source: str) -> dict | None:
+    """``estimated_12_core`` for a numba CPU runtime record, else None.
+
+    The per-call time (``per_call``: numba warm iid median) divided by 6: the human's estimate
+    of one call's time at 12 cores. An estimate, never a measurement; nothing ran at 12 cores.
+    """
+    if not setup_id.startswith(TWELVE_CORE_SETUP_PREFIX) or _positive(seconds) is None:
+        return None
+    return {
+        "value_s": seconds / TWELVE_CORE_DIVISOR,
+        "per_call_s": seconds,
+        "per_call_source": source,
+        "divisor": TWELVE_CORE_DIVISOR,
+        "cores": 12,
+        "basis": "estimate",
+        "ruling": "human 2026-10-26: per-call / 6 at 12 cores",
+    }
 
 
 def _sig(value: float) -> float:

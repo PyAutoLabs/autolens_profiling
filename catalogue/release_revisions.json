@@ -1,7 +1,7 @@
 {
  "schema": "release-revisions",
- "version": 1,
- "note": "Each released tag's library SHAs (git rev-parse <tag>^{commit}). A row run from a library source checkout stamps the last built autolens_version (2026.8.17.1 at every later tag); when its device.provenance.library_revisions equal every SHA of one tag here, build_catalogue.py publishes that tag as the record's release_pin and library_version and says so in identity.software.release_pin_basis. Add a tag when a campaign measures on it.",
+ "version": 2,
+ "note": "Each released tag's library SHAs (git rev-parse <tag>^{commit}). A row run from a library source checkout stamps the last built autolens_version (2026.8.17.1 at every later tag); when its device.provenance.library_revisions equal every SHA of one tag here, build_catalogue.py publishes that tag as the record's release_pin and library_version and says so in identity.software.release_pin_basis. Add a tag when a campaign measures on it. Version 2 adds carry_forward: a declared, human-ruled move of the records measured on tag 'from' (likelihood dataset_type in 'domains') to release_pin 'to' without a rerun, because the release diff from..to ('basis', per library) touches no per-call likelihood there; those records keep measured_release_pin and their measured SHAs, and identity.software.release_pin_basis starts 'carried_forward'.",
  "releases": {
   "2026.10.23.1": {
    "PyAutoNerves": "f116f70077e442db19a2a152f5ee78d57294c504",
@@ -9,6 +9,30 @@
    "PyAutoArray": "d99ec2b30224ac021e39628b9904d01c44f33b29",
    "PyAutoGalaxy": "e00b5e7d554d6958a6c8821edef6afdf01188e6d",
    "PyAutoLens": "f791ac77d136d664346fff21cc36079f8f9b1196"
+  },
+  "2026.10.25.1": {
+   "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+   "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+   "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+   "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+   "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
   }
- }
+ },
+ "carry_forward": [
+  {
+   "from": "2026.10.23.1",
+   "to": "2026.10.25.1",
+   "domains": [
+    "imaging"
+   ],
+   "basis": {
+    "PyAutoArray": "157e210c + 3f3c8619: finufft as the CPU NUFFT backend (single-threaded type-1 transform); NumPy NUFFT path only, i.e. interferometer/datacube, hence those domains are NOT carried. No imaging likelihood change.",
+    "PyAutoLens": "58f561c04 + a25ca735a: PointSolver residual_threshold (opt-in, then on by default at 10.0); 635d81294 docstring. Point-source solver only; no imaging likelihood change.",
+    "PyAutoGalaxy": "01f5c2fb + a5f0412a: docstrings only.",
+    "PyAutoFit": "Search/fork-side fixes: BFGS/LBFGS checkpoint resume, MCMC thinning guard, parent likelihood warm-up before forking workers, EP/Laplace reporting, assertion naming; tests. No per-call likelihood change.",
+    "PyAutoNerves": "90bd238: Colab bootstrap installs finufft. No likelihood change."
+   },
+   "ruling": "human 2026-10-26: re-stamp the 2a imaging records to 2026.10.25.1, do not rerun, 'so we're all in sync' (autolens_profiling#466)"
+  }
+ ]
 }

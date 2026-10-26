@@ -682,6 +682,42 @@ def _releases(root: Path) -> dict:
     return lc.release_revisions(root)
 
 
+@functools.cache
+def _carries(root: Path) -> tuple:
+    return tuple(lc.carry_forwards(root))
+
+
+def carried(root: Path, rel: str, point: dict | None) -> dict | None:
+    """``point`` published at its carry-forward pin, the catalogue's rule (``lc.carried_pin``).
+
+    A point of a mirrored cell measured on a declared carry-forward's ``from`` tag, in one of
+    its domains, takes the ``to`` tag as ``version`` (the published pin: the trend axis and
+    ``identity.library_version``) and keeps the measured tag as ``measured_version``.
+    """
+    if point is None:
+        return None
+    facts = lc.mirrored(rel)
+    entry = lc.carried_pin(
+        point["version"], facts["dataset_type"] if facts else None, _carries(root)
+    )
+    if entry is None:
+        return point
+    return dict(point, version=entry["to"], measured_version=point["version"])
+
+
+def point_id(key: str, point: dict) -> str:
+    """``<series key>@<published pin>``: the contract's record-id grammar, which a comparison's
+    ``baseline``/``candidate`` pins resolve against (PyAutoPulse ``pulse.summary.pair``)."""
+    return f"{key}@{point['version']}"
+
+
+def uncarried(point: dict) -> dict:
+    """A carried point published back at its measured pin (no carry)."""
+    out = {k: v for k, v in point.items() if k != "measured_version"}
+    out["version"] = point["measured_version"]
+    return out
+
+
 def native_points(root: Path, rel: str, index: dict) -> list[tuple[str, str, str, dict]]:
     """``(series id, version, source, payload)`` the mirrored tree itself gives one file.
 
@@ -764,11 +800,11 @@ def scan(root: Path) -> dict[str, list[dict]]:
                     continue
                 claimed.add(fragment)
                 source = f"{rel}#{fragment}" if fragment else rel
-                add(target["id"], _point(entry, target["version"], source))
+                add(target["id"], carried(root, rel, _point(entry, target["version"], source)))
         for key, version, source, payload in native_points(root, rel, index):
             if source.partition("#")[2] in claimed:
                 continue
-            add(key, _point(payload, version, source))
+            add(key, carried(root, rel, _point(payload, version, source)))
     return raw
 
 
@@ -898,6 +934,39 @@ def drift(points: list[dict]) -> dict:
     }
 
 
+def offer(by_version: dict, displaced: list, point: dict) -> None:
+    """Keep one point per published release.
+
+    Prefer a provenance-carrying row, then one carrying a repeat summary (fix phase 10: a sweep
+    row is scanned both as its comparison.json entry, which lists the repeat runs, and as its raw
+    config-tagged file, which does not), then the first seen. A point measured on a release beats
+    one carried forward to it; the carried one goes to ``displaced`` (republished at its measured
+    pin by the caller), so at most one point holds each ``<series>@<published pin>`` id.
+    """
+    cur = by_version.get(point["version"])
+    carried_point, carried_cur = (
+        "measured_version" in point,
+        cur is not None and ("measured_version" in cur),
+    )
+    if cur is not None and carried_point != carried_cur:
+        if carried_cur:
+            by_version[point["version"]] = point
+            displaced.append(cur)
+        else:
+            displaced.append(point)
+        return
+    if (
+        cur is None
+        or (point["has_provenance"] and not cur["has_provenance"])
+        or (
+            point["has_provenance"] == cur["has_provenance"]
+            and has_repeat_summary(point)
+            and not has_repeat_summary(cur)
+        )
+    ):
+        by_version[point["version"]] = point
+
+
 def build_series(root: Path, conf: dict) -> tuple[list[dict], list[dict]]:
     """Series (one per key, points de-duplicated per version) and the refused rows."""
     raw = scan(root)
@@ -913,6 +982,7 @@ def build_series(root: Path, conf: dict) -> tuple[list[dict], list[dict]]:
         fields = parse_key(key)
         section, cell, config, sparse = (fields[k] for k in ("section", "cell", "config", "sparse"))
         by_version: dict[str, dict] = {}
+        displaced: list[dict] = []
         for point in raw[key]:
             ok, reason, is_refused = qualify(point, config, conf)
             point = dict(point, qualified=ok, reason=reason)
@@ -921,21 +991,11 @@ def build_series(root: Path, conf: dict) -> tuple[list[dict], list[dict]]:
                     dict(point, key=key, section=section, cell=cell, config=config, sparse=sparse)
                 )
                 continue
-            cur = by_version.get(point["version"])
-            # One point per release: prefer a provenance-carrying row, then one carrying a repeat
-            # summary (fix phase 10: a sweep row is scanned both as its comparison.json entry,
-            # which lists the repeat runs, and as its raw config-tagged file, which does not),
-            # then the first seen.
-            if (
-                cur is None
-                or (point["has_provenance"] and not cur["has_provenance"])
-                or (
-                    point["has_provenance"] == cur["has_provenance"]
-                    and has_repeat_summary(point)
-                    and not has_repeat_summary(cur)
-                )
-            ):
-                by_version[point["version"]] = point
+            offer(by_version, displaced, point)
+        # A carried point a release's own measurement displaced keeps its history: it is
+        # published at its measured pin instead (no carry), under the same rules.
+        while displaced:
+            offer(by_version, displaced, uncarried(displaced.pop(0)))
         if not by_version:
             continue
         points = [by_version[v] for v in sorted(by_version, key=_version_key)]
@@ -1029,6 +1089,12 @@ def _producer_revision(root: Path) -> tuple[str | None, str | None]:
     return sha, None
 
 
+def _pin_text(point: dict) -> str:
+    """The published pin, with the measured pin beside it for a carried-forward point."""
+    measured = point.get("measured_version")
+    return f"{point['version']} (measured {measured})" if measured else point["version"]
+
+
 def _release_date(version: str) -> str | None:
     """``2026.9.27.1`` -> ``2026-09-27`` (PyAutoLens release versions encode their date)."""
     parts = version.split(".")
@@ -1062,7 +1128,7 @@ def _evidence(source: str) -> dict:
 def _summary_record(s: dict, p: dict) -> dict:
     ident = _config_identity(s["config"])
     return {
-        "id": f"{s['key']}@{p['version']}",
+        "id": point_id(s["key"], p),
         "axis": "runtime",
         "unit": "s",
         "measurement": {
@@ -1095,6 +1161,11 @@ def _summary_record(s: dict, p: dict) -> dict:
             "precision": ident["precision"],
             "library": "PyAutoLens",
             "library_version": p["version"],
+            **(
+                {"measured_library_version": p["measured_version"]}
+                if "measured_version" in p
+                else {}
+            ),
             "release_date": _release_date(p["version"]),
             "reason": ident["reason"],
         },
@@ -1182,7 +1253,7 @@ def build_summary(
     comparisons = [_summary_comparison(s) for s in series]
     excluded = [
         {
-            "id": f"{r['key']}@{r['version']}",
+            "id": point_id(r["key"], r),
             "reason": r["reason"],
             "evidence": _evidence(r["source"]),
         }
@@ -1555,7 +1626,7 @@ def _svg_panel(cell_series: list[dict], versions: list[str], slots: dict[str, in
             )
         for x, y, p in pts:
             tip = html.escape(
-                f"{s['config']}{' sparse' if s['sparse'] else ''} @ {p['version']}: {_fmt_s(p['single_jit_s'])} per call"
+                f"{s['config']}{' sparse' if s['sparse'] else ''} @ {_pin_text(p)}: {_fmt_s(p['single_jit_s'])} per call"
                 + (f" ({repeat_label(p)})" if has_repeat_summary(p) else "")
                 + (f" ({p['headline_note']})" if p.get("headline_note") else "")
                 + (
@@ -1677,7 +1748,7 @@ def render_html(
                         else ""
                     )
                     parts.append(
-                        f"<tr><td>{html.escape(s['config'])}{' sparse' if s['sparse'] else ''}</td><td>{html.escape(p['version'])}</td>"
+                        f"<tr><td>{html.escape(s['config'])}{' sparse' if s['sparse'] else ''}</td><td>{html.escape(_pin_text(p))}</td>"
                         f"<td>{_per_call_html(p)}</td><td>{_fmt_s(p['vmap_per_call_s'])}</td><td>{html.escape(prov)}{note}</td><td>{html.escape(dtxt)}</td></tr>"
                     )
             parts.append("</table></details></div>")
@@ -1692,7 +1763,7 @@ def render_html(
         for r in refused:
             parts.append(
                 f'<tr class="refused"><td>{html.escape(r["section"] + "/" + r["cell"])}</td><td>{html.escape(r["config"])}{" sparse" if r["sparse"] else ""}</td>'
-                f"<td>{html.escape(r['version'])}</td><td>{_fmt_s(r['single_jit_s'])}</td>"
+                f"<td>{html.escape(_pin_text(r))}</td><td>{_fmt_s(r['single_jit_s'])}</td>"
                 f"<td>{html.escape(str(r['host']))} / {html.escape(str(r['job']))} / {r['loadavg']:.1f}</td><td><code>{html.escape(r['source'])}</code></td></tr>"
             )
         parts.append("</table>")

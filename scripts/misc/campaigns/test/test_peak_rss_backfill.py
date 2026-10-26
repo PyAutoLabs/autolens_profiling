@@ -110,9 +110,14 @@ def test_committed_sidecar_covers_every_committed_2a_row():
     doc = json.loads((ROOT / bf.SIDECAR).read_text())
     tasks = p2a.planned_tasks()
     committed = {t.output for t in tasks if (ROOT / t.output).is_file()}
-    assert set(doc["rows"]) == committed
-    assert len(committed) == 104
-    assert {t.cell for t in tasks if t.output not in committed} == set(doc["legs_without_row"])
+    # Rows written after #462 (the two ao gpu-dense breakdowns rerun in #466) carry their own
+    # ``resources`` block and need no sidecar entry; the sidecar stays batch 1's record.
+    own = {o for o in committed if "resources" in json.loads((ROOT / o).read_text())}
+    assert set(doc["rows"]) == committed - own
+    assert len(committed - own) == 104
+    assert {t.cell for t in tasks if t.output not in committed - own} == set(
+        doc["legs_without_row"]
+    )
     for entry in doc["rows"].values():
         assert entry["cpus_per_eval"] in (1, 8)
         assert (entry["peak_rss_gb"] is None) == (entry["peak_rss_basis"] is None)

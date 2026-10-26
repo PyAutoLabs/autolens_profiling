@@ -98,11 +98,16 @@ delaunay_nn), so jwst, hst and euclid run under the ao upper bound. `--time` is 
 rounded up to the next half hour: 1:00:00 for every RAL array, 3:00:00 for the ao, euclid and
 jwst A100 jobs and 3:30:00 for hst (its six delaunay_nn legs on top).
 
-The ao `jax_gpu_dense_fp64@hpc_a100 [breakdown]` legs of rectangular and delaunay are a known
-limitation (`BATCH0_LIMITATIONS`; human ruling): the 384,753 x 1,280 fp64 blurred mapping
-matrix does not fit on the A100. Batch 1 keeps them in the ao A100 job, where they fail in under
-two minutes and the job carries on; their WALL-BASIS rows say so. jwst (43k masked pixels) and
-the smaller instruments fit.
+The ao `jax_gpu_dense_fp64@hpc_a100 [breakdown]` legs of rectangular and delaunay ran out of
+A100 memory in batches 0 and 1 and were first recorded as a known limitation
+(`BATCH0_LIMITATIONS`). The cause was the breakdown holding duplicate device copies of the
+384,753 x 1,280 fp64 mapping matrices; autolens_profiling#466 frees them and both legs ran
+(RAL 413033), so `BATCH0_LIMITATIONS` is now empty. The rerun loaded the same private
+2026.10.23.1 checkout as batch 1 (the same library SHAs), deliberately, so its rows are
+like-for-like with the rest of 2a: they were **measured on 2026.10.23.1** and are published at
+`release_pin` 2026.10.25.1 only by the declared carry-forward in
+`catalogue/release_revisions.json` (`measured_release_pin` 2026.10.23.1), not by a measurement
+on 2026.10.25.1.
 
 **Batch 1.** Submit the four RAL arrays and the four A100 jobs from the private RAL checkout of
 this repo. Rows go to the gitignored `output/p2a_batch1/results/...` scratch tree, never in
