@@ -1,6 +1,6 @@
 {
- "catalogue_generated_at": "2026-10-25T18:51:31Z",
- "catalogue_release_pin": "2026.10.23.1",
+ "catalogue_generated_at": "2026-10-26T11:14:56Z",
+ "catalogue_release_pin": "2026.10.25.1",
  "cells": [
   {
    "cell": "cluster/image_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [breakdown]",
@@ -2376,7 +2376,7 @@
    "likelihood": "interferometer/mge",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "release_pin 2026.8.17.1 behind 2026.10.23.1",
+   "reason": "release_pin 2026.8.17.1 behind 2026.10.25.1",
    "record": "lifecycle/af710929670e207b5c73",
    "setup_id": "jax_gpu_dense_fp64_nufft",
    "state": "stale"
@@ -3052,7 +3052,7 @@
    "likelihood": "point_source_image/image_plane",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "release_pin 2026.8.17.1 behind 2026.10.23.1",
+   "reason": "release_pin 2026.8.17.1 behind 2026.10.25.1",
    "record": "lifecycle/cb90f6f5a85337f51dfd",
    "setup_id": "jax_cpu_na_fp64",
    "state": "stale"
@@ -3078,7 +3078,7 @@
    "likelihood": "point_source_image/image_plane",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "release_pin 2026.8.17.1 behind 2026.10.23.1",
+   "reason": "release_pin 2026.8.17.1 behind 2026.10.25.1",
    "record": "lifecycle/4d30b4c98e64be2a52c0",
    "setup_id": "jax_gpu_na_fp64",
    "state": "stale"
@@ -3130,7 +3130,7 @@
    "likelihood": "point_source_source/source_plane",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "release_pin 2026.8.17.1 behind 2026.10.23.1",
+   "reason": "release_pin 2026.8.17.1 behind 2026.10.25.1",
    "record": "lifecycle/844ac46ac2bd6937c74f",
    "setup_id": "jax_cpu_na_fp64",
    "state": "stale"
@@ -3143,7 +3143,7 @@
    "likelihood": "point_source_source/source_plane",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "release_pin 2026.10.17.1 behind 2026.10.23.1",
+   "reason": "release_pin 2026.10.17.1 behind 2026.10.25.1",
    "record": "lifecycle/61082dc032d7280b3bd1",
    "setup_id": "jax_cpu_na_fp64",
    "state": "stale"
@@ -3156,7 +3156,7 @@
    "likelihood": "point_source_source/source_plane",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "release_pin 2026.8.17.1 behind 2026.10.23.1",
+   "reason": "release_pin 2026.8.17.1 behind 2026.10.25.1",
    "record": "lifecycle/d505d66aee0ffbf0e5c4",
    "setup_id": "jax_gpu_na_fp64",
    "state": "stale"
@@ -3169,7 +3169,7 @@
    "likelihood": "point_source_source/source_plane",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "release_pin 2026.10.17.1 behind 2026.10.23.1",
+   "reason": "release_pin 2026.10.17.1 behind 2026.10.25.1",
    "record": "lifecycle/fcb319f0f24b8cc9fd37",
    "setup_id": "jax_gpu_na_fp64",
    "state": "stale"
