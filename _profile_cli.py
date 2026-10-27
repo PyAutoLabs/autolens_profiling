@@ -363,7 +363,10 @@ def _profile_parser() -> argparse.ArgumentParser:
             "``--source-pixels``, except a declared size variant "
             "(``catalogue/size_variants.json``, e.g. rectangular 784 = 28x28, the SLaM "
             "production preset): ``--standard-size --source-pixels 784`` builds the same "
-            "production cell at that count."
+            "production cell at that count. The interferometer rectangular / Delaunay cells "
+            "(likelihood-lifecycle 2b, ruling R3) build "
+            "``_production_config.interferometer_standard_preset`` instead: the same mesh and "
+            "regularization, no lens light, the truth lensed-source adapt image uncapped."
         ),
     )
 
@@ -643,7 +646,7 @@ _LIBRARY_PACKAGES = (
 #: Third-party packages whose version rescales or re-routes a measurement (a JAX bump
 #: changes XLA, a nufftax below its floor routed x64 GPU NUFFTs to fp32 Pallas —
 #: interferometer MGE round 1, RAL jobs 351055-351057).
-_DEPENDENCY_PACKAGES = ("jax", "jaxlib", "numpy", "scipy", "numba", "nufftax")
+_DEPENDENCY_PACKAGES = ("jax", "jaxlib", "numpy", "scipy", "numba", "nufftax", "finufft")
 
 
 def _source_revisions() -> dict[str, str]:
@@ -1456,6 +1459,15 @@ PARITY_JSON = "parity.json"
 #: ruling 2026-10-24): 1e-4 for an fp64 cell, 1e-3 for a mixed-precision one. The witness stores
 #: the resulting ABSOLUTE tolerance.
 PARITY_RTOL = {"fp64": 1e-4, "mixed": 1e-3}
+#: Per-dataset-type overrides of :data:`PARITY_RTOL`. Interferometer (likelihood-lifecycle 2b
+#: ruling R7, human 2026-10-25): 1e-8 x |reference| in fp64 (at |log L| ~ 3e8 on jvla, 1e-4 would
+#: be ~30,000 nats and prove nothing), 1e-3 for mixed precision.
+PARITY_RTOL_BY_DATASET = {"interferometer": {"fp64": 1e-8, "mixed": 1e-3}}
+
+
+def parity_rtol(dataset_type: str | None, precision: str) -> float:
+    """The parity witness's relative tolerance for ``dataset_type`` at ``precision``."""
+    return PARITY_RTOL_BY_DATASET.get(dataset_type or "", PARITY_RTOL)[precision]
 
 
 def parity_witness_doc(
@@ -1468,19 +1480,22 @@ def parity_witness_doc(
     source_pixels: int | None = None,
     source_pixels_requested: int | None = None,
     quantity: str | None = None,
+    dataset_type: str | None = None,
+    pending_reason: str | None = None,
 ) -> dict:
     """One ``parity-witness`` v1 document (the schema of ``parity_witness.validate``).
 
     ``status`` is ``match`` when ``|log_likelihood - reference| <= tolerance`` and ``diverged``
-    above it, with ``tolerance = PARITY_RTOL[precision] * |reference|``; a non-finite value on
-    either side is ``not_assessed`` with its reason (the numbers are then ``null``).
+    above it, with ``tolerance = parity_rtol(dataset_type, precision) * |reference|``; a
+    non-finite value on either side is ``not_assessed`` with its reason (the numbers are then
+    ``null``), ``pending_reason`` when the caller knows why (e.g. a reference task still to run).
     """
     import datetime as _dt
     import math
 
     now = _dt.datetime.now(_dt.UTC)
     precision = "mixed" if use_mixed_precision else "fp64"
-    rtol = PARITY_RTOL[precision]
+    rtol = parity_rtol(dataset_type, precision)
     doc = {
         "schema": "parity-witness",
         "version": 1,
@@ -1504,7 +1519,7 @@ def parity_witness_doc(
     except (TypeError, ValueError):
         value = reference = float("nan")
     if not (math.isfinite(value) and math.isfinite(reference)):
-        doc["reason"] = (
+        doc["reason"] = pending_reason or (
             f"non-finite log-likelihood (cell {log_likelihood!r}, reference "
             f"{reference_log_likelihood!r}); no comparison made"
         )
