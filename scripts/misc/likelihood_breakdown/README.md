@@ -90,6 +90,10 @@ For *how long the likelihood actually takes* on production hardware — i.e. a s
 | `imaging/rectangular` | jwst | `jax_gpu_dense_fp64` | hpc_a100 | dense (mapping) | 75.4 ms | v2026.8.17.1 |
 | `imaging/rectangular` | jwst | `jax_gpu_sparse_fp64` | hpc_a100 | sparse (w-tilde) | 125.6 ms | v2026.8.17.1 |
 | `imaging/rectangular/light_fixed` | hst | `jax_gpu_dense_fp64` | hpc_a100 | dense (mapping) | — | v2026.8.17.1 |
+| `imaging/rectangular/source_pixels_784` | hst | `numba_cpu_sparse_fp64` | hpc_ral_cpu | sparse (numba) | 628.9 ms | v2026.8.17.1 |
+| `imaging/rectangular/source_pixels_784` | hst | `jax_cpu_sparse_fp64` | hpc_a100 | sparse (w-tilde) | 1.34 s | v2026.8.17.1 |
+| `imaging/rectangular/source_pixels_784` | hst | `jax_gpu_dense_fp64` | hpc_a100 | dense (mapping) | 32.3 ms | v2026.8.17.1 |
+| `imaging/rectangular/source_pixels_784` | hst | `jax_gpu_sparse_fp64` | hpc_a100 | sparse (w-tilde) | 49.9 ms | v2026.8.17.1 |
 | `interferometer/delaunay` | alma | `jax_cpu_sparse_fp64_wtilde` | local_laptop | sparse (w-tilde) | 4.18 s | v2026.8.17.1 |
 | `interferometer/delaunay` | alma | `jax_cpu_sparse_fp64_wtilde` | hpc_ral_cpu | sparse (w-tilde) | 2.88 s | v2026.8.17.1 |
 | `interferometer/delaunay` | alma | `numba_cpu_sparse_fp64_wtilde` | hpc_ral_cpu | sparse (numba) | 1.27 s | v2026.8.17.1 |

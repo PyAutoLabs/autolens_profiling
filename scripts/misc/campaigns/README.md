@@ -203,7 +203,10 @@ The catalogue reads that folder as the declared size variant: its rows are keyed
 `regime: source_pixels_784`, `current` beside the standard row with a `size_variant` limitation
 and no `size_fallback` note. Coverage and the trend dashboard stay standard-only.
 
-**Before committing the rows:** PyAutoPulse's v3 validator allows one `current` record per
-(likelihood, instrument, setup_id, host_class, model_variant, measurement), with no regime, so
-`build_catalogue.py --check --validate-with ../PyAutoPulse` rejects the second current record
-until Pulse keys on the regime too.
+**Validation:** PyAutoPulse#80 adds the regime to the v3 one-`current` key, so the 784 rows
+pass `build_catalogue.py --check --validate-with ../PyAutoPulse` beside the standard row.
+
+**Ran:** RAL 413044 (CPU array) and 413046 (A100), 8/8 legs exit 0, every leg's
+`library_revisions` at tag 2026.10.25.1, so the rows publish `release_pin` 2026.10.25.1 by exact
+SHA match. The rows still stamp `autolens_version` 2026.8.17.1 (the source checkout's stale
+`__version__`); the revisions are the provenance.
