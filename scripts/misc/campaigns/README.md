@@ -9,12 +9,17 @@ the same list.
 |--------|----------|---------|
 | [`imaging_p2a.py`](imaging_p2a.py) | Phase 2a, `imaging/{mge, rectangular, delaunay, delaunay_nn}` at the standard size on 2026.10.23.1 (autolens_profiling#456) | `hpc/batch_cpu/submit_campaign_p2a_imaging_*`, `hpc/batch_gpu/submit_campaign_p2a_imaging_*` |
 | [`imaging_p2a.py`](imaging_p2a.py) (`rect28_tasks`) | Phase 2a size variant: hst rectangular at 28x28 = 784 source pixels on 2026.10.25.1 (autolens_profiling#468) | `hpc/batch_cpu/submit_campaign_p2a_rect28_ral_cpu_fp64`, `hpc/batch_gpu/submit_campaign_p2a_rect28_a100_fp64` |
+| [`interferometer_p2b.py`](interferometer_p2b.py) | Phase 2b, `interferometer/{mge, rectangular, delaunay}` at the standard size on 2026.10.25.1 (autolens_profiling#469), plus the dense parity references and the matrix-free experiment | `hpc/batch_cpu/submit_campaign_p2b_*`, `hpc/batch_gpu/submit_campaign_p2b_*` |
+| [`_common.py`](_common.py) | The submit machinery both generators share (preamble, guards, WALL-BASIS rows, `#SBATCH` block) | none of its own |
 | [`peak_rss_backfill.py`](peak_rss_backfill.py) | Phase 2x backfill of 2a's peak memory and cores per call from sacct (autolens_profiling#462) | writes `catalogue/peak_rss_backfill.json`, no submits |
 
 ```bash
 python scripts/misc/campaigns/imaging_p2a.py --list    # the 106 cells + 8 28x28 legs, script and flags
 python scripts/misc/campaigns/imaging_p2a.py --write   # re-render the submits after an edit
 python scripts/misc/campaigns/imaging_p2a.py --check   # exit 1 if a submit is out of date
+python scripts/misc/campaigns/interferometer_p2b.py --list    # the 60 cells, 6 references, 7 matrix-free legs
+python scripts/misc/campaigns/interferometer_p2b.py --write   # re-render the 2b submits
+python scripts/misc/campaigns/interferometer_p2b.py --check
 pytest scripts/misc/campaigns/test -q
 ```
 
@@ -210,3 +215,109 @@ pass `build_catalogue.py --check --validate-with ../PyAutoPulse` beside the stan
 `library_revisions` at tag 2026.10.25.1, so the rows publish `release_pin` 2026.10.25.1 by exact
 SHA match. The rows still stamp `autolens_version` 2026.8.17.1 (the source checkout's stale
 `__version__`); the revisions are the provenance.
+
+## Phase 2b interferometer
+
+**Cells.** The 60 planned interferometer cells (`dashboard/coverage.json`): 38 on `hpc_ral_cpu`
+and 22 on `hpc_a100`. The human's rulings (autolens_profiling#469) set the list:
+
+- R1(a): dense pixelized NUFFT (`jax_*_dense_fp64_nufft`) is planned at sma only. Above sma
+  the library's one-shot dense transform does not fit in memory, so 84 cells became 60.
+- R2: no DFT cells. R9: the registry's instruments, so MGE runs at sma only.
+- Rectangular and Delaunay: `numba_cpu_sparse_fp64_wtilde` (optimal) and
+  `jax_cpu_sparse_fp64_wtilde` on every instrument, `jax_cpu_dense_fp64_nufft` at sma on `ral`;
+  `jax_gpu_sparse_fp64_wtilde` (optimal) everywhere and `jax_gpu_dense_fp64_nufft` at sma on the
+  A100. MGE: `jax_cpu_dense_fp64_nufft` and `jax_gpu_dense_fp64_nufft` at sma.
+
+Every pixelized leg runs with `--standard-size` (R3): the interferometer production cell from
+`_production_config.interferometer_standard_preset`. That is Delaunay 1250 Hilbert vertices
+plus 30 zeroed edge points with `AdaptSplit`, or rectangular 35x35
+`RectangularBilinearAdaptImage` with `Adapt`. The adapt image is the truth lensed source, not
+capped. There is no lens light. MGE-20 is unchanged. Each setup of one likelihood and
+instrument evaluates the same likelihood at the preset's seeded iid draw 0.
+
+The flags each leg gets:
+
+- JAX runtime: `--sparse` for the W~ setups, nothing for the dense ones.
+- JAX breakdown: the W~ harness is the default; `--dense` writes the dense row.
+- numba runtime and breakdown: `--n-instances` 20 / 20 / 10 / 5 on sma / alma / alma_high /
+  jvla (R4). The headline is the route the packaged cost model picks; the forced routes are
+  sub-rows.
+
+**Submits.**
+
+| Submit | Partition | Tasks | `--time` | `--mem` |
+|--------|-----------|-------|----------|---------|
+| `batch_cpu/submit_campaign_p2b_batch0_ral_cpu_fp64` | `ral`, array `%8` | 14 (batch 0) | 12:00:00 | 128 GB |
+| `batch_gpu/submit_campaign_p2b_batch0_a100_fp64` | `gpu`, `--gres=gpu:1`, array `%2` | 10 (batch 0) | 6:00:00 | 64 GB |
+| `batch_cpu/submit_campaign_p2b_batch0_references_ral_cpu_fp64` | `ral`, array | 2 (optional, batch 0) | 24:00:00 | 64 GB |
+| `batch_cpu/submit_campaign_p2b_interferometer_ral_cpu_<instrument>_fp64` | `ral`, array `%16` | sma 14, alma 8, alma_high 8, jvla 8 | provisional | 32 / 32 / 64 / 128 GB |
+| `batch_gpu/submit_campaign_p2b_interferometer_a100_<instrument>_fp64` | `gpu`, `--gres=gpu:1` | one job per instrument: sma 10, others 4 legs in turn | provisional | 32 / 64 / 64 / 64 GB |
+| `batch_cpu/submit_campaign_p2b_references_ral_cpu_fp64` | `ral`, array | 6 (alma, alma_high, jvla x rectangular, delaunay) | provisional | 64 GB |
+| `batch_cpu/submit_campaign_p2b_matrixfree_ral_cpu_fp64` | `ral`, array | 7 (experiment, not batch 0) | 12:00:00 | 128 GB |
+
+There are no `jax_cpu@hpc_a100` legs in 2b, so every A100 leg is a GPU leg. No CPU-only job
+goes on the `gpu` partition.
+
+**Pin and guards.** Every campaign submit loads the libraries from a private checkout at tag
+2026.10.25.1 (R5, changed by the human 2026-10-26; `PYAUTO_PRIVATE_BASE`, default
+`/mnt/ral/jnightin/profiling/PyAuto_2026.10.25.1`) over the shared venv (`PYAUTO_HPC_BASE`;
+its finufft 2.5.1 serves the NumPy NUFFT). The guards are 2a's: the job refuses any other tag
+or import origin, and checks each row's `library_revisions` against the checkout. A missing
+dataset is simulated under a lock (`prepare_dataset`), which also writes `lensed_source.fits`
+and the NumPy W~ preload cache, so array tasks never race to build them. Logs and the
+`walls.tsv` START / WALL lines go to `output/p2b_logs/`.
+
+**Memory.** The `--mem` values are declared estimates from the dataset sizes (2b survey A8),
+not measurements. jvla's mapping matrix alone is 384,852 x 1,280 x 8 B = 3.9 GB, and the JAX
+CPU W~ compile temporaries there have never been measured, so jvla CPU asks 128 GB. The batch-0
+RAL array covers sma and jvla in one array, so it takes jvla's 128 GB for every task. That
+wastes memory on the sma tasks, but a `ral` node has 921 GB and one array is simpler to submit
+and to read back. Batch 1 replaces the estimates with batch 0's `sacct --format=MaxRSS`
+(`mem_gb_measured`: 1.5 x the peak of the bounding instrument, at least 32 GB).
+
+**Batch 0 (timing arm, R8).** Run the batch-0 submits first. They run the legs that bound the
+others: jvla for every W~ and numba setup (the largest mask and visibility count, never
+measured on CPU), and sma for the dense and MGE setups, which exist only there. Rows go to the
+gitignored `output/p2b_batch0/`. The WALL-BASIS rows are declared guesses (`source:
+unmeasured`, 3x floor), and batch 0 carries no provisional guard, so it runs as generated. The
+two jvla reference tasks are optional; running them in batch 0 measures their wall.
+
+**Setting batch 1's `--time`.** Fill `BATCH0_WALLS` (each batch-0 leg's `walls.tsv` WALL, its
+sacct Elapsed and the task) and `BATCH0_PEAK_RSS_KIB` / `REFERENCE_PEAK_RSS_KIB` in
+`interferometer_p2b.py`, set `WALL_BASIS_STATUS = "measured"`, run `--write`, and confirm
+`python scripts/misc/wall/check_submits.py --check` passes. Each batch-1 leg then takes the wall
+of its batch-0 leg on the bounding instrument (`basis_leg`), with 2a's rule: 1.25x, plus 15 min,
+rounded up to the next half hour. Until then the batch-1 submits refuse to run
+(`P2B_ALLOW_PROVISIONAL_WALL=1` overrides).
+
+**Parity references (R6, R7).** Every pixelized cell writes `parity.json` against the
+visibility-chunked eager NumPy dense log evidence at the same instance. At sma a cell computes
+it in-process. Above sma it is one RAL task per likelihood and instrument
+(`scripts/interferometer/pixelized/parity_reference.py`), cached in `output/p2b_references/`.
+A cell that finishes before its reference writes a `not_assessed` witness and keeps its value
+as `parity_candidate`; the reference task's `--results-root` pass then rewrites the witness.
+To finish later by hand, run the script with `--finalise-only`. The tolerance is 1e-8 x
+|reference| in fp64 and 1e-3 in mixed precision.
+
+**Matrix-free experiment.** `submit_campaign_p2b_matrixfree_ral_cpu_fp64` runs the NumPy CPU
+matrix-free route (`Settings(interferometer_route="matrix_free")`, PyAutoArray#658) on a
+`RectangularUniform` mesh with `MaternSparse` regularization. It covers 35x35 on all four
+instruments and an alma mesh scan at 64x64, 128x128 and 192x192, and records the log-evidence
+agreement with the dense reference. Rows are experiments only, never current: 35x35 under the
+cell's `experiments/numpy_cpu_matrixfree/`, the scan under `scans/numpy_cpu_matrixfree_<N>x<N>/`,
+both in `numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/` (the setup id grammar has no `numpy_`
+backend), in the gitignored `output/p2b_matrixfree/`. It is not part of batch 0.
+
+#658 merged after 2026.10.25.1, so this submit loads its own private checkout of library main
+(`MF_PRIVATE_BASE`, default `/mnt/ral/jnightin/profiling/PyAuto_main_7eba0c07`) and refuses to
+run unless all five HEADs equal `MF_LIBRARY_SHAS` (origin/main on 2026-10-27). It is labelled
+unreleased. Open question for the human: PyAutoArray `7eba0c07` is also tag 2026.10.26.1, which
+is on PyPI, so this experiment could instead pin that release.
+
+**PR B** copies only complete cells from `output/p2b_batch1/results/` into `results/`, as in 2a:
+the final row, `fit.png`, a `parity.json` that passes `parity_witness.py --check` (not
+`not_assessed`), and `library_revisions` that match the pinned checkout. It moves the 20
+`size_fallback` rows and the stale MGE row to `history/<release_pin>_<date>/` first, then
+regenerates the catalogue and coverage.
+
