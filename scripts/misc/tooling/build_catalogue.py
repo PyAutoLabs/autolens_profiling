@@ -1337,7 +1337,9 @@ def build_lifecycle(root, generated, revision, dates=None):
     planned_cells = []
     for dataset_type, variant, instrument in sorted(planned):
         for host_class in ("hpc_a100", "hpc_ral_cpu"):
-            for sid, cls in lc.planned_setups(dataset_type, variant, host_class).items():
+            for sid, cls in lc.planned_setups(
+                dataset_type, variant, host_class, instrument
+            ).items():
                 for measurement in ("runtime", "breakdown"):
                     planned_cells.append(
                         {

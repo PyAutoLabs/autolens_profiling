@@ -389,6 +389,16 @@ _TABLES = {
 #: Regime-specific routes are designated but not planned in the ``standard`` regime: DFT runs
 #: only below 10,000 visibilities and streaming only at ``n_vis >= 1e7``.
 _REGIME_ONLY = tuple(_DESIGNATIONS["regime_only_suffixes"])
+#: Designated setups planned only on some instruments (ruling R1(a) on #469: the dense pixelized
+#: interferometer NUFFT route at sma only): ``[(dataset_types, setups, planned_instruments)]``.
+_INSTRUMENT_SCOPED = tuple(
+    (
+        frozenset(rule["dataset_types"]),
+        frozenset(rule["setups"]),
+        frozenset(rule["planned_instruments"]),
+    )
+    for rule in _DESIGNATIONS.get("instrument_scoped_setups", [])
+)
 _PIXELIZED_VARIANTS = tuple(_DESIGNATIONS["pixelized_variants"])
 
 
@@ -440,15 +450,37 @@ def record_class(dataset_type, variant, host_class, setup_id) -> tuple[str, list
     return "experimental", []
 
 
-def planned_setups(dataset_type: str, variant: str, host_class: str) -> dict[str, str]:
-    """{setup_id: class} the phase-0 plan intends to measure on a reference host."""
+def _instrument_scoped_out(dataset_type: str, setup_id: str, instrument: str | None) -> bool:
+    """Whether an ``instrument_scoped_setups`` rule leaves ``setup_id`` unplanned on ``instrument``."""
+    if instrument is None:
+        return False
+    return any(
+        dataset_type in types and setup_id in setups and instrument not in instruments
+        for types, setups, instruments in _INSTRUMENT_SCOPED
+    )
+
+
+def planned_setups(
+    dataset_type: str, variant: str, host_class: str, instrument: str | None = None
+) -> dict[str, str]:
+    """{setup_id: class} the phase-0 plan intends to measure on a reference host.
+
+    Regime-only setups (``_dft``, ``_streaming``) are never planned; an instrument-scoped setup
+    (``instrument_scoped_setups``, e.g. the dense pixelized interferometer NUFFT route, sma only)
+    is planned only on its instruments. ``instrument`` None skips the instrument scoping.
+    """
     table = _table(dataset_type, variant)
     if table is None:
         return {}
     optimal, secondary = table[host_class]
     plan = {sid: "secondary" for sid in secondary}
     plan.update({sid: "optimal" for sid in optimal})
-    return {sid: plan[sid] for sid in sorted(plan) if not sid.endswith(_REGIME_ONLY)}
+    return {
+        sid: plan[sid]
+        for sid in sorted(plan)
+        if not sid.endswith(_REGIME_ONLY)
+        and not _instrument_scoped_out(dataset_type, sid, instrument)
+    }
 
 
 # ---- likelihood-lifecycle phase 2x: resources per evaluation and projected node throughput ----
