@@ -248,3 +248,23 @@ def test_every_route_names_the_table_catalogue_lifecycle_dispatches_to(
 ):
     assert cm.table_for(DESIGNATIONS, dataset_type, variant) == table
     assert lc._table_name(dataset_type, variant) == table
+
+
+def test_a_declared_size_variant_row_is_never_coverage():
+    """A current size-variant row (#468; ``size_variant`` limitation) sits on its own catalogue
+    key beside the standard row; coverage reads the standard row only, in either order."""
+    note = "size_variant: a declared size measured beside the standard 1225 source pixels"
+    sized = record("sized", limitations=[note])
+    for records in ([sized, record("std")], [record("std"), sized]):
+        cov = cm.build(catalogue(records), DESIGNATIONS)
+        assert (only(cov)["state"], only(cov)["record"]) == ("current", "std")
+        assert cov["unplanned_current_records"] == []
+    cov = cm.build(catalogue([sized]), DESIGNATIONS)
+    assert (only(cov)["state"], only(cov)["record"]) == ("missing", None)
+    witness = {**cell(measurement="parity"), "status": "match", "location": "cell"}
+    witness.pop("class")
+    witnesses = [{**witness, "size_variant": "source_pixels_784"}]
+    cov = cm.build(catalogue([], witnesses=witnesses), DESIGNATIONS)
+    assert {c["state"] for c in cov["parity"]["cells"]} == {"missing"}
+    cov = cm.build(catalogue([], witnesses=[witness]), DESIGNATIONS)
+    assert {c["state"] for c in cov["parity"]["cells"]} == {"match"}

@@ -978,3 +978,89 @@ def test_without_a_release_map_the_stamped_version_stands(tree):
     write(tree, f"{A100}/runtime.json", tagged_row())
     record = by_path(lifecycle(tree))[f"{A100}/runtime.json"]
     assert record["release_pin"] == "2026.8.17.1"
+
+
+# ------------------------------------------------- declared size variants (#468) ---
+
+RECT_HST = {
+    "id": "imaging/pixelization/hst",
+    "dataset": "imaging",
+    "model": "rectangular",
+    "instrument": "hst",
+}
+RECT = "results/imaging/rectangular/hst/jax_gpu_dense_fp64/hpc_a100"
+
+
+def rect_row(pixels, **extra):
+    return row(
+        model="rectangular",
+        configuration={"source_pixels": pixels, "source_pixels_requested": pixels},
+        **extra,
+    )
+
+
+def size_variant_lifecycle(root):
+    update_registry(root, cells=[RECT_HST])
+    date_all(root, FIRST_COMMIT)
+    return cat.build_lifecycle(root, STAMP, "0123456789abcdef0123456789abcdef01234567")
+
+
+def test_declared_size_variant_is_current_in_its_own_regime_beside_the_standard_row(tree):
+    """A 784 (28x28) rectangular runtime row in the declared source_pixels_784/ folder is
+    current in regime source_pixels_784, next to the current standard 1225 row of the same
+    setup, with no size_fallback note; coverage still reads only the standard row."""
+    assert cat.lc.SIZE_VARIANT_FOLDERS["source_pixels_784"]["variant"] == "rectangular"
+    write(tree, f"{RECT}/runtime.json", rect_row(1225))
+    write(tree, f"{RECT}/source_pixels_784/runtime.json", rect_row(784))
+    doc = size_variant_lifecycle(tree)
+    records = by_path(doc)
+    standard = records[f"{RECT}/runtime.json"]
+    sized = records[f"{RECT}/source_pixels_784/runtime.json"]
+    assert standard["status"] == sized["status"] == "current"
+    assert (standard["regime"], sized["regime"]) == ("standard", "source_pixels_784")
+    assert sized["model_variant"] == standard["model_variant"] == "default"
+    assert not any(n.startswith("size_fallback") for n in sized["limitations"])
+    assert any(n.startswith("size_variant") and "784" in n for n in sized["limitations"])
+    assert not any(n.startswith("size_variant") for n in standard["limitations"])
+    assert cat.lc_key(standard) != cat.lc_key(sized)
+    # Coverage stays standard-only: the cell is current on the standard row.
+    spec = importlib.util.spec_from_file_location("coverage_matrix", TOOLING / "coverage_matrix.py")
+    cm = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cm)
+    designations = json.loads((TOOLING.parents[2] / cm.DESIGNATIONS).read_text())
+    cov = cm.build(json.loads(json.dumps(doc)), designations)
+    [cell] = [
+        c
+        for c in cov["cells"]
+        if (c["setup_id"], c["host_class"], c["measurement"])
+        == ("jax_gpu_dense_fp64", "hpc_a100", "runtime")
+    ]
+    assert (cell["state"], cell["record"]) == ("current", standard["id"])
+
+
+def test_size_variant_alone_is_current_without_a_size_fallback_and_keeps_the_standard_key_empty(
+    tree,
+):
+    write(tree, f"{RECT}/source_pixels_784/runtime.json", rect_row(784))
+    doc = size_variant_lifecycle(tree)
+    sized = by_path(doc)[f"{RECT}/source_pixels_784/runtime.json"]
+    assert sized["status"] == "current" and sized["regime"] == "source_pixels_784"
+    assert not any(n.startswith("size_fallback") for n in sized["limitations"])
+
+
+def test_a_size_variant_folder_row_at_another_size_is_refused(tree):
+    write(tree, f"{RECT}/source_pixels_784/runtime.json", rect_row(1225))
+    with pytest.raises(ValueError, match="size-variant folder source_pixels_784"):
+        size_variant_lifecycle(tree)
+
+
+def test_size_variant_folders_are_declared_per_likelihood():
+    lc = cat.lc
+    rect = lc.mirrored(f"{RECT}/source_pixels_784/runtime.json")
+    assert (rect["model_variant"], rect["size_variant"]) == ("default", "source_pixels_784")
+    fixed = lc.mirrored(f"{RECT}/light_fixed/source_pixels_784/runtime.json")
+    assert (fixed["model_variant"], fixed["size_variant"]) == ("light_fixed", "source_pixels_784")
+    assert lc.mirrored(f"{RECT}/runtime.json")["size_variant"] is None
+    # Not declared for Delaunay: the folder stays an ordinary model variant there.
+    other = lc.mirrored(f"{A100}/source_pixels_784/runtime.json")
+    assert (other["model_variant"], other["size_variant"]) == ("source_pixels_784", None)

@@ -360,7 +360,10 @@ def _profile_parser() -> argparse.ArgumentParser:
             "built, and the catalogue's size rule matches on the requested count. Unlike "
             "``--source-pixels`` the row is a canonical cell: no ``_n<N>`` suffix, no scan "
             "placement. Cells without a source mesh (MGE) ignore it. Exclusive with "
-            "``--source-pixels``."
+            "``--source-pixels``, except a declared size variant "
+            "(``catalogue/size_variants.json``, e.g. rectangular 784 = 28x28, the SLaM "
+            "production preset): ``--standard-size --source-pixels 784`` builds the same "
+            "production cell at that count."
         ),
     )
 
@@ -402,6 +405,12 @@ def parse_profile_cli(default_config_name: str | None = None, *, argv=None) -> P
             for f in STANDARD_SIZE_EXCLUSIVE
             if any(t == f or t.startswith(f + "=") for t in tokens)
         ]
+        # A declared size variant is the one ``--source-pixels`` that is not a silent
+        # replacement: it names a production-preset size beside the standard one (#468).
+        if args.source_pixels is not None and args.source_pixels in {
+            n for counts in declared_size_variants().values() for n in counts
+        }:
+            given = [f for f in given if f != "--source-pixels"]
         if given:
             parser.error(
                 f"--standard-size builds the production cell and would silently replace "
@@ -441,19 +450,50 @@ STANDARD_SOURCE_PIXELS = {"delaunay": 1250, "delaunay_nn": 1250, "rectangular": 
 def requested_source_pixels(cli: ProfileCLI, variant: str) -> int | None:
     """The source-pixel count a cell of likelihood ``variant`` is asked to build, or None.
 
-    ``--standard-size`` -> :data:`STANDARD_SOURCE_PIXELS` of ``variant``; else ``--source-pixels``;
-    else None (the cell keeps its own fiducial). Rectangular cells build the nearest square
+    ``--standard-size`` -> :data:`STANDARD_SOURCE_PIXELS` of ``variant``, or its declared size
+    variant when ``--source-pixels`` names one (:func:`declared_size_variants`; any other count
+    raises); else ``--source-pixels``; else None (the cell keeps its own fiducial). Rectangular cells build the nearest square
     (``round(sqrt(N))`` per side; 1225 -> 35x35 exactly); Delaunay-family cells build N Hilbert
     vertices (the standard-size production cells add the preset's 30 zeroed edge points).
     """
     if getattr(cli, "standard_size", False):
         try:
-            return STANDARD_SOURCE_PIXELS[variant]
+            standard = STANDARD_SOURCE_PIXELS[variant]
         except KeyError:
             raise ValueError(
                 f"--standard-size has no standard count for variant {variant!r}"
             ) from None
+        if cli.source_pixels is None:
+            return standard
+        if cli.source_pixels not in declared_size_variants().get(variant, ()):
+            raise ValueError(
+                f"--standard-size --source-pixels {cli.source_pixels}: not a declared size "
+                f"variant of {variant!r} ({SIZE_VARIANTS})"
+            )
+        return cli.source_pixels
     return cli.source_pixels
+
+
+#: The declared size variants (``{variant: [source pixels]}``, imaging): the one copy is
+#: ``catalogue/size_variants.json``, which the catalogue keys and labels by as well.
+SIZE_VARIANTS = "catalogue/size_variants.json"
+
+
+def declared_size_variants(root: Path | None = None) -> dict[str, tuple[int, ...]]:
+    """``{likelihood variant: (source-pixel counts,)}`` from :data:`SIZE_VARIANTS` ({} if absent).
+
+    Only ``imaging`` variants: every ``--standard-size`` cell is an imaging cell.
+    """
+    import json
+
+    path = (Path(__file__).resolve().parent if root is None else Path(root)) / SIZE_VARIANTS
+    if not path.is_file():
+        return {}
+    out: dict[str, tuple[int, ...]] = {}
+    for entry in json.loads(path.read_text())["variants"]:
+        if entry["dataset_type"] == "imaging":
+            out[entry["variant"]] = (*out.get(entry["variant"], ()), int(entry["source_pixels"]))
+    return out
 
 
 def rectangular_side(requested: int | None, fiducial: int) -> int:

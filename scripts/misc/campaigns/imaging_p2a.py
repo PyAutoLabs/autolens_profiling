@@ -21,7 +21,12 @@ The submits (README.md beside this file has the batch procedure):
   the GPU job (never a CPU array on the ``gpu`` partition);
 - batch 0, ``..._batch0_ral_cpu_fp64`` and ``..._batch0_a100_fp64`` — the timing arms that set
   batch 1's ``--time`` (:data:`BATCH0_INSTRUMENTS`), writing their rows into the gitignored
-  ``output/p2a_batch0/`` scratch tree.
+  ``output/p2a_batch0/`` scratch tree;
+- the 28x28 rectangular size variant (autolens_profiling#468, :func:`rect28_tasks`),
+  ``hpc/batch_cpu/submit_campaign_p2a_rect28_ral_cpu_fp64`` (``--partition=ral`` array) and
+  ``hpc/batch_gpu/submit_campaign_p2a_rect28_a100_fp64`` (one ``--gres=gpu:1`` job): hst
+  rectangular at 784 source pixels, the mesh the SLaM inference runs use, on tag
+  :data:`RECT28_PIN`, writing into ``output/p2a_rect28/``.
 
 Stdlib only; nothing here imports the modelling stack except :func:`prepare_dataset`, which the
 submits call to simulate a missing dataset and cache its adapt image under a lock.
@@ -159,6 +164,24 @@ BATCH1_MEM_FLOOR_GB = 32
 WALL_BASIS_STATUS = "measured"
 BATCH1_PROVISIONAL_TIME = {"ral_cpu": "12:00:00", "a100": "2-00:00:00"}
 
+#: The 28x28 rectangular size variant (autolens_profiling#468, human 2026-10-26): hst
+#: rectangular at the 784 source pixels (``catalogue/size_variants.json``) the SLaM inference
+#: runs use, beside the 35x35 standard, so their wall-time rows pair with a profiling row of the
+#: same size. Measured on tag 2026.10.25.1 from its own private checkout. Each setup is one the
+#: inference runs record, on the host class it ran on (light_fixed and jax_cpu_dense have no
+#: profiling cell at any size).
+RECT28_PIN = "2026.10.25.1"
+RECT28_PRIVATE_BASE = f"/mnt/ral/jnightin/profiling/PyAuto_{RECT28_PIN}"
+RECT28_ISSUE = "autolens_profiling#468"
+RECT28_SOURCE_PIXELS = 784
+RECT28_INSTRUMENT = "hst"
+RECT28_SETUPS = (
+    ("numba_cpu_sparse_fp64", "hpc_ral_cpu"),
+    ("jax_cpu_sparse_fp64", "hpc_a100"),
+    ("jax_gpu_sparse_fp64", "hpc_a100"),
+    ("jax_gpu_dense_fp64", "hpc_a100"),
+)
+
 #: Pixel scale per instrument (arcsec / pixel; ``scripts/misc/simulators/imaging.INSTRUMENTS``,
 #: pinned equal by the campaign test) and the cells' 3.5" circular mask: the masked image size
 #: every cell's memory scales with.
@@ -225,13 +248,18 @@ _ROUTES = {row["path"]: row["legacy"] for row in load_routes(ROOT)["routes"]}
 
 @dataclass(frozen=True, order=True)
 class Task:
-    """One planned cell: ``imaging/<variant>/<instrument> <setup_id>@<host_class> [<measurement>]``."""
+    """One planned cell: ``imaging/<variant>/<instrument> <setup_id>@<host_class> [<measurement>]``.
+
+    ``source_pixels`` is a declared size variant (``catalogue/size_variants.json``) the cell is
+    built at instead of the standard size, else None.
+    """
 
     variant: str
     instrument: str
     setup_id: str
     host_class: str
     measurement: str
+    source_pixels: int | None = None
 
     @property
     def backend(self) -> str:
@@ -248,10 +276,16 @@ class Task:
     @property
     def cell(self) -> str:
         """The coverage-matrix cell name (``dashboard/coverage.json`` ``cells[].cell``)."""
-        return (
+        name = (
             f"imaging/{self.variant}/{self.instrument} {self.setup_id}@{self.host_class} "
             f"[{self.measurement}]"
         )
+        return name + (f" {self.size_folder}" if self.source_pixels else "")
+
+    @property
+    def size_folder(self) -> str | None:
+        """The cell sub-folder a size variant's row lives in (``source_pixels_<n>``)."""
+        return f"source_pixels_{self.source_pixels}" if self.source_pixels else None
 
     @property
     def script(self) -> str:
@@ -277,6 +311,8 @@ class Task:
         flags = []
         if self.variant in PIXELIZED:
             flags.append("--standard-size")
+            if self.source_pixels:
+                flags += ["--source-pixels", str(self.source_pixels)]
         if self.backend == "jax" and self.operator == "sparse":
             flags.append("--sparse")
         if self.backend == "numba" and self.variant == "delaunay_nn":
@@ -287,9 +323,10 @@ class Task:
     @property
     def output(self) -> str:
         """The row's mirrored-tree path, relative to the results root."""
+        size = f"{self.size_folder}/" if self.source_pixels else ""
         return (
             f"results/imaging/{self.variant}/{self.instrument}/{self.setup_id}/"
-            f"{self.host_class}/{self.measurement}.json"
+            f"{self.host_class}/{size}{self.measurement}.json"
         )
 
     @property
@@ -323,6 +360,16 @@ def batch1_a100(instrument: str) -> list[Task]:
     return [t for t in planned_tasks() if t.host_class == "hpc_a100" and t.instrument == instrument]
 
 
+def rect28_tasks(host_class: str | None = None) -> list[Task]:
+    """The 28x28 size-variant legs (8: numba on ``hpc_ral_cpu``, six on ``hpc_a100``), sorted."""
+    return sorted(
+        Task("rectangular", RECT28_INSTRUMENT, sid, host, m, RECT28_SOURCE_PIXELS)
+        for sid, host in RECT28_SETUPS
+        for m in MEASUREMENTS
+        if host_class in (None, host)
+    )
+
+
 def _batch0(tasks: list[Task]) -> list[Task]:
     return [t for t in tasks if t.instrument in BATCH0_INSTRUMENTS[t.variant]]
 
@@ -337,7 +384,8 @@ def batch0_a100() -> list[Task]:
 
 def basis_leg(task: Task) -> Task:
     """The batch-0 leg that bounds ``task``: same script, setup, host class and measurement on
-    the bounding instrument (ao; hst for delaunay_nn). A wall on ao bounds every smaller one."""
+    the bounding instrument (ao; hst for delaunay_nn), at the standard size. A wall on ao bounds
+    every smaller instrument, and the 35x35 standard bounds the smaller 28x28 size variant."""
     instrument = BATCH0_INSTRUMENTS[task.variant][0]
     return Task(task.variant, instrument, task.setup_id, task.host_class, task.measurement)
 
@@ -573,8 +621,15 @@ fi
 """
 
 
-def render(name: str, tasks: list[Task], *, kind: str, batch: int, title: str) -> str:
-    """One submit script. ``kind``: ``ral_cpu`` (array) / ``a100_job`` / ``a100_array``."""
+def render(
+    name: str, tasks: list[Task], *, kind: str, batch: int, title: str, rect28: bool = False
+) -> str:
+    """One submit script. ``kind``: ``ral_cpu`` (array) / ``a100_job`` / ``a100_array``.
+
+    ``rect28``: the 28x28 size-variant batch (:func:`rect28_tasks`), rendered as a measured
+    batch 1 on its own pin, private checkout and scratch tree.
+    """
+    pin, private_base = (RECT28_PIN, RECT28_PRIVATE_BASE) if rect28 else (PIN, PRIVATE_BASE)
     device = "ral_cpu" if kind == "ral_cpu" else "a100"
     guess = BATCH0_WALL_GUESS_S if batch == 0 else None
     sequential = kind == "a100_job"
@@ -586,7 +641,7 @@ def render(name: str, tasks: list[Task], *, kind: str, batch: int, title: str) -
         time = BATCH0_TIME if batch == 0 else BATCH1_PROVISIONAL_TIME[device]
     n = len(tasks)
     # Never in place over committed rows: PR B copies complete rows into results/ (README).
-    results_root = f"$AP_ROOT/output/p2a_batch{batch}"
+    results_root = f"$AP_ROOT/output/{'p2a_rect28' if rect28 else f'p2a_batch{batch}'}"
     instruments = sorted({t.instrument for t in tasks})
     floor = BATCH1_MEM_FLOOR_GB if batch == 1 else (16 if kind == "ral_cpu" else 32)
     mem = mem_gb_measured(instruments, floor) if batch == 1 else mem_gb(instruments, floor)
@@ -595,25 +650,45 @@ def render(name: str, tasks: list[Task], *, kind: str, batch: int, title: str) -
         "#!/bin/bash -l",
         "#",
         f"# {title}",
-        f"# Likelihood-lifecycle phase 2a imaging campaign ({ISSUE}), batch {batch}: {n} cell(s).",
+        (
+            f"# Likelihood-lifecycle phase 2a, 28x28 rectangular size variant ({RECT28_ISSUE}): "
+            f"{n} cell(s)."
+            if rect28
+            else f"# Likelihood-lifecycle phase 2a imaging campaign ({ISSUE}), batch {batch}: "
+            f"{n} cell(s)."
+        ),
         "# GENERATED by scripts/misc/campaigns/imaging_p2a.py --write; edit the generator, not this",
         "# file (the campaign test fails on a hand edit). The batch procedure is in",
         "# scripts/misc/campaigns/README.md.",
         "#",
-        f"# LIBRARY CODE. A private checkout of the five libraries at tag {PIN} ($PYAUTO_PRIVATE_BASE,",
-        f"# default {PRIVATE_BASE}) is prepended to PYTHONPATH over the shared venv",
+        f"# LIBRARY CODE. A private checkout of the five libraries at tag {pin} ($PYAUTO_PRIVATE_BASE,",
+        f"# default {private_base}) is prepended to PYTHONPATH over the shared venv",
         f"# ($PYAUTO_HPC_BASE, default {HPC_BASE}, third-party packages only). The job refuses to",
         "# run if a library imports from anywhere else or sits at another tag, and after each leg it",
         "# checks the row's library_revisions equal the checkout's HEADs. The shared mirror is never",
         "# pulled or used. AP_ROOT is the checkout this was submitted from (hpc/<batch>/../..).",
         "#",
-        "# CELLS. Every leg runs one cell script at the standard size (--standard-size: Delaunay",
-        "# 1250 Hilbert vertices, rectangular 35x35; MGE has no mesh) and writes its row, fit.png and",
-        "# parity.json into the mirrored cell named by --output-path under the gitignored",
-        f"# output/p2a_batch{batch}/ scratch tree, never in place over committed rows"
-        + (" (PR B copies complete rows into results/)." if batch == 1 else "."),
-        "#",
     ]
+    if rect28:
+        header += [
+            "# CELLS. Every leg runs the standard-size production cell at the declared size variant",
+            f"# --standard-size --source-pixels {RECT28_SOURCE_PIXELS} (catalogue/size_variants.json):"
+            " rectangular",
+            "# 28x28, the mesh the SLaM inference runs use, everything else as the 35x35 standard",
+            "# cells. It writes its row, fit.png and parity.json into the cell's source_pixels_784/",
+            "# folder named by --output-path under the gitignored output/p2a_rect28/ scratch tree,",
+            "# never in place (complete rows are copied into results/ beside the standard row).",
+            "#",
+        ]
+    else:
+        header += [
+            "# CELLS. Every leg runs one cell script at the standard size (--standard-size: Delaunay",
+            "# 1250 Hilbert vertices, rectangular 35x35; MGE has no mesh) and writes its row, fit.png and",
+            "# parity.json into the mirrored cell named by --output-path under the gitignored",
+            f"# output/p2a_batch{batch}/ scratch tree, never in place over committed rows"
+            + (" (PR B copies complete rows into results/)." if batch == 1 else "."),
+            "#",
+        ]
     if batch == 1:
         rss = ", ".join(
             f"{i} {kib / 2**20:.1f} GiB in {ref}" for i, (kib, ref) in BATCH0_PEAK_RSS_KIB.items()
@@ -675,6 +750,13 @@ def render(name: str, tasks: list[Task], *, kind: str, batch: int, title: str) -
             f"# {rule}; --time is {WALL_HEADROOM}x the submit's total ({time_basis_s}s),",
             f"# plus {WALL_MIN_SLACK_S // 60} min of slack, rounded up to the next {WALL_ROUND_S // 60} min.",
         ]
+        if rect28:
+            header += [
+                "# This 28x28 batch has no wall of its own: it takes the ao legs of the 35x35",
+                "# standard (batch 0 measured no hst rectangular leg), and both the 784-pixel mesh",
+                "# (< 1225) and hst (15k masked pixels, < ao's 385k) are smaller, so every wall and",
+                "# the MaxRSS --mem below are upper bounds.",
+            ]
     else:
         header += [
             "# WALL-BASIS: PROVISIONAL. No cell has a standard-size wall yet; batch 0 measures them.",
@@ -682,7 +764,12 @@ def render(name: str, tasks: list[Task], *, kind: str, batch: int, title: str) -
             "# WALL_BASIS_STATUS=provisional (export P2A_ALLOW_PROVISIONAL_WALL=1 overrides it).",
         ]
     header += _wall_rows(tasks, device, guess, measured=measured, sequential=sequential)
-    sbatch = [f"#SBATCH -J p2a_{'b0' if batch == 0 else 'b1'}_{name.split('imaging_', 1)[1]}"]
+    job = (
+        f"p2a_{name.split('p2a_', 1)[1]}"
+        if rect28
+        else f"p2a_{'b0' if batch == 0 else 'b1'}_{name.split('imaging_', 1)[1]}"
+    )
+    sbatch = [f"#SBATCH -J {job}"]
     if kind == "ral_cpu":
         throttle = "%8" if batch == 0 else "%16"
         sbatch += [
@@ -730,8 +817,8 @@ def render(name: str, tasks: list[Task], *, kind: str, batch: int, title: str) -
         ]
     body = (
         _PREAMBLE.replace("@HPC_BASE@", HPC_BASE)
-        .replace("@PRIVATE_BASE@", PRIVATE_BASE)
-        .replace("@PIN@", PIN)
+        .replace("@PRIVATE_BASE@", private_base)
+        .replace("@PIN@", pin)
         .replace("@NAME@", name)
     )
     tail = [
@@ -801,6 +888,24 @@ def submits() -> dict[str, str]:
         batch=0,
         title="Batch-0 timing arm, A100: the bounding hpc_a100 cells.",
     )
+    name = "submit_campaign_p2a_rect28_ral_cpu_fp64"
+    out[f"hpc/batch_cpu/{name}"] = render(
+        name,
+        rect28_tasks("hpc_ral_cpu"),
+        kind="ral_cpu",
+        batch=1,
+        rect28=True,
+        title="RAL CPU array: the hpc_ral_cpu hst rectangular cells at 28x28 (784 source pixels).",
+    )
+    name = "submit_campaign_p2a_rect28_a100_fp64"
+    out[f"hpc/batch_gpu/{name}"] = render(
+        name,
+        rect28_tasks("hpc_a100"),
+        kind="a100_job",
+        batch=1,
+        rect28=True,
+        title="A100 job: the hpc_a100 hst rectangular cells at 28x28 (784 source pixels).",
+    )
     return out
 
 
@@ -812,7 +917,7 @@ def main(argv=None) -> int:
     mode.add_argument("--list", action="store_true", help="print the manifest")
     args = parser.parse_args(argv)
     if args.list:
-        for task in planned_tasks():
+        for task in planned_tasks() + rect28_tasks():
             print(f"{task.cell:<72} {task.script}.py {task.flags}")
         return 0
     stale = []

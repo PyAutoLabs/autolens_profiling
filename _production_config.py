@@ -557,7 +557,9 @@ STANDARD_HILBERT_PIXELS = 1250
 STANDARD_RECT_PIXELS_YX = 35
 
 
-def standard_size_preset(cell_family: str, instrument: str) -> ProductionPreset:
+def standard_size_preset(
+    cell_family: str, instrument: str, source_pixels: int | None = None
+) -> ProductionPreset:
     """The production preset of ``cell_family`` at ``instrument``, at the standard size.
 
     ``--standard-size`` (phase 2 of the likelihood-lifecycle epic) measures every instrument at
@@ -569,6 +571,11 @@ def standard_size_preset(cell_family: str, instrument: str) -> ProductionPreset:
     and ``size_override``. Whenever anything changed, ``size_override`` says why, and the cells
     skip the preset's pinned value and production witness (both describe the preset as
     recorded). HST Delaunay is already 1250 + 30, so it comes back unchanged.
+
+    ``source_pixels`` (rectangular only) builds the same cell at a declared size variant
+    instead (``catalogue/size_variants.json``, ``--standard-size --source-pixels``; #468): an
+    exact square, e.g. 784 = 28 x 28, the hst production preset's own mesh. None, or the
+    standard 1225, is the standard size.
     """
     from dataclasses import replace
 
@@ -581,18 +588,24 @@ def standard_size_preset(cell_family: str, instrument: str) -> ProductionPreset:
         variant="production",
     )
     if base.mesh_kind == "delaunay":
+        if source_pixels is not None and source_pixels != STANDARD_HILBERT_PIXELS:
+            raise ValueError("Delaunay has no declared size variant; it runs at the standard size")
         resized = base.hilbert_pixels != STANDARD_HILBERT_PIXELS
         size = {"hilbert_pixels": STANDARD_HILBERT_PIXELS}
         what = (
             f"Hilbert {base.hilbert_pixels} -> {STANDARD_HILBERT_PIXELS} (+{base.edge_pixels} edge)"
         )
     else:
-        resized = base.rect_pixels_yx != STANDARD_RECT_PIXELS_YX
-        size = {"rect_pixels_yx": STANDARD_RECT_PIXELS_YX}
-        what = (
-            f"rectangular {base.rect_pixels_yx}x{base.rect_pixels_yx} -> "
-            f"{STANDARD_RECT_PIXELS_YX}x{STANDARD_RECT_PIXELS_YX}"
-        )
+        side = STANDARD_RECT_PIXELS_YX
+        if source_pixels is not None and source_pixels != STANDARD_RECT_PIXELS_YX**2:
+            side = int(round(source_pixels**0.5))
+            if side * side != source_pixels:
+                raise ValueError(
+                    f"a rectangular size variant must be a square, not {source_pixels}"
+                )
+        resized = base.rect_pixels_yx != side
+        size = {"rect_pixels_yx": side}
+        what = f"rectangular {base.rect_pixels_yx}x{base.rect_pixels_yx} -> {side}x{side}"
     reasons = [
         "production data (human ruling 2026-10-24): subtracted S/N adapt image, uncapped "
         "over-sampling cut"
@@ -603,13 +616,22 @@ def standard_size_preset(cell_family: str, instrument: str) -> ProductionPreset:
             f"no {instrument} production reference: borrows the "
             f"{STANDARD_SIZE_REFERENCE_INSTRUMENT} preset {base.name!r} with the {instrument} dataset"
         )
-    if resized:
+    variant_size = size.get("rect_pixels_yx", STANDARD_RECT_PIXELS_YX) != STANDARD_RECT_PIXELS_YX
+    if variant_size:
+        reasons.append(
+            f"declared size variant (catalogue/size_variants.json, #468): "
+            f"{size['rect_pixels_yx'] ** 2} source pixels"
+            + (f", {what}" if resized else f", the preset's own {what.split(' -> ')[1]} mesh")
+        )
+    elif resized:
         reasons.append(f"standard size (human ruling 2026-10-23): {what}")
     note = "; ".join(reasons)
     return replace(
         base,
         production_data=True,
-        name=f"{base.name}_standard" + (f"_{instrument}" if borrowed else ""),
+        name=f"{base.name}_standard"
+        + (f"_n{size['rect_pixels_yx'] ** 2}" if variant_size else "")
+        + (f"_{instrument}" if borrowed else ""),
         provenance=f"{base.provenance} — {note}",
         size_override=note,
         **size,
@@ -1314,6 +1336,7 @@ def standard_jax_cell(
     memo: str = "off",
     use_mixed_precision: bool = False,
     rect_mesh_cls=None,
+    source_pixels: int | None = None,
 ):
     """Everything a JAX standard-size cell takes from the production preset, built once.
 
@@ -1322,11 +1345,12 @@ def standard_jax_cell(
     (Delaunay family, else None), ``n_source_pixels``, ``model``, ``instance`` (the first draw of
     the preset's seeded iid sequence — the numba cells' instance 0), ``settings``,
     ``memo_provenance``, ``positions_likelihood_list``, ``reg_scheme``, ``reg_provenance`` and
-    ``record`` (what the row stores as ``configuration.production_preset``).
+    ``record`` (what the row stores as ``configuration.production_preset``). ``source_pixels``:
+    a declared rectangular size variant (:func:`standard_size_preset`), else the standard size.
     """
     import autolens as al
 
-    preset = standard_size_preset(STANDARD_FAMILY[variant], instrument)
+    preset = standard_size_preset(STANDARD_FAMILY[variant], instrument, source_pixels)
     if preset.mesh_kind == "delaunay":
         grid = production_image_mesh_grid(dataset, adapt_image, preset, mask_radius)
         n_source_pixels = int(grid.shape[0])

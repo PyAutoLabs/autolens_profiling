@@ -1016,6 +1016,8 @@ def lifecycle_candidates(
                 "file was first committed to git, an upper bound on the measurement date"
             )
         pixels = lc.size_pixels(cell["variant"], payload)
+        size_rank, size_notes = size_variant_rank(cell, pixels, path)
+        row_notes += size_notes
         resources = lc.row_resources(payload, path, base, backfill)
         for measurement, found in sorted(groups.items()):
             values = {k: v[0] for k, v in sorted(found.items())}
@@ -1074,10 +1076,7 @@ def lifecycle_candidates(
                     "location": cell["location"],
                     "limitations": list(row_notes),
                     **extra,
-                    "_rank": (
-                        lc.size_rank(cell["variant"], pixels),
-                        lc.FILE_ORDER[cell["file_measurement"]],
-                    ),
+                    "_rank": (size_rank, lc.FILE_ORDER[cell["file_measurement"]]),
                     "_pixels": pixels,
                 }
             )
@@ -1101,6 +1100,8 @@ def parity_candidate(root, path, doc, releases=None, carries=None):
         "location": cell["location"],
         "record_id": None,
     }
+    if cell["size_variant"] is not None:
+        entry["size_variant"] = cell["size_variant"]
     if doc["status"] == "not_assessed":
         return [], entry
     cls, notes = lc.record_class(
@@ -1120,6 +1121,7 @@ def parity_candidate(root, path, doc, releases=None, carries=None):
     prov = {**prov, "measured_at": doc["measured_at"]}
     prov["unknowns"] = {k: v for k, v in prov["unknowns"].items() if k != "measured_at"}
     pixels = lc.size_pixels(cell["variant"], doc)
+    size_rank, size_notes = size_variant_rank(cell, pixels, path)
     record = {
         "id": "lifecycle/" + digest([path, "", "parity"]),
         "run_id": "parity/" + digest([path]),
@@ -1171,8 +1173,8 @@ def parity_candidate(root, path, doc, releases=None, carries=None):
         },
         "pointers": {"tolerance": "/tolerance"},
         "location": cell["location"],
-        "limitations": list(notes),
-        "_rank": (lc.size_rank(cell["variant"], pixels), lc.FILE_ORDER["parity"]),
+        "limitations": list(notes) + size_notes,
+        "_rank": (size_rank, lc.FILE_ORDER["parity"]),
         "_pixels": pixels,
     }
     entry["record_id"] = record["id"]
@@ -1247,20 +1249,38 @@ def label_lifecycle(records, planned, refs):
 
 
 def lc_key(record):
-    return json.dumps(
-        {
-            k: record[k]
-            for k in (
-                "likelihood",
-                "instrument",
-                "setup_id",
-                "host_class",
-                "model_variant",
-                "measurement",
-            )
-        },
-        sort_keys=True,
-    )
+    """The lifecycle key; a declared size variant's row (``source_pixels_<n>/``) adds its
+    ``size_variant``, so it is current beside the standard row (autolens_profiling#468)."""
+    key = {
+        k: record[k]
+        for k in (
+            "likelihood",
+            "instrument",
+            "setup_id",
+            "host_class",
+            "model_variant",
+            "measurement",
+        )
+    }
+    facts = lc.mirrored(record["evidence"]["path"])
+    if facts is not None and facts["size_variant"] is not None:
+        key["size_variant"] = facts["size_variant"]
+    return json.dumps(key, sort_keys=True)
+
+
+def size_variant_rank(cell, pixels, where):
+    """``(size rank, limitations)`` of a row: a declared size variant's row is at its own size
+    (rank 0, a ``size_variant`` note) and must record that size; any other is ranked against
+    the standard size (``lc.size_rank``)."""
+    if cell["size_variant"] is None:
+        return lc.size_rank(cell["variant"], pixels), []
+    entry = lc.SIZE_VARIANT_FOLDERS[cell["size_variant"]]
+    if pixels != entry["source_pixels"]:
+        raise ValueError(
+            f"{where}: in the declared size-variant folder {cell['size_variant']} but records "
+            f"{pixels} source pixels ({lc.SIZE_VARIANTS})"
+        )
+    return (0, 0), [lc.size_variant_note(entry)]
 
 
 def archived_count(root, path, doc, adapter):

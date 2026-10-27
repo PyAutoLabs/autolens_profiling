@@ -625,7 +625,12 @@ def _cell_index(files: list[str]) -> dict[tuple, list[dict]]:
     index: dict[tuple, list[dict]] = {}
     for rel in files:
         facts = lc.mirrored(rel)
-        if facts is None or facts["location"] != "cell" or facts["file_measurement"] != "runtime":
+        if (
+            facts is None
+            or facts["location"] != "cell"
+            or facts["file_measurement"] != "runtime"
+            or facts["size_variant"] is not None
+        ):
             continue
         index.setdefault((facts["dataset_type"], facts["variant"], facts["instrument"]), []).append(
             facts
@@ -723,7 +728,9 @@ def native_points(root: Path, rel: str, index: dict) -> list[tuple[str, str, str
 
     Mirrored ``runtime``/``breakdown`` rows (current and ``history/``) that record
     ``autolens_version``; each such entry of a mirrored cell's ``comparison.json``; and
-    ``results/lens`` versioned artifacts. Anything else has no native series.
+    ``results/lens`` versioned artifacts. Anything else has no native series; a declared
+    size variant's rows (``source_pixels_<n>/``, autolens_profiling#468) neither: the trend
+    series are standard-size, and the catalogue carries the variant as its own regime.
     """
     facts = lc.mirrored(rel)
     name = rel.rsplit("/", 1)[-1]
@@ -731,6 +738,7 @@ def native_points(root: Path, rel: str, index: dict) -> list[tuple[str, str, str
         if (
             facts["location"] not in ("cell", "history")
             or facts["file_measurement"] not in SERIES_MEASUREMENTS
+            or facts["size_variant"] is not None
         ):
             return []
         payload = _load(root / rel)

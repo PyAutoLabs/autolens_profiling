@@ -20,6 +20,10 @@ Cell states (the PyAutoBrain profiling conductor's vocabulary, ``CELL_STATES``):
   (human ruling 2026-10-23: a standard-size cell covered only by a non-standard size row is
   missing until the standard size is measured).
 
+Coverage is standard-size only: a declared size variant's rows (``catalogue/size_variants.json``,
+a ``size_variant`` limitation; current beside the standard row on their own key) and its
+parity witnesses are not read here.
+
 A parity witness (``parity_witness.py``) is reported per planned setup cell: ``match`` /
 ``diverged`` from its current ``measurement: parity`` record, ``not_assessed`` from the
 catalogue's ``parity_witnesses`` list, else ``missing``. Nothing here re-measures, ranks or
@@ -41,6 +45,7 @@ CELL_STATES = ("current", "stale", "superseded", "missing")
 PARITY_STATES = ("match", "diverged", "not_assessed", "missing")
 LOCAL_PREFIX = "local_"
 SIZE_FALLBACK = "size_fallback"
+SIZE_VARIANT = "size_variant"
 
 
 def pin_order(pin):
@@ -131,6 +136,11 @@ def is_size_fallback(record):
     return any(str(note).startswith(SIZE_FALLBACK) for note in record.get("limitations", []))
 
 
+def is_size_variant(record):
+    """A declared size variant's row: measured beside the standard size, never coverage."""
+    return any(str(note).startswith(SIZE_VARIANT) for note in record.get("limitations", []))
+
+
 def cell_state(records, pin):
     """(state, reason, record id) of one planned key from its records."""
     current = [
@@ -156,7 +166,8 @@ def build(catalogue, designations):
     pin, pin_source = catalogue_pin(catalogue)
     by_key = {}
     for record in catalogue["records"]:
-        by_key.setdefault(key_of(record), []).append(record)
+        if not is_size_variant(record):
+            by_key.setdefault(key_of(record), []).append(record)
     planned = {}
     for cell in catalogue["planned_cells"]:
         planned[key_of(cell)] = cell["class"]
@@ -189,7 +200,7 @@ def build(catalogue, designations):
     # Parity witnesses, one per planned setup cell (the key without its measurement).
     witnesses = {}
     for entry in catalogue.get("parity_witnesses", []):
-        if entry.get("location") == "cell":
+        if entry.get("location") == "cell" and not entry.get("size_variant"):
             witnesses[key_of(entry, "parity")] = entry
     setup_cells = sorted({k[:6] for k in planned})
     parity_cells, parity_groups = [], {}
@@ -223,7 +234,10 @@ def build(catalogue, designations):
     unplanned = sorted(
         r["id"]
         for r in catalogue["records"]
-        if r["status"] == "current" and r["measurement"] != "parity" and key_of(r) not in planned
+        if r["status"] == "current"
+        and r["measurement"] != "parity"
+        and not is_size_variant(r)
+        and key_of(r) not in planned
     )
     return {
         "schema": "profiling-coverage",

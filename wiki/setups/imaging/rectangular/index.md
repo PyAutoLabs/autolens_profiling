@@ -74,6 +74,7 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 | [28d094dcc86cc7f37564](4974cb619fb28dbc70d3.md) | results/imaging/rectangular/hst/numba_cpu_sparse_fp64/local_laptop/mge_mass/runtime.json | 1 |
 | [2c15a7ed1b2d565955c3](6445c17aaf99ae4c4f7f.md) | scripts/misc/jax_compile/results/local_gpu_NVIDIA_A100_80GB_PCIe/pixelization.json | 4 |
 | [31b6f0eda3565fda5f29](f07a74812302903279f4.md) | results/imaging/rectangular/hst/jax_gpu_sparse_fp64/hpc_a100/scans/n3000/breakdown.json | 138 |
+| [323189c986b02afee8ec](b883b1cd9f20e34a6b12.md) | results/imaging/rectangular/hst/jax_gpu_dense_fp64/hpc_a100/source_pixels_784/breakdown.json | 86 |
 | [33dc06c48f94a1013ee6](37a7677d30ff680efb29.md) | scripts/misc/jax_compile/results/local_gpu_NVIDIA_A100_80GB_PCIe/pixelization.json | 4 |
 | [3eb120272f540bf29850](ed532d0bc75b00dbf781.md) | results/imaging/rectangular/hst/jax_gpu_dense_fp64/hpc_a100/history/2026.8.17.1_2026-09-10/breakdown.json | 93 |
 | [42d4e5e3d97f5ca41947](aad017f2e2b93d36d265.md) | results/imaging/rectangular/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json | 86 |
@@ -87,6 +88,7 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 | [5ff68de92edf1563b65a](b6833dc9d3e54c36fa33.md) | results/imaging/rectangular/hst/jax_gpu_dense_mixed/local_gpu/light_fixed/scans/n3969/breakdown.json | 104 |
 | [62c69a4ca21329da0dac](f97430726c3cf6c107c2.md) | scripts/misc/jax_compile/results/local_cpu/pixelization.json | 4 |
 | [63b976dbf88c0c60dc09](fce2d3d5ba0f5556d00d.md) | scripts/misc/jax_compile/results/local_cpu/pixelization.json | 4 |
+| [680545fce114b5ac0847](89c64a2490babce30d2e.md) | results/imaging/rectangular/hst/jax_cpu_sparse_fp64/hpc_a100/source_pixels_784/breakdown.json | 110 |
 | [6d35ce382b5c3077c2f4](56fbf9d524861b85c94f.md) | scripts/misc/jax_compile/results/local_cpu/pixelization.json | 4 |
 | [7255e3c25fc1c85f02d2](b92e723f4a36082f20f1.md) | results/imaging/rectangular/hst/jax_gpu_dense_fp64/local_gpu/light_fixed/scans/n1521/breakdown.json | 104 |
 | [7327d3aee65d350c81fa](b118d80d4bec9ab775d1.md) | scripts/misc/jax_compile/results/local_cpu/pixelization.json | 4 |
@@ -99,6 +101,7 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 | [7dfef9ec1aaa2de478e6](abf176619cc1b6d8dc31.md) | results/imaging/rectangular/hst/jax_gpu_dense_fp64/local_gpu/light_fixed/experiments/library_n2500/breakdown.json | 16 |
 | [7f1125ab9427e2ba3895](a2786f03c23265f0bd5e.md) | archive/2026/07/hostless_summaries/breakdown/imaging/pixelization_breakdown_hst_v2026.7.6.649.json | 12 |
 | [81d2de7afc64d3125685](ec69815ba7fe8ca04a2d.md) | results/imaging/rectangular/hst/jax_gpu_dense_fp64/local_gpu/light_fixed/experiments/library/breakdown.json | 24 |
+| [85c0faef3946fc990670](2690703214c89c1c6550.md) | results/imaging/rectangular/hst/jax_gpu_dense_fp64/hpc_a100/source_pixels_784/runtime.json | 7 |
 | [86c8532e1a0557a58523](22b7669886cc9742c612.md) | results/imaging/rectangular/hst/jax_gpu_sparse_fp64/hpc_a100/breakdown.json | 110 |
 | [895a189082352a843607](fa7a6925d4c3f893060b.md) | results/imaging/rectangular/hst/jax_gpu_dense_mixed/local_gpu/light_fixed/scans/n1521/breakdown.json | 104 |
 | [8f5c45da1af87eb2b34c](b27abdabb54990262deb.md) | results/imaging/rectangular/hst/jax_gpu_dense_fp64/hpc_a100/experiments/recon_split/runtime.json | 6 |
@@ -107,8 +110,10 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 | [9749c2f226aaf4146f2f](62a368646e1ea340df38.md) | results/imaging/rectangular/hst/jax_gpu_dense_fp64/local_gpu/light_fixed/scans/n1024/breakdown.json | 104 |
 | [9ae8ee0caafec3f7948f](2bfed34ea1f4f7432159.md) | results/imaging/rectangular/hst/jax_gpu_dense_fp64/local_gpu/light_fixed/experiments/library_n484/breakdown.json | 16 |
 | [9cf3fff77bedd7e5455d](f61ffe419994f2a67e30.md) | results/imaging/rectangular/hst/jax_gpu_dense_fp64/hpc_a100/light_fixed/scans/n3969/breakdown.json | 110 |
+| [9d791ae7b662e2bd1e53](a71970f086d442bc4216.md) | results/imaging/rectangular/hst/jax_cpu_sparse_fp64/hpc_a100/source_pixels_784/runtime.json | 7 |
 | [a19b338d7d9096e8e268](8b14fe669e99463fcc02.md) | results/imaging/rectangular/hst/numba_cpu_sparse_fp64/hpc_ral_cpu/runtime.json | 1 |
 | [a1b42d6b8c9abb48e5dd](cadb6ef590f60724abd9.md) | results/imaging/rectangular/hst/jax_gpu_dense_fp64/local_gpu/light_fixed/scans/n3969/breakdown.json | 104 |
+| [a3b47fde0e12addb5483](9730909e493a2c57c402.md) | results/imaging/rectangular/hst/jax_gpu_sparse_fp64/hpc_a100/source_pixels_784/runtime.json | 7 |
 | [a90bdb0094c5d416997b](e8f0ecabfe6a4b1c896d.md) | results/imaging/rectangular/hst/jax_cpu_dense_fp64/local_laptop/light_fixed/scans/n3969/breakdown.json | 104 |
 | [aaa9e3150086cd53b793](17c46704220e5bef186c.md) | results/imaging/rectangular/hst/jax_cpu_dense_fp64/local_laptop/runtime.json | 3 |
 | [abf62725082cf65ac330](047602f9854c9eac015d.md) | results/imaging/rectangular/hst/jax_gpu_dense_fp64/hpc_a100/runtime.json | 7 |
@@ -126,6 +131,7 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 | [c3227e3e96d213919f0d](44998f010b709e938dfa.md) | results/imaging/rectangular/hst/jax_cpu_sparse_fp64/hpc_a100/breakdown.json | 110 |
 | [c4ce787c144d4cbaa4c8](7eb3c36eddf390b76c89.md) | results/imaging/rectangular/hst/jax_gpu_dense_fp64/hpc_a100/history/2026.8.17.1_2026-09-10/runtime.json | 6 |
 | [c548f6a810d115722195](603b4aa48bc0c4090659.md) | results/imaging/rectangular/hst/jax_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json | 110 |
+| [c6b9238d9e55bf4c6ea6](13641e33084f291751e4.md) | results/imaging/rectangular/hst/jax_gpu_sparse_fp64/hpc_a100/source_pixels_784/breakdown.json | 110 |
 | [c6fb4e2ab3ce682496b1](d448f2165c372cc34d39.md) | results/imaging/rectangular/hst/jax_gpu_dense_mixed/local_gpu/light_fixed/experiments/library/breakdown.json | 24 |
 | [c7acdae75aa1016d966f](3b9afc291d3c955ffa25.md) | results/imaging/rectangular/hst/jax_gpu_sparse_fp64/hpc_a100/scans/n5000/breakdown.json | 137 |
 | [c8398a6e6546ef0e96dc](8220b1d93633d831347f.md) | results/imaging/rectangular/hst/jax_gpu_dense_fp64/hpc_a100/scans/n12000/breakdown.json | 108 |
@@ -136,6 +142,7 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 | [cf2aee625d83f2a1bd05](fcaa2a63f3a8a001324c.md) | results/imaging/rectangular/hst/jax_gpu_dense_fp64/local_gpu/light_fixed/scans/n484/breakdown.json | 104 |
 | [d2516e55763620175da0](9b0fa6e6bf4bb41ad2f5.md) | scripts/misc/jax_compile/results/local_cpu/pixelization.json | 4 |
 | [d3aaac9a2e31b35fef5f](cceaa9a8ab382a8b9f9f.md) | scripts/misc/jax_compile/results/local_cpu/pixelization.json | 4 |
+| [d49e954eac9983c21c2f](37b456b99599186c7562.md) | results/imaging/rectangular/hst/numba_cpu_sparse_fp64/hpc_ral_cpu/source_pixels_784/runtime.json | 1 |
 | [d53f98db81de467e4498](46d0699a8cbe63f18c20.md) | scripts/misc/jax_compile/results/local_cpu/pixelization.json | 4 |
 | [d641ddfec2ccb97fa543](78ded06bb6cbcb3cebe1.md) | archive/2026/08/hostless_summaries/runtime/imaging/pixelization/pixelization_likelihood_summary_hst_v2026.8.17.1.json | 3 |
 | [d6740757fb3858e69baf](0d687fc2234b2260d5a1.md) | scripts/misc/jax_compile/results/local_cpu/pixelization.json | 4 |
@@ -150,6 +157,7 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 | [eaf0540529e0119c3484](ef97736848d99d3c97e7.md) | results/imaging/rectangular/hst/jax_gpu_dense_fp64/hpc_a100/experiments/matrix_free_n3000/breakdown.json | 52 |
 | [eb2866834df4b7b96d38](38cc90d6b97edd8d0697.md) | results/imaging/rectangular/hst/jax_gpu_dense_fp64/hpc_a100/scans/n8000/breakdown.json | 110 |
 | [eb5b405aa2e5377113c5](f290abebdfcde5d67d2a.md) | results/imaging/rectangular/hst/jax_cpu_dense_fp64/local_laptop/light_fixed/experiments/library_t1/breakdown.json | 24 |
+| [eb9db7aa319c25c35cdd](64a56d80eb08a964da60.md) | results/imaging/rectangular/hst/numba_cpu_sparse_fp64/hpc_ral_cpu/source_pixels_784/breakdown.json | 25 |
 | [ec0b91f41ea1fe64f342](eff8cdaef76cd1386489.md) | archive/2026/08/hostless_summaries/runtime/imaging/pixelization_numba/pixelization_numba_likelihood_summary_hst_v2026.8.17.1.json | 1 |
 | [f01741cee9316aabb77c](c37f052446b9c3908776.md) | results/imaging/rectangular/hst/jax_cpu_dense_fp64/local_laptop/light_fixed/scans/n1521/breakdown.json | 104 |
 | [f3a5c0dee5315bd5fe57](35e6abcade70007a6b51.md) | results/imaging/rectangular/hst/jax_gpu_dense_fp64/hpc_a100/light_fixed/breakdown.json | 94 |
