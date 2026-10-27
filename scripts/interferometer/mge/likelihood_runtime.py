@@ -112,6 +112,7 @@ from _profile_cli import (
     render_fit_png,
     resolve_output_paths,
     resources_dict,
+    write_parity_json,
 )
 
 _cli = parse_profile_cli()
@@ -645,6 +646,25 @@ record_pinned_check(dict_path, _pinned_expected, _pinned_drift)
 if _pinned_expected is not None and not _pinned_drift:
     print("  Pinned-value check PASSED (recorded in result JSON).")
 
+
+# Parity witness (likelihood-lifecycle 2b, #469): the JIT full pipeline against the eager NumPy
+# FitInterferometer computed above on the same dataset (no sparse operator: the dense route, with
+# this cell's transformer), model and instance, written beside the row after every timed region.
+# Tolerance 1e-8 x |reference| in fp64 (ruling R7), 1e-3 mixed precision.
+write_parity_json(
+    dict_path.parent,
+    log_likelihood=float(full_result),
+    reference_log_likelihood=float(figure_of_merit_ref),
+    use_mixed_precision=_cli.use_mixed_precision,
+    reference_source=(
+        "eager NumPy FitInterferometer(xp=np).figure_of_merit in the same process: "
+        f"{instrument}, {'TransformerDFT' if USE_DFT else 'TransformerNUFFT'}, "
+        f"{n_linear_gaussians} linear Gaussians, same dataset, model and instance"
+    ),
+    autolens_version=al_version,
+    quantity="log_likelihood_function (JIT cell vs eager NumPy dense reference)",
+    dataset_type="interferometer",
+)
 
 # Fit figure (likelihood-lifecycle 1B): the eager fit, drawn after every timed region and kept as
 # fit.png beside this row. Off under AUTOLENS_PROFILING_SMOKE and with --no-fit-png.

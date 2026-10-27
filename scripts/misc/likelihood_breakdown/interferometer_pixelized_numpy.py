@@ -152,7 +152,13 @@ from .provenance import source_revisions
 ARM_CLASSES = {
     "numba": "InversionInterferometerSparseNumba",
     "numpy_fft": "InversionInterferometerSparse",
+    # The packaged route (likelihood-lifecycle 2b ruling R4): the cost model of PyAutoArray#628
+    # picks either class per evaluation, so nothing is asserted; the route taken is recorded.
+    "default": None,
 }
+#: The arms of a ``--standard-size`` run (R4): the packaged route is the headline, the two
+#: routes it chooses between are forced as sub-rows.
+STANDARD_ARMS = "default,numba,numpy_fft"
 
 #: A gate no geometry reaches: the numba arm is numba whatever its nnz per column.
 NUMBA_GATE_FORCED = 1.0e9
@@ -180,6 +186,7 @@ L_MARSHAL = "F marshalling: kernel_index_arrays (CSR / CSC / extent)"
 L_CURVATURE = {
     "numba": "Curvature F + H: F by numba direct_conv",
     "numpy_fft": "Curvature F + H: F by sparse triplets + NumPy rfft2 blocks",
+    "default": "Curvature F + H: F by the packaged route (cost model: numba or NumPy FFT)",
 }
 L_SOLVE = "Reconstruction: D = Lᵀ d~ + fnnls"
 L_CHI2 = "Fast chi-squared (sᵀFs - 2sᵀD + dᵀN⁻¹d)"
@@ -194,9 +201,11 @@ def add_cell_args(parser) -> None:
     shared.add_mask_radius_arg(parser)
     parser.add_argument(
         "--arms",
-        default="numba,numpy_fft",
-        help="Comma-separated NumPy arms to run: numba, numpy_fft (default both). The "
-        "numba arm is the headline; without it the FFT arm is.",
+        default=None,
+        help="Comma-separated NumPy arms to run: default (the packaged cost-model route), "
+        "numba, numpy_fft. Default: numba,numpy_fft; with --standard-size "
+        "default,numba,numpy_fft (ruling R4). The headline is default, else numba, else the "
+        "first arm.",
     )
     parser.add_argument(
         "--numba-gate",
@@ -265,13 +274,16 @@ def iid_instances(model, n: int, seed: int = IID_SEED) -> list:
     ]
 
 
-def memo_off_settings(gate: float):
-    """``al.Settings`` for one arm: the numba gate set, the NNLS memo off at both layers."""
+def memo_off_settings(gate: float | None, **extra):
+    """``al.Settings`` for one arm: the numba gate set, the NNLS memo off at both layers.
+
+    ``gate`` None keeps the packaged route (the cost model); ``extra`` adds further fields (the
+    standard-size cells' ``use_border_relocator``).
+    """
     env_before = os.environ.get("AUTOARRAY_NNLS_WARM_START")
     os.environ["AUTOARRAY_NNLS_WARM_START"] = "0"
-    settings = al.Settings(
-        nnls_warm_start_memo=False, interferometer_numba_nnz_per_source_max=float(gate)
-    )
+    gate_kwargs = {} if gate is None else {"interferometer_numba_nnz_per_source_max": float(gate)}
+    settings = al.Settings(nnls_warm_start_memo=False, **gate_kwargs, **extra)
     provenance = {
         "requested": "off",
         "settings_nnls_warm_start_memo": bool(settings.nnls_warm_start_memo),
@@ -446,7 +458,7 @@ def run(
     """Run one NumPy / numba pixelized interferometer breakdown cell end to end."""
     import autogalaxy as ag
 
-    from _profile_cli import check_pinned, device_info_dict, record_pinned_check
+    from _profile_cli import check_pinned, device_info_dict, record_pinned_check, resources_dict
 
     revisions = source_revisions(profiling_root)
     print("--- Import provenance ---")
@@ -462,11 +474,13 @@ def run(
         f"(numba.config {numba.config.NUMBA_NUM_THREADS}); parallel kernel {_numba_parallel()}"
     )
 
-    arms = [a.strip() for a in cell_args.arms.split(",") if a.strip()]
+    standard_size = bool(getattr(cli, "standard_size", False))
+    arms_arg = cell_args.arms or (STANDARD_ARMS if standard_size else "numba,numpy_fft")
+    arms = [a.strip() for a in arms_arg.split(",") if a.strip()]
     unknown = [a for a in arms if a not in ARM_CLASSES]
     if unknown or not arms:
-        raise SystemExit(f"--arms {cell_args.arms!r}: choose from {tuple(ARM_CLASSES)}")
-    headline = "numba" if "numba" in arms else arms[0]
+        raise SystemExit(f"--arms {arms_arg!r}: choose from {tuple(ARM_CLASSES)}")
+    headline = "default" if "default" in arms else ("numba" if "numba" in arms else arms[0])
     levers = [lv.strip() for lv in cell_args.levers.split(",") if lv.strip()]
     bad_levers = [lv for lv in levers if lv not in LEVERS]
     if bad_levers:
@@ -514,43 +528,81 @@ def run(
         f"  adapt image {adapt_record['path']} md5 {adapt_record['md5_after']} "
         f"({'cache' if adapt_record['cache_existed'] else 'REGENERATED'})"
     )
-    n_requested = cli.source_pixels
-    mesh = spec.build_mesh(cli, ds.dataset, adapt_image, n_requested)
+    n_instances = max(int(cli.n_instances), 2 + int(cli.cold_evals))
+    standard = None
+    if standard_size:
+        # Likelihood-lifecycle 2b (#469): the standard-size interferometer production cell
+        # (ruling R3) every setup of the likelihood evaluates. Its seeded iid stream is this
+        # harness's (seed 235, central 20 %), and draw 0 -- the warm-up instance -- stands in for
+        # the prior median everywhere below (route check, call accounting, sub-rows, parity).
+        import _production_config as pc
+
+        standard = pc.standard_interferometer_cell(
+            spec.variant,
+            instrument,
+            dataset=ds.dataset,
+            adapt_image=adapt_image,
+            mask_radius=ds.mask_radius,
+            memo="off",
+            n_instances=n_instances,
+        )
+        n_requested = standard["source_pixels_requested"]
+        mesh = shared.MeshSetup(
+            pixelization=None,
+            n_source_pixels=standard["n_source_pixels"],
+            image_plane_mesh_grid=standard["image_plane_mesh_grid"],
+            regularization=standard["reg_provenance"],
+            configuration={"standard_size": True, "production_preset": standard["record"]},
+        )
+        model = standard["model"]
+        instances = standard["instances"]
+        median_instance = instances[0]
+        pin_is_fiducial = False
+    else:
+        n_requested = cli.source_pixels
+        mesh = spec.build_mesh(cli, ds.dataset, adapt_image, n_requested)
+        pin_is_fiducial = (
+            n_requested is None
+            and cli.regularization in (None, "adapt_split")
+            and not ds.mask_suffix
+            and cli.rect_mesh == "bilinear"
+        )
+        model = shared.build_model(mesh)
+        median_instance = model.instance_from_vector(
+            vector=model.physical_values_from_prior_medians
+        )
+        instances = iid_instances(model, n_instances)
     n_src = int(mesh.n_source_pixels)
-    pin_is_fiducial = (
-        n_requested is None
-        and cli.regularization in (None, "adapt_split")
-        and not ds.mask_suffix
-        and cli.rect_mesh == "bilinear"
-    )
     print(
         f"  source pixels: {n_src} (requested {n_requested}); regularization {mesh.regularization}"
     )
-
-    model = shared.build_model(mesh)
-    median_instance = model.instance_from_vector(vector=model.physical_values_from_prior_medians)
-    n_instances = max(int(cli.n_instances), 2 + int(cli.cold_evals))
-    instances = iid_instances(model, n_instances)
     adapt_images_for = shared.adapt_images_builder(adapt_image, mesh)
 
     # PyAutoArray#628/#632 (2026.10.17.1): the packaged gate is None, meaning a cost model
     # routes; the arms here pass explicit gates, so only the recorded default changes.
     packaged_gate = al.Settings().interferometer_numba_nnz_per_source_max
     default_gate = None if packaged_gate is None else float(packaged_gate)
-    gates = {"numba": float(cell_args.numba_gate), "numpy_fft": 0.0}
+    gates = {"numba": float(cell_args.numba_gate), "numpy_fft": 0.0, "default": None}
+    # The standard-size cell's settings (``_production_config.analysis_settings``) add the border
+    # relocator, so every setup of the likelihood evaluates the same one.
+    extra_settings = {"use_border_relocator": True} if standard is not None else {}
     settings = {}
     memo_provenance = None
     for arm in arms:
-        settings[arm], memo_provenance = memo_off_settings(gates[arm])
+        settings[arm], memo_provenance = memo_off_settings(gates[arm], **extra_settings)
 
     def fit_from(instance, arm, memo: bool = False):
-        arm_settings = (
-            al.Settings(
-                nnls_warm_start_memo=True, interferometer_numba_nnz_per_source_max=gates[arm]
+        arm_settings = settings[arm]
+        if memo:
+            arm_settings = al.Settings(
+                nnls_warm_start_memo=True,
+                **(
+                    {}
+                    if gates[arm] is None
+                    else {"interferometer_numba_nnz_per_source_max": gates[arm]}
+                ),
+                **extra_settings,
             )
-            if memo
-            else settings[arm]
-        )
         return al.FitInterferometer(
             dataset=dataset_sparse,
             tracer=al.Tracer(galaxies=list(instance.galaxies), fields=[instance.fields]),
@@ -580,8 +632,8 @@ def run(
             "solve_subset_edge_zeroed": ids is not None and len(ids) != n_src,
             "pixels_solved": int(len(ids)) if ids is not None else n_src,
         }
-        print(f"  {arm:<10} gate {gates[arm]:g} -> {built} (nnz/col {nnz:.2f})")
-        if built != ARM_CLASSES[arm]:
+        print(f"  {arm:<10} gate {gates[arm]} -> {built} (nnz/col {nnz:.2f})")
+        if ARM_CLASSES[arm] is not None and built != ARM_CLASSES[arm]:
             raise SystemExit(
                 f"arm {arm!r} built {built}, expected {ARM_CLASSES[arm]} (gate {gates[arm]}, "
                 f"nnz/col {nnz:.2f}): the factory did not route as requested"
@@ -638,7 +690,16 @@ def run(
         inv, mapper = tick(L_BUILD, build)
         tick(L_MAPPING, lambda: mapper.mapping_matrix)
         tick(L_REG_MATRIX, lambda: inv.regularization_matrix)
-        if arm == "numba":
+        on_numba = isinstance(inv, InversionInterferometerSparseNumba)
+        if arm == "default":
+            # The packaged route can differ per instance, so its row keeps one label set: the
+            # marshalling row is 0 when the cost model picked the FFT route.
+            routes_taken[arm].append("numba" if on_numba else "numpy_fft")
+            if on_numba:
+                tick(L_MARSHAL, lambda: inv.kernel_index_arrays)
+            else:
+                times[L_MARSHAL] = 0.0
+        elif arm == "numba":
             tick(L_MARSHAL, lambda: inv.kernel_index_arrays)
         tick(L_CURVATURE[arm], lambda: inv.curvature_reg_matrix)
         tick(L_SOLVE, lambda: inv.reconstruction)
@@ -670,6 +731,7 @@ def run(
     records = {
         arm: {"chain": [], "chain_fom": [], "direct_s": [], "direct_fom": []} for arm in arms
     }
+    routes_taken: dict[str, list[str]] = {arm: [] for arm in arms}
     print(f"\n--- iid stream: {n_instances} instances (0 = warm-up), arms {arms} ---")
     for i, instance in enumerate(instances):
         order = arms if i % 2 == 0 else list(reversed(arms))
@@ -763,6 +825,18 @@ def run(
             "chain_vs_direct_max_abs_nats": float(max(chain_vs_direct)),
             "evaluations_per_figure_of_merit": call_counts[arm],
             "sub_rows": sub_rows[arm],
+            **(
+                {
+                    "route_per_instance": routes_taken[arm],
+                    "route_counts": {
+                        r: routes_taken[arm].count(r) for r in sorted(set(routes_taken[arm]))
+                    },
+                    "route_note": "the packaged cost model's choice per instance (chain call); "
+                    "instance 0 is the warm-up",
+                }
+                if arm == "default"
+                else {}
+            ),
         }
 
     arm_records = {arm: arm_summary(arm) for arm in arms}
@@ -860,9 +934,23 @@ def run(
         else None
     )
 
+    candidate = None
+    if standard is not None:
+        from .interferometer_standard import parity_candidate
+
+        # The headline arm's figure of merit at draw 0 (the parity instance; a direct call).
+        candidate = parity_candidate(
+            log_likelihood=records[headline]["direct_fom"][0],
+            cell=standard,
+            use_mixed_precision=False,
+            variant=spec.variant,
+            instrument=instrument,
+        )
     summary = {
         "autolens_version": al_version,
         "device": device_info_dict(),
+        # Likelihood-lifecycle 2x: one serial evaluation per core (numba / BLAS pinned to 1).
+        "resources": resources_dict("numba"),
         "instrument": instrument,
         "model": f"{spec.cell}_numba",
         "transformer": "TransformerNUFFT",
@@ -946,9 +1034,30 @@ def run(
         "control_dgemm_tail_s": control_tail,
         "source_revisions": revisions,
         "peak_rss_mb": float(_peak_rss_mb()),
+        **({"parity_candidate": candidate} if candidate is not None else {}),
     }
     dict_path.write_text(json.dumps(summary, indent=2, default=float))
     _plot(summary, chart_path, spec, arm_records)
+
+    if standard is not None:
+        # Likelihood-lifecycle 2b (#469): parity.json against the visibility-chunked dense
+        # reference (R6, R7) and fit.png beside the row, after every timed region.
+        from .interferometer_standard import _in_process_reference, _render_fit, _write_parity
+
+        _write_parity(
+            dict_path.parent,
+            candidate=candidate,
+            ds=ds,
+            profiling_root=profiling_root,
+            autolens_version=al_version,
+            compute_reference=_in_process_reference(
+                ds,
+                standard,
+                pc.adapt_images_for(instances[0], mesh.image_plane_mesh_grid, adapt_image),
+                memo="off",
+            ),
+        )
+        _render_fit(lambda: fit_from(instances[0], headline), dict_path.parent, cli)
 
     pin = spec.pinned.get(instrument) if pin_is_fiducial and headline == "numba" else None
     drift = []

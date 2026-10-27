@@ -186,6 +186,14 @@ def add_cell_args(parser) -> None:
         action="store_true",
         help="Also jit the library's one-shot dense FitInterferometer (OOM recorded).",
     )
+    parser.add_argument(
+        "--dense",
+        action="store_true",
+        help="Make the dense NUFFT route (InversionInterferometerMapping, the library's one-shot "
+        "transform) the row's primary arm, for a jax_*_dense_fp64_nufft [breakdown] cell "
+        "(likelihood-lifecycle 2b, #469). The sparse operator, the W~ levers and the dense "
+        "comparison arm are not built.",
+    )
 
 
 @dataclass
@@ -209,6 +217,11 @@ class CellSpec:
     # (cli, dataset, adapt_image, n_requested) -> MeshSetup
     build_mesh: Callable[..., MeshSetup]
     pinned: dict = field(default_factory=dict)
+
+    @property
+    def variant(self) -> str:
+        """The likelihood variant (``rectangular`` for the historic ``pixelization`` cell)."""
+        return "rectangular" if self.cell == "pixelization" else self.cell
 
 
 def _peak_rss_mb() -> float:
@@ -522,6 +535,7 @@ def run(spec: CellSpec, cli, cell_args, script_file: str, profiling_root: Path) 
         check_pinned,
         device_info_dict,
         record_pinned_check,
+        resources_dict,
     )
 
     # ------------------------------------------------------------------
@@ -562,20 +576,28 @@ def run(spec: CellSpec, cli, cell_args, script_file: str, profiling_root: Path) 
     n_vis = ds.n_vis
     n_image_pixels = ds.n_image_pixels
 
-    with timer.section("apply_sparse_operator"):
-        dataset_sparse = dataset.apply_sparse_operator(
-            method="nufft",
-            batch_size=cli.sparse_batch_size,
-            nufft_chunk_size=transformer_chunk,
-            use_jax=True,
+    dense_primary = bool(getattr(cell_args, "dense", False))
+    if dense_primary:
+        # The dense NUFFT route is the row (``jax_*_dense_fp64_nufft``): no sparse operator.
+        dataset_sparse = dataset
+        operator = None
+        operator_build_s = 0.0
+        print("  --dense: the dense NUFFT route is the primary arm (no sparse operator)")
+    else:
+        with timer.section("apply_sparse_operator"):
+            dataset_sparse = dataset.apply_sparse_operator(
+                method="nufft",
+                batch_size=cli.sparse_batch_size,
+                nufft_chunk_size=transformer_chunk,
+                use_jax=True,
+            )
+        operator_build_s = timer.records[-1][1]
+        operator = dataset_sparse.sparse_operator
+        print(
+            f"  sparse operator: extent {operator.y_shape}x{operator.x_shape} "
+            f"(M={operator.M}), batch_size={operator.batch_size}, build {operator_build_s:.2f} s, "
+            f"peak RSS {_peak_rss_mb():.0f} MB"
         )
-    operator_build_s = timer.records[-1][1]
-    operator = dataset_sparse.sparse_operator
-    print(
-        f"  sparse operator: extent {operator.y_shape}x{operator.x_shape} "
-        f"(M={operator.M}), batch_size={operator.batch_size}, build {operator_build_s:.2f} s, "
-        f"peak RSS {_peak_rss_mb():.0f} MB"
-    )
 
     large_on_cpu = on_cpu and n_vis > LARGE_VIS
     n_repeats = (
@@ -600,22 +622,63 @@ def run(spec: CellSpec, cli, cell_args, script_file: str, profiling_root: Path) 
     with timer.section("adapt_image_build"):
         adapt_image = adapt_image_for_dataset(dataset_path=dataset_path, dataset=dataset)
 
-    n_requested = cli.source_pixels
-    mesh = spec.build_mesh(cli, dataset, adapt_image, n_requested)
+    standard = None
+    if getattr(cli, "standard_size", False):
+        # Likelihood-lifecycle 2b (#469): the standard-size interferometer production cell (ruling
+        # R3) every setup of the likelihood evaluates, at the preset's seeded iid draw 0.
+        import _production_config as pc
+
+        standard = pc.standard_interferometer_cell(
+            spec.variant,
+            instrument,
+            dataset=dataset,
+            adapt_image=adapt_image,
+            mask_radius=mask_radius,
+            memo=cli.memo,
+            use_mixed_precision=cli.use_mixed_precision,
+        )
+        n_requested = standard["source_pixels_requested"]
+        mesh = MeshSetup(
+            pixelization=None,
+            n_source_pixels=standard["n_source_pixels"],
+            image_plane_mesh_grid=standard["image_plane_mesh_grid"],
+            regularization=standard["reg_provenance"],
+            configuration={
+                "standard_size": True,
+                "production_preset": standard["record"],
+                "edge_zeroed_pixels": standard["preset"].edge_pixels
+                if standard["preset"].mesh_kind == "delaunay"
+                else None,
+            },
+        )
+        model = standard["model"]
+        instance = standard["instance"]
+        pin_is_fiducial = False
+    else:
+        n_requested = cli.source_pixels
+        mesh = spec.build_mesh(cli, dataset, adapt_image, n_requested)
+        model = build_model(mesh)
+        instance = model.instance_from_vector(vector=model.physical_values_from_prior_medians)
+        pin_is_fiducial = n_requested is None and cli.regularization in (None, "adapt_split")
     n_src = int(mesh.n_source_pixels)
-    pin_is_fiducial = n_requested is None and cli.regularization in (None, "adapt_split")
     print(
         f"  source pixels: {n_src} (requested {n_requested}); regularization {mesh.regularization}"
     )
 
-    model = build_model(mesh)
-    instance = model.instance_from_vector(vector=model.physical_values_from_prior_medians)
     _register_model_pytrees(model)
     params_tree = jax.tree_util.tree_map(jnp.asarray, instance)
 
     def settings_for(solver=None, mixed=None):
+        mixed = cli.use_mixed_precision if mixed is None else mixed
+        if standard is not None:
+            return pc.analysis_settings(
+                standard["preset"],
+                cli.memo,
+                use_mixed_precision=mixed,
+                positive_only_solver=solver or cell_args.solver,
+            )[0]
         return al.Settings(
-            use_mixed_precision=cli.use_mixed_precision if mixed is None else mixed,
+            use_mixed_precision=mixed,
             positive_only_solver=solver or cell_args.solver,
         )
 
@@ -683,15 +746,22 @@ def run(spec: CellSpec, cli, cell_args, script_file: str, profiling_root: Path) 
         f"(preconditioning {trace_info['preconditioning_used']})"
     )
     print(f"  library figure_of_merit = {fom_library!r}")
-    if trace_info["inversion_class"] != "InversionInterferometerSparse":
-        raise SystemExit(f"expected InversionInterferometerSparse, got {trace_info}")
+    expected_class = (
+        "InversionInterferometerMapping" if dense_primary else "InversionInterferometerSparse"
+    )
+    if trace_info["inversion_class"] != expected_class:
+        raise SystemExit(f"expected {expected_class}, got {trace_info}")
 
     # Structural arrays the triplet step closes over (static per dataset).
     slim_index_for_sub = ref["slim_index_for_sub"]
     sub_fraction = ref["sub_fraction"]
-    extent_index = jnp.asarray(
-        np.asarray(dataset_sparse.transformer.real_space_mask.extent_index_for_masked_pixel),
-        dtype=jnp.int32,
+    extent_index = (
+        None
+        if dense_primary
+        else jnp.asarray(
+            np.asarray(dataset_sparse.transformer.real_space_mask.extent_index_for_masked_pixel),
+            dtype=jnp.int32,
+        )
     )
     mapper_indices = jnp.asarray(np.arange(n_src))
     # Edge-zeroed pixels (the rectangular meshes): the library solves the subset system
@@ -700,7 +770,7 @@ def run(spec: CellSpec, cli, cell_args, script_file: str, profiling_root: Path) 
     n_solved = int(solve_ids.shape[0]) if solve_ids is not None else n_src
     print(f"  solve subset: {trace_info['solve_subset']} ({n_solved} of {n_src} pixels solved)")
 
-    dirty_image = jnp.asarray(np.asarray(operator.dirty_image))
+    dirty_image = None if dense_primary else jnp.asarray(np.asarray(operator.dirty_image))
     data_jnp = jnp.asarray(dataset.data.array)
     noise_jnp = jnp.asarray(dataset.noise_map.array)
 
@@ -853,28 +923,75 @@ def run(spec: CellSpec, cli, cell_args, script_file: str, profiling_root: Path) 
     ]
     sub_rows: dict[str, float] = {}
 
-    print("\n--- Step 5: sparse triplets ---")
-    rows, cols, vals = jit_profile(
-        sparse_triplets, "sparse_triplets", ref["pix_indexes"], ref["pix_weights"]
-    )
-    steps.append(("Sparse triplets (extent grid)", per_call("sparse_triplets")))
-    nnz = int(rows.shape[0])
-    _free()
+    if dense_primary:
+        # --dense: steps 5-7 of the library's dense route (InversionInterferometerMapping): the
+        # one-shot transform of every column (TransformerNUFFT.transform_mapping_matrix, nufftax
+        # on JAX), then D and F from T (real + imaginary), as the library computes them.
+        def transform_library(mapping_matrix):
+            return dataset.transformer.transform_mapping_matrix(mapping_matrix, xp=jnp)
 
-    print("\n--- Step 6: D = Lᵀ d~ ---")
-    dv = jit_profile(data_vector_sparse, "data_vector_sparse", ref["mapping_matrix"], dirty_image)
-    steps.append(("Data vector D = Lᵀ d~", per_call("data_vector_sparse")))
-    _free()
+        def dense_dv_primary(tmm, vis, noise):
+            return inversion_interferometer_util.data_vector_via_transformed_mapping_matrix_from(
+                transformed_mapping_matrix=tmm, visibilities=vis, noise_map=noise
+            )
 
-    print("\n--- Step 7: F = Aᵀ W~ A (blocked rfft2) ---")
-    fm = jit_profile(curvature_sparse, "curvature_sparse", rows, cols, vals)
-    steps.append(
-        (
-            f"Curvature matrix F = Aᵀ W~ A ({-(-n_src // operator.batch_size)} blocks of {operator.batch_size})",
-            per_call("curvature_sparse"),
+        def dense_curvature_primary(tmm, noise):
+            return inversion_util.curvature_matrix_via_mapping_matrix_from(
+                mapping_matrix=tmm.real, noise_map=noise.real, settings=settings, xp=jnp
+            ) + inversion_util.curvature_matrix_via_mapping_matrix_from(
+                mapping_matrix=tmm.imag, noise_map=noise.imag, settings=settings, xp=jnp
+            )
+
+        print("\n--- Step 5: transformed mapping matrix T (library one-shot NUFFT) ---")
+        tmm_primary = jit_profile(
+            transform_library, "transformed_mapping_matrix", ref["mapping_matrix"]
         )
-    )
-    _free()
+        steps.append(
+            (
+                "Transformed mapping matrix T (library one-shot nufft2d2)",
+                per_call("transformed_mapping_matrix"),
+            )
+        )
+        rows = cols = vals = None
+        nnz = None
+        _free()
+
+        print("\n--- Step 6: D (dense, Re + Im) ---")
+        dv = jit_profile(dense_dv_primary, "data_vector_dense", tmm_primary, data_jnp, noise_jnp)
+        steps.append(("Data vector D (dense, Re + Im)", per_call("data_vector_dense")))
+        _free()
+
+        print("\n--- Step 7: F (dense Tᵀ N⁻¹ T, Re + Im) ---")
+        fm = jit_profile(dense_curvature_primary, "curvature_dense", tmm_primary, noise_jnp)
+        steps.append(("Curvature matrix F (dense Tᵀ N⁻¹ T, Re + Im)", per_call("curvature_dense")))
+        census_F = (dense_curvature_primary, (tmm_primary, noise_jnp))
+        _free()
+    else:
+        print("\n--- Step 5: sparse triplets ---")
+        rows, cols, vals = jit_profile(
+            sparse_triplets, "sparse_triplets", ref["pix_indexes"], ref["pix_weights"]
+        )
+        steps.append(("Sparse triplets (extent grid)", per_call("sparse_triplets")))
+        nnz = int(rows.shape[0])
+        _free()
+
+        print("\n--- Step 6: D = Lᵀ d~ ---")
+        dv = jit_profile(
+            data_vector_sparse, "data_vector_sparse", ref["mapping_matrix"], dirty_image
+        )
+        steps.append(("Data vector D = Lᵀ d~", per_call("data_vector_sparse")))
+        _free()
+
+        print("\n--- Step 7: F = Aᵀ W~ A (blocked rfft2) ---")
+        fm = jit_profile(curvature_sparse, "curvature_sparse", rows, cols, vals)
+        steps.append(
+            (
+                f"Curvature matrix F = Aᵀ W~ A ({-(-n_src // operator.batch_size)} blocks of {operator.batch_size})",
+                per_call("curvature_sparse"),
+            )
+        )
+        census_F = (curvature_sparse, (rows, cols, vals))
+        _free()
 
     hm = ref["regularization_matrix"]
     solver = trace_info["solver_used"]
@@ -939,6 +1056,8 @@ def run(spec: CellSpec, cli, cell_args, script_file: str, profiling_root: Path) 
         "fp32": None,
         "mixed_precision": None,
         "vmap": [],
+        # Likelihood-lifecycle 2b: what this row's parity.json compares (standard-size cells).
+        "parity_candidate": None,
     }
     al_version = al.__version__
     paths: dict = {}
@@ -952,6 +1071,8 @@ def run(spec: CellSpec, cli, cell_args, script_file: str, profiling_root: Path) 
             "stage": stage,
             "autolens_version": al_version,
             "device": device_info_dict(),
+            # Likelihood-lifecycle 2x: what one evaluation occupies (cpus, devices, peak RSS).
+            "resources": resources_dict("jax"),
             "instrument": instrument,
             "model": spec.cell,
             "transformer": "TransformerNUFFT",
@@ -968,7 +1089,7 @@ def run(spec: CellSpec, cli, cell_args, script_file: str, profiling_root: Path) 
                 "lens_light": None,
                 "lens_light_note": "simulators/interferometer.py puts no lens emission in the "
                 "visibilities; mass fixed near truth (tight Gaussian priors), no lens light.",
-                "inversion_path": "sparse",
+                "inversion_path": "dense" if dense_primary else "sparse",
                 "inversion_class": trace_info["inversion_class"],
                 "mapper_class": trace_info["mapper_class"],
                 "solve_subset_edge_zeroed": bool(trace_info["solve_subset"]),
@@ -976,12 +1097,23 @@ def run(spec: CellSpec, cli, cell_args, script_file: str, profiling_root: Path) 
                 "positive_only_solver_requested": cell_args.solver,
                 "positive_only_solver_used": trace_info["solver_used"],
                 "nnls_preconditioning": trace_info["preconditioning_used"],
-                "sparse_operator_method": "nufft",
-                "sparse_batch_size": int(operator.batch_size),
-                "curvature_blocks": int(-(-n_src // operator.batch_size)),
-                "operator_extent_shape": [int(operator.y_shape), int(operator.x_shape)],
-                "operator_M": int(operator.M),
-                "operator_fft_shape": [2 * int(operator.y_shape), 2 * int(operator.x_shape)],
+                **(
+                    {
+                        "dense_transform": "library one-shot TransformerNUFFT.transform_mapping_matrix"
+                    }
+                    if dense_primary
+                    else {
+                        "sparse_operator_method": "nufft",
+                        "sparse_batch_size": int(operator.batch_size),
+                        "curvature_blocks": int(-(-n_src // operator.batch_size)),
+                        "operator_extent_shape": [int(operator.y_shape), int(operator.x_shape)],
+                        "operator_M": int(operator.M),
+                        "operator_fft_shape": [
+                            2 * int(operator.y_shape),
+                            2 * int(operator.x_shape),
+                        ],
+                    }
+                ),
                 "transformer_chunk_size": transformer_chunk,
                 "transformer_chunk_size_preset": preset_chunk,
                 "nufftax_version": _nufftax_version(),
@@ -1014,6 +1146,11 @@ def run(spec: CellSpec, cli, cell_args, script_file: str, profiling_root: Path) 
             "fp32_fft_arm": state["fp32"],
             "mixed_precision": state["mixed_precision"],
             "vmap": state["vmap"],
+            **(
+                {"parity_candidate": state["parity_candidate"]}
+                if state["parity_candidate"] is not None
+                else {}
+            ),
             "source_revisions": revisions,
             "jit_phases": jit_records,
             "peak_rss_mb": float(_peak_rss_mb()),
@@ -1046,7 +1183,10 @@ def run(spec: CellSpec, cli, cell_args, script_file: str, profiling_root: Path) 
     # ------------------------------------------------------------------
     # Full pipeline (AnalysisInterferometer on the sparse dataset)
     # ------------------------------------------------------------------
-    print("\n--- Full pipeline: AnalysisInterferometer.log_likelihood_function (sparse) ---")
+    print(
+        "\n--- Full pipeline: AnalysisInterferometer.log_likelihood_function "
+        f"({'dense' if dense_primary else 'sparse'}) ---"
+    )
 
     def full_pipeline_with(solver):
         analysis = al.AnalysisInterferometer(
@@ -1115,12 +1255,23 @@ def run(spec: CellSpec, cli, cell_args, script_file: str, profiling_root: Path) 
         state["full_pipeline"]["hlo_census"] = {
             "full_pipeline": hlo_census(full_fn, params_tree),
             "library_fit_figure_of_merit": hlo_census(library_fom, params_tree),
-            "standalone_curvature_F": hlo_census(curvature_sparse, rows, cols, vals),
+            "standalone_curvature_F": hlo_census(census_F[0], *census_F[1]),
             "standalone_reconstruction": hlo_census(solve_with(solver), dv, fm, hm),
             "standalone_log_dets": hlo_census(log_dets, fm, hm),
         }
         print(f"  HLO census: {state['full_pipeline']['hlo_census']}")
         _free()
+    if standard is not None:
+        from .interferometer_standard import parity_candidate
+
+        full = state["full_pipeline"]
+        state["parity_candidate"] = parity_candidate(
+            log_likelihood=full["figure_of_merit"] if full.get("status") == "ok" else fom_library,
+            cell=standard,
+            use_mixed_precision=cli.use_mixed_precision,
+            variant=spec.variant,
+            instrument=instrument,
+        )
     write_results("full_pipeline")
 
     # ------------------------------------------------------------------
@@ -1187,152 +1338,158 @@ def run(spec: CellSpec, cli, cell_args, script_file: str, profiling_root: Path) 
     # ------------------------------------------------------------------
     # Lever 1: F block size sweep + kernel split
     # ------------------------------------------------------------------
-    print("\n--- F kernel split (one block: scatter / FFT apply / gather) ---")
-    B = int(operator.batch_size)
-    n_blocks = -(-n_src // B)
+    # The W~ levers need the sparse operator: none under --dense.
+    if not dense_primary:
+        print("\n--- F kernel split (one block: scatter / FFT apply / gather) ---")
+        B = int(operator.batch_size)
+        n_blocks = -(-n_src // B)
 
-    def block_scatter(rows, cols, vals):
-        in_block = (cols >= 0) & (cols < B)
-        bc = jnp.where(in_block, cols, 0).astype(jnp.int32)
-        v = jnp.where(in_block, vals, 0.0)
-        return jnp.zeros((operator.M, B), dtype=jnp.float64).at[rows, bc].add(v)
+        def block_scatter(rows, cols, vals):
+            in_block = (cols >= 0) & (cols < B)
+            bc = jnp.where(in_block, cols, 0).astype(jnp.int32)
+            v = jnp.where(in_block, vals, 0.0)
+            return jnp.zeros((operator.M, B), dtype=jnp.float64).at[rows, bc].add(v)
 
-    def block_apply(fblock):
-        return operator.apply_operator(fblock, xp=jnp)
+        def block_apply(fblock):
+            return operator.apply_operator(fblock, xp=jnp)
 
-    def block_gather(gblock, rows, cols, vals):
-        from jax.ops import segment_sum
-
-        return segment_sum(vals[:, None] * gblock[rows, :], cols, num_segments=n_src)
-
-    try:
-        fb = jit_profile(block_scatter, "kernel_scatter", rows, cols, vals)
-        gb = jit_profile(block_apply, "kernel_fft_apply", fb)
-        jit_profile(block_gather, "kernel_gather_segment_sum", gb, rows, cols, vals)
-        parts = {
-            "scatter_per_block_s": per_call("kernel_scatter"),
-            "fft_apply_per_block_s": per_call("kernel_fft_apply"),
-            "gather_segment_sum_per_block_s": per_call("kernel_gather_segment_sum"),
-        }
-        pred = n_blocks * sum(parts.values())
-        state["kernel_split"] = {
-            **parts,
-            "n_blocks": n_blocks,
-            "batch_size": B,
-            "predicted_F_s": pred,
-            "measured_F_s": per_call("curvature_sparse"),
-            "fft_share_of_predicted": n_blocks * parts["fft_apply_per_block_s"] / pred,
-            "scatter_share_of_predicted": n_blocks * parts["scatter_per_block_s"] / pred,
-            "gather_share_of_predicted": n_blocks * parts["gather_segment_sum_per_block_s"] / pred,
-            "note": "Each part jitted alone on one block (block 0) and scaled by n_blocks; the "
-            "measured F runs them fused inside lax.fori_loop.",
-        }
-        del fb, gb
-    except Exception as exc:  # noqa: BLE001
-        state["kernel_split"] = (
-            _oom_record(exc, "kernel split")
-            if _is_oom(exc)
-            else {"status": "error", "error": traceback.format_exc()[-2000:]}
-        )
-    _free()
-
-    if cell_args.batch_size_sweep:
-        sweep = []
-        for bs in [int(b) for b in cell_args.batch_size_sweep.split(",") if b.strip()]:
-            print(f"\n--- F with batch_size={bs} ---")
-            op_b = dataclasses.replace(operator, batch_size=bs)
-            try:
-                f_b = jit_profile(
-                    curvature_sparse_with(op_b), f"curvature_sparse_b{bs}", rows, cols, vals
-                )
-                sweep.append(
-                    {
-                        "batch_size": bs,
-                        "n_blocks": -(-n_src // bs),
-                        "per_call_s": per_call(f"curvature_sparse_b{bs}"),
-                        "max_rel_diff_vs_default": rel(f_b, fm),
-                        "status": "ok",
-                    }
-                )
-                del f_b
-            except Exception as exc:  # noqa: BLE001
-                if not _is_oom(exc):
-                    raise
-                sweep.append({"batch_size": bs, **_oom_record(exc, f"F batch_size {bs}")})
-            del op_b
-            _free()
-        state["batch_size_sweep"] = sweep
-    write_results("kernel_levers")
-
-    # ------------------------------------------------------------------
-    # Lever 5: fp32 FFT arm (measurement only)
-    # ------------------------------------------------------------------
-    if cell_args.fp32_fft_arm:
-        print("\n--- fp32 FFT arm: F in float32 (measurement only) ---")
-        khat32 = jnp.asarray(operator.Khat, dtype=jnp.complex64)
-        y_s, x_s, M = int(operator.y_shape), int(operator.x_shape), int(operator.M)
-
-        def curvature_fp32(rows, cols, vals):
-            from jax import lax
+        def block_gather(gblock, rows, cols, vals):
             from jax.ops import segment_sum
 
-            rows = rows.astype(jnp.int32)
-            cols = cols.astype(jnp.int32)
-            v32 = vals.astype(jnp.float32)
-            offsets = jnp.arange(B, dtype=jnp.int32)
-            c0 = jnp.zeros((n_src, n_blocks * B), dtype=jnp.float32)
-
-            def body(i, C):
-                start = i * B
-                in_block = (cols >= start) & (cols < start + B)
-                bc = jnp.where(in_block, cols - start, 0).astype(jnp.int32)
-                v = jnp.where(in_block, v32, 0.0)
-                F = jnp.zeros((M, B), dtype=jnp.float32).at[rows, bc].add(v)
-                img = F.T.reshape((B, y_s, x_s))
-                pad = jnp.pad(img, ((0, 0), (0, y_s), (0, x_s)))
-                G = jnp.fft.irfft2(jnp.fft.rfft2(pad) * khat32[None], s=(2 * y_s, 2 * x_s))
-                G = G[:, :y_s, :x_s].reshape((B, M)).T
-                cb = segment_sum(v32[:, None] * G[rows, :], cols, num_segments=n_src)
-                width = jnp.minimum(B, jnp.maximum(0, n_src - start))
-                cb = cb * (offsets < width)[None, :]
-                return lax.dynamic_update_slice(C, cb, (0, start))
-
-            C = lax.fori_loop(0, n_blocks, body, c0)[:, :n_src]
-            return (0.5 * (C + C.T)).astype(jnp.float64)
+            return segment_sum(vals[:, None] * gblock[rows, :], cols, num_segments=n_src)
 
         try:
-            f32 = jit_profile(curvature_fp32, "curvature_sparse_fp32", rows, cols, vals)
-            r32, _ = jax.jit(solve_with("pdip"))(dv, f32, hm)
-            ld_c32, ld_r32 = jax.jit(log_dets)(f32, hm)
-            fom32 = float(
-                jax.jit(figure_of_merit_fn)(r32, dv, f32, hm, ld_c32, ld_r32, data_jnp, noise_jnp)
-            )
-            fom64 = solver_ab.get("pdip", {}).get("figure_of_merit", fom_steps)
-            d = _abs_diff(fom32, fom64)
-            state["fp32"] = {
-                "per_call_s": per_call("curvature_sparse_fp32"),
-                "fp64_per_call_s": per_call("curvature_sparse"),
-                "speedup": per_call("curvature_sparse") / per_call("curvature_sparse_fp32"),
-                "curvature_max_rel_diff": rel(f32, fm),
-                "figure_of_merit_fp32_F": fom32,
-                "figure_of_merit_fp64_F_pdip": fom64,
-                "abs_diff_nats": d,
-                "bar_nats": PRECISION_BAR_NATS,
-                "holds_bar": bool(d is not None and np.isfinite(d) and d <= PRECISION_BAR_NATS),
-                "note": "Script copy of curvature_matrix_diag_from in float32 (scatter, rfft2 / "
-                "irfft2 with complex64 Khat, gather); solve / log-dets / chi-squared stay fp64 on "
-                "the upcast F. The library hard-casts this path to float64, so "
-                "use_mixed_precision never reaches it.",
+            fb = jit_profile(block_scatter, "kernel_scatter", rows, cols, vals)
+            gb = jit_profile(block_apply, "kernel_fft_apply", fb)
+            jit_profile(block_gather, "kernel_gather_segment_sum", gb, rows, cols, vals)
+            parts = {
+                "scatter_per_block_s": per_call("kernel_scatter"),
+                "fft_apply_per_block_s": per_call("kernel_fft_apply"),
+                "gather_segment_sum_per_block_s": per_call("kernel_gather_segment_sum"),
             }
-            del f32, r32
+            pred = n_blocks * sum(parts.values())
+            state["kernel_split"] = {
+                **parts,
+                "n_blocks": n_blocks,
+                "batch_size": B,
+                "predicted_F_s": pred,
+                "measured_F_s": per_call("curvature_sparse"),
+                "fft_share_of_predicted": n_blocks * parts["fft_apply_per_block_s"] / pred,
+                "scatter_share_of_predicted": n_blocks * parts["scatter_per_block_s"] / pred,
+                "gather_share_of_predicted": n_blocks
+                * parts["gather_segment_sum_per_block_s"]
+                / pred,
+                "note": "Each part jitted alone on one block (block 0) and scaled by n_blocks; the "
+                "measured F runs them fused inside lax.fori_loop.",
+            }
+            del fb, gb
         except Exception as exc:  # noqa: BLE001
-            state["fp32"] = (
-                _oom_record(exc, "fp32 F")
+            state["kernel_split"] = (
+                _oom_record(exc, "kernel split")
                 if _is_oom(exc)
                 else {"status": "error", "error": traceback.format_exc()[-2000:]}
             )
         _free()
-        write_results("fp32_arm")
+
+        if cell_args.batch_size_sweep:
+            sweep = []
+            for bs in [int(b) for b in cell_args.batch_size_sweep.split(",") if b.strip()]:
+                print(f"\n--- F with batch_size={bs} ---")
+                op_b = dataclasses.replace(operator, batch_size=bs)
+                try:
+                    f_b = jit_profile(
+                        curvature_sparse_with(op_b), f"curvature_sparse_b{bs}", rows, cols, vals
+                    )
+                    sweep.append(
+                        {
+                            "batch_size": bs,
+                            "n_blocks": -(-n_src // bs),
+                            "per_call_s": per_call(f"curvature_sparse_b{bs}"),
+                            "max_rel_diff_vs_default": rel(f_b, fm),
+                            "status": "ok",
+                        }
+                    )
+                    del f_b
+                except Exception as exc:  # noqa: BLE001
+                    if not _is_oom(exc):
+                        raise
+                    sweep.append({"batch_size": bs, **_oom_record(exc, f"F batch_size {bs}")})
+                del op_b
+                _free()
+            state["batch_size_sweep"] = sweep
+        write_results("kernel_levers")
+
+        # ------------------------------------------------------------------
+        # Lever 5: fp32 FFT arm (measurement only)
+        # ------------------------------------------------------------------
+        if cell_args.fp32_fft_arm:
+            print("\n--- fp32 FFT arm: F in float32 (measurement only) ---")
+            khat32 = jnp.asarray(operator.Khat, dtype=jnp.complex64)
+            y_s, x_s, M = int(operator.y_shape), int(operator.x_shape), int(operator.M)
+
+            def curvature_fp32(rows, cols, vals):
+                from jax import lax
+                from jax.ops import segment_sum
+
+                rows = rows.astype(jnp.int32)
+                cols = cols.astype(jnp.int32)
+                v32 = vals.astype(jnp.float32)
+                offsets = jnp.arange(B, dtype=jnp.int32)
+                c0 = jnp.zeros((n_src, n_blocks * B), dtype=jnp.float32)
+
+                def body(i, C):
+                    start = i * B
+                    in_block = (cols >= start) & (cols < start + B)
+                    bc = jnp.where(in_block, cols - start, 0).astype(jnp.int32)
+                    v = jnp.where(in_block, v32, 0.0)
+                    F = jnp.zeros((M, B), dtype=jnp.float32).at[rows, bc].add(v)
+                    img = F.T.reshape((B, y_s, x_s))
+                    pad = jnp.pad(img, ((0, 0), (0, y_s), (0, x_s)))
+                    G = jnp.fft.irfft2(jnp.fft.rfft2(pad) * khat32[None], s=(2 * y_s, 2 * x_s))
+                    G = G[:, :y_s, :x_s].reshape((B, M)).T
+                    cb = segment_sum(v32[:, None] * G[rows, :], cols, num_segments=n_src)
+                    width = jnp.minimum(B, jnp.maximum(0, n_src - start))
+                    cb = cb * (offsets < width)[None, :]
+                    return lax.dynamic_update_slice(C, cb, (0, start))
+
+                C = lax.fori_loop(0, n_blocks, body, c0)[:, :n_src]
+                return (0.5 * (C + C.T)).astype(jnp.float64)
+
+            try:
+                f32 = jit_profile(curvature_fp32, "curvature_sparse_fp32", rows, cols, vals)
+                r32, _ = jax.jit(solve_with("pdip"))(dv, f32, hm)
+                ld_c32, ld_r32 = jax.jit(log_dets)(f32, hm)
+                fom32 = float(
+                    jax.jit(figure_of_merit_fn)(
+                        r32, dv, f32, hm, ld_c32, ld_r32, data_jnp, noise_jnp
+                    )
+                )
+                fom64 = solver_ab.get("pdip", {}).get("figure_of_merit", fom_steps)
+                d = _abs_diff(fom32, fom64)
+                state["fp32"] = {
+                    "per_call_s": per_call("curvature_sparse_fp32"),
+                    "fp64_per_call_s": per_call("curvature_sparse"),
+                    "speedup": per_call("curvature_sparse") / per_call("curvature_sparse_fp32"),
+                    "curvature_max_rel_diff": rel(f32, fm),
+                    "figure_of_merit_fp32_F": fom32,
+                    "figure_of_merit_fp64_F_pdip": fom64,
+                    "abs_diff_nats": d,
+                    "bar_nats": PRECISION_BAR_NATS,
+                    "holds_bar": bool(d is not None and np.isfinite(d) and d <= PRECISION_BAR_NATS),
+                    "note": "Script copy of curvature_matrix_diag_from in float32 (scatter, rfft2 / "
+                    "irfft2 with complex64 Khat, gather); solve / log-dets / chi-squared stay fp64 on "
+                    "the upcast F. The library hard-casts this path to float64, so "
+                    "use_mixed_precision never reaches it.",
+                }
+                del f32, r32
+            except Exception as exc:  # noqa: BLE001
+                state["fp32"] = (
+                    _oom_record(exc, "fp32 F")
+                    if _is_oom(exc)
+                    else {"status": "error", "error": traceback.format_exc()[-2000:]}
+                )
+            _free()
+            write_results("fp32_arm")
 
     # ------------------------------------------------------------------
     # Mixed precision: fp64 library value in the same run
@@ -1361,7 +1518,9 @@ def run(spec: CellSpec, cli, cell_args, script_file: str, profiling_root: Path) 
     # Dense (mapping) comparison arm
     # ------------------------------------------------------------------
     dense_state: dict = {"status": "skipped"}
-    if n_vis > cell_args.dense_max_vis:
+    if dense_primary:
+        dense_state["reason"] = "--dense: the dense route is this row's primary arm"
+    elif n_vis > cell_args.dense_max_vis:
         dense_state["reason"] = (
             f"N_vis {n_vis} > --dense-max-vis {cell_args.dense_max_vis}: T alone is "
             f"{n_vis * n_src * 16 / 2**30:.1f} GiB complex128"
@@ -1547,6 +1706,34 @@ def run(spec: CellSpec, cli, cell_args, script_file: str, profiling_root: Path) 
             if r is not None:
                 drift.append(r)
     record_pinned_check(paths["json"], pin, drift)
+
+    if standard is not None:
+        # Likelihood-lifecycle 2b (#469): parity.json against the visibility-chunked dense
+        # reference (R6, R7) and fit.png, beside the row, after every timed region.
+        from .interferometer_standard import _in_process_reference, _render_fit, _write_parity
+
+        std_adapt_images = pc.adapt_images_for(
+            instance, standard["image_plane_mesh_grid"], adapt_image
+        )
+        _write_parity(
+            paths["json"].parent,
+            candidate=state["parity_candidate"],
+            ds=ds,
+            profiling_root=profiling_root,
+            autolens_version=al_version,
+            compute_reference=_in_process_reference(ds, standard, std_adapt_images, memo=cli.memo),
+        )
+        _render_fit(
+            lambda: al.FitInterferometer(
+                dataset=dataset_sparse,
+                tracer=tracer_from(instance),
+                adapt_images=std_adapt_images,
+                settings=settings,
+                xp=np,
+            ),
+            paths["json"].parent,
+            cli,
+        )
 
     # Fail loudly (after the JSON is on disk) on a broken reproduction.
     gap = step_fidelity["abs_diff_nats"]

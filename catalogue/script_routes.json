@@ -361,6 +361,13 @@
       "measurement": "preload_numba"
     },
     {
+      "legacy": "scripts/interferometer/likelihood_reference/pixelized_dense.py",
+      "path": "scripts/interferometer/pixelized/parity_reference.py",
+      "dataset": "interferometer",
+      "model": "pixelized",
+      "measurement": "parity_reference"
+    },
+    {
       "legacy": "scripts/interferometer/likelihood_runtime/datacube/delaunay.py",
       "path": "scripts/datacube/delaunay/likelihood_runtime.py",
       "dataset": "datacube",
@@ -382,6 +389,13 @@
       "measurement": "likelihood_runtime"
     },
     {
+      "legacy": "scripts/interferometer/likelihood_runtime/delaunay_numba.py",
+      "path": "scripts/interferometer/delaunay/likelihood_runtime_numba.py",
+      "dataset": "interferometer",
+      "model": "delaunay",
+      "measurement": "likelihood_runtime_numba"
+    },
+    {
       "legacy": "scripts/interferometer/likelihood_runtime/mge.py",
       "path": "scripts/interferometer/mge/likelihood_runtime.py",
       "dataset": "interferometer",
@@ -394,6 +408,20 @@
       "dataset": "interferometer",
       "model": "rectangular",
       "measurement": "likelihood_runtime"
+    },
+    {
+      "legacy": "scripts/interferometer/likelihood_runtime/pixelization_matrixfree.py",
+      "path": "scripts/interferometer/rectangular/likelihood_runtime_matrixfree.py",
+      "dataset": "interferometer",
+      "model": "rectangular",
+      "measurement": "likelihood_runtime_matrixfree"
+    },
+    {
+      "legacy": "scripts/interferometer/likelihood_runtime/pixelization_numba.py",
+      "path": "scripts/interferometer/rectangular/likelihood_runtime_numba.py",
+      "dataset": "interferometer",
+      "model": "rectangular",
+      "measurement": "likelihood_runtime_numba"
     },
     {
       "legacy": "scripts/interferometer/quick_update/delaunay.py",
