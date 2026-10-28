@@ -535,6 +535,20 @@
       "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
     },
     {
+      "id": "cluster/source_plane/unspecified",
+      "dataset": "cluster",
+      "model": "source_plane",
+      "instrument": null,
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
       "id": "multi_dataset/delaunay/unspecified",
       "dataset": "multi_dataset",
       "model": "delaunay",
