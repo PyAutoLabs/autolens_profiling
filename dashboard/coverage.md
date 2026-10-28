@@ -15,7 +15,7 @@ Catalogue generated 2026-10-27T12:25:45Z; catalogue pin `2026.10.25.1` (newest r
 
 | Planned cells | Current | Stale | Superseded | Missing (of which size_fallback) | Superseded records |
 |---|---|---|---|---|---|
-| 222 | 106 | 7 | 0 | 109 (20) | 384 |
+| 230 | 106 | 7 | 0 | 117 (20) | 384 |
 
 ## Likelihood x class x measurement
 
@@ -61,6 +61,10 @@ Catalogue generated 2026-10-27T12:25:45Z; catalogue pin `2026.10.25.1` (newest r
 | point_source_source/source_plane | optimal | runtime | 0 | 1 | 0 | 1 |
 | point_source_source/source_plane | secondary | breakdown | 0 | 1 | 0 | 1 |
 | point_source_source/source_plane | secondary | runtime | 0 | 1 | 0 | 1 |
+| weak/isothermal | optimal | breakdown | 0 | 0 | 0 | 2 |
+| weak/isothermal | optimal | runtime | 0 | 0 | 0 | 2 |
+| weak/isothermal | secondary | breakdown | 0 | 0 | 0 | 2 |
+| weak/isothermal | secondary | runtime | 0 | 0 | 0 | 2 |
 
 ## Parity witnesses
 
@@ -68,7 +72,7 @@ Per planned setup cell: match/diverged from its current parity record, not_asses
 
 | Setup cells | Match | Diverged | Not assessed | Missing |
 |---|---|---|---|---|
-| 111 | 53 | 0 | 0 | 58 |
+| 115 | 53 | 0 | 0 | 62 |
 
 | Likelihood | Class | Match | Diverged | Not assessed | Missing |
 |---|---|---|---|---|---|
@@ -92,3 +96,5 @@ Per planned setup cell: match/diverged from its current parity record, not_asses
 | point_source_image/image_plane | optimal | 0 | 0 | 0 | 2 |
 | point_source_source/source_plane | optimal | 0 | 0 | 0 | 2 |
 | point_source_source/source_plane | secondary | 0 | 0 | 0 | 2 |
+| weak/isothermal | optimal | 0 | 0 | 0 | 2 |
+| weak/isothermal | secondary | 0 | 0 | 0 | 2 |
