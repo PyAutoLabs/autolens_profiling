@@ -36,6 +36,7 @@ NOT_YET_MEASURED = {
     ("cluster", "source_plane"),
     ("imaging", "sersic"),
     ("multi_dataset", "delaunay"),
+    ("weak", "isothermal"),  # likelihood-lifecycle 2g (#476): rows land after the RAL batch
 }
 MISC_WITHOUT_SCRIPTS = {
     "logs": "committed SLURM job logs, one folder per campaign; provenance, never a result",

@@ -786,6 +786,14 @@ iteration counts, budgets in iterations, geometry or formatting, not a measured 
   `--time` at 1.25x batch 0's measured walls once they exist; `--mem` at 1.5x measured MaxRSS).
   `scripts/misc/campaigns/test/test_interferometer_p2b.py::test_batch1_walls_are_measured_by_batch0_and_batch0_never_guards`
   checks it, as the 2a test does.
+- `scripts/misc/campaigns/weak_p2g.py::WALL_HEADROOM` (autolens_profiling#476): the 2g
+  generator's copy of the same `--time` multiplier (1.25x batch 0's measured walls once they
+  exist). S1 is still the gate.
+- `scripts/weak/isothermal/likelihood_breakdown.py::MEDIAN_N_WARM` and
+  `scripts/weak/isothermal/likelihood_breakdown.py::MEDIAN_N_TIMED`
+  (autolens_profiling#476): the warm and timed call counts of each breakdown step's steady
+  median (5 and 100, `timing.steady_median_profile`). They size a statistic, not a gate: no
+  verdict reads them and nothing passes or fails on the median.
   S1 is still the gate.
 - `scripts/misc/tooling/build_readme.py::_format_time` and
   `scripts/misc/tooling/build_readme.py::_render_runtime_table`: unit formatting.

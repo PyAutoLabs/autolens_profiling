@@ -54,6 +54,7 @@ dataset/imaging/jwst_lw/
 dataset/imaging/ao/
 dataset/interferometer/simple/
 dataset/interferometer/sma/
+dataset/weak/
 dataset/point_source/simple/data.fits
 dataset/point_source/simple/noise_map.fits
 dataset/point_source/simple/psf.fits
