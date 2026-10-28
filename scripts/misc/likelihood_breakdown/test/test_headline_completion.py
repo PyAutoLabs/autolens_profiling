@@ -211,6 +211,14 @@ def test_every_opted_in_script_is_in_the_wall_basis_set():
     # The standard-size driver (2b) runs inside the interferometer delaunay / rectangular
     # likelihood_runtime.py cells, which are already in the set.
     sites.discard("scripts/misc/likelihood_breakdown/interferometer_standard.py")
+    # The galaxy/group driver (2d) runs inside the six multi_galaxy / group likelihood_runtime.py
+    # cells (thin wrappers), which are in the set by name.
+    sites.discard("scripts/misc/likelihood_breakdown/galaxy_group_standard.py")
+    sites |= {
+        f"scripts/{dt}/{v}/likelihood_runtime.py"
+        for dt in ("multi_galaxy", "group")
+        for v in ("mge", "rectangular", "delaunay")
+    }
     sites |= {
         "scripts/interferometer/delaunay/likelihood_breakdown.py",
         "scripts/interferometer/rectangular/likelihood_breakdown.py",
