@@ -43,11 +43,12 @@ plumbing. (In a model-fit the tracer changes per call — see
 
 Reference check: the summed per-step log-likelihood is asserted against the
 eager ``al.FitPositionsSource(profile=None)`` values at ``rtol=1e-4``, so the
-decomposition is provably the production calculation. Note the known JAX
-constraint: the *end-to-end* source-plane fit is not JIT-compilable today
-(see ``autolens_workspace_test/scripts/CLAUDE.md`` — the source-plane entry
-is marked JIT-blocked); the per-step decomposition below sidesteps that by
-compiling the numerical core of each step in isolation.
+decomposition is provably the production calculation. The end-to-end
+source-plane likelihood JIT-compiles today; it is timed by the runtime cell
+(``likelihood_runtime.py``, likelihood-lifecycle 2e), which also writes the
+cell's ``parity.json``. This decomposition compiles the numerical core of each
+step in isolation. The likelihood has no PointSolver, so ``--standard-size``
+changes nothing here; the row records it.
 
 Solved-variant addendum (issue #657 phase 3)
 ----------------------------------------------
@@ -113,6 +114,8 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     sys.exit(0)
 
 sys.path.insert(0, str(_profiling_root()))
+from likelihood_breakdown.provenance import source_revisions, thread_environment  # noqa: E402
+
 from _profile_cli import (  # noqa: E402
     auto_simulate_if_missing,
     device_info_dict,
@@ -543,14 +546,20 @@ print("=" * 70)
 
 breakdown_summary = {
     "autolens_version": al_version,
+    "source_revisions": source_revisions(_workspace_root),
     "device": device_info_dict(),
     "resources": resources_dict("jax"),
+    "thread_environment": thread_environment(),
+    "n_repeats": 10,
     "configuration": {
         "n_systems": len(dataset_list),
         "n_images_total": int(sum(len(p) for p in positions_list)),
         "n_planes": len(tracer.planes),
         "n_mass_profiles": n_mass_profiles,
         "likelihood": "source_plane (FitPositionsSource)",
+        "jax_enable_x64": bool(jax.config.jax_enable_x64),
+        "standard_size": bool(_cli.standard_size),
+        "solver": None,
     },
     "steps": {label: per_call for label, per_call in likelihood_steps},
     "total_step_by_step": step_total,

@@ -38,10 +38,16 @@ Steps profiled:
    sampler pays per likelihood call. They are reported next to the steps, not
    inside ``total_step_by_step``.
 
-The solver grid below (200x200 @ 0.7", precision 0.01") is the
-tutorial-scale configuration of the workspace cluster scripts, chosen so the
-one-off compile stays at minutes; production precision (0.001") multiplies
-the triangle fan-out, not the structure of the breakdown.
+Without ``--standard-size`` the solver grid (200x200 @ 0.7", precision 0.01") is
+the historic tutorial-scale configuration the committed rows used. With
+``--standard-size`` (likelihood-lifecycle 2e, autolens_profiling#474, decision D1)
+the cell builds the workspace cluster solver the ``cluster-pointsolver-speed``
+epic kept (human 2026-10-23): 100x100 @ 1.0", precision 0.001",
+``magnification_threshold`` 0.1 and ``residual_threshold`` 10, every setting passed
+explicitly (``likelihood_breakdown/cluster_standard.py``: ``STANDARD_SOLVER``), so
+this breakdown decomposes the likelihood the cluster runtime cell times. The
+cell's ``parity.json`` is the runtime's (``likelihood_runtime.py``), never this
+script's.
 
 Solved-variant addendum (issue #657 phase 3)
 ----------------------------------------------
@@ -341,11 +347,15 @@ _registration_model = af.Collection(
 _register_model_pytrees(_registration_model)
 register_instance_pytree(Tracer, no_flatten=("cosmology",))
 
-solver = al.PointSolver.for_grid(
-    grid=al.Grid2D.uniform(shape_native=(200, 200), pixel_scales=0.7),
-    pixel_scale_precision=0.01,
-    use_jax=True,
+from likelihood_breakdown.cluster_standard import (  # noqa: E402
+    build_solver,
+    settings_record,
+    solver_settings,
 )
+
+# --standard-size: the workspace cluster solver (decision D1); else the historic 200x200 @ 0.7".
+SOLVER_SETTINGS = solver_settings(_cli.standard_size)
+solver = build_solver(SOLVER_SETTINGS, use_jax=True)
 
 predicted_per_system = []
 for dataset, centre in zip(dataset_list, source_centres):
@@ -651,8 +661,13 @@ breakdown_summary = {
         "n_planes": len(tracer.planes),
         "n_mass_profiles": n_mass_profiles,
         "likelihood": "image_plane (FitPositionsImagePairRepeat)",
-        "solver_grid": "200x200 @ 0.7 arcsec",
-        "solver_pixel_scale_precision": 0.01,
+        "solver_grid": (
+            f"{SOLVER_SETTINGS['shape_native'][0]}x{SOLVER_SETTINGS['shape_native'][1]} "
+            f"@ {SOLVER_SETTINGS['pixel_scales']} arcsec"
+        ),
+        "solver_pixel_scale_precision": SOLVER_SETTINGS["pixel_scale_precision"],
+        "solver": settings_record(SOLVER_SETTINGS),
+        "standard_size": bool(_cli.standard_size),
         "jax_enable_x64": bool(jax.config.jax_enable_x64),
         "n_repeats": N_REPEATS,
         "fused_model_free_parameters": {
