@@ -96,15 +96,124 @@ BOUNDING_INSTRUMENT = {"sparse": "jvla", "dense": "sma"}
 BATCH0_WALL_GUESS_S = {"ral_cpu": 14000, "a100": 7000, "reference": 28000}
 BATCH0_TIME = {"ral_cpu": "12:00:00", "a100": "6:00:00", "reference": "24:00:00"}
 
-#: Batch 0's measured legs (filled by the walls PR): cell -> (walls.tsv WALL, sacct Elapsed,
-#: array task), keyed by the batch-0 leg's :attr:`Task.cell`.
-BATCH0_WALLS: dict = {}
+#: Batch 0's measured legs: cell -> (walls.tsv WALL, sacct Elapsed, array task), keyed by the
+#: batch-0 leg's :attr:`Task.cell` (RAL 413115, references 413116, A100 413117; every leg exit 0,
+#: every jvla parity witness ``match``). Elapsed exceeds WALL by the dataset preflight (~230 s on
+#: the first jvla legs to simulate it).
+BATCH0_WALLS = {
+    "interferometer/delaunay/jvla dense_reference@hpc_ral_cpu [parity]": (10719, 10727, "413116_0"),
+    "interferometer/delaunay/jvla jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [breakdown]": (
+        916,
+        1149,
+        "413115_0",
+    ),
+    "interferometer/delaunay/jvla jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [runtime]": (
+        982,
+        1215,
+        "413115_1",
+    ),
+    "interferometer/delaunay/jvla jax_gpu_sparse_fp64_wtilde@hpc_a100 [breakdown]": (
+        466,
+        714,
+        "413117_0",
+    ),
+    "interferometer/delaunay/jvla jax_gpu_sparse_fp64_wtilde@hpc_a100 [runtime]": (
+        438,
+        686,
+        "413117_1",
+    ),
+    "interferometer/delaunay/jvla numba_cpu_sparse_fp64_wtilde@hpc_ral_cpu [breakdown]": (
+        5308,
+        5541,
+        "413115_2",
+    ),
+    "interferometer/delaunay/jvla numba_cpu_sparse_fp64_wtilde@hpc_ral_cpu [runtime]": (
+        2253,
+        2486,
+        "413115_3",
+    ),
+    "interferometer/delaunay/sma jax_cpu_dense_fp64_nufft@hpc_ral_cpu [breakdown]": (
+        176,
+        194,
+        "413115_4",
+    ),
+    "interferometer/delaunay/sma jax_cpu_dense_fp64_nufft@hpc_ral_cpu [runtime]": (
+        187,
+        204,
+        "413115_5",
+    ),
+    "interferometer/delaunay/sma jax_gpu_dense_fp64_nufft@hpc_a100 [breakdown]": (
+        92,
+        95,
+        "413117_2",
+    ),
+    "interferometer/delaunay/sma jax_gpu_dense_fp64_nufft@hpc_a100 [runtime]": (94, 96, "413117_3"),
+    "interferometer/mge/sma jax_cpu_dense_fp64_nufft@hpc_ral_cpu [breakdown]": (27, 29, "413115_6"),
+    "interferometer/mge/sma jax_cpu_dense_fp64_nufft@hpc_ral_cpu [runtime]": (31, 35, "413115_7"),
+    "interferometer/mge/sma jax_gpu_dense_fp64_nufft@hpc_a100 [breakdown]": (21, 23, "413117_4"),
+    "interferometer/mge/sma jax_gpu_dense_fp64_nufft@hpc_a100 [runtime]": (23, 25, "413117_5"),
+    "interferometer/rectangular/jvla dense_reference@hpc_ral_cpu [parity]": (
+        10085,
+        10093,
+        "413116_1",
+    ),
+    "interferometer/rectangular/jvla jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [breakdown]": (
+        847,
+        849,
+        "413115_8",
+    ),
+    "interferometer/rectangular/jvla jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [runtime]": (
+        940,
+        943,
+        "413115_9",
+    ),
+    "interferometer/rectangular/jvla jax_gpu_sparse_fp64_wtilde@hpc_a100 [breakdown]": (
+        448,
+        450,
+        "413117_6",
+    ),
+    "interferometer/rectangular/jvla jax_gpu_sparse_fp64_wtilde@hpc_a100 [runtime]": (
+        424,
+        428,
+        "413117_7",
+    ),
+    "interferometer/rectangular/jvla numba_cpu_sparse_fp64_wtilde@hpc_ral_cpu [breakdown]": (
+        6458,
+        6461,
+        "413115_10",
+    ),
+    "interferometer/rectangular/jvla numba_cpu_sparse_fp64_wtilde@hpc_ral_cpu [runtime]": (
+        2549,
+        2552,
+        "413115_11",
+    ),
+    "interferometer/rectangular/sma jax_cpu_dense_fp64_nufft@hpc_ral_cpu [breakdown]": (
+        176,
+        179,
+        "413115_12",
+    ),
+    "interferometer/rectangular/sma jax_cpu_dense_fp64_nufft@hpc_ral_cpu [runtime]": (
+        187,
+        191,
+        "413115_13",
+    ),
+    "interferometer/rectangular/sma jax_gpu_dense_fp64_nufft@hpc_a100 [breakdown]": (
+        97,
+        107,
+        "413117_8",
+    ),
+    "interferometer/rectangular/sma jax_gpu_dense_fp64_nufft@hpc_a100 [runtime]": (
+        93,
+        104,
+        "413117_9",
+    ),
+}
 #: Batch-0 legs that cannot run, recorded as a known limitation by human ruling.
 BATCH0_LIMITATIONS: dict = {}
 #: ``measured`` once :data:`BATCH0_WALLS` holds batch 0 and the batch-1 rows cite it; while
 #: ``provisional`` batch 1 renders unmeasured rows, :data:`BATCH1_PROVISIONAL_TIME` and a submit
 #: that refuses to run (``P2B_ALLOW_PROVISIONAL_WALL=1`` overrides).
-WALL_BASIS_STATUS = "provisional"
+WALL_BASIS_STATUS = "measured"
 BATCH1_PROVISIONAL_TIME = {"ral_cpu": "12:00:00", "a100": "2-00:00:00", "reference": "24:00:00"}
 WALL_HEADROOM = 1.25
 WALL_ROUND_S = 1800
@@ -118,10 +227,12 @@ A100_MEM_GB = {"sma": 32, "alma": 64, "alma_high": 64, "jvla": 64}
 #: The chunked dense reference (5e5-visibility chunks, peak ~25 GB at S = 1280).
 REFERENCE_MEM_GB = 64
 MEM_STEPS_GB = (16, 32, 64, 128, 256)
-#: Batch 0's peak MaxRSS (KiB) per instrument of the cell legs, and of the reference tasks, with
-#: the task that reached it (filled by the walls PR).
-BATCH0_PEAK_RSS_KIB: dict = {}
-REFERENCE_PEAK_RSS_KIB: dict = {}
+#: Batch 0's peak ``.batch`` MaxRSS (KiB) per instrument of the cell legs (both host classes; the
+#: A100 hosts peaked at 12.2 GiB), and of the reference tasks, with the task that reached it. The
+#: four ~25 s MGE legs (413115_6/7, 413117_4/5) report no MaxRSS (they end before sacct samples);
+#: the sma peak comes from the pixelized dense legs beside them. alma and alma_high take jvla's.
+BATCH0_PEAK_RSS_KIB = {"sma": (32256276, "413115_5"), "jvla": (22483956, "413115_1")}
+REFERENCE_PEAK_RSS_KIB = {"jvla": (31974948, "413116_1")}
 MEM_HEADROOM = 1.5
 BATCH1_MEM_FLOOR_GB = 32
 

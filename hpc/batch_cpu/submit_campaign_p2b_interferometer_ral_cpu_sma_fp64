@@ -21,44 +21,45 @@
 # parity.json into the mirrored cell named by --output-path under the gitignored
 # output/p2b_batch1/ scratch tree, never in place over committed rows.
 #
-# MEMORY. --mem=32gb, a declared estimate for sma (survey A8;
-# the largest instrument decides). Batch 0's sacct MaxRSS replaces it before batch 1.
+# MEMORY. --mem=64gb from batch 0's sacct MaxRSS (bounding instrument) x 1.5,
+# at least 32 GB.
 # One leg per array task on `ral` (CPU work never goes on `gpu`). numba legs pin their
 # BLAS and numba threads to 1; JAX CPU legs get NPROC=8.
 #
-# WALL-BASIS: PROVISIONAL. No leg has a standard-size wall yet; batch 0 measures them.
-# Every row is `unmeasured` until batch 0 lands, and the job refuses to run while
-# WALL_BASIS_STATUS=provisional (export P2B_ALLOW_PROVISIONAL_WALL=1 overrides it).
+# WALL-BASIS: measured by batch 0. Each leg's wall is that of its batch-0 leg of the
+# same script, setup and host class on the bounding instrument, the larger of the
+# walls.tsv WALL and sacct Elapsed; --time is 1.25x the total plus
+# 15 min of slack, rounded up to the next 30 min.
 #   4 leg(s): delaunay jax_cpu_dense_fp64_nufft breakdown, delaunay jax_cpu_dense_fp64_nufft runtime, delaunay jax_cpu_sparse_fp64_wtilde breakdown, delaunay jax_cpu_sparse_fp64_wtilde runtime
 #   cell: interferometer/delaunay/sma  device: ral_cpu  precision: fp64
-#   source: unmeasured  probe-first: yes
+#   source: measured-wall  wall: 1215  ref: 413115_0,413115_1,413115_4,413115_5  measured-on: jvla,sma  headroom: 1.25  median: included
 #   2 leg(s): delaunay numba_cpu_sparse_fp64_wtilde breakdown, delaunay numba_cpu_sparse_fp64_wtilde runtime
 #   cell: interferometer/delaunay_numba/sma  device: ral_cpu  precision: fp64
-#   source: unmeasured  probe-first: yes
+#   source: measured-wall  wall: 5541  ref: 413115_2,413115_3  measured-on: jvla  headroom: 1.25  median: included
 #   2 leg(s): mge jax_cpu_dense_fp64_nufft breakdown, mge jax_cpu_dense_fp64_nufft runtime
 #   cell: interferometer/mge/sma  device: ral_cpu  precision: fp64
-#   source: unmeasured  probe-first: yes
+#   source: measured-wall  wall: 35  ref: 413115_6,413115_7  measured-on: sma  headroom: 1.25  median: included
 #   4 leg(s): rectangular jax_cpu_dense_fp64_nufft breakdown, rectangular jax_cpu_dense_fp64_nufft runtime, rectangular jax_cpu_sparse_fp64_wtilde breakdown, rectangular jax_cpu_sparse_fp64_wtilde runtime
 #   cell: interferometer/pixelization/sma  device: ral_cpu  precision: fp64
-#   source: unmeasured  probe-first: yes
+#   source: measured-wall  wall: 943  ref: 413115_12,413115_13,413115_8,413115_9  measured-on: jvla,sma  headroom: 1.25  median: included
 #   2 leg(s): rectangular numba_cpu_sparse_fp64_wtilde breakdown, rectangular numba_cpu_sparse_fp64_wtilde runtime
 #   cell: interferometer/pixelization_numba/sma  device: ral_cpu  precision: fp64
-#   source: unmeasured  probe-first: yes
+#   source: measured-wall  wall: 6461  ref: 413115_10,413115_11  measured-on: jvla  headroom: 1.25  median: included
 
 #SBATCH -J p2b_interferometer_ral_cpu_sma
 #SBATCH --partition=ral
 #SBATCH --array=0-13%16
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=32gb
-#SBATCH --time=12:00:00
+#SBATCH --mem=64gb
+#SBATCH --time=2:30:00
 #SBATCH -o output/output.%A_%a.out
 #SBATCH -e error/error.%A_%a.err
 
 # Submit from hpc/batch_cpu/ or hpc/batch_gpu/ (the -o/-e paths are relative).
 # Batch 1 runs only once batch 0's walls have replaced the provisional WALL-BASIS rows above
 # (source: measured-wall, --time from the measurement) and this reads "measured".
-WALL_BASIS_STATUS=provisional
+WALL_BASIS_STATUS=measured
 if [ "$WALL_BASIS_STATUS" != measured ] && [ "${P2B_ALLOW_PROVISIONAL_WALL:-0}" != 1 ]; then
     echo "REFUSING: WALL_BASIS_STATUS=$WALL_BASIS_STATUS. Run batch 0, set --time from its walls"
     echo "and mark the WALL-BASIS rows measured-wall first (scripts/misc/campaigns/README.md)."

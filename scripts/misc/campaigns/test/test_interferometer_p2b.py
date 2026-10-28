@@ -3,7 +3,7 @@
 The manifest must be exactly the 60 planned interferometer cells (rulings R1(a), R2, R9); the
 submits must be what the generator renders, run every cell once (38 on `ral`, 22 in
 `--gres=gpu:1` jobs), never put a CPU-only job on the `gpu` partition, pass the wall gate, pin
-the private checkout at 2026.10.25.1 and keep batch 1 refusing until batch 0's walls are in. The
+the private checkout at 2026.10.25.1 and cite batch 0's measured walls and MaxRSS in batch 1. The
 shared machinery (`_common.py`) must leave the phase-2a submits byte-identical. Modules are
 loaded by path; no cell script is run.
 """
@@ -251,15 +251,61 @@ def test_every_submit_passes_the_wall_gate():
         assert {tuple(r["cell"].split("/")[:2]) for r in rows} == cells, path
 
 
-def test_batch1_refuses_while_provisional_and_batch0_never_does():
-    assert p2b.WALL_BASIS_STATUS == "provisional"
+def test_batch1_walls_are_measured_by_batch0_and_batch0_never_guards():
+    """Every batch-1 row is measured-wall citing batch 0 (RAL 413115, references 413116, A100
+    413117), and --time holds 1.25x the slowest leg of a RAL array or the sum of an A100 job's
+    legs, plus the slack."""
+    assert p2b.WALL_BASIS_STATUS == "measured"
+    batch0 = p2b.batch0_ral_cpu() + p2b.batch0_a100() + p2b.batch0_references()
+    assert set(p2b.BATCH0_WALLS) == {t.cell for t in batch0}
+    assert set(p2b.BATCH0_LIMITATIONS) <= set(p2b.BATCH0_WALLS)
     for path in BATCH1:
-        text = (ROOT / path).read_text()
-        assert "WALL_BASIS_STATUS=provisional" in text and "P2B_ALLOW_PROVISIONAL_WALL" in text
-        assert "#   source: measured-wall" not in text
+        text, names = legs(path)
+        assert "WALL_BASIS_STATUS=measured" in text
+        assert text.index("WALL_BASIS_STATUS=measured") < text.index(
+            'source "$AP_ROOT/activate.sh"'
+        )
+        tasks = [t for t in p2b.planned_tasks() + p2b.reference_tasks() if t.cell in set(names)]
+        assert len(tasks) == len(names)
+        walls = []
+        for t in tasks:
+            basis = p2b.basis_leg(t)
+            assert basis.cell in p2b.BATCH0_WALLS  # a leg of the same script and setup
+            assert basis.script == t.script and basis.setup_id == t.setup_id
+            # Never bounded by a smaller instrument: jvla bounds every sparse / reference leg.
+            assert p2b.INSTRUMENTS.index(basis.instrument) >= p2b.INSTRUMENTS.index(t.instrument)
+            wall, elapsed, _ = p2b.BATCH0_WALLS[basis.cell]
+            assert p2b.measured_wall(t)[0] == max(wall, elapsed)
+            walls.append(max(wall, elapsed))
+        need = 1.25 * (sum(walls) if path in A1001 else max(walls)) + p2b.WALL_MIN_SLACK_S
+        assert check_submits.parse_slurm_time(sbatch(text, "time")) >= need, path
+        for row in check_submits.parse_basis_rows(text):
+            assert row["source"] == "measured-wall" and float(row["headroom"]) >= 1.25
+            assert all(
+                r.split("_")[0] in {"413115", "413116", "413117"} for r in row["ref"].split(",")
+            )
+    times = {p: sbatch((ROOT / p).read_text(), "time") for p in RAL1 + A1001 + [REFS1]}
+    assert {times[p] for p in RAL1} == {"2:30:00"}
+    assert {times[p] for p in A1001} == {"1:30:00"}
+    assert times[REFS1] == "4:00:00"
     for path in BATCH0 + [MATRIXFREE]:
         text = (ROOT / path).read_text()
         assert "WALL_BASIS_STATUS" not in text and "ALLOW_PROVISIONAL" not in text, path
+
+
+def test_batch1_mem_is_batch0_maxrss_times_headroom():
+    for table in (p2b.BATCH0_PEAK_RSS_KIB, p2b.REFERENCE_PEAK_RSS_KIB):
+        for instrument, (kib, ref) in table.items():
+            assert abs(p2b.peak_rss_gib(instrument, table) - kib / 2**20) < 1e-9
+            assert p2b.mem_gb_measured([instrument], table=table) >= 1.5 * kib / 2**20
+            assert ref.split("_")[0] in {"413115", "413116", "413117"}
+    # alma and alma_high are bounded by jvla's peak, never by sma's.
+    assert p2b.peak_rss_gib("alma") == p2b.peak_rss_gib("jvla")
+    assert p2b.peak_rss_gib("alma_high") == p2b.peak_rss_gib("jvla")
+    for path in RAL1 + A1001 + [REFS1]:
+        text = (ROOT / path).read_text()
+        assert sbatch(text, "mem") == "64gb", path
+        assert "# MEMORY." in text and "MaxRSS" in text
 
 
 def test_every_submit_pins_the_private_checkout():

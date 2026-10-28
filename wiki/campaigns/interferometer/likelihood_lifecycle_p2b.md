@@ -3,13 +3,13 @@
 **Status:** open
 **Question:** What does every planned interferometer/{mge, rectangular, delaunay} cell cost at the standard source size (Delaunay 1250 + 30 edge, rectangular 35x35) on the pinned release 2026.10.25.1, on the sparse W~ and dense NUFFT routes, and does each cell's log evidence match an independent dense reference?
 **Pre-registered rule:** every one of the 60 planned cells lands `current`, with runtime and breakdown, provenance, `resources`, `fit.png` and a `parity.json` whose status is `match` against the visibility-chunked eager NumPy dense reference (tolerance 1e-8 x |reference| in fp64, 1e-3 mixed precision; rulings R6, R7). Any `diverged` witness blocks that setup until explained. Recorded here with PR A, before batch 0 runs (2026-10-27).
-**Verdict:** pending (no runs yet). Expected, written before the runs: W~ is the optimal route on both hosts for every pixelized cell, with the packaged cost model picking the NumPy FFT route over numba `direct_conv` at jvla on RAL CPU (survey 2026-10-25); every parity witness is `match`, with the Delaunay cells closest to the bound at sma (about 1e-8 relative jitter between the scipy and JAX Delaunay walks). Class designations are phase 3's decision, not this page's.
+**Verdict:** pending (batch 0 run; batch 1 not yet). Expected, written before the runs: W~ is the optimal route on both hosts for every pixelized cell, with the packaged cost model picking the NumPy FFT route over numba `direct_conv` at jvla on RAL CPU (survey 2026-10-25); every parity witness is `match`, with the Delaunay cells closest to the bound at sma (about 1e-8 relative jitter between the scipy and JAX Delaunay walks). Class designations are phase 3's decision, not this page's.
 **Headline:** none yet.
 **Library PRs:** none (measurement only, tag 2026.10.25.1); the matrix-free experiment reads PyAutoArray#658 from a main checkout
 **Profiling PRs:** PR A (standard-size interferometer cells, numba runtime scripts, `--dense` breakdowns, chunked parity reference, campaign submits, matrix-free harness), then a walls PR after batch 0, then PR B (rows, catalogue, coverage, this page's result)
 **Ledger:** this page; rows will land under `results/interferometer/{mge,rectangular,delaunay}/`; work list [`scripts/misc/campaigns/interferometer_p2b.py`](../../../scripts/misc/campaigns/interferometer_p2b.py) and its [README](../../../scripts/misc/campaigns/README.md)
 **Mind contract:** epic `likelihood-lifecycle`, phase 2 sub-issue 2b; `active/likelihood_lifecycle_p2b_interferometer_campaign.md`; issue autolens_profiling#469
-**Next:** human go for batch 0 (RAL `ral` array of 14, A100 array of 10, optional jvla reference tasks); then set batch 1's `--time` and `--mem` from batch 0
+**Next:** batch 1 (four RAL arrays, four A100 jobs, the references array), from the walls commit; then PR B
 
 ## Why this campaign
 
@@ -65,11 +65,24 @@ cell computes it in-process; above sma the reference task
 (`scripts/interferometer/pixelized/parity_reference.py`) caches it per mesh and rewrites each
 cell's `parity.json` from the row's `parity_candidate`.
 
+## Batch 0 (2026-10-27/28)
+
+| Array | Job | Legs | Result |
+|-------|-----|------|--------|
+| RAL CPU timing arm | 413115 | 14 | all exit 0; slowest leg the rectangular jvla numba breakdown, 6461 s |
+| jvla dense references | 413116 | 2 | all exit 0; 10093 s (rectangular), 10727 s (delaunay) |
+| A100 timing arm | 413117 | 10 | all exit 0; slowest leg the delaunay jvla GPU sparse breakdown, 714 s |
+
+Every jvla parity witness is `match`. The walls set batch 1's `--time` (RAL 2:30:00, A100
+1:30:00, references 4:00:00) and the MaxRSS its `--mem` (64 GB everywhere); the generator's
+`BATCH0_WALLS` and `BATCH0_PEAK_RSS_KIB` hold the numbers. These are timing-arm rows only;
+the campaign's rows come from batch 1.
+
 ## Caveats
 
 - The numba fork segfault (multi-worker Nautilus, Aris campaign) does not touch these
   single-process legs. It matters in phase 4.
-- jvla has never been measured on CPU; every CPU jvla wall before batch 0 is a projection.
+- Before batch 0, jvla had never been measured on CPU; batch 0's jvla CPU walls are the first.
 - At sma the noise is large (sigma 1000 per visibility), so the curvature matrix is tiny and the
   numba, NumPy FFT and dense routes agree to the last printed digit there; the parity bound bites
   at alma and above.

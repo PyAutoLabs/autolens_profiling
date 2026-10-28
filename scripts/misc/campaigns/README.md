@@ -251,9 +251,9 @@ The flags each leg gets:
 | `batch_cpu/submit_campaign_p2b_batch0_ral_cpu_fp64` | `ral`, array `%8` | 14 (batch 0) | 12:00:00 | 128 GB |
 | `batch_gpu/submit_campaign_p2b_batch0_a100_fp64` | `gpu`, `--gres=gpu:1`, array `%2` | 10 (batch 0) | 6:00:00 | 64 GB |
 | `batch_cpu/submit_campaign_p2b_batch0_references_ral_cpu_fp64` | `ral`, array | 2 (optional, batch 0) | 24:00:00 | 64 GB |
-| `batch_cpu/submit_campaign_p2b_interferometer_ral_cpu_<instrument>_fp64` | `ral`, array `%16` | sma 14, alma 8, alma_high 8, jvla 8 | provisional | 32 / 32 / 64 / 128 GB |
-| `batch_gpu/submit_campaign_p2b_interferometer_a100_<instrument>_fp64` | `gpu`, `--gres=gpu:1` | one job per instrument: sma 10, others 4 legs in turn | provisional | 32 / 64 / 64 / 64 GB |
-| `batch_cpu/submit_campaign_p2b_references_ral_cpu_fp64` | `ral`, array | 6 (alma, alma_high, jvla x rectangular, delaunay) | provisional | 64 GB |
+| `batch_cpu/submit_campaign_p2b_interferometer_ral_cpu_<instrument>_fp64` | `ral`, array `%16` | sma 14, alma 8, alma_high 8, jvla 8 | 2:30:00 | 64 GB |
+| `batch_gpu/submit_campaign_p2b_interferometer_a100_<instrument>_fp64` | `gpu`, `--gres=gpu:1` | one job per instrument: sma 10, others 4 legs in turn | 1:30:00 | 64 GB |
+| `batch_cpu/submit_campaign_p2b_references_ral_cpu_fp64` | `ral`, array | 6 (alma, alma_high, jvla x rectangular, delaunay) | 4:00:00 | 64 GB |
 | `batch_cpu/submit_campaign_p2b_matrixfree_ral_cpu_fp64` | `ral`, array | 7 (experiment, not batch 0) | 12:00:00 | 128 GB |
 
 There are no `jax_cpu@hpc_a100` legs in 2b, so every A100 leg is a GPU leg. No CPU-only job
@@ -290,6 +290,19 @@ sacct Elapsed and the task) and `BATCH0_PEAK_RSS_KIB` / `REFERENCE_PEAK_RSS_KIB`
 of its batch-0 leg on the bounding instrument (`basis_leg`), with 2a's rule: 1.25x, plus 15 min,
 rounded up to the next half hour. Until then the batch-1 submits refuse to run
 (`P2B_ALLOW_PROVISIONAL_WALL=1` overrides).
+
+Done for 2026.10.25.1 (RAL 413115, references 413116, A100 413117; all 26 legs exit 0, every
+jvla parity witness `match`): `BATCH0_WALLS` holds every batch-0 leg. Each batch-1 leg takes the
+larger of WALL and Elapsed of its batch-0 leg (jvla for the sparse, numba and reference legs, so
+alma and alma_high run under the jvla upper bound: about 6x and 25x fewer masked pixels; sma for
+the dense and MGE legs). The slowest leg is the rectangular jvla numba breakdown (6461 s), so
+every RAL array asks 2:30:00; the A100 jobs sum their legs (sma 2728 s, the others 2278 s) and
+ask 1:30:00; the references take the delaunay jvla reference (10727 s) and ask 4:00:00. `--mem`
+is 64 GB everywhere: the cell peak was 30.8 GiB on sma (413115_5, the delaunay JAX CPU dense
+runtime) and 21.4 GiB on jvla (413115_1), alma and alma_high take jvla's, the references
+peaked at 30.5 GiB (413116_1), and 1.5x each lands on the 64 GB step. The four ~25 s MGE legs
+report no MaxRSS (they end before sacct samples them); their memory is bounded by the sma
+pixelized legs in the same job.
 
 **Parity references (R6, R7).** Every pixelized cell writes `parity.json` against the
 visibility-chunked eager NumPy dense log evidence at the same instance. At sma a cell computes
