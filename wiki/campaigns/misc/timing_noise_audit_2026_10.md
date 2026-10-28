@@ -787,6 +787,11 @@ iteration counts, budgets in iterations, geometry or formatting, not a measured 
   `scripts/misc/campaigns/test/test_interferometer_p2b.py::test_batch1_walls_are_measured_by_batch0_and_batch0_never_guards`
   checks it, as the 2a test does.
   S1 is still the gate.
+- `scripts/misc/campaigns/point_source_p2c.py::WALL_HEADROOM` (autolens_profiling#472): the 2c
+  generator's copy of the same 1.25x multiplier, applied to the laptop walls of the point-source
+  scripts (no timing batch, decision D3);
+  `scripts/misc/campaigns/test/test_point_source_p2c.py::test_walls_are_one_hour_and_hold_the_laptop_walls`
+  checks that the fixed 1:00:00 holds it plus the slack. S1 is still the gate.
 - `scripts/misc/tooling/build_readme.py::_format_time` and
   `scripts/misc/tooling/build_readme.py::_render_runtime_table`: unit formatting.
 

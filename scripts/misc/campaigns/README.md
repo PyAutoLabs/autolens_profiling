@@ -10,7 +10,8 @@ the same list.
 | [`imaging_p2a.py`](imaging_p2a.py) | Phase 2a, `imaging/{mge, rectangular, delaunay, delaunay_nn}` at the standard size on 2026.10.23.1 (autolens_profiling#456) | `hpc/batch_cpu/submit_campaign_p2a_imaging_*`, `hpc/batch_gpu/submit_campaign_p2a_imaging_*` |
 | [`imaging_p2a.py`](imaging_p2a.py) (`rect28_tasks`) | Phase 2a size variant: hst rectangular at 28x28 = 784 source pixels on 2026.10.25.1 (autolens_profiling#468) | `hpc/batch_cpu/submit_campaign_p2a_rect28_ral_cpu_fp64`, `hpc/batch_gpu/submit_campaign_p2a_rect28_a100_fp64` |
 | [`interferometer_p2b.py`](interferometer_p2b.py) | Phase 2b, `interferometer/{mge, rectangular, delaunay}` at the standard size on 2026.10.25.1 (autolens_profiling#469), plus the dense parity references and the matrix-free experiment | `hpc/batch_cpu/submit_campaign_p2b_*`, `hpc/batch_gpu/submit_campaign_p2b_*` |
-| [`_common.py`](_common.py) | The submit machinery both generators share (preamble, guards, WALL-BASIS rows, `#SBATCH` block) | none of its own |
+| [`point_source_p2c.py`](point_source_p2c.py) | Phase 2c, `point_source_image/image_plane` and `point_source_source/source_plane` (instrument `simple`) on 2026.10.25.1 (autolens_profiling#472), plus the solved-likelihood runtime experiments | `hpc/batch_cpu/submit_campaign_p2c_point_source_ral_cpu_fp64`, `hpc/batch_gpu/submit_campaign_p2c_point_source_a100_fp64` |
+| [`_common.py`](_common.py) | The submit machinery the generators share (preamble, guards, WALL-BASIS rows, `#SBATCH` block) | none of its own |
 | [`peak_rss_backfill.py`](peak_rss_backfill.py) | Phase 2x backfill of 2a's peak memory and cores per call from sacct (autolens_profiling#462) | writes `catalogue/peak_rss_backfill.json`, no submits |
 
 ```bash
@@ -20,6 +21,9 @@ python scripts/misc/campaigns/imaging_p2a.py --check   # exit 1 if a submit is o
 python scripts/misc/campaigns/interferometer_p2b.py --list    # the 60 cells, 6 references, 7 matrix-free legs
 python scripts/misc/campaigns/interferometer_p2b.py --write   # re-render the 2b submits
 python scripts/misc/campaigns/interferometer_p2b.py --check
+python scripts/misc/campaigns/point_source_p2c.py --list      # the 10 cells, 5 solved experiments, 2 untasked
+python scripts/misc/campaigns/point_source_p2c.py --write     # re-render the 2c submits
+python scripts/misc/campaigns/point_source_p2c.py --check
 pytest scripts/misc/campaigns/test -q
 ```
 
@@ -334,3 +338,50 @@ the final row, `fit.png`, a `parity.json` that passes `parity_witness.py --check
 `size_fallback` rows and the stale MGE row to `history/<release_pin>_<date>/` first, then
 regenerates the catalogue and coverage.
 
+## Phase 2c point source
+
+**Cells.** The 12 planned point-source cells (`dashboard/coverage.json`, instrument `simple`):
+10 get a task, 4 on `hpc_ral_cpu` and 6 on `hpc_a100`. The decisions on autolens_profiling#472:
+
+- D1: the pin, private checkout and shared venv of 2b (`PYAUTO_PRIVATE_BASE`, default
+  `/mnt/ral/jnightin/profiling/PyAuto_2026.10.25.1`; `P2C_PIN=2026.10.25.1`), with 2a's guards.
+- D2: `point_source_source/source_plane jax_cpu_na_fp64@hpc_a100` runs JAX on the A100 node's
+  CPU (`JAX_PLATFORMS=cpu`, `NPROC=8`) inside the A100 job. `jax_gpu_na_fp64@hpc_ral_cpu` (a GPU
+  setup on `ral`, which has no GPU) gets no task: both of its cells stay `missing`
+  (`MIS_DESIGNATED`), a designation bug in `catalogue/provisional_designations.json` awaiting a
+  human ruling (the [campaign page](../../../wiki/campaigns/point_source_source/source_plane/likelihood_lifecycle_p2c.md) says where it comes from).
+- D3: no timing batch. Every evaluation is milliseconds, so one batch runs every cell under a
+  fixed 1:00:00.
+
+Each cell runs `likelihood_runtime.py` or `likelihood_breakdown.py` with `--config-name` and
+`--output-path`; the scripts accept `--instrument` and always load the committed
+`dataset/point_source/simple`, so `prepare_dataset` only refuses a missing dataset. Every row now
+carries `device` (provenance), `resources`, `fit.png` and a `parity.json` against the eager NumPy
+`AnalysisPoint(use_jax=False)` value of the same instance (default fp64 tolerance, 1e-4 x
+|reference|: the eager source-plane solved lane uses a finite-difference Hessian). GPU legs set
+`JAX_PLATFORMS=cuda` alone, so a node without a visible GPU fails the leg instead of writing a CPU
+row.
+
+**Solved runtime experiments.** `likelihood_runtime.py` times the free-centre likelihoods
+(`FitPositionsImagePairAll`, `FitPositionsSource`); the breakdowns, the library default and the
+stale source-plane runtime rows are the solved ones. Each submit also runs
+`likelihood_runtime_solved.py` on every runtime setup into the cell's
+`experiments/solved_runtime/` folder (5 legs, never current), so PR B can publish either as the
+runtime cell after the human rules, without a second batch.
+
+**Submits.**
+
+| Submit | Partition | Legs | `--time` | `--mem` |
+|--------|-----------|------|----------|---------|
+| `batch_cpu/submit_campaign_p2c_point_source_ral_cpu_fp64` | `ral`, array `%16` | 6 (4 cells + 2 solved) | 1:00:00 | 16 GB |
+| `batch_gpu/submit_campaign_p2c_point_source_a100_fp64` | `gpu`, `--gres=gpu:1`, one job | 9 in turn (6 cells + 3 solved) | 1:00:00 | 32 GB |
+
+**Walls and memory.** The WALL-BASIS rows cite each script's process wall on the laptop
+(`LAPTOP_WALLS`, the smoke runs of this branch, WSL2, `NPROC=4`), which compiled the image-plane
+breakdown 3-6x slower than either RAL host in 2026-09, so they bound both. The A100 job needs the
+sum of its legs, the array its slowest leg; the test checks 1:00:00 holds `WALL_HEADROOM` x that
+plus 15 min. The laptop smokes peaked at about 1.1 GB resident.
+
+**Rows** go to the gitignored `output/p2c/results/...`; logs and `walls.tsv` to
+`output/p2c_logs/`. PR B copies complete cells into `results/` as in 2a and 2b, moving the six
+stale rows to `history/` first.
