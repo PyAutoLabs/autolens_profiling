@@ -137,6 +137,37 @@ from _profile_cli import (  # noqa: E402
 
 _cli = parse_profile_cli()
 
+if _cli.standard_size:
+    # Likelihood-lifecycle 2f (autolens_profiling#475): the standard-size datacube breakdown --
+    # the 2b interferometer standard breakdown of the lead channel (which is the 2b cell; --dense
+    # makes the library's dense route the primary arm), projected to the cube by step (decision
+    # D4), plus an eager cube evaluation for parity.json. The cell below is the historic fiducial
+    # and is unchanged.
+    import argparse
+
+    from likelihood_breakdown import datacube_standard
+    from likelihood_breakdown import interferometer_pixelized as _harness
+
+    _cell_parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
+    _harness.add_cell_args(_cell_parser)
+    _cell_parser.add_argument("--n-channels", type=int, default=datacube_standard.N_CHANNELS)
+    datacube_standard.run_breakdown(
+        _cli,
+        _cli.parse_cell_args(_cell_parser),
+        _harness.CellSpec(
+            cell="delaunay",
+            title="Delaunay Datacube Likelihood (lead channel, projected to the cube)",
+            fiducial_source_pixels=_harness.DELAUNAY_N_FIDUCIAL,
+            build_mesh=_harness.build_delaunay_mesh,
+            pinned={},
+        ),
+        numba=False,
+        thread_env=None,
+        script_file=__file__,
+        profiling_root=_profiling_root(),
+    )
+    sys.exit(0)
+
 instrument = _cli.instrument or "sma"
 
 # n_channels = 34 matches the prior Hannah ALMA cube fiducial. For quick

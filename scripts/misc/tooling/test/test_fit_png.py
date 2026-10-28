@@ -45,6 +45,10 @@ WIRED = {
 SHARED_RENDERERS = {
     "scripts/misc/likelihood_breakdown/interferometer_standard.py",
     "scripts/interferometer/rectangular/likelihood_runtime_matrixfree.py",
+    # Likelihood-lifecycle 2f (#475): the datacube and multi-dataset standard-size drivers render
+    # the lead channel's / dataset 0's eager fit for the cells that call them.
+    "scripts/misc/likelihood_breakdown/datacube_standard.py",
+    "scripts/misc/likelihood_breakdown/multi_dataset_standard.py",
 }
 
 

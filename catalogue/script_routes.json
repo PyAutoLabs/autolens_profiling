@@ -18,6 +18,27 @@
       "measurement": "likelihood_breakdown"
     },
     {
+      "legacy": "scripts/datacube/likelihood_breakdown/delaunay_numba.py",
+      "path": "scripts/datacube/delaunay/likelihood_breakdown_numba.py",
+      "dataset": "datacube",
+      "model": "delaunay",
+      "measurement": "likelihood_breakdown_numba"
+    },
+    {
+      "legacy": "scripts/datacube/likelihood_reference/delaunay.py",
+      "path": "scripts/datacube/delaunay/parity_reference.py",
+      "dataset": "datacube",
+      "model": "delaunay",
+      "measurement": "parity_reference"
+    },
+    {
+      "legacy": "scripts/datacube/likelihood_runtime/delaunay_numba.py",
+      "path": "scripts/datacube/delaunay/likelihood_runtime_numba.py",
+      "dataset": "datacube",
+      "model": "delaunay",
+      "measurement": "likelihood_runtime_numba"
+    },
+    {
       "legacy": "scripts/imaging/hazards/mge_nnls_capture.py",
       "path": "scripts/imaging/mge/hazards_nnls_capture.py",
       "dataset": "imaging",
@@ -471,6 +492,34 @@
       "dataset": "interferometer",
       "model": "delaunay",
       "measurement": "streaming_plot_scaling"
+    },
+    {
+      "legacy": "scripts/multi_dataset/likelihood_breakdown/delaunay.py",
+      "path": "scripts/multi_dataset/delaunay/likelihood_breakdown.py",
+      "dataset": "multi_dataset",
+      "model": "delaunay",
+      "measurement": "likelihood_breakdown"
+    },
+    {
+      "legacy": "scripts/multi_dataset/likelihood_breakdown/delaunay_numba.py",
+      "path": "scripts/multi_dataset/delaunay/likelihood_breakdown_numba.py",
+      "dataset": "multi_dataset",
+      "model": "delaunay",
+      "measurement": "likelihood_breakdown_numba"
+    },
+    {
+      "legacy": "scripts/multi_dataset/likelihood_runtime/delaunay.py",
+      "path": "scripts/multi_dataset/delaunay/likelihood_runtime.py",
+      "dataset": "multi_dataset",
+      "model": "delaunay",
+      "measurement": "likelihood_runtime"
+    },
+    {
+      "legacy": "scripts/multi_dataset/likelihood_runtime/delaunay_numba.py",
+      "path": "scripts/multi_dataset/delaunay/likelihood_runtime_numba.py",
+      "dataset": "multi_dataset",
+      "model": "delaunay",
+      "measurement": "likelihood_runtime_numba"
     },
     {
       "legacy": "scripts/multi_dataset/likelihood_runtime/shared_preloads.py",
