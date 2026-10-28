@@ -445,6 +445,318 @@
    "state": "missing"
   },
   {
+   "cell": "group/delaunay/euclid jax_cpu_sparse_fp64@hpc_a100 [breakdown]",
+   "class": "secondary",
+   "host_class": "hpc_a100",
+   "instrument": "euclid",
+   "likelihood": "group/delaunay",
+   "measurement": "breakdown",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_cpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "group/delaunay/euclid jax_cpu_sparse_fp64@hpc_a100 [runtime]",
+   "class": "secondary",
+   "host_class": "hpc_a100",
+   "instrument": "euclid",
+   "likelihood": "group/delaunay",
+   "measurement": "runtime",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_cpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "group/delaunay/euclid jax_cpu_sparse_fp64@hpc_ral_cpu [breakdown]",
+   "class": "secondary",
+   "host_class": "hpc_ral_cpu",
+   "instrument": "euclid",
+   "likelihood": "group/delaunay",
+   "measurement": "breakdown",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_cpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "group/delaunay/euclid jax_cpu_sparse_fp64@hpc_ral_cpu [runtime]",
+   "class": "secondary",
+   "host_class": "hpc_ral_cpu",
+   "instrument": "euclid",
+   "likelihood": "group/delaunay",
+   "measurement": "runtime",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_cpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "group/delaunay/euclid jax_gpu_dense_fp64@hpc_a100 [breakdown]",
+   "class": "optimal",
+   "host_class": "hpc_a100",
+   "instrument": "euclid",
+   "likelihood": "group/delaunay",
+   "measurement": "breakdown",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_gpu_dense_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "group/delaunay/euclid jax_gpu_dense_fp64@hpc_a100 [runtime]",
+   "class": "optimal",
+   "host_class": "hpc_a100",
+   "instrument": "euclid",
+   "likelihood": "group/delaunay",
+   "measurement": "runtime",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_gpu_dense_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "group/delaunay/euclid jax_gpu_sparse_fp64@hpc_a100 [breakdown]",
+   "class": "secondary",
+   "host_class": "hpc_a100",
+   "instrument": "euclid",
+   "likelihood": "group/delaunay",
+   "measurement": "breakdown",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_gpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "group/delaunay/euclid jax_gpu_sparse_fp64@hpc_a100 [runtime]",
+   "class": "secondary",
+   "host_class": "hpc_a100",
+   "instrument": "euclid",
+   "likelihood": "group/delaunay",
+   "measurement": "runtime",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_gpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "group/delaunay/euclid numba_cpu_sparse_fp64@hpc_ral_cpu [breakdown]",
+   "class": "optimal",
+   "host_class": "hpc_ral_cpu",
+   "instrument": "euclid",
+   "likelihood": "group/delaunay",
+   "measurement": "breakdown",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "numba_cpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "group/delaunay/euclid numba_cpu_sparse_fp64@hpc_ral_cpu [runtime]",
+   "class": "optimal",
+   "host_class": "hpc_ral_cpu",
+   "instrument": "euclid",
+   "likelihood": "group/delaunay",
+   "measurement": "runtime",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "numba_cpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "group/mge/euclid jax_cpu_dense_fp64@hpc_ral_cpu [breakdown]",
+   "class": "optimal",
+   "host_class": "hpc_ral_cpu",
+   "instrument": "euclid",
+   "likelihood": "group/mge",
+   "measurement": "breakdown",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_cpu_dense_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "group/mge/euclid jax_cpu_dense_fp64@hpc_ral_cpu [runtime]",
+   "class": "optimal",
+   "host_class": "hpc_ral_cpu",
+   "instrument": "euclid",
+   "likelihood": "group/mge",
+   "measurement": "runtime",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_cpu_dense_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "group/mge/euclid jax_gpu_dense_fp64@hpc_a100 [breakdown]",
+   "class": "optimal",
+   "host_class": "hpc_a100",
+   "instrument": "euclid",
+   "likelihood": "group/mge",
+   "measurement": "breakdown",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_gpu_dense_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "group/mge/euclid jax_gpu_dense_fp64@hpc_a100 [runtime]",
+   "class": "optimal",
+   "host_class": "hpc_a100",
+   "instrument": "euclid",
+   "likelihood": "group/mge",
+   "measurement": "runtime",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_gpu_dense_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "group/rectangular/euclid jax_cpu_sparse_fp64@hpc_a100 [breakdown]",
+   "class": "secondary",
+   "host_class": "hpc_a100",
+   "instrument": "euclid",
+   "likelihood": "group/rectangular",
+   "measurement": "breakdown",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_cpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "group/rectangular/euclid jax_cpu_sparse_fp64@hpc_a100 [runtime]",
+   "class": "secondary",
+   "host_class": "hpc_a100",
+   "instrument": "euclid",
+   "likelihood": "group/rectangular",
+   "measurement": "runtime",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_cpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "group/rectangular/euclid jax_cpu_sparse_fp64@hpc_ral_cpu [breakdown]",
+   "class": "secondary",
+   "host_class": "hpc_ral_cpu",
+   "instrument": "euclid",
+   "likelihood": "group/rectangular",
+   "measurement": "breakdown",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_cpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "group/rectangular/euclid jax_cpu_sparse_fp64@hpc_ral_cpu [runtime]",
+   "class": "secondary",
+   "host_class": "hpc_ral_cpu",
+   "instrument": "euclid",
+   "likelihood": "group/rectangular",
+   "measurement": "runtime",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_cpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "group/rectangular/euclid jax_gpu_dense_fp64@hpc_a100 [breakdown]",
+   "class": "optimal",
+   "host_class": "hpc_a100",
+   "instrument": "euclid",
+   "likelihood": "group/rectangular",
+   "measurement": "breakdown",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_gpu_dense_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "group/rectangular/euclid jax_gpu_dense_fp64@hpc_a100 [runtime]",
+   "class": "optimal",
+   "host_class": "hpc_a100",
+   "instrument": "euclid",
+   "likelihood": "group/rectangular",
+   "measurement": "runtime",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_gpu_dense_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "group/rectangular/euclid jax_gpu_sparse_fp64@hpc_a100 [breakdown]",
+   "class": "secondary",
+   "host_class": "hpc_a100",
+   "instrument": "euclid",
+   "likelihood": "group/rectangular",
+   "measurement": "breakdown",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_gpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "group/rectangular/euclid jax_gpu_sparse_fp64@hpc_a100 [runtime]",
+   "class": "secondary",
+   "host_class": "hpc_a100",
+   "instrument": "euclid",
+   "likelihood": "group/rectangular",
+   "measurement": "runtime",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_gpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "group/rectangular/euclid numba_cpu_sparse_fp64@hpc_ral_cpu [breakdown]",
+   "class": "optimal",
+   "host_class": "hpc_ral_cpu",
+   "instrument": "euclid",
+   "likelihood": "group/rectangular",
+   "measurement": "breakdown",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "numba_cpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "group/rectangular/euclid numba_cpu_sparse_fp64@hpc_ral_cpu [runtime]",
+   "class": "optimal",
+   "host_class": "hpc_ral_cpu",
+   "instrument": "euclid",
+   "likelihood": "group/rectangular",
+   "measurement": "runtime",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "numba_cpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
    "cell": "imaging/delaunay/ao jax_cpu_sparse_fp64@hpc_a100 [breakdown]",
    "class": "secondary",
    "host_class": "hpc_a100",
@@ -2733,6 +3045,318 @@
    "state": "missing"
   },
   {
+   "cell": "multi_galaxy/delaunay/hst jax_cpu_sparse_fp64@hpc_a100 [breakdown]",
+   "class": "secondary",
+   "host_class": "hpc_a100",
+   "instrument": "hst",
+   "likelihood": "multi_galaxy/delaunay",
+   "measurement": "breakdown",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_cpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "multi_galaxy/delaunay/hst jax_cpu_sparse_fp64@hpc_a100 [runtime]",
+   "class": "secondary",
+   "host_class": "hpc_a100",
+   "instrument": "hst",
+   "likelihood": "multi_galaxy/delaunay",
+   "measurement": "runtime",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_cpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "multi_galaxy/delaunay/hst jax_cpu_sparse_fp64@hpc_ral_cpu [breakdown]",
+   "class": "secondary",
+   "host_class": "hpc_ral_cpu",
+   "instrument": "hst",
+   "likelihood": "multi_galaxy/delaunay",
+   "measurement": "breakdown",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_cpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "multi_galaxy/delaunay/hst jax_cpu_sparse_fp64@hpc_ral_cpu [runtime]",
+   "class": "secondary",
+   "host_class": "hpc_ral_cpu",
+   "instrument": "hst",
+   "likelihood": "multi_galaxy/delaunay",
+   "measurement": "runtime",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_cpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "multi_galaxy/delaunay/hst jax_gpu_dense_fp64@hpc_a100 [breakdown]",
+   "class": "optimal",
+   "host_class": "hpc_a100",
+   "instrument": "hst",
+   "likelihood": "multi_galaxy/delaunay",
+   "measurement": "breakdown",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_gpu_dense_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "multi_galaxy/delaunay/hst jax_gpu_dense_fp64@hpc_a100 [runtime]",
+   "class": "optimal",
+   "host_class": "hpc_a100",
+   "instrument": "hst",
+   "likelihood": "multi_galaxy/delaunay",
+   "measurement": "runtime",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_gpu_dense_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "multi_galaxy/delaunay/hst jax_gpu_sparse_fp64@hpc_a100 [breakdown]",
+   "class": "secondary",
+   "host_class": "hpc_a100",
+   "instrument": "hst",
+   "likelihood": "multi_galaxy/delaunay",
+   "measurement": "breakdown",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_gpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "multi_galaxy/delaunay/hst jax_gpu_sparse_fp64@hpc_a100 [runtime]",
+   "class": "secondary",
+   "host_class": "hpc_a100",
+   "instrument": "hst",
+   "likelihood": "multi_galaxy/delaunay",
+   "measurement": "runtime",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_gpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "multi_galaxy/delaunay/hst numba_cpu_sparse_fp64@hpc_ral_cpu [breakdown]",
+   "class": "optimal",
+   "host_class": "hpc_ral_cpu",
+   "instrument": "hst",
+   "likelihood": "multi_galaxy/delaunay",
+   "measurement": "breakdown",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "numba_cpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "multi_galaxy/delaunay/hst numba_cpu_sparse_fp64@hpc_ral_cpu [runtime]",
+   "class": "optimal",
+   "host_class": "hpc_ral_cpu",
+   "instrument": "hst",
+   "likelihood": "multi_galaxy/delaunay",
+   "measurement": "runtime",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "numba_cpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "multi_galaxy/mge/hst jax_cpu_dense_fp64@hpc_ral_cpu [breakdown]",
+   "class": "optimal",
+   "host_class": "hpc_ral_cpu",
+   "instrument": "hst",
+   "likelihood": "multi_galaxy/mge",
+   "measurement": "breakdown",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_cpu_dense_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "multi_galaxy/mge/hst jax_cpu_dense_fp64@hpc_ral_cpu [runtime]",
+   "class": "optimal",
+   "host_class": "hpc_ral_cpu",
+   "instrument": "hst",
+   "likelihood": "multi_galaxy/mge",
+   "measurement": "runtime",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_cpu_dense_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "multi_galaxy/mge/hst jax_gpu_dense_fp64@hpc_a100 [breakdown]",
+   "class": "optimal",
+   "host_class": "hpc_a100",
+   "instrument": "hst",
+   "likelihood": "multi_galaxy/mge",
+   "measurement": "breakdown",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_gpu_dense_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "multi_galaxy/mge/hst jax_gpu_dense_fp64@hpc_a100 [runtime]",
+   "class": "optimal",
+   "host_class": "hpc_a100",
+   "instrument": "hst",
+   "likelihood": "multi_galaxy/mge",
+   "measurement": "runtime",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_gpu_dense_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "multi_galaxy/rectangular/hst jax_cpu_sparse_fp64@hpc_a100 [breakdown]",
+   "class": "secondary",
+   "host_class": "hpc_a100",
+   "instrument": "hst",
+   "likelihood": "multi_galaxy/rectangular",
+   "measurement": "breakdown",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_cpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "multi_galaxy/rectangular/hst jax_cpu_sparse_fp64@hpc_a100 [runtime]",
+   "class": "secondary",
+   "host_class": "hpc_a100",
+   "instrument": "hst",
+   "likelihood": "multi_galaxy/rectangular",
+   "measurement": "runtime",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_cpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "multi_galaxy/rectangular/hst jax_cpu_sparse_fp64@hpc_ral_cpu [breakdown]",
+   "class": "secondary",
+   "host_class": "hpc_ral_cpu",
+   "instrument": "hst",
+   "likelihood": "multi_galaxy/rectangular",
+   "measurement": "breakdown",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_cpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "multi_galaxy/rectangular/hst jax_cpu_sparse_fp64@hpc_ral_cpu [runtime]",
+   "class": "secondary",
+   "host_class": "hpc_ral_cpu",
+   "instrument": "hst",
+   "likelihood": "multi_galaxy/rectangular",
+   "measurement": "runtime",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_cpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "multi_galaxy/rectangular/hst jax_gpu_dense_fp64@hpc_a100 [breakdown]",
+   "class": "optimal",
+   "host_class": "hpc_a100",
+   "instrument": "hst",
+   "likelihood": "multi_galaxy/rectangular",
+   "measurement": "breakdown",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_gpu_dense_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "multi_galaxy/rectangular/hst jax_gpu_dense_fp64@hpc_a100 [runtime]",
+   "class": "optimal",
+   "host_class": "hpc_a100",
+   "instrument": "hst",
+   "likelihood": "multi_galaxy/rectangular",
+   "measurement": "runtime",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_gpu_dense_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "multi_galaxy/rectangular/hst jax_gpu_sparse_fp64@hpc_a100 [breakdown]",
+   "class": "secondary",
+   "host_class": "hpc_a100",
+   "instrument": "hst",
+   "likelihood": "multi_galaxy/rectangular",
+   "measurement": "breakdown",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_gpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "multi_galaxy/rectangular/hst jax_gpu_sparse_fp64@hpc_a100 [runtime]",
+   "class": "secondary",
+   "host_class": "hpc_a100",
+   "instrument": "hst",
+   "likelihood": "multi_galaxy/rectangular",
+   "measurement": "runtime",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_gpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "multi_galaxy/rectangular/hst numba_cpu_sparse_fp64@hpc_ral_cpu [breakdown]",
+   "class": "optimal",
+   "host_class": "hpc_ral_cpu",
+   "instrument": "hst",
+   "likelihood": "multi_galaxy/rectangular",
+   "measurement": "breakdown",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "numba_cpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "multi_galaxy/rectangular/hst numba_cpu_sparse_fp64@hpc_ral_cpu [runtime]",
+   "class": "optimal",
+   "host_class": "hpc_ral_cpu",
+   "instrument": "hst",
+   "likelihood": "multi_galaxy/rectangular",
+   "measurement": "runtime",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "numba_cpu_sparse_fp64",
+   "state": "missing"
+  },
+  {
    "cell": "point_source_image/image_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [breakdown]",
    "class": "optimal",
    "host_class": "hpc_ral_cpu",
@@ -2947,6 +3571,96 @@
   },
   {
    "class": "optimal",
+   "current": 0,
+   "likelihood": "group/delaunay",
+   "measurement": "breakdown",
+   "missing": 2,
+   "stale": 0,
+   "superseded": 0
+  },
+  {
+   "class": "optimal",
+   "current": 0,
+   "likelihood": "group/delaunay",
+   "measurement": "runtime",
+   "missing": 2,
+   "stale": 0,
+   "superseded": 0
+  },
+  {
+   "class": "secondary",
+   "current": 0,
+   "likelihood": "group/delaunay",
+   "measurement": "breakdown",
+   "missing": 3,
+   "stale": 0,
+   "superseded": 0
+  },
+  {
+   "class": "secondary",
+   "current": 0,
+   "likelihood": "group/delaunay",
+   "measurement": "runtime",
+   "missing": 3,
+   "stale": 0,
+   "superseded": 0
+  },
+  {
+   "class": "optimal",
+   "current": 0,
+   "likelihood": "group/mge",
+   "measurement": "breakdown",
+   "missing": 2,
+   "stale": 0,
+   "superseded": 0
+  },
+  {
+   "class": "optimal",
+   "current": 0,
+   "likelihood": "group/mge",
+   "measurement": "runtime",
+   "missing": 2,
+   "stale": 0,
+   "superseded": 0
+  },
+  {
+   "class": "optimal",
+   "current": 0,
+   "likelihood": "group/rectangular",
+   "measurement": "breakdown",
+   "missing": 2,
+   "stale": 0,
+   "superseded": 0
+  },
+  {
+   "class": "optimal",
+   "current": 0,
+   "likelihood": "group/rectangular",
+   "measurement": "runtime",
+   "missing": 2,
+   "stale": 0,
+   "superseded": 0
+  },
+  {
+   "class": "secondary",
+   "current": 0,
+   "likelihood": "group/rectangular",
+   "measurement": "breakdown",
+   "missing": 3,
+   "stale": 0,
+   "superseded": 0
+  },
+  {
+   "class": "secondary",
+   "current": 0,
+   "likelihood": "group/rectangular",
+   "measurement": "runtime",
+   "missing": 3,
+   "stale": 0,
+   "superseded": 0
+  },
+  {
+   "class": "optimal",
    "current": 8,
    "likelihood": "imaging/delaunay",
    "measurement": "breakdown",
@@ -3192,6 +3906,96 @@
    "class": "secondary",
    "current": 0,
    "likelihood": "multi_dataset/delaunay",
+   "measurement": "runtime",
+   "missing": 3,
+   "stale": 0,
+   "superseded": 0
+  },
+  {
+   "class": "optimal",
+   "current": 0,
+   "likelihood": "multi_galaxy/delaunay",
+   "measurement": "breakdown",
+   "missing": 2,
+   "stale": 0,
+   "superseded": 0
+  },
+  {
+   "class": "optimal",
+   "current": 0,
+   "likelihood": "multi_galaxy/delaunay",
+   "measurement": "runtime",
+   "missing": 2,
+   "stale": 0,
+   "superseded": 0
+  },
+  {
+   "class": "secondary",
+   "current": 0,
+   "likelihood": "multi_galaxy/delaunay",
+   "measurement": "breakdown",
+   "missing": 3,
+   "stale": 0,
+   "superseded": 0
+  },
+  {
+   "class": "secondary",
+   "current": 0,
+   "likelihood": "multi_galaxy/delaunay",
+   "measurement": "runtime",
+   "missing": 3,
+   "stale": 0,
+   "superseded": 0
+  },
+  {
+   "class": "optimal",
+   "current": 0,
+   "likelihood": "multi_galaxy/mge",
+   "measurement": "breakdown",
+   "missing": 2,
+   "stale": 0,
+   "superseded": 0
+  },
+  {
+   "class": "optimal",
+   "current": 0,
+   "likelihood": "multi_galaxy/mge",
+   "measurement": "runtime",
+   "missing": 2,
+   "stale": 0,
+   "superseded": 0
+  },
+  {
+   "class": "optimal",
+   "current": 0,
+   "likelihood": "multi_galaxy/rectangular",
+   "measurement": "breakdown",
+   "missing": 2,
+   "stale": 0,
+   "superseded": 0
+  },
+  {
+   "class": "optimal",
+   "current": 0,
+   "likelihood": "multi_galaxy/rectangular",
+   "measurement": "runtime",
+   "missing": 2,
+   "stale": 0,
+   "superseded": 0
+  },
+  {
+   "class": "secondary",
+   "current": 0,
+   "likelihood": "multi_galaxy/rectangular",
+   "measurement": "breakdown",
+   "missing": 3,
+   "stale": 0,
+   "superseded": 0
+  },
+  {
+   "class": "secondary",
+   "current": 0,
+   "likelihood": "multi_galaxy/rectangular",
    "measurement": "runtime",
    "missing": 3,
    "stale": 0,
@@ -3352,6 +4156,78 @@
    },
    {
     "cell": "datacube/delaunay/sma numba_cpu_sparse_fp64_wtilde@hpc_ral_cpu [parity]",
+    "class": "optimal",
+    "record": null,
+    "state": "missing"
+   },
+   {
+    "cell": "group/delaunay/euclid jax_cpu_sparse_fp64@hpc_a100 [parity]",
+    "class": "secondary",
+    "record": null,
+    "state": "missing"
+   },
+   {
+    "cell": "group/delaunay/euclid jax_cpu_sparse_fp64@hpc_ral_cpu [parity]",
+    "class": "secondary",
+    "record": null,
+    "state": "missing"
+   },
+   {
+    "cell": "group/delaunay/euclid jax_gpu_dense_fp64@hpc_a100 [parity]",
+    "class": "optimal",
+    "record": null,
+    "state": "missing"
+   },
+   {
+    "cell": "group/delaunay/euclid jax_gpu_sparse_fp64@hpc_a100 [parity]",
+    "class": "secondary",
+    "record": null,
+    "state": "missing"
+   },
+   {
+    "cell": "group/delaunay/euclid numba_cpu_sparse_fp64@hpc_ral_cpu [parity]",
+    "class": "optimal",
+    "record": null,
+    "state": "missing"
+   },
+   {
+    "cell": "group/mge/euclid jax_cpu_dense_fp64@hpc_ral_cpu [parity]",
+    "class": "optimal",
+    "record": null,
+    "state": "missing"
+   },
+   {
+    "cell": "group/mge/euclid jax_gpu_dense_fp64@hpc_a100 [parity]",
+    "class": "optimal",
+    "record": null,
+    "state": "missing"
+   },
+   {
+    "cell": "group/rectangular/euclid jax_cpu_sparse_fp64@hpc_a100 [parity]",
+    "class": "secondary",
+    "record": null,
+    "state": "missing"
+   },
+   {
+    "cell": "group/rectangular/euclid jax_cpu_sparse_fp64@hpc_ral_cpu [parity]",
+    "class": "secondary",
+    "record": null,
+    "state": "missing"
+   },
+   {
+    "cell": "group/rectangular/euclid jax_gpu_dense_fp64@hpc_a100 [parity]",
+    "class": "optimal",
+    "record": null,
+    "state": "missing"
+   },
+   {
+    "cell": "group/rectangular/euclid jax_gpu_sparse_fp64@hpc_a100 [parity]",
+    "class": "secondary",
+    "record": null,
+    "state": "missing"
+   },
+   {
+    "cell": "group/rectangular/euclid numba_cpu_sparse_fp64@hpc_ral_cpu [parity]",
     "class": "optimal",
     "record": null,
     "state": "missing"
@@ -3885,6 +4761,78 @@
     "state": "missing"
    },
    {
+    "cell": "multi_galaxy/delaunay/hst jax_cpu_sparse_fp64@hpc_a100 [parity]",
+    "class": "secondary",
+    "record": null,
+    "state": "missing"
+   },
+   {
+    "cell": "multi_galaxy/delaunay/hst jax_cpu_sparse_fp64@hpc_ral_cpu [parity]",
+    "class": "secondary",
+    "record": null,
+    "state": "missing"
+   },
+   {
+    "cell": "multi_galaxy/delaunay/hst jax_gpu_dense_fp64@hpc_a100 [parity]",
+    "class": "optimal",
+    "record": null,
+    "state": "missing"
+   },
+   {
+    "cell": "multi_galaxy/delaunay/hst jax_gpu_sparse_fp64@hpc_a100 [parity]",
+    "class": "secondary",
+    "record": null,
+    "state": "missing"
+   },
+   {
+    "cell": "multi_galaxy/delaunay/hst numba_cpu_sparse_fp64@hpc_ral_cpu [parity]",
+    "class": "optimal",
+    "record": null,
+    "state": "missing"
+   },
+   {
+    "cell": "multi_galaxy/mge/hst jax_cpu_dense_fp64@hpc_ral_cpu [parity]",
+    "class": "optimal",
+    "record": null,
+    "state": "missing"
+   },
+   {
+    "cell": "multi_galaxy/mge/hst jax_gpu_dense_fp64@hpc_a100 [parity]",
+    "class": "optimal",
+    "record": null,
+    "state": "missing"
+   },
+   {
+    "cell": "multi_galaxy/rectangular/hst jax_cpu_sparse_fp64@hpc_a100 [parity]",
+    "class": "secondary",
+    "record": null,
+    "state": "missing"
+   },
+   {
+    "cell": "multi_galaxy/rectangular/hst jax_cpu_sparse_fp64@hpc_ral_cpu [parity]",
+    "class": "secondary",
+    "record": null,
+    "state": "missing"
+   },
+   {
+    "cell": "multi_galaxy/rectangular/hst jax_gpu_dense_fp64@hpc_a100 [parity]",
+    "class": "optimal",
+    "record": null,
+    "state": "missing"
+   },
+   {
+    "cell": "multi_galaxy/rectangular/hst jax_gpu_sparse_fp64@hpc_a100 [parity]",
+    "class": "secondary",
+    "record": null,
+    "state": "missing"
+   },
+   {
+    "cell": "multi_galaxy/rectangular/hst numba_cpu_sparse_fp64@hpc_ral_cpu [parity]",
+    "class": "optimal",
+    "record": null,
+    "state": "missing"
+   },
+   {
     "cell": "point_source_image/image_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [parity]",
     "class": "optimal",
     "record": null,
@@ -3944,6 +4892,46 @@
     "likelihood": "datacube/delaunay",
     "match": 0,
     "missing": 9,
+    "not_assessed": 0
+   },
+   {
+    "class": "optimal",
+    "diverged": 0,
+    "likelihood": "group/delaunay",
+    "match": 0,
+    "missing": 2,
+    "not_assessed": 0
+   },
+   {
+    "class": "secondary",
+    "diverged": 0,
+    "likelihood": "group/delaunay",
+    "match": 0,
+    "missing": 3,
+    "not_assessed": 0
+   },
+   {
+    "class": "optimal",
+    "diverged": 0,
+    "likelihood": "group/mge",
+    "match": 0,
+    "missing": 2,
+    "not_assessed": 0
+   },
+   {
+    "class": "optimal",
+    "diverged": 0,
+    "likelihood": "group/rectangular",
+    "match": 0,
+    "missing": 2,
+    "not_assessed": 0
+   },
+   {
+    "class": "secondary",
+    "diverged": 0,
+    "likelihood": "group/rectangular",
+    "match": 0,
+    "missing": 3,
     "not_assessed": 0
    },
    {
@@ -4061,6 +5049,46 @@
    {
     "class": "optimal",
     "diverged": 0,
+    "likelihood": "multi_galaxy/delaunay",
+    "match": 0,
+    "missing": 2,
+    "not_assessed": 0
+   },
+   {
+    "class": "secondary",
+    "diverged": 0,
+    "likelihood": "multi_galaxy/delaunay",
+    "match": 0,
+    "missing": 3,
+    "not_assessed": 0
+   },
+   {
+    "class": "optimal",
+    "diverged": 0,
+    "likelihood": "multi_galaxy/mge",
+    "match": 0,
+    "missing": 2,
+    "not_assessed": 0
+   },
+   {
+    "class": "optimal",
+    "diverged": 0,
+    "likelihood": "multi_galaxy/rectangular",
+    "match": 0,
+    "missing": 2,
+    "not_assessed": 0
+   },
+   {
+    "class": "secondary",
+    "diverged": 0,
+    "likelihood": "multi_galaxy/rectangular",
+    "match": 0,
+    "missing": 3,
+    "not_assessed": 0
+   },
+   {
+    "class": "optimal",
+    "diverged": 0,
     "likelihood": "point_source_image/image_plane",
     "match": 0,
     "missing": 2,
@@ -4086,9 +5114,9 @@
   "totals": {
    "diverged": 0,
    "match": 53,
-   "missing": 58,
+   "missing": 82,
    "not_assessed": 0,
-   "setup_cells": 111
+   "setup_cells": 135
   }
  },
  "release_pin_source": "newest record",
@@ -4107,9 +5135,9 @@
  "totals": {
   "current": 106,
   "current_records_unplanned": 116,
-  "missing": 109,
+  "missing": 157,
   "missing_size_fallback": 20,
-  "planned_cells": 222,
+  "planned_cells": 270,
   "records_superseded": 384,
   "stale": 7,
   "superseded": 0
