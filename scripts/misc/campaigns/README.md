@@ -10,6 +10,7 @@ the same list.
 | [`imaging_p2a.py`](imaging_p2a.py) | Phase 2a, `imaging/{mge, rectangular, delaunay, delaunay_nn}` at the standard size on 2026.10.23.1 (autolens_profiling#456) | `hpc/batch_cpu/submit_campaign_p2a_imaging_*`, `hpc/batch_gpu/submit_campaign_p2a_imaging_*` |
 | [`imaging_p2a.py`](imaging_p2a.py) (`rect28_tasks`) | Phase 2a size variant: hst rectangular at 28x28 = 784 source pixels on 2026.10.25.1 (autolens_profiling#468) | `hpc/batch_cpu/submit_campaign_p2a_rect28_ral_cpu_fp64`, `hpc/batch_gpu/submit_campaign_p2a_rect28_a100_fp64` |
 | [`interferometer_p2b.py`](interferometer_p2b.py) | Phase 2b, `interferometer/{mge, rectangular, delaunay}` at the standard size on 2026.10.25.1 (autolens_profiling#469), plus the dense parity references and the matrix-free experiment | `hpc/batch_cpu/submit_campaign_p2b_*`, `hpc/batch_gpu/submit_campaign_p2b_*` |
+| [`multi_galaxy_group_p2d.py`](multi_galaxy_group_p2d.py) | Phase 2d DRAFT, `{multi_galaxy,group}/{mge, rectangular, delaunay}` at the standard size on 2026.10.25.1 (autolens_profiling#473); decisions D1-D11 await the human | `hpc/batch_cpu/submit_campaign_p2d_*`, `hpc/batch_gpu/submit_campaign_p2d_*` |
 | [`_common.py`](_common.py) | The submit machinery both generators share (preamble, guards, WALL-BASIS rows, `#SBATCH` block) | none of its own |
 | [`peak_rss_backfill.py`](peak_rss_backfill.py) | Phase 2x backfill of 2a's peak memory and cores per call from sacct (autolens_profiling#462) | writes `catalogue/peak_rss_backfill.json`, no submits |
 
@@ -20,6 +21,9 @@ python scripts/misc/campaigns/imaging_p2a.py --check   # exit 1 if a submit is o
 python scripts/misc/campaigns/interferometer_p2b.py --list    # the 60 cells, 6 references, 7 matrix-free legs
 python scripts/misc/campaigns/interferometer_p2b.py --write   # re-render the 2b submits
 python scripts/misc/campaigns/interferometer_p2b.py --check
+python scripts/misc/campaigns/multi_galaxy_group_p2d.py --list   # the 48 draft 2d cells
+python scripts/misc/campaigns/multi_galaxy_group_p2d.py --write  # re-render the 2d submits
+python scripts/misc/campaigns/multi_galaxy_group_p2d.py --check
 pytest scripts/misc/campaigns/test -q
 ```
 
@@ -333,4 +337,46 @@ the final row, `fit.png`, a `parity.json` that passes `parity_witness.py --check
 `not_assessed`), and `library_revisions` that match the pinned checkout. It moves the 20
 `size_fallback` rows and the stale MGE row to `history/<release_pin>_<date>/` first, then
 regenerates the catalogue and coverage.
+
+## Phase 2d multi_galaxy + group (DRAFT, not submitted)
+
+**Status.** A draft for the human's review (autolens_profiling#473). The cell design is
+decisions D1-D11 on the campaign page,
+[`wiki/campaigns/multi_galaxy/likelihood_lifecycle_p2d.md`](../../../wiki/campaigns/multi_galaxy/likelihood_lifecycle_p2d.md).
+No submit has run; each batch needs the human's go.
+
+**Cells.** 48 planned cells (`catalogue/registry.json`, §3.3 "as imaging"): `multi_galaxy` at
+hst and `group` at euclid, each `mge` (`jax_cpu_dense_fp64`@`hpc_ral_cpu`,
+`jax_gpu_dense_fp64`@`hpc_a100`) and `rectangular` / `delaunay` (`numba_cpu_sparse_fp64` and
+`jax_cpu_sparse_fp64`@`hpc_ral_cpu`; `jax_gpu_dense_fp64`, `jax_gpu_sparse_fp64` and
+`jax_cpu_sparse_fp64`@`hpc_a100`), runtime and breakdown: 20 RAL CPU, 28 A100. The scripts are
+new (`scripts/{multi_galaxy,group}/<variant>/likelihood_{runtime,breakdown}[_numba].py`), thin
+wrappers over one driver, `scripts/misc/likelihood_breakdown/galaxy_group_standard.py`, on one
+cell builder, `scripts/misc/cell_builders/galaxy_group.py` (dataset simulation, masking, the
+workspace modeling model, the standard-size pixelization). JAX legs take `--sparse` for the
+sparse setups; nothing else but `--config-name`.
+
+**Submits.**
+
+| Submit | Partition | Tasks | `--time` | `--mem` |
+|--------|-----------|-------|----------|---------|
+| `batch_cpu/submit_campaign_p2d_batch0_ral_cpu_fp64` | `ral`, array `%8` | 10 (batch 0, every group RAL leg) | 4:00:00 | 32 GB |
+| `batch_gpu/submit_campaign_p2d_batch0_a100_fp64` | `gpu`, `--gres=gpu:1`, array `%2` | 14 (batch 0, every group A100 leg) | 4:00:00 | 32 GB |
+| `batch_cpu/submit_campaign_p2d_<dataset_type>_ral_cpu_<instrument>_fp64` | `ral`, array `%16` | 10 each | 4:00:00 (provisional) | 32 GB (provisional) |
+| `batch_gpu/submit_campaign_p2d_<dataset_type>_a100_<instrument>_fp64` | `gpu`, `--gres=gpu:1` | one job each, 14 legs in turn | 2-00:00:00 (provisional) | 32 GB (provisional) |
+
+The `jax_cpu_sparse_fp64@hpc_a100` legs run on the GPU node's CPU inside the GPU job, as in 2a.
+Batch 0 is the timing arm (D9): group bounds multi_galaxy (1.6x the masked pixels, two dPIE
+extra galaxies), so its legs set batch 1's walls. Its rows declare `source: unmeasured` with a
+3600 s guess (3x floor). Batch 1 renders `WALL_BASIS_STATUS=provisional` and refuses to run
+(`P2D_ALLOW_PROVISIONAL_WALL=1` overrides) until `BATCH0_WALLS` holds batch 0's walls and the
+generator sets `WALL_BASIS_STATUS = "measured"`: then `--time` is 1.25x the bounding group leg (an
+A100 job: the sum of its legs) plus 15 min, rounded up to 30 min, and `--mem` the next step at
+or above 1.5x batch 0's MaxRSS, as 2a and 2b. Pin, private checkout and guards are 2b's
+(`P2D_PIN=2026.10.25.1`); logs and `walls.tsv` go to `output/p2d_logs/`. A missing dataset is
+simulated under a lock (`prepare_dataset`, by instrument: hst -> multi_galaxy, euclid -> group).
+
+**Local check.** Every cell script takes `--fast` (2 repeats, a 5-call median, vmap batch 2, a
+4-instance stream) and, without `--output-path`, writes into the gitignored
+`output/p2d_local/results/...`, never `results/`.
 
