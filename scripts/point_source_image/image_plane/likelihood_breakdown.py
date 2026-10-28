@@ -65,8 +65,10 @@ from _profile_cli import (  # noqa: E402
     auto_simulate_if_missing,
     device_info_dict,
     parse_profile_cli,
+    render_fit_png,
     resolve_output_paths,
     resources_dict,
+    write_parity_json,
 )
 
 _cli = parse_profile_cli()
@@ -487,3 +489,32 @@ print(f"  {'Fused plain control':<54} {summary['fused_full_plain_control_s'] * 1
 print(f"  Results JSON: {dict_path}")
 print(f"  Results PNG:  {chart_path}")
 timer.summary()
+
+
+# Parity witness (likelihood-lifecycle 2c, #472): the fused JIT solved likelihood (the
+# authoritative runtime of this breakdown) against the eager NumPy AnalysisPoint(use_jax=False)
+# value computed above in the same process on the same dataset, model and instance (the non-JIT
+# xp=np code path). Tolerance per _profile_cli.parity_rtol("point_source", ...).
+write_parity_json(
+    dict_path.parent,
+    log_likelihood=float(solved_result),
+    reference_log_likelihood=solved_eager,
+    use_mixed_precision=_cli.use_mixed_precision,
+    reference_source=(
+        "eager NumPy AnalysisPoint(use_jax=False).log_likelihood_function(instance) in the same "
+        f"process: {INSTRUMENT}, PointSolved / FitPositionsImagePairAllSolved (image-plane chi-squared, the solved lane), "
+        "same dataset, model and instance"
+    ),
+    autolens_version=al_version,
+    quantity="log_likelihood_function of the solved lane (fused JIT vs eager NumPy reference)",
+    dataset_type="point_source",
+)
+
+# Fit figure (likelihood-lifecycle 1B): the eager solved fit, drawn after every timed region and
+# kept as fit.png beside this row. Off under AUTOLENS_PROFILING_SMOKE and with --no-fit-png.
+render_fit_png(
+    analysis_solved_eager.fit_from(instance=instance_solved),
+    dict_path.parent,
+    dataset_type="point_source",
+    cli=_cli,
+)

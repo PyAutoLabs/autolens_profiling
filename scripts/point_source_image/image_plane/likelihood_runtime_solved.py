@@ -123,9 +123,11 @@ from _profile_cli import (
     device_info_dict,
     legacy_landing_dir,
     parse_profile_cli,
-    place_output_path,
     record_pinned_check,  # noqa: E402
+    render_fit_png,
     resolve_output_paths,
+    resources_dict,
+    write_parity_json,
 )
 
 _cli = parse_profile_cli()
@@ -535,6 +537,8 @@ print("=" * 70)
 
 likelihood_summary = {
     "autolens_version": al_version,
+    "device": device_info_dict(),
+    "resources": resources_dict("jax"),
     "dataset": instrument,
     "fit_positions_cls": "FitPositionsImagePairAllSolved",
     "configuration": {
@@ -563,16 +567,13 @@ likelihood_summary = {
     },
 }
 
-# Placed in the mirrored tree by the legacy name (autolens_profiling#442); the chart sits beside it.
-dict_path = place_output_path(
-    _workspace_root
-    / "results"
-    / "runtime"
-    / "point_source_image"
-    / "image_plane_solved"
-    / f"image_plane_solved_summary_v{al_version}.json",
+# ``--output-path`` / ``--output-dir`` are honoured; by default the row is placed in the mirrored
+# tree by the legacy name (autolens_profiling#442). The chart sits beside it.
+dict_path, _ = resolve_output_paths(
     _cli,
+    _workspace_root / "results" / "runtime" / "point_source_image" / "image_plane_solved",
     f"image_plane_solved_summary_v{al_version}",
+    cell="image_plane_solved",
     hints=likelihood_summary,
 )
 dict_path.write_text(json.dumps(likelihood_summary, indent=2))
@@ -664,3 +665,28 @@ timer.summary()
 record_pinned_check(dict_path, _pinned_expected, _pinned_drift)
 if _pinned_expected is not None and not _pinned_drift:
     print("  Pinned-value check PASSED (recorded in result JSON).")
+
+
+# Parity witness (likelihood-lifecycle 2c, #472): the JIT full pipeline against the eager NumPy
+# AnalysisPoint(use_jax=False) computed above in the same process on the same dataset, solver,
+# model and instance (the non-JIT xp=np code path), written beside the row after every timed
+# region. Tolerance per _profile_cli.parity_rtol("point_source", ...).
+write_parity_json(
+    dict_path.parent,
+    log_likelihood=float(full_result),
+    reference_log_likelihood=figure_of_merit_ref,
+    use_mixed_precision=_cli.use_mixed_precision,
+    reference_source=(
+        "eager NumPy AnalysisPoint(use_jax=False).fit_from(instance).figure_of_merit in the same "
+        f"process: {instrument}, PointSolved / FitPositionsImagePairAllSolved (image-plane chi-squared, solved), same "
+        "dataset, model and instance"
+    ),
+    autolens_version=al_version,
+    quantity="log_likelihood_function (JIT cell vs eager NumPy reference)",
+    dataset_type="point_source",
+)
+
+
+# Fit figure (likelihood-lifecycle 1B): the eager fit, drawn after every timed region and kept as
+# fit.png beside this row. Off under AUTOLENS_PROFILING_SMOKE and with --no-fit-png.
+render_fit_png(fit_eager, dict_path.parent, dataset_type="point_source", cli=_cli)

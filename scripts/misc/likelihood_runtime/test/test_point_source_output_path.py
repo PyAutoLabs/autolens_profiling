@@ -31,12 +31,15 @@ def _calls(path: Path) -> dict[str, list[ast.Call]]:
 
 
 def test_scripts_resolve_their_row_from_the_cli():
+    # likelihood_runtime_solved.py too (likelihood-lifecycle 2c, #472: its campaign legs pass
+    # --output-path).
     for cls, model in CELLS.items():
-        script = ROOT / "scripts" / cls / model / "likelihood_runtime.py"
-        calls = _calls(script)
-        assert "place_output_path" not in calls, script
-        (call,) = calls["resolve_output_paths"]
-        assert isinstance(call.args[0], ast.Name) and call.args[0].id == "_cli", script
+        for name in ("likelihood_runtime.py", "likelihood_runtime_solved.py"):
+            script = ROOT / "scripts" / cls / model / name
+            calls = _calls(script)
+            assert "place_output_path" not in calls, script
+            (call,) = calls["resolve_output_paths"]
+            assert isinstance(call.args[0], ast.Name) and call.args[0].id == "_cli", script
 
 
 def test_default_placement_is_unchanged(monkeypatch):
