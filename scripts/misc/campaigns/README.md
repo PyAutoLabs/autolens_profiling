@@ -21,7 +21,7 @@ python scripts/misc/campaigns/imaging_p2a.py --check   # exit 1 if a submit is o
 python scripts/misc/campaigns/interferometer_p2b.py --list    # the 60 cells, 6 references, 7 matrix-free legs
 python scripts/misc/campaigns/interferometer_p2b.py --write   # re-render the 2b submits
 python scripts/misc/campaigns/interferometer_p2b.py --check
-python scripts/misc/campaigns/cluster_p2e.py --list    # the 10 runnable cluster cells + 2 not submitted (D4)
+python scripts/misc/campaigns/cluster_p2e.py --list    # the 10 planned cluster cells, all runnable
 python scripts/misc/campaigns/cluster_p2e.py --write   # re-render the 2e submits
 pytest scripts/misc/campaigns/test -q
 ```
@@ -344,11 +344,12 @@ Nothing here has run on RAL. The human reviews the decisions on the campaign pag
 [source plane](../../../wiki/campaigns/cluster/source_plane/likelihood_lifecycle_p2e.md)) and gives
 a go per batch.
 
-**Cells.** 12 planned cluster cells in `dashboard/coverage.json`: `cluster/image_plane` (registry)
+**Cells.** 10 planned cluster cells in `dashboard/coverage.json`: `cluster/image_plane` (registry)
 `jax_cpu_na_fp64@hpc_ral_cpu` and `jax_gpu_na_fp64@hpc_a100`; `cluster/source_plane` (registry cell
 drafted in this branch, decision D2) `jax_cpu_na_fp64` on both hosts and `jax_gpu_na_fp64` on
-both hosts, each with runtime and breakdown. The two `jax_gpu_na_fp64@hpc_ral_cpu` cells cannot run
-on the CPU-only `ral` partition and are not submitted (decision D4), so 10 legs run.
+`hpc_a100`, each with runtime and breakdown; all 10 legs run. The planner plans a GPU setup only on
+a GPU host (autolens_profiling#481), so the §3.3 table's `jax_gpu_na_fp64` secondary is no longer
+planned on the CPU-only `hpc_ral_cpu` (decision D4, settled).
 
 Every leg gets `--standard-size --config-name <host>_fp64`. For the image plane that builds the
 workspace cluster PointSolver the `cluster-pointsolver-speed` epic kept (100x100 @ 1.0",

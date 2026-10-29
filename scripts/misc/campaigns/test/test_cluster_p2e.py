@@ -1,8 +1,8 @@
 """The phase-2e cluster campaign manifest and its submits (autolens_profiling#474).
 
 The manifest must be exactly the planned cluster cells of ``dashboard/coverage.json`` (image_plane
-from the registry, source_plane drafted by analogy with point_source_source, decision D2), less
-the cells no RAL job can run (decision D4); the submits must be what the generator renders, run
+from the registry, source_plane drafted by analogy with point_source_source, decision D2), with
+no cell a RAL job cannot run (the planner plans GPU setups only on GPU hosts, #481); the submits must be what the generator renders, run
 every runnable cell once (4 on `ral`, 6 in a `--gres=gpu:1` job), never put a CPU-only job on the
 `gpu` partition, pass the wall gate, pin the private checkout at 2026.10.25.1 and refuse batch 1
 while the walls are provisional. The shared machinery must leave the 2a and 2b submits
@@ -82,9 +82,9 @@ def legs(path):
 
 def test_manifest_is_exactly_the_planned_cluster_cells():
     cells = p2e.coverage_cells()
-    assert len(cells) == len({t.cell for t in cells}) == 12
+    assert len(cells) == len({t.cell for t in cells}) == 10
     assert {t.cell for t in cells} == planned_cluster_cells()
-    assert Counter(t.variant for t in cells) == {"image_plane": 4, "source_plane": 8}
+    assert Counter(t.variant for t in cells) == {"image_plane": 4, "source_plane": 6}
     # The planned setups are the §3.3 tables the catalogue routes each variant to (D2).
     for variant, table in (
         ("image_plane", "point_source_image"),
@@ -96,14 +96,14 @@ def test_manifest_is_exactly_the_planned_cluster_cells():
         assert lc._table_name("cluster", variant) == table
 
 
-def test_the_unrunnable_cells_are_the_gpu_setup_on_the_cpu_host_and_never_submitted():
-    unrunnable = p2e.unrunnable_tasks()
-    assert {(t.variant, t.setup_id, t.host_class) for t in unrunnable} == {
-        ("source_plane", "jax_gpu_na_fp64", "hpc_ral_cpu")
-    }
-    assert len(unrunnable) == 2
+def test_no_gpu_setup_is_planned_on_the_cpu_host_so_every_cell_runs():
+    # The planner plans a GPU setup only on a gpu_hosts host (#481), which settled D4.
+    assert p2e.unrunnable_tasks() == []
+    assert not any(
+        t.device == "gpu" and t.host_class == "hpc_ral_cpu" for t in p2e.coverage_cells()
+    )
     tasks = p2e.planned_tasks()
-    assert len(tasks) == 10 and not set(tasks) & set(unrunnable)
+    assert len(tasks) == 10 and tasks == p2e.coverage_cells()
     assert Counter(t.host_class for t in tasks) == {"hpc_ral_cpu": 4, "hpc_a100": 6}
     for t in tasks:
         if t.host_class == "hpc_ral_cpu":

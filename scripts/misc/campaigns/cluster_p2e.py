@@ -24,9 +24,11 @@ batch plan (README.md beside this file):
   (``submit_campaign_p2e_cluster_a100_fp64``, its legs in turn, the ``jax_cpu`` legs on the A100
   node's CPU), refusing to run while :data:`WALL_BASIS_STATUS` is ``provisional``.
 
-The coverage plan's ``cluster/source_plane jax_gpu_na_fp64@hpc_ral_cpu`` cells (the
-§3.3 table's secondary GPU setup carried onto the CPU host) cannot run on a CPU-only partition;
-they are listed in :data:`UNRUNNABLE` and left to the human (decision D4), never submitted.
+The §3.3 point_source_source table lists its secondary ``jax_gpu_na_fp64`` setup on every host,
+which once planned two ``cluster/source_plane jax_gpu_na_fp64@hpc_ral_cpu`` cells no CPU-only
+partition can run (decision D4). Since the planner plans a GPU setup only on a ``gpu_hosts`` host
+(autolens_profiling#481, human 2026-10-29: "fix the planner gap"), coverage no longer plans them,
+so every planned cluster cell is runnable and :data:`UNRUNNABLE` is empty.
 
 Stdlib only; nothing here imports the modelling stack except :func:`prepare_dataset`, which the
 submits call to simulate a missing ``dataset/cluster/simple`` under a lock.
@@ -72,17 +74,11 @@ SETUPS = {
         ("jax_cpu_na_fp64", "hpc_ral_cpu"),
         ("jax_cpu_na_fp64", "hpc_a100"),
         ("jax_gpu_na_fp64", "hpc_a100"),
-        ("jax_gpu_na_fp64", "hpc_ral_cpu"),
     ),
 }
-#: Planned cells no RAL job can run: a GPU setup on the CPU-only ``ral`` partition (decision D4).
-UNRUNNABLE = {
-    ("source_plane", "jax_gpu_na_fp64", "hpc_ral_cpu"): (
-        "a jax_gpu setup on hpc_ral_cpu: the CPU-only `ral` partition has no GPU, and CPU work "
-        "never goes on `gpu`. The §3.3 point_source_source table lists jax_gpu as the secondary "
-        "on every host; the human decides whether to scope it out (decision D4)"
-    ),
-}
+#: Planned cells no RAL job can run. Empty: the planner no longer plans a GPU setup on the
+#: CPU-only ``hpc_ral_cpu`` host (``gpu_hosts``, autolens_profiling#481), which settled D4.
+UNRUNNABLE: dict = {}
 MEASUREMENTS = ("runtime", "breakdown")
 CONFIG_NAMES = {"hpc_ral_cpu": "hpc_ral_cpu_fp64", "hpc_a100": "hpc_a100_fp64"}
 
@@ -192,7 +188,7 @@ class Task:
 
 
 def coverage_cells() -> list[Task]:
-    """Every planned cluster cell, runnable or not (12: image_plane 4, source_plane 8)."""
+    """Every planned cluster cell, runnable or not (10: image_plane 4, source_plane 6)."""
     return sorted(
         Task(variant, setup_id, host_class, measurement)
         for variant, setups in SETUPS.items()
@@ -475,7 +471,7 @@ def main(argv=None) -> int:
         for task in planned_tasks():
             print(f"{task.cell:<70} {task.script}.py {task.flags}")
         for task in unrunnable_tasks():
-            print(f"{task.cell:<70} NOT SUBMITTED (decision D4)")
+            print(f"{task.cell:<70} NOT SUBMITTED")
         return 0
     return _common.write_or_check(submits(), ROOT, args=args, generator="cluster_p2e.py")
 
