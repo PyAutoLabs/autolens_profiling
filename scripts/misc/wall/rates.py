@@ -223,6 +223,10 @@ HEADLINE_MEDIAN_SCRIPTS = frozenset(
         # harness on its lead channel; the multi_dataset runtime takes the cell median.
         "scripts/datacube/delaunay/likelihood_breakdown.py",
         "scripts/multi_dataset/delaunay/likelihood_runtime.py",
+        # likelihood-lifecycle 2e (#474): the cluster runtime cells (shared driver
+        # likelihood_breakdown/cluster_standard.py)
+        "scripts/cluster/image_plane/likelihood_runtime.py",
+        "scripts/cluster/source_plane/likelihood_runtime.py",
     }
 )
 

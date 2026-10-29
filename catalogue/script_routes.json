@@ -18,6 +18,20 @@
       "measurement": "likelihood_breakdown"
     },
     {
+      "legacy": "scripts/cluster/likelihood_runtime/image_plane.py",
+      "path": "scripts/cluster/image_plane/likelihood_runtime.py",
+      "dataset": "cluster",
+      "model": "image_plane",
+      "measurement": "likelihood_runtime"
+    },
+    {
+      "legacy": "scripts/cluster/likelihood_runtime/source_plane.py",
+      "path": "scripts/cluster/source_plane/likelihood_runtime.py",
+      "dataset": "cluster",
+      "model": "source_plane",
+      "measurement": "likelihood_runtime"
+    },
+    {
       "legacy": "scripts/datacube/likelihood_breakdown/delaunay_numba.py",
       "path": "scripts/datacube/delaunay/likelihood_breakdown_numba.py",
       "dataset": "datacube",

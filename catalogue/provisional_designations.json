@@ -15,7 +15,8 @@
     "Machine reading: the interferometer CPU many-core cell names a numba direct_conv vs FFT cost model; it is read as numba_cpu_sparse_fp64_wtilde until a designation decision names the route.",
     "Mixed precision is experimental everywhere at day zero (the report's footnote); a setup in no table is experimental.",
     "No designation decision exists yet: an 'optimal' here is provisional and is labelled class secondary with 'provisional_optimal: true' on records (R3); planned_cells carry it as optimal.",
-    "Machine reading: instrument_scoped_setups[] plan a designated setup only on the listed instruments of its dataset types (catalogue_lifecycle.planned_setups); on any other instrument it stays designated but is not planned, like the regime-only suffixes. R1(a) (human 2026-10-25, autolens_profiling#469) scopes the dense pixelized interferometer NUFFT route to sma. D1 (proposed 2026-10-28, autolens_profiling#475, awaiting the human's review) scopes the dense datacube NUFFT route to sma the same way."
+    "Machine reading: instrument_scoped_setups[] plan a designated setup only on the listed instruments of its dataset types (catalogue_lifecycle.planned_setups); on any other instrument it stays designated but is not planned, like the regime-only suffixes. R1(a) (human 2026-10-25, autolens_profiling#469) scopes the dense pixelized interferometer NUFFT route to sma. D1 (proposed 2026-10-28, autolens_profiling#475, awaiting the human's review) scopes the dense datacube NUFFT route to sma the same way.",
+    "Machine reading: a GPU setup (jax_gpu_*) is planned only on a host in gpu_hosts[]; on a GPU-less host (hpc_ral_cpu, laptop) it stays designated but is not planned, like the regime-only suffixes. A table lists a GPU setup on every host because the report's secondary column is host-agnostic (human 2026-10-29: fix the planner gap seen in 2c/2e/2g)."
   ],
   "footnote": "Mixed precision is `experimental` everywhere at day zero (the fp32 leg currently runs fp64: Mind bug draft). Compile cost is recorded where available but is not a class axis.",
   "hosts": {
@@ -23,6 +24,9 @@
     "hpc_ral_cpu": "CPU many-core (RAL `ral`)",
     "laptop": "Laptop (few cores, no GPU)"
   },
+  "gpu_hosts": [
+    "hpc_a100"
+  ],
   "pixelized_variants": [
     "delaunay",
     "delaunay_nn",

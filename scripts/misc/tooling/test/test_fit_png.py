@@ -49,6 +49,9 @@ SHARED_RENDERERS = {
     # the lead channel's / dataset 0's eager fit for the cells that call them.
     "scripts/misc/likelihood_breakdown/datacube_standard.py",
     "scripts/misc/likelihood_breakdown/multi_dataset_standard.py",
+    # Likelihood-lifecycle 2e (#474): the cluster runtime driver renders for the two cluster
+    # likelihood_runtime.py cells that call it, after their row write.
+    "scripts/misc/likelihood_breakdown/cluster_standard.py",
 }
 
 

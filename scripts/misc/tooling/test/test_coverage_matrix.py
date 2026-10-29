@@ -297,3 +297,25 @@ def test_dense_pixelized_interferometer_nufft_is_planned_at_sma_only():
     assert "jax_cpu_dense_fp64_nufft" in lc.planned_setups(
         "interferometer", "mge", "hpc_ral_cpu", "sma"
     )
+
+
+def test_a_gpu_setup_is_planned_only_on_a_gpu_host():
+    """A table's secondary column lists the GPU setup on every host; a GPU-less host plans it never
+    (the 2c/2e/2g planner gap: jax_gpu_* cells on ``hpc_ral_cpu`` could not run)."""
+    for dataset_type, variant in [
+        ("point_source_source", "source_plane"),
+        ("weak", "shear"),
+        ("imaging", "mge"),
+        ("interferometer", "rectangular"),
+    ]:
+        for host in ("hpc_ral_cpu", "laptop"):
+            planned = lc.planned_setups(dataset_type, variant, host, "sma")
+            assert not [s for s in planned if s.split("_")[1] == "gpu"], (dataset_type, host)
+        assert any(
+            s.split("_")[1] == "gpu"
+            for s in lc.planned_setups(dataset_type, variant, "hpc_a100", "sma")
+        ), dataset_type
+    # Still designated, so a measured row keeps its secondary class rather than experimental.
+    assert lc.designation(
+        "point_source_source", "source_plane", "hpc_ral_cpu", "jax_gpu_na_fp64"
+    ) == ("secondary")

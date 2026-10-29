@@ -11,6 +11,7 @@ the same list.
 | [`imaging_p2a.py`](imaging_p2a.py) (`rect28_tasks`) | Phase 2a size variant: hst rectangular at 28x28 = 784 source pixels on 2026.10.25.1 (autolens_profiling#468) | `hpc/batch_cpu/submit_campaign_p2a_rect28_ral_cpu_fp64`, `hpc/batch_gpu/submit_campaign_p2a_rect28_a100_fp64` |
 | [`interferometer_p2b.py`](interferometer_p2b.py) | Phase 2b, `interferometer/{mge, rectangular, delaunay}` at the standard size on 2026.10.25.1 (autolens_profiling#469), plus the dense parity references and the matrix-free experiment | `hpc/batch_cpu/submit_campaign_p2b_*`, `hpc/batch_gpu/submit_campaign_p2b_*` |
 | [`multi_dataset_datacube_p2f.py`](multi_dataset_datacube_p2f.py) | Phase 2f, `multi_dataset/delaunay` and `datacube/delaunay` at the standard size on 2026.10.25.1 (autolens_profiling#475); DRAFT, nothing submitted | `hpc/batch_cpu/submit_campaign_p2f_*`, `hpc/batch_gpu/submit_campaign_p2f_*` |
+| [`cluster_p2e.py`](cluster_p2e.py) | Phase 2e, `cluster/{image_plane, source_plane}` on 2026.10.25.1 (autolens_profiling#474). DRAFT for review: nothing has run | `hpc/batch_cpu/submit_campaign_p2e_*`, `hpc/batch_gpu/submit_campaign_p2e_*` |
 | [`_common.py`](_common.py) | The submit machinery the generators share (preamble, guards, WALL-BASIS rows, `#SBATCH` block) | none of its own |
 | [`peak_rss_backfill.py`](peak_rss_backfill.py) | Phase 2x backfill of 2a's peak memory and cores per call from sacct (autolens_profiling#462) | writes `catalogue/peak_rss_backfill.json`, no submits |
 
@@ -24,6 +25,8 @@ python scripts/misc/campaigns/interferometer_p2b.py --check
 python scripts/misc/campaigns/multi_dataset_datacube_p2f.py --list    # the 32 cells (D1) and 2 references
 python scripts/misc/campaigns/multi_dataset_datacube_p2f.py --write   # re-render the 2f submits
 python scripts/misc/campaigns/multi_dataset_datacube_p2f.py --check
+python scripts/misc/campaigns/cluster_p2e.py --list    # the 10 planned cluster cells, all runnable
+python scripts/misc/campaigns/cluster_p2e.py --write   # re-render the 2e submits
 pytest scripts/misc/campaigns/test -q
 ```
 
@@ -404,3 +407,42 @@ multi_dataset cell computes 2a's reference per dataset in-process.
 
 **PR B** copies only complete cells from `output/p2f_batch1/results/` into `results/`, as in
 2a and 2b, then regenerates the catalogue and coverage.
+
+## Phase 2e cluster (DRAFT, autolens_profiling#474)
+
+Nothing here has run on RAL. The human reviews the decisions on the campaign pages
+([image plane](../../../wiki/campaigns/cluster/image_plane/likelihood_lifecycle_p2e.md),
+[source plane](../../../wiki/campaigns/cluster/source_plane/likelihood_lifecycle_p2e.md)) and gives
+a go per batch.
+
+**Cells.** 10 planned cluster cells in `dashboard/coverage.json`: `cluster/image_plane` (registry)
+`jax_cpu_na_fp64@hpc_ral_cpu` and `jax_gpu_na_fp64@hpc_a100`; `cluster/source_plane` (registry cell
+drafted in this branch, decision D2) `jax_cpu_na_fp64` on both hosts and `jax_gpu_na_fp64` on
+`hpc_a100`, each with runtime and breakdown; all 10 legs run. The planner plans a GPU setup only on
+a GPU host (autolens_profiling#481), so the §3.3 table's `jax_gpu_na_fp64` secondary is no longer
+planned on the CPU-only `hpc_ral_cpu` (decision D4, settled).
+
+Every leg gets `--standard-size --config-name <host>_fp64`. For the image plane that builds the
+workspace cluster PointSolver the `cluster-pointsolver-speed` epic kept (100x100 @ 1.0",
+precision 0.001, `magnification_threshold` 0.1, `residual_threshold` 10, all explicit; D1). The
+source plane has no solver; the flag is recorded only. Runtime rows come from the shared driver
+`scripts/misc/likelihood_breakdown/cluster_standard.py`, which writes the row, `parity.json` (JIT vs
+eager NumPy `AnalysisPoint`, 1e-4 x |reference|) and `fit.png`. The breakdowns write their row and
+`fit.png` and leave the cell's witness to the runtime.
+
+**Submits.**
+
+| Submit | Partition | Tasks | `--time` | `--mem` |
+|--------|-----------|-------|----------|---------|
+| `batch_cpu/submit_campaign_p2e_batch0_ral_cpu_fp64` | `ral`, array `%8` | 2 (image plane, batch 0) | 2:30:00 | 32 GB |
+| `batch_gpu/submit_campaign_p2e_batch0_a100_fp64` | `gpu`, `--gres=gpu:1`, array `%2` | 2 (image plane, batch 0) | 2:30:00 | 32 GB |
+| `batch_cpu/submit_campaign_p2e_cluster_ral_cpu_fp64` | `ral`, array `%8` | 4 | 2:30:00 (provisional) | 32 GB |
+| `batch_gpu/submit_campaign_p2e_cluster_a100_fp64` | `gpu`, `--gres=gpu:1`, one job | 6 in turn (2 `jax_cpu` legs on the node's CPU) | 5:00:00 (provisional) | 32 GB |
+
+**Proposed batch plan.** Batch 0 runs the four image-plane legs, which bound every cluster leg of
+the same measurement and device (the source plane is the same model without the forward solve).
+Then fill `BATCH0_WALLS` and `BATCH0_PEAK_RSS_KIB`, set `WALL_BASIS_STATUS = "measured"`, run
+`--write` and the wall gate, and submit batch 1. Until then batch 1 refuses to run
+(`P2E_ALLOW_PROVISIONAL_WALL=1` overrides it). The campaign is small, so an alternative is to skip
+batch 0 and run batch 1 with the override under its conservative provisional walls; that is the
+human's call (D5).
