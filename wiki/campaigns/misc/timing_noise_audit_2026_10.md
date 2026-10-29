@@ -792,6 +792,11 @@ iteration counts, budgets in iterations, geometry or formatting, not a measured 
   scripts (no timing batch, decision D3);
   `scripts/misc/campaigns/test/test_point_source_p2c.py::test_walls_are_one_hour_and_hold_the_laptop_walls`
   checks that the fixed 1:00:00 holds it plus the slack. S1 is still the gate.
+- `scripts/misc/campaigns/cluster_p2e.py::WALL_HEADROOM` and
+  `scripts/misc/campaigns/cluster_p2e.py::MEM_HEADROOM` (autolens_profiling#474): the 2e
+  generator's copies of the same two multipliers, unused until batch 0 lands (its walls are
+  provisional). `scripts/misc/campaigns/test/test_cluster_p2e.py::test_walls_are_provisional_and_batch1_refuses_until_batch0_lands`
+  checks the provisional state and batch 0's 3x floor on its declared guess. S1 is still the gate.
 - `scripts/misc/tooling/build_readme.py::_format_time` and
   `scripts/misc/tooling/build_readme.py::_render_runtime_table`: unit formatting.
 

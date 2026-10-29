@@ -134,7 +134,7 @@ The pull destination is **not** this checkout. `output/` is gitignored here, `re
 holds small committed result rows that a staging copy must not overwrite, and a full pull
 is ~2 GB of run directories. So `sync.conf` sets `LOCAL_PULL_ROOT` — a separate local
 mirror whose only job is holding RAL runs so they can be read. It defaults to
-`/mnt/c/Users/Jammy/Science/profiling/autolens_profiling`.
+`/mnt/c/Users/Jammy/Workspace/Science/profiling/autolens_profiling`.
 
 | on RAL | lands at |
 |--------|----------|
