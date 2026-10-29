@@ -46,6 +46,7 @@ import _profile_cli as pc  # noqa: E402
 RAL = "hpc/batch_cpu/submit_campaign_p2c_point_source_ral_cpu_fp64"
 A100 = "hpc/batch_gpu/submit_campaign_p2c_point_source_a100_fp64"
 ALL = [RAL, A100]
+QUIET = "hpc/batch_cpu/submit_campaign_p2c_quiet_point_source_ral_cpu_fp64"
 
 
 def planned_point_source_cells():
@@ -141,7 +142,7 @@ def test_plain_runtime_runs_beside_every_runtime_cell():
 
 def test_submits_are_what_the_generator_renders():
     assert p2c.main(["--check"]) == 0
-    assert set(p2c.submits()) == set(ALL)
+    assert set(p2c.submits()) == set(ALL + [QUIET])
 
 
 def test_phase_2a_and_2b_submits_stay_byte_identical():
@@ -247,3 +248,38 @@ def test_prepare_dataset_needs_the_committed_dataset(tmp_path):
         assert "missing committed point-source dataset" in str(exc)
     else:
         raise AssertionError("prepare_dataset accepted a missing dataset")
+
+
+def test_quiet_rerun_repeats_the_two_solved_ral_runtime_cells_one_per_exclusive_node():
+    """Human 2026-10-29: the solved RAL CPU runtime rows (413192_4/5) started at load 22-33 and
+    are refused as trend points; the rerun repeats exactly those two cells, each holding its node,
+    behind the quiet-node gate, into its own scratch tree."""
+    text = (ROOT / QUIET).read_text()
+    old = (ROOT / RAL).read_text()
+    names = bash_array(text, "CELLNAMES")
+    assert names == [
+        "point_source_image/image_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [runtime]",
+        "point_source_source/source_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [runtime]",
+    ]
+    old_names = bash_array(old, "CELLNAMES")
+    assert [old_names.index(n) for n in names] == [1, 3]
+    for k in ("CELLS", "INSTS", "FLAGS", "PLATFORMS", "OUTS"):
+        old_values = bash_array(old, k)
+        assert bash_array(text, k) == [old_values[1], old_values[3]], k
+    assert bash_array(text, "CELLS") == [
+        "point_source_image/image_plane/likelihood_runtime_solved",
+        "point_source_source/source_plane/likelihood_runtime_solved",
+    ]
+    assert sbatch(text, "partition") == "ral" and sbatch(text, "array") == "0-1%2"
+    assert sbatch(text, "cpus-per-task") == "8" and sbatch(text, "nodelist") is None
+    assert "#SBATCH --exclusive" in text and "#SBATCH --exclusive" not in old
+    assert 'RESULTS_ROOT="$AP_ROOT/output/p2c_quiet"' in text
+    assert "output/p2c_quiet_logs/walls.tsv" in text
+    assert "taskset -cp" in text and "    quiet_wait\n    local T0" in text
+    assert "export P2C_PIN=2026.10.25.1" in text and "not tag {pin}" in text
+    assert check_submits.check_text(text) == []
+    need = p2c.WALL_HEADROOM * (62 + p2c.QUIET.wait_s) + p2c.WALL_MIN_SLACK_S
+    budget = check_submits.parse_slurm_time(sbatch(text, "time"))
+    assert need <= budget and sbatch(text, "time") == "1:00:00"
+    for row in check_submits.parse_basis_rows(text):
+        assert row["source"] == "measured-wall" and row["ref"].startswith("413192_")
