@@ -1,33 +1,33 @@
 {
   "autolens_version": "2026.8.17.1",
   "device": {
-    "backend": "gpu",
-    "device": "cuda:0",
-    "hostname": "euclid-ral-gpu-1",
+    "backend": "cpu",
+    "device": "cpu:0",
+    "hostname": "euclid-ral-compute-10-5",
     "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
     "omp_num_threads": "1",
-    "cpu_count": 124,
-    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2c/output/jax_cache/p2c_413193_6",
+    "cpu_count": 236,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2c/output/jax_cache/p2c_413205_3",
     "autotune_cache_entries_at_start": 0,
     "cache_fresh": true,
     "provenance": {
       "provenance_schema": 1,
-      "captured_at": "2026-10-28T21:56:51Z",
-      "host": "euclid-ral-gpu-1",
+      "captured_at": "2026-10-28T22:44:43Z",
+      "host": "euclid-ral-compute-10-5",
       "slurm": {
-        "job_id": "413193",
-        "array_job_id": null,
-        "array_task_id": null
+        "job_id": "413205",
+        "array_job_id": "413192",
+        "array_task_id": "3"
       },
       "loadavg_at_import": [
-        2.07,
-        1.75,
-        0.89
+        6.06,
+        2.46,
+        2.67
       ],
       "loadavg_at_write": [
-        2.02,
-        1.77,
-        0.93
+        6.53,
+        2.62,
+        2.72
       ],
       "profiling_revision": "2f98e01a150d2f59aebb5735c4c12ae286a7b1d3",
       "library_revisions": {
@@ -54,37 +54,35 @@
         "nufftax": "0.6.1",
         "finufft": "2.5.1"
       }
-    },
-    "nvidia_smi": "NVIDIA A100 80GB PCIe, 445 MiB, 81920 MiB"
+    }
   },
   "resources": {
     "resources_schema": 1,
     "engine": "jax",
-    "device": "gpu",
+    "device": "cpu",
     "cpus_per_eval": 8,
-    "cpus_per_eval_basis": "jax gpu: one device; cpus_per_eval = NPROC host threads",
-    "devices_per_eval": 1,
-    "peak_rss_gb": 1.177928,
+    "cpus_per_eval_basis": "jax cpu: NPROC threads in XLA's CPU intra-op pool",
+    "devices_per_eval": 0,
+    "peak_rss_gb": 0.545599,
     "peak_rss_basis": "in_process_ru_maxrss",
     "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
   },
   "dataset": "simple",
-  "fit_positions_cls": "FitPositionsImagePairAllSolved",
+  "fit_positions_cls": "FitPositionsSource",
   "configuration": {
     "observed_image_positions": 4,
     "positions_noise_sigma": 0.05,
-    "free_parameters": 5,
-    "free_parameters_image_plane_plain": 8,
-    "free_parameters_delta": -3,
-    "point_source_profile": "PointSolved"
+    "free_parameters": 8
   },
-  "eager_per_call": 0.22318720349576324,
-  "eager_log_likelihood": 7.743201200876817,
-  "full_pipeline_single_jit": 0.001050053397193551,
-  "full_pipeline_single_jit_median": 0.0008472389890812337,
-  "full_pipeline_single_jit_median_ms": 0.8472389890812337,
-  "full_pipeline_single_jit_p10_ms": 0.8334268932230771,
-  "full_pipeline_single_jit_p90_ms": 0.9057949355337769,
+  "eager_per_call": 0.0016097617702325805,
+  "eager_log_likelihood": 12.75281004008905,
+  "full_pipeline_jits": true,
+  "full_pipeline_blocker": null,
+  "full_pipeline_single_jit": 0.00020511790062300862,
+  "full_pipeline_single_jit_median": 0.00015605200314894319,
+  "full_pipeline_single_jit_median_ms": 0.15605200314894319,
+  "full_pipeline_single_jit_p10_ms": 0.13746001641266048,
+  "full_pipeline_single_jit_p90_ms": 0.21248807897791266,
   "full_pipeline_single_jit_median_protocol": {
     "n_warm": 5,
     "n_timed": 200,
@@ -92,18 +90,16 @@
     "full_pipeline_single_jit_is": "mean of one 10-call block after one first call (first block after compile)",
     "issue": "autolens_profiling#371; timing-noise audit P8 (#362)"
   },
-  "full_pipeline_log_likelihood": 7.743201200876806,
-  "repeat_fit_class_steady_state": {
-    "fit_positions_cls": "FitPositionsImagePairRepeatSolved",
-    "per_call": 0.0010356584971304983,
-    "log_likelihood": 4.981203683959095
+  "jit_able_prefix": {
+    "name": "ray-trace observed positions to source plane",
+    "per_call": 0.00014844239922240376
   },
-  "vmap": {
+  "vmap_prefix": {
     "batch_size": 3,
-    "batch_time": 0.001216480298899114,
-    "per_call": 0.00040549343296637135,
-    "speedup_vs_single_jit": 2.6
+    "batch_time": 0.00017120999982580542,
+    "per_call": 5.706999994193514e-05,
+    "speedup_vs_single_jit_prefix": 2.6
   },
-  "pinned_expected": 7.743201200876817,
+  "pinned_expected": 12.752810040089676,
   "pinned_drift": []
 }

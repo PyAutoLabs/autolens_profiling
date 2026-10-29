@@ -7,27 +7,27 @@
     "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
     "omp_num_threads": "1",
     "cpu_count": 236,
-    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2c/output/jax_cache/p2c_413207_4",
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2c/output/jax_cache/p2c_413203_1",
     "autotune_cache_entries_at_start": 0,
     "cache_fresh": true,
     "provenance": {
       "provenance_schema": 1,
-      "captured_at": "2026-10-28T22:46:07Z",
+      "captured_at": "2026-10-28T22:44:39Z",
       "host": "euclid-ral-compute-10-5",
       "slurm": {
-        "job_id": "413207",
+        "job_id": "413203",
         "array_job_id": "413192",
-        "array_task_id": "4"
+        "array_task_id": "1"
       },
       "loadavg_at_import": [
-        33.42,
-        9.75,
-        5.1
+        2.2,
+        1.56,
+        2.39
       ],
       "loadavg_at_write": [
-        53.67,
-        18.4,
-        8.25
+        6.06,
+        2.46,
+        2.67
       ],
       "profiling_revision": "2f98e01a150d2f59aebb5735c4c12ae286a7b1d3",
       "library_revisions": {
@@ -63,27 +63,24 @@
     "cpus_per_eval": 8,
     "cpus_per_eval_basis": "jax cpu: NPROC threads in XLA's CPU intra-op pool",
     "devices_per_eval": 0,
-    "peak_rss_gb": 1.055465,
+    "peak_rss_gb": 0.879944,
     "peak_rss_basis": "in_process_ru_maxrss",
     "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
   },
   "dataset": "simple",
-  "fit_positions_cls": "FitPositionsImagePairAllSolved",
+  "fit_positions_cls": "FitPositionsImagePairAll",
   "configuration": {
     "observed_image_positions": 4,
     "positions_noise_sigma": 0.05,
-    "free_parameters": 5,
-    "free_parameters_image_plane_plain": 8,
-    "free_parameters_delta": -3,
-    "point_source_profile": "PointSolved"
+    "free_parameters": 8
   },
-  "eager_per_call": 0.1592455330013763,
-  "eager_log_likelihood": 7.743201200876817,
-  "full_pipeline_single_jit": 0.0018993143050465733,
-  "full_pipeline_single_jit_median": 0.0015562975022476166,
-  "full_pipeline_single_jit_median_ms": 1.5562975022476166,
-  "full_pipeline_single_jit_p10_ms": 1.4656124636530876,
-  "full_pipeline_single_jit_p90_ms": 1.9104068167507648,
+  "eager_per_call": 0.15968733839690685,
+  "eager_log_likelihood": 7.196577317761017,
+  "full_pipeline_single_jit": 0.0018228734959848225,
+  "full_pipeline_single_jit_median": 0.001526898005977273,
+  "full_pipeline_single_jit_median_ms": 1.526898005977273,
+  "full_pipeline_single_jit_p10_ms": 1.452325697755441,
+  "full_pipeline_single_jit_p90_ms": 1.9197766087017953,
   "full_pipeline_single_jit_median_protocol": {
     "n_warm": 5,
     "n_timed": 200,
@@ -91,18 +88,13 @@
     "full_pipeline_single_jit_is": "mean of one 10-call block after one first call (first block after compile)",
     "issue": "autolens_profiling#371; timing-noise audit P8 (#362)"
   },
-  "full_pipeline_log_likelihood": 7.743201200876812,
-  "repeat_fit_class_steady_state": {
-    "fit_positions_cls": "FitPositionsImagePairRepeatSolved",
-    "per_call": 0.0016299012000672518,
-    "log_likelihood": 4.981203683959095
-  },
+  "full_pipeline_log_likelihood": 7.196577317761015,
   "vmap": {
     "batch_size": 3,
-    "batch_time": 0.0032907086017075924,
-    "per_call": 0.0010969028672358641,
+    "batch_time": 0.003209193504881114,
+    "per_call": 0.0010697311682937047,
     "speedup_vs_single_jit": 1.7
   },
-  "pinned_expected": 7.743201200876817,
+  "pinned_expected": 7.196577317761017,
   "pinned_drift": []
 }

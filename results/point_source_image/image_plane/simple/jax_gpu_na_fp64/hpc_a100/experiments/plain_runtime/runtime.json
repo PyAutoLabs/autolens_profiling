@@ -1,18 +1,18 @@
 {
   "autolens_version": "2026.8.17.1",
   "device": {
-    "backend": "cpu",
-    "device": "cpu:0",
+    "backend": "gpu",
+    "device": "cuda:0",
     "hostname": "euclid-ral-gpu-1",
     "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
     "omp_num_threads": "1",
     "cpu_count": 124,
-    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2c/output/jax_cache/p2c_413193_7",
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2c/output/jax_cache/p2c_413193_1",
     "autotune_cache_entries_at_start": 0,
     "cache_fresh": true,
     "provenance": {
       "provenance_schema": 1,
-      "captured_at": "2026-10-28T21:57:00Z",
+      "captured_at": "2026-10-28T21:54:10Z",
       "host": "euclid-ral-gpu-1",
       "slurm": {
         "job_id": "413193",
@@ -21,13 +21,13 @@
       },
       "loadavg_at_import": [
         1.94,
-        1.76,
-        0.93
+        1.58,
+        0.69
       ],
       "loadavg_at_write": [
-        1.86,
-        1.74,
-        0.94
+        2.51,
+        1.73,
+        0.76
       ],
       "profiling_revision": "2f98e01a150d2f59aebb5735c4c12ae286a7b1d3",
       "library_revisions": {
@@ -54,37 +54,34 @@
         "nufftax": "0.6.1",
         "finufft": "2.5.1"
       }
-    }
+    },
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 475 MiB, 81920 MiB"
   },
   "resources": {
     "resources_schema": 1,
     "engine": "jax",
-    "device": "cpu",
+    "device": "gpu",
     "cpus_per_eval": 8,
-    "cpus_per_eval_basis": "jax cpu: NPROC threads in XLA's CPU intra-op pool",
-    "devices_per_eval": 0,
-    "peak_rss_gb": 0.576987,
+    "cpus_per_eval_basis": "jax gpu: one device; cpus_per_eval = NPROC host threads",
+    "devices_per_eval": 1,
+    "peak_rss_gb": 0.977326,
     "peak_rss_basis": "in_process_ru_maxrss",
     "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
   },
   "dataset": "simple",
-  "fit_positions_cls": "FitPositionsSourceSolved",
+  "fit_positions_cls": "FitPositionsImagePairAll",
   "configuration": {
     "observed_image_positions": 4,
     "positions_noise_sigma": 0.05,
-    "free_parameters": 5,
-    "free_parameters_source_plane_plain": 8,
-    "free_parameters_delta": -3,
-    "point_source_profile": "PointSolved"
+    "free_parameters": 8
   },
-  "eager_per_call": 0.006480904499767348,
-  "eager_log_likelihood": 0.598650453950647,
-  "full_pipeline_jits": true,
-  "full_pipeline_single_jit": 0.00032449609716422856,
-  "full_pipeline_single_jit_median": 0.00026525199064053595,
-  "full_pipeline_single_jit_median_ms": 0.26525199064053595,
-  "full_pipeline_single_jit_p10_ms": 0.2376859833020717,
-  "full_pipeline_single_jit_p90_ms": 0.31547899707220495,
+  "eager_per_call": 0.2194027550984174,
+  "eager_log_likelihood": 7.196577317761017,
+  "full_pipeline_single_jit": 0.001002695900388062,
+  "full_pipeline_single_jit_median": 0.0008644744812045246,
+  "full_pipeline_single_jit_median_ms": 0.8644744812045246,
+  "full_pipeline_single_jit_p10_ms": 0.8297898981254548,
+  "full_pipeline_single_jit_p90_ms": 0.8963228145148605,
   "full_pipeline_single_jit_median_protocol": {
     "n_warm": 5,
     "n_timed": 200,
@@ -92,13 +89,13 @@
     "full_pipeline_single_jit_is": "mean of one 10-call block after one first call (first block after compile)",
     "issue": "autolens_profiling#371; timing-noise audit P8 (#362)"
   },
-  "full_pipeline_log_likelihood": 0.5986504555536349,
+  "full_pipeline_log_likelihood": 7.196577317761012,
   "vmap": {
-    "batch_size": 3,
-    "batch_time": 0.0003321679017972201,
-    "per_call": 0.00011072263393240669,
-    "speedup_vs_single_jit": 2.9
+    "batch_size": 64,
+    "batch_time": 0.0016092905949335544,
+    "per_call": 2.5145165545836788e-05,
+    "speedup_vs_single_jit": 39.9
   },
-  "pinned_expected": 0.5986504555530896,
+  "pinned_expected": 7.196577317761017,
   "pinned_drift": []
 }

@@ -7,12 +7,12 @@
     "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
     "omp_num_threads": "1",
     "cpu_count": 124,
-    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2c/output/jax_cache/p2c_413193_3",
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2c/output/jax_cache/p2c_413193_7",
     "autotune_cache_entries_at_start": 0,
     "cache_fresh": true,
     "provenance": {
       "provenance_schema": 1,
-      "captured_at": "2026-10-28T21:55:04Z",
+      "captured_at": "2026-10-28T21:57:00Z",
       "host": "euclid-ral-gpu-1",
       "slurm": {
         "job_id": "413193",
@@ -20,14 +20,14 @@
         "array_task_id": null
       },
       "loadavg_at_import": [
-        1.65,
-        1.62,
-        0.78
+        1.94,
+        1.76,
+        0.93
       ],
       "loadavg_at_write": [
-        1.6,
-        1.6,
-        0.78
+        1.86,
+        1.74,
+        0.94
       ],
       "profiling_revision": "2f98e01a150d2f59aebb5735c4c12ae286a7b1d3",
       "library_revisions": {
@@ -63,26 +63,28 @@
     "cpus_per_eval": 8,
     "cpus_per_eval_basis": "jax cpu: NPROC threads in XLA's CPU intra-op pool",
     "devices_per_eval": 0,
-    "peak_rss_gb": 0.539808,
+    "peak_rss_gb": 0.576987,
     "peak_rss_basis": "in_process_ru_maxrss",
     "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
   },
   "dataset": "simple",
-  "fit_positions_cls": "FitPositionsSource",
+  "fit_positions_cls": "FitPositionsSourceSolved",
   "configuration": {
     "observed_image_positions": 4,
     "positions_noise_sigma": 0.05,
-    "free_parameters": 8
+    "free_parameters": 5,
+    "free_parameters_source_plane_plain": 8,
+    "free_parameters_delta": -3,
+    "point_source_profile": "PointSolved"
   },
-  "eager_per_call": 0.0022909708897350355,
-  "eager_log_likelihood": 12.752810040089676,
+  "eager_per_call": 0.006480904499767348,
+  "eager_log_likelihood": 0.598650453950647,
   "full_pipeline_jits": true,
-  "full_pipeline_blocker": null,
-  "full_pipeline_single_jit": 0.0002768476027995348,
-  "full_pipeline_single_jit_median": 0.00025521102361381054,
-  "full_pipeline_single_jit_median_ms": 0.25521102361381054,
-  "full_pipeline_single_jit_p10_ms": 0.2255149360280484,
-  "full_pipeline_single_jit_p90_ms": 0.28193796752020717,
+  "full_pipeline_single_jit": 0.00032449609716422856,
+  "full_pipeline_single_jit_median": 0.00026525199064053595,
+  "full_pipeline_single_jit_median_ms": 0.26525199064053595,
+  "full_pipeline_single_jit_p10_ms": 0.2376859833020717,
+  "full_pipeline_single_jit_p90_ms": 0.31547899707220495,
   "full_pipeline_single_jit_median_protocol": {
     "n_warm": 5,
     "n_timed": 200,
@@ -90,16 +92,13 @@
     "full_pipeline_single_jit_is": "mean of one 10-call block after one first call (first block after compile)",
     "issue": "autolens_profiling#371; timing-noise audit P8 (#362)"
   },
-  "jit_able_prefix": {
-    "name": "ray-trace observed positions to source plane",
-    "per_call": 0.0003016953996848315
-  },
-  "vmap_prefix": {
+  "full_pipeline_log_likelihood": 0.5986504555536349,
+  "vmap": {
     "batch_size": 3,
-    "batch_time": 0.0002967392967548221,
-    "per_call": 9.891309891827404e-05,
-    "speedup_vs_single_jit_prefix": 3.1
+    "batch_time": 0.0003321679017972201,
+    "per_call": 0.00011072263393240669,
+    "speedup_vs_single_jit": 2.9
   },
-  "pinned_expected": 12.752810040089676,
+  "pinned_expected": 0.5986504555530896,
   "pinned_drift": []
 }

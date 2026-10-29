@@ -3,31 +3,31 @@
   "device": {
     "backend": "cpu",
     "device": "cpu:0",
-    "hostname": "euclid-ral-compute-10-5",
+    "hostname": "euclid-ral-gpu-1",
     "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
     "omp_num_threads": "1",
-    "cpu_count": 236,
-    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2c/output/jax_cache/p2c_413192_5",
+    "cpu_count": 124,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2c/output/jax_cache/p2c_413193_3",
     "autotune_cache_entries_at_start": 0,
     "cache_fresh": true,
     "provenance": {
       "provenance_schema": 1,
-      "captured_at": "2026-10-28T22:45:42Z",
-      "host": "euclid-ral-compute-10-5",
+      "captured_at": "2026-10-28T21:55:04Z",
+      "host": "euclid-ral-gpu-1",
       "slurm": {
-        "job_id": "413192",
-        "array_job_id": "413192",
-        "array_task_id": "5"
+        "job_id": "413193",
+        "array_job_id": null,
+        "array_task_id": null
       },
       "loadavg_at_import": [
-        33.42,
-        9.75,
-        5.1
+        1.65,
+        1.62,
+        0.78
       ],
       "loadavg_at_write": [
-        43.87,
-        13.67,
-        6.49
+        1.6,
+        1.6,
+        0.78
       ],
       "profiling_revision": "2f98e01a150d2f59aebb5735c4c12ae286a7b1d3",
       "library_revisions": {
@@ -63,28 +63,26 @@
     "cpus_per_eval": 8,
     "cpus_per_eval_basis": "jax cpu: NPROC threads in XLA's CPU intra-op pool",
     "devices_per_eval": 0,
-    "peak_rss_gb": 0.572756,
+    "peak_rss_gb": 0.539808,
     "peak_rss_basis": "in_process_ru_maxrss",
     "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
   },
   "dataset": "simple",
-  "fit_positions_cls": "FitPositionsSourceSolved",
+  "fit_positions_cls": "FitPositionsSource",
   "configuration": {
     "observed_image_positions": 4,
     "positions_noise_sigma": 0.05,
-    "free_parameters": 5,
-    "free_parameters_source_plane_plain": 8,
-    "free_parameters_delta": -3,
-    "point_source_profile": "PointSolved"
+    "free_parameters": 8
   },
-  "eager_per_call": 0.004529430199763738,
-  "eager_log_likelihood": 0.5986504539443818,
+  "eager_per_call": 0.0022909708897350355,
+  "eager_log_likelihood": 12.752810040089676,
   "full_pipeline_jits": true,
-  "full_pipeline_single_jit": 0.00019971719593740999,
-  "full_pipeline_single_jit_median": 0.00015573750715702772,
-  "full_pipeline_single_jit_median_ms": 0.15573750715702772,
-  "full_pipeline_single_jit_p10_ms": 0.13556185876950622,
-  "full_pipeline_single_jit_p90_ms": 0.20762646454386413,
+  "full_pipeline_blocker": null,
+  "full_pipeline_single_jit": 0.0002768476027995348,
+  "full_pipeline_single_jit_median": 0.00025521102361381054,
+  "full_pipeline_single_jit_median_ms": 0.25521102361381054,
+  "full_pipeline_single_jit_p10_ms": 0.2255149360280484,
+  "full_pipeline_single_jit_p90_ms": 0.28193796752020717,
   "full_pipeline_single_jit_median_protocol": {
     "n_warm": 5,
     "n_timed": 200,
@@ -92,13 +90,16 @@
     "full_pipeline_single_jit_is": "mean of one 10-call block after one first call (first block after compile)",
     "issue": "autolens_profiling#371; timing-noise audit P8 (#362)"
   },
-  "full_pipeline_log_likelihood": 0.5986504555536349,
-  "vmap": {
-    "batch_size": 3,
-    "batch_time": 0.00018256300245411694,
-    "per_call": 6.0854334151372313e-05,
-    "speedup_vs_single_jit": 3.3
+  "jit_able_prefix": {
+    "name": "ray-trace observed positions to source plane",
+    "per_call": 0.0003016953996848315
   },
-  "pinned_expected": 0.5986504555530896,
+  "vmap_prefix": {
+    "batch_size": 3,
+    "batch_time": 0.0002967392967548221,
+    "per_call": 9.891309891827404e-05,
+    "speedup_vs_single_jit_prefix": 3.1
+  },
+  "pinned_expected": 12.752810040089676,
   "pinned_drift": []
 }

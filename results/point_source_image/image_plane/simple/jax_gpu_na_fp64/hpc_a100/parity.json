@@ -2,15 +2,15 @@
   "schema": "parity-witness",
   "version": 1,
   "status": "match",
-  "log_likelihood": 7.196577317761012,
-  "reference_log_likelihood": 7.196577317761017,
-  "tolerance": 0.0007196577317761017,
+  "log_likelihood": 7.743201200876806,
+  "reference_log_likelihood": 7.743201200876817,
+  "tolerance": 0.0007743201200876818,
   "tolerance_rule": "0.0001 x |reference_log_likelihood| (fp64)",
   "reference": {
-    "source": "eager NumPy AnalysisPoint(use_jax=False).fit_from(instance).figure_of_merit in the same process: simple, FitPositionsImagePairAll (image-plane chi-squared), same dataset, PointSolver, model and instance",
+    "source": "eager NumPy AnalysisPoint(use_jax=False).fit_from(instance).figure_of_merit in the same process: simple, PointSolved / FitPositionsImagePairAllSolved (image-plane chi-squared, solved), same dataset, model and instance",
     "date": "2026-10-28"
   },
-  "measured_at": "2026-10-28T21:54:10Z",
+  "measured_at": "2026-10-28T21:56:51Z",
   "autolens_version": "2026.8.17.1",
   "quantity": "log_likelihood_function (JIT cell vs eager NumPy reference)"
 }
