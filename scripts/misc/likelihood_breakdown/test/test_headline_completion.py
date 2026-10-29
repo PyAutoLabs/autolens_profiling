@@ -215,6 +215,14 @@ def test_every_opted_in_script_is_in_the_wall_basis_set():
     # breakdown cell runs the pixelized breakdown harness above.
     sites.discard("scripts/misc/likelihood_breakdown/datacube_standard.py")
     sites.discard("scripts/misc/likelihood_breakdown/multi_dataset_standard.py")
+    # The galaxy/group driver (2d) runs inside the six multi_galaxy / group likelihood_runtime.py
+    # cells (thin wrappers), which are in the set by name.
+    sites.discard("scripts/misc/likelihood_breakdown/galaxy_group_standard.py")
+    sites |= {
+        f"scripts/{dt}/{v}/likelihood_runtime.py"
+        for dt in ("multi_galaxy", "group")
+        for v in ("mge", "rectangular", "delaunay")
+    }
     # The cluster driver (2e) runs inside the two cluster likelihood_runtime.py cells.
     sites.discard("scripts/misc/likelihood_breakdown/cluster_standard.py")
     sites |= {

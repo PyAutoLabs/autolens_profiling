@@ -223,6 +223,15 @@ HEADLINE_MEDIAN_SCRIPTS = frozenset(
         # harness on its lead channel; the multi_dataset runtime takes the cell median.
         "scripts/datacube/delaunay/likelihood_breakdown.py",
         "scripts/multi_dataset/delaunay/likelihood_runtime.py",
+        # likelihood-lifecycle 2g (#476)
+        "scripts/weak/isothermal/likelihood_runtime.py",
+        # likelihood-lifecycle 2d (#473): the JAX runtime cells of the shared galaxy/group driver
+        "scripts/group/delaunay/likelihood_runtime.py",
+        "scripts/group/mge/likelihood_runtime.py",
+        "scripts/group/rectangular/likelihood_runtime.py",
+        "scripts/multi_galaxy/delaunay/likelihood_runtime.py",
+        "scripts/multi_galaxy/mge/likelihood_runtime.py",
+        "scripts/multi_galaxy/rectangular/likelihood_runtime.py",
         # likelihood-lifecycle 2e (#474): the cluster runtime cells (shared driver
         # likelihood_breakdown/cluster_standard.py)
         "scripts/cluster/image_plane/likelihood_runtime.py",
