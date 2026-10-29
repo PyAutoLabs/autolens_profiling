@@ -5,8 +5,8 @@
   "status": "draft",
   "purpose": "Proposed fresh setup baseline; no measurements or acceptance authorized.",
   "inventory": {
-    "catalogue/registry.json": "d1eadec1cd7f06a83cab989a1af27da1f80959c503c3afca2fa9059d5099f1ab",
-    "catalogue/script_routes.json": "2e473caa8b46f7a3134d088fc172bd7abc8756902622bd6e2af5b9681b9f09f5"
+    "catalogue/registry.json": "92d09786b31ec499344a2e56831fbe6d77f5e1be280b3530605e69d81f73a64c",
+    "catalogue/script_routes.json": "8cb207779b294b825e902f07a24f61c25a79ff4fc8dc563281bbfed16153fa41"
   },
   "software": {
     "revisions": {
@@ -535,6 +535,20 @@
       "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
     },
     {
+      "id": "cluster/source_plane/unspecified",
+      "dataset": "cluster",
+      "model": "source_plane",
+      "instrument": null,
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
       "id": "multi_dataset/delaunay/unspecified",
       "dataset": "multi_dataset",
       "model": "delaunay",
@@ -547,6 +561,104 @@
         "relative_tolerance": null
       },
       "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "multi_galaxy/mge/hst",
+      "dataset": "multi_galaxy",
+      "model": "mge",
+      "instrument": "hst",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "multi_galaxy/rectangular/hst",
+      "dataset": "multi_galaxy",
+      "model": "rectangular",
+      "instrument": "hst",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "multi_galaxy/delaunay/hst",
+      "dataset": "multi_galaxy",
+      "model": "delaunay",
+      "instrument": "hst",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "group/mge/euclid",
+      "dataset": "group",
+      "model": "mge",
+      "instrument": "euclid",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "group/rectangular/euclid",
+      "dataset": "group",
+      "model": "rectangular",
+      "instrument": "euclid",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "group/delaunay/euclid",
+      "dataset": "group",
+      "model": "delaunay",
+      "instrument": "euclid",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "weak/isothermal/simple",
+      "dataset": "weak",
+      "model": "isothermal",
+      "instrument": "simple",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze the shear catalogue (positions, noise, seed), mass model, parameter vector and seed as applicable."
     }
   ],
   "unknowns": [

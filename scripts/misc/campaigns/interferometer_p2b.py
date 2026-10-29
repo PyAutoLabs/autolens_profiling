@@ -255,6 +255,15 @@ MF_EXPERIMENT = "numpy_cpu_matrixfree"
 MF_WALL_GUESS_S = 14000
 MF_TIME = "12:00:00"
 MF_MEM_GB = 128
+#: Batch-1 legs that wrote no row, recorded as a known gap by human ruling (2026-10-29, "go ahead
+#: with cell missing"): {cell: reason}. Not resubmitted. Every other batch-1 leg (72 of 73)
+#: exited 0 with a final row. Not a coverage cell: the matrix-free legs are experiments only.
+BATCH1_LIMITATIONS = {
+    "interferometer/rectangular/alma numpy_cpu_matrixfree_192x192@hpc_ral_cpu [runtime]": (
+        "TIMEOUT at 12:00:29 (--time 12:00:00, RAL 413191_6): the 20 matrix-free instances "
+        "finished, the dense_fft comparison arm at 36,864 source pixels did not, so no row"
+    ),
+}
 
 _ROUTES = {row["path"]: row["legacy"] for row in load_routes(ROOT)["routes"]}
 

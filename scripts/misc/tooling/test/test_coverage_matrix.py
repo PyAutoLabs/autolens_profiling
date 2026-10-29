@@ -286,10 +286,13 @@ def test_dense_pixelized_interferometer_nufft_is_planned_at_sma_only():
     for sid in dense:
         host = "hpc_a100" if "gpu" in sid else "hpc_ral_cpu"
         assert lc.designation("interferometer", "rectangular", host, sid) == "secondary"
-    # The scope names the interferometer only: a datacube cell's plan is unchanged.
-    assert lc.planned_setups("datacube", "delaunay", "hpc_a100", "alma") == lc.planned_setups(
-        "datacube", "delaunay", "hpc_a100"
-    )
+    # 2f's D1 (#475, proposed) carries the scope to the datacube by its own rule: dense at sma
+    # only there too, the W~ route planned everywhere.
+    for host in ("hpc_ral_cpu", "hpc_a100"):
+        assert dense & set(lc.planned_setups("datacube", "delaunay", host, "sma"))
+        for instrument in ("alma", "alma_high"):
+            planned = set(lc.planned_setups("datacube", "delaunay", host, instrument))
+            assert not dense & planned and any(s.endswith("_wtilde") for s in planned)
     # MGE (its own table) is untouched.
     assert "jax_cpu_dense_fp64_nufft" in lc.planned_setups(
         "interferometer", "mge", "hpc_ral_cpu", "sma"
