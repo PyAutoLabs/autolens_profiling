@@ -133,32 +133,6 @@
    "state": "missing"
   },
   {
-   "cell": "datacube/delaunay/alma jax_cpu_dense_fp64_nufft@hpc_ral_cpu [breakdown]",
-   "class": "secondary",
-   "host_class": "hpc_ral_cpu",
-   "instrument": "alma",
-   "likelihood": "datacube/delaunay",
-   "measurement": "breakdown",
-   "model_variant": "default",
-   "reason": "no record",
-   "record": null,
-   "setup_id": "jax_cpu_dense_fp64_nufft",
-   "state": "missing"
-  },
-  {
-   "cell": "datacube/delaunay/alma jax_cpu_dense_fp64_nufft@hpc_ral_cpu [runtime]",
-   "class": "secondary",
-   "host_class": "hpc_ral_cpu",
-   "instrument": "alma",
-   "likelihood": "datacube/delaunay",
-   "measurement": "runtime",
-   "model_variant": "default",
-   "reason": "no record",
-   "record": null,
-   "setup_id": "jax_cpu_dense_fp64_nufft",
-   "state": "missing"
-  },
-  {
    "cell": "datacube/delaunay/alma jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [breakdown]",
    "class": "secondary",
    "host_class": "hpc_ral_cpu",
@@ -182,32 +156,6 @@
    "reason": "no record",
    "record": null,
    "setup_id": "jax_cpu_sparse_fp64_wtilde",
-   "state": "missing"
-  },
-  {
-   "cell": "datacube/delaunay/alma jax_gpu_dense_fp64_nufft@hpc_a100 [breakdown]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "alma",
-   "likelihood": "datacube/delaunay",
-   "measurement": "breakdown",
-   "model_variant": "default",
-   "reason": "no record",
-   "record": null,
-   "setup_id": "jax_gpu_dense_fp64_nufft",
-   "state": "missing"
-  },
-  {
-   "cell": "datacube/delaunay/alma jax_gpu_dense_fp64_nufft@hpc_a100 [runtime]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "alma",
-   "likelihood": "datacube/delaunay",
-   "measurement": "runtime",
-   "model_variant": "default",
-   "reason": "no record",
-   "record": null,
-   "setup_id": "jax_gpu_dense_fp64_nufft",
    "state": "missing"
   },
   {
@@ -263,32 +211,6 @@
    "state": "missing"
   },
   {
-   "cell": "datacube/delaunay/alma_high jax_cpu_dense_fp64_nufft@hpc_ral_cpu [breakdown]",
-   "class": "secondary",
-   "host_class": "hpc_ral_cpu",
-   "instrument": "alma_high",
-   "likelihood": "datacube/delaunay",
-   "measurement": "breakdown",
-   "model_variant": "default",
-   "reason": "no record",
-   "record": null,
-   "setup_id": "jax_cpu_dense_fp64_nufft",
-   "state": "missing"
-  },
-  {
-   "cell": "datacube/delaunay/alma_high jax_cpu_dense_fp64_nufft@hpc_ral_cpu [runtime]",
-   "class": "secondary",
-   "host_class": "hpc_ral_cpu",
-   "instrument": "alma_high",
-   "likelihood": "datacube/delaunay",
-   "measurement": "runtime",
-   "model_variant": "default",
-   "reason": "no record",
-   "record": null,
-   "setup_id": "jax_cpu_dense_fp64_nufft",
-   "state": "missing"
-  },
-  {
    "cell": "datacube/delaunay/alma_high jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [breakdown]",
    "class": "secondary",
    "host_class": "hpc_ral_cpu",
@@ -312,32 +234,6 @@
    "reason": "no record",
    "record": null,
    "setup_id": "jax_cpu_sparse_fp64_wtilde",
-   "state": "missing"
-  },
-  {
-   "cell": "datacube/delaunay/alma_high jax_gpu_dense_fp64_nufft@hpc_a100 [breakdown]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "alma_high",
-   "likelihood": "datacube/delaunay",
-   "measurement": "breakdown",
-   "model_variant": "default",
-   "reason": "no record",
-   "record": null,
-   "setup_id": "jax_gpu_dense_fp64_nufft",
-   "state": "missing"
-  },
-  {
-   "cell": "datacube/delaunay/alma_high jax_gpu_dense_fp64_nufft@hpc_a100 [runtime]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "alma_high",
-   "likelihood": "datacube/delaunay",
-   "measurement": "runtime",
-   "model_variant": "default",
-   "reason": "no record",
-   "record": null,
-   "setup_id": "jax_gpu_dense_fp64_nufft",
    "state": "missing"
   },
   {
@@ -3722,7 +3618,7 @@
    "current": 0,
    "likelihood": "datacube/delaunay",
    "measurement": "breakdown",
-   "missing": 9,
+   "missing": 5,
    "stale": 0,
    "superseded": 0
   },
@@ -3731,7 +3627,7 @@
    "current": 0,
    "likelihood": "datacube/delaunay",
    "measurement": "runtime",
-   "missing": 9,
+   "missing": 5,
    "stale": 0,
    "superseded": 0
   },
@@ -4291,19 +4187,7 @@
     "state": "missing"
    },
    {
-    "cell": "datacube/delaunay/alma jax_cpu_dense_fp64_nufft@hpc_ral_cpu [parity]",
-    "class": "secondary",
-    "record": null,
-    "state": "missing"
-   },
-   {
     "cell": "datacube/delaunay/alma jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [parity]",
-    "class": "secondary",
-    "record": null,
-    "state": "missing"
-   },
-   {
-    "cell": "datacube/delaunay/alma jax_gpu_dense_fp64_nufft@hpc_a100 [parity]",
     "class": "secondary",
     "record": null,
     "state": "missing"
@@ -4321,19 +4205,7 @@
     "state": "missing"
    },
    {
-    "cell": "datacube/delaunay/alma_high jax_cpu_dense_fp64_nufft@hpc_ral_cpu [parity]",
-    "class": "secondary",
-    "record": null,
-    "state": "missing"
-   },
-   {
     "cell": "datacube/delaunay/alma_high jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [parity]",
-    "class": "secondary",
-    "record": null,
-    "state": "missing"
-   },
-   {
-    "cell": "datacube/delaunay/alma_high jax_gpu_dense_fp64_nufft@hpc_a100 [parity]",
     "class": "secondary",
     "record": null,
     "state": "missing"
@@ -5139,7 +5011,7 @@
     "diverged": 0,
     "likelihood": "datacube/delaunay",
     "match": 0,
-    "missing": 9,
+    "missing": 5,
     "not_assessed": 0
    },
    {
@@ -5378,9 +5250,9 @@
   "totals": {
    "diverged": 0,
    "match": 53,
-   "missing": 87,
+   "missing": 83,
    "not_assessed": 0,
-   "setup_cells": 140
+   "setup_cells": 136
   }
  },
  "release_pin_source": "newest record",
@@ -5399,9 +5271,9 @@
  "totals": {
   "current": 106,
   "current_records_unplanned": 116,
-  "missing": 167,
+  "missing": 159,
   "missing_size_fallback": 20,
-  "planned_cells": 280,
+  "planned_cells": 272,
   "records_superseded": 384,
   "stale": 7,
   "superseded": 0

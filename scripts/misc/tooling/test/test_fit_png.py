@@ -47,6 +47,10 @@ WIRED = {
 SHARED_RENDERERS = {
     "scripts/misc/likelihood_breakdown/interferometer_standard.py",
     "scripts/interferometer/rectangular/likelihood_runtime_matrixfree.py",
+    # Likelihood-lifecycle 2f (#475): the datacube and multi-dataset standard-size drivers render
+    # the lead channel's / dataset 0's eager fit for the cells that call them.
+    "scripts/misc/likelihood_breakdown/datacube_standard.py",
+    "scripts/misc/likelihood_breakdown/multi_dataset_standard.py",
     # likelihood-lifecycle 2d (#473): the multi_galaxy / group runtime scripts are thin wrappers;
     # the driver renders after the row and the parity witness.
     "scripts/misc/likelihood_breakdown/galaxy_group_standard.py",

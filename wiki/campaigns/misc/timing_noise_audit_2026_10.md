@@ -795,6 +795,11 @@ iteration counts, budgets in iterations, geometry or formatting, not a measured 
   median (5 and 100, `timing.steady_median_profile`). They size a statistic, not a gate: no
   verdict reads them and nothing passes or fails on the median.
   S1 is still the gate.
+- `scripts/misc/campaigns/multi_dataset_datacube_p2f.py::WALL_HEADROOM` and
+  `scripts/misc/campaigns/multi_dataset_datacube_p2f.py::MEM_HEADROOM` (autolens_profiling#475):
+  the 2f generator's copies of the same two multipliers, unused until batch 0 has run (its batch
+  1 is provisional and refuses to run; `test_multi_dataset_datacube_p2f.py::
+  test_batch1_is_provisional_until_batch0_has_run` pins that). S1 is still the gate.
 - `scripts/misc/campaigns/multi_galaxy_group_p2d.py::WALL_HEADROOM` and
   `scripts/misc/campaigns/multi_galaxy_group_p2d.py::MEM_HEADROOM` (autolens_profiling#473): the
   2d generator's copies of the same two multipliers, with the same meaning (batch 1's `--time` at

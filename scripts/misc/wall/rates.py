@@ -219,6 +219,10 @@ HEADLINE_MEDIAN_SCRIPTS = frozenset(
         "scripts/datacube/delaunay/likelihood_runtime.py",
         "scripts/imaging/mge_mass/likelihood_runtime_jax.py",
         "scripts/imaging/rectangular/likelihood_runtime_numba_mge_mass.py",
+        # likelihood-lifecycle 2f (#475): the datacube breakdown runs the pixelized breakdown
+        # harness on its lead channel; the multi_dataset runtime takes the cell median.
+        "scripts/datacube/delaunay/likelihood_breakdown.py",
+        "scripts/multi_dataset/delaunay/likelihood_runtime.py",
         # likelihood-lifecycle 2g (#476)
         "scripts/weak/isothermal/likelihood_runtime.py",
         # likelihood-lifecycle 2d (#473): the JAX runtime cells of the shared galaxy/group driver

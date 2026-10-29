@@ -211,6 +211,10 @@ def test_every_opted_in_script_is_in_the_wall_basis_set():
     # The standard-size driver (2b) runs inside the interferometer delaunay / rectangular
     # likelihood_runtime.py cells, which are already in the set.
     sites.discard("scripts/misc/likelihood_breakdown/interferometer_standard.py")
+    # The 2f drivers (#475) run inside the datacube and multi_dataset runtime cells; the datacube
+    # breakdown cell runs the pixelized breakdown harness above.
+    sites.discard("scripts/misc/likelihood_breakdown/datacube_standard.py")
+    sites.discard("scripts/misc/likelihood_breakdown/multi_dataset_standard.py")
     # The galaxy/group driver (2d) runs inside the six multi_galaxy / group likelihood_runtime.py
     # cells (thin wrappers), which are in the set by name.
     sites.discard("scripts/misc/likelihood_breakdown/galaxy_group_standard.py")
@@ -228,6 +232,8 @@ def test_every_opted_in_script_is_in_the_wall_basis_set():
     sites |= {
         "scripts/interferometer/delaunay/likelihood_breakdown.py",
         "scripts/interferometer/rectangular/likelihood_breakdown.py",
+        "scripts/datacube/delaunay/likelihood_breakdown.py",
+        "scripts/multi_dataset/delaunay/likelihood_runtime.py",
     }
     assert sites == set(rates.HEADLINE_MEDIAN_SCRIPTS)
 

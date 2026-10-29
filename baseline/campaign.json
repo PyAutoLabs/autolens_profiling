@@ -6,7 +6,7 @@
   "purpose": "Proposed fresh setup baseline; no measurements or acceptance authorized.",
   "inventory": {
     "catalogue/registry.json": "e0a72f237c3895e194b8acc854d068995425e5d62648d774b73b854f53d36e15",
-    "catalogue/script_routes.json": "53b7c144657ae6f91894676b5d577840ce86ada20a84ac8ba24d9852b88514ee"
+    "catalogue/script_routes.json": "8cb207779b294b825e902f07a24f61c25a79ff4fc8dc563281bbfed16153fa41"
   },
   "software": {
     "revisions": {

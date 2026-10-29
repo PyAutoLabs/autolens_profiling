@@ -121,7 +121,9 @@ def test_inventory_is_complete_and_unknowns_do_not_become_ready(draft):
     assert len(plan["cells"]) == 37 * 3 * 2 * 6
     assert len({c["id"] for c in plan["cells"]}) == len(plan["cells"])
     assert plan["status"] == "blocked"
-    assert plan["counts"] == {"unverified": 718, "unsupported": 540, "not_applicable": 74}
+    # 2f (#475): multi_dataset/delaunay gained runtime and breakdown routes, so its 12 cells
+    # moved from unsupported to unverified.
+    assert plan["counts"] == {"unverified": 730, "unsupported": 528, "not_applicable": 74}
     assert all(
         c["capability"] == "unsupported"
         for c in plan["cells"]
