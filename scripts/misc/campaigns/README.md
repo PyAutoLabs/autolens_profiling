@@ -22,7 +22,7 @@ python scripts/misc/campaigns/imaging_p2a.py --check   # exit 1 if a submit is o
 python scripts/misc/campaigns/interferometer_p2b.py --list    # the 60 cells, 6 references, 7 matrix-free legs
 python scripts/misc/campaigns/interferometer_p2b.py --write   # re-render the 2b submits
 python scripts/misc/campaigns/interferometer_p2b.py --check
-python scripts/misc/campaigns/weak_p2g.py --list    # the 8 planned weak cells (6 runnable)
+python scripts/misc/campaigns/weak_p2g.py --list    # the 6 planned weak cells, all runnable
 python scripts/misc/campaigns/weak_p2g.py --write
 python scripts/misc/campaigns/weak_p2g.py --check
 python scripts/misc/campaigns/cluster_p2e.py --list    # the 10 planned cluster cells, all runnable
@@ -344,10 +344,11 @@ regenerates the catalogue and coverage.
 ## Phase 2g weak lensing (DRAFT, awaiting review)
 
 **Cells.** Weak lensing had no profiling script and no planned cell. 2g adds the registry cell
-`weak/isothermal/simple`; the §3.3 weak row then plans 8 cells: `jax_cpu_dense_fp64`
-(provisional optimal) and `jax_gpu_dense_fp64` (secondary) on both reference hosts, runtime and
-breakdown. The two `jax_gpu_dense_fp64@hpc_ral_cpu` cells cannot run (the `ral` partition has no
-GPU; decision D5), so the manifest has 6 legs: 2 on `ral`, 4 in one A100 job. The
+`weak/isothermal/simple`; the §3.3 weak row then plans 6 cells, runtime and breakdown:
+`jax_cpu_dense_fp64` (provisional optimal) on both reference hosts and `jax_gpu_dense_fp64`
+(secondary) on `hpc_a100` only (the planner plans a GPU setup only on a GPU host,
+autolens_profiling#481, which settles decision D5). The manifest has 6 legs: 2 on `ral`, 4 in one
+A100 job. The
 `jax_cpu_dense_fp64@hpc_a100` legs run on the A100 node's CPU (`JAX_PLATFORMS=cpu`), before the
 GPU legs in the same job. Every leg evaluates the standard weak cell
 (`scripts/misc/likelihood_breakdown/weak_standard.py`): the `simple` catalogue of

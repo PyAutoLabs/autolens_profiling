@@ -23,8 +23,9 @@ The submits (README.md beside this file has the batch procedure):
   ``submit_campaign_p2g_weak_a100_simple_fp64``) into ``output/p2g_batch1/``, refusing to run
   until batch 0's walls are in (:data:`WALL_BASIS_STATUS`).
 
-Of the 8 planned cells, the 2 ``jax_gpu_dense_fp64@hpc_ral_cpu`` cells cannot run: the ``ral``
-partition has no GPU (decision D5, :data:`UNRUNNABLE`). Nothing here submits anything.
+Every planned cell runs: the planner plans a GPU setup only on a GPU host (autolens_profiling#481,
+which settles decision D5), so the §3.3 weak row plans 6 cells, not 8, and the CPU-only ``ral``
+partition gets no ``jax_gpu_dense_fp64`` cell. Nothing here submits anything.
 
 Stdlib only; nothing here imports the modelling stack except :func:`prepare_dataset`, which the
 submits call to simulate a missing catalogue under a lock.
@@ -56,16 +57,16 @@ ISSUE = "autolens_profiling#476"
 #: (decisions D2, D3).
 INSTRUMENTS = ("simple",)
 VARIANT = "isothermal"
-#: The §3.3 weak row (``catalogue/provisional_designations.json`` table ``weak``): every host
-#: plans ``jax_cpu_dense_fp64`` (provisional optimal) and ``jax_gpu_dense_fp64`` (secondary).
+#: The §3.3 weak row (``catalogue/provisional_designations.json`` table ``weak``):
+#: ``jax_cpu_dense_fp64`` (provisional optimal) and ``jax_gpu_dense_fp64`` (secondary), the GPU
+#: setup only on the GPU host (``gpu_hosts``, autolens_profiling#481; decision D5).
 SETUPS = {
-    "hpc_ral_cpu": ("jax_cpu_dense_fp64", "jax_gpu_dense_fp64"),
+    "hpc_ral_cpu": ("jax_cpu_dense_fp64",),
     "hpc_a100": ("jax_cpu_dense_fp64", "jax_gpu_dense_fp64"),
 }
-#: Planned (setup_id, host_class) pairs no RAL job can measure (decision D5): a GPU setup on the
-#: CPU-only ``ral`` partition. They stay planned (the §3.3 reading plans them, as it does for
-#: point_source_source) and missing until the human rules.
-UNRUNNABLE = {("jax_gpu_dense_fp64", "hpc_ral_cpu"): "the ral partition has no GPU"}
+#: Planned (setup_id, host_class) pairs no RAL job can measure. Empty since #481 (decision D5):
+#: the planner no longer plans a GPU setup on the CPU-only ``ral`` partition.
+UNRUNNABLE: dict[tuple[str, str], str] = {}
 MEASUREMENTS = ("runtime", "breakdown")
 CONFIG_NAMES = {"hpc_ral_cpu": "hpc_ral_cpu_fp64", "hpc_a100": "hpc_a100_fp64"}
 
@@ -148,7 +149,7 @@ class Task:
 
 
 def planned_cells() -> list[Task]:
-    """Every planned weak cell (8: the §3.3 reading on both reference hosts)."""
+    """Every planned weak cell (6: the §3.3 reading, the GPU setup on the GPU host only)."""
     return sorted(
         Task(VARIANT, instrument, setup_id, host_class, measurement)
         for instrument in INSTRUMENTS

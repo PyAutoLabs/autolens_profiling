@@ -1,8 +1,8 @@
 """The phase-2g weak-lensing campaign manifest and its submits (autolens_profiling#476).
 
 The manifest must be exactly the planned weak cells (the registry's ``weak/isothermal/simple`` on
-the §3.3 weak row), minus the two GPU-setup cells the CPU-only ``ral`` partition cannot measure
-(decision D5); the submits must be what the generator renders, run every runnable cell once
+the §3.3 weak row, whose GPU setup is planned on the GPU host only since #481, decision D5), all
+of them runnable; the submits must be what the generator renders, run every runnable cell once
 (2 on ``ral``, 4 in one ``--gres=gpu:1`` job), pass the wall gate, pin the private checkout at
 2026.10.25.1, and keep batch 1 behind the provisional-wall guard. The 2a and 2b submits stay
 byte-identical on the shared machinery. Modules are loaded by path; no cell script is run.
@@ -83,7 +83,10 @@ def test_manifest_is_exactly_the_planned_weak_cells():
     planned = planned_weak_cells()
     cells = p2g.planned_cells()
     assert {t.cell for t in cells} == set(planned)
-    assert len(cells) == 8
+    assert len(cells) == 6
+    assert not any(
+        t.setup_id == "jax_gpu_dense_fp64" and t.host_class == "hpc_ral_cpu" for t in cells
+    )
     for t in cells:
         expected = "optimal" if t.setup_id == "jax_cpu_dense_fp64" else "secondary"
         assert planned[t.cell] == expected
@@ -92,14 +95,10 @@ def test_manifest_is_exactly_the_planned_weak_cells():
         )
 
 
-def test_only_the_gpu_setup_on_the_cpu_partition_is_unrunnable():
+def test_every_planned_cell_is_runnable():
     tasks = p2g.planned_tasks()
     assert len(tasks) == 6
-    left_out = {t.cell for t in p2g.planned_cells()} - {t.cell for t in tasks}
-    assert left_out == {
-        f"weak/isothermal/simple jax_gpu_dense_fp64@hpc_ral_cpu [{m}]"
-        for m in ("runtime", "breakdown")
-    }
+    assert {t.cell for t in tasks} == {t.cell for t in p2g.planned_cells()}
     assert Counter(t.host_class for t in tasks) == {"hpc_ral_cpu": 2, "hpc_a100": 4}
     # D4: the CPU setup runs on the A100 host's CPU.
     for t in tasks:
