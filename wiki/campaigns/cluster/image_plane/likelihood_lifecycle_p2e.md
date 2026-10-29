@@ -1,15 +1,15 @@
 # Likelihood lifecycle phase 2e: cluster image plane
 
-**Status:** draft
+**Status:** open
 **Question:** What does each planned cluster/image_plane cell cost, for the solved image-plane likelihood (`FitPositionsImagePairRepeatSolved`, D3), on the pinned release 2026.10.25.1 with the decided workspace PointSolver (100x100 @ 1.0", precision 0.001, `residual_threshold` 10), and does each cell's JIT log-likelihood match the eager NumPy one?
 **Pre-registered rule:** all 4 planned cluster/image_plane cells (`jax_cpu_na_fp64@hpc_ral_cpu`, `jax_gpu_na_fp64@hpc_a100`, each runtime and breakdown) land `current` with provenance, `resources`, `fit.png` and a `parity.json` whose status is `match` (JIT `AnalysisPoint` vs the eager NumPy `AnalysisPoint` of the same model, instance and solver, tolerance 1e-4 x |reference| in fp64). A `diverged` witness blocks that setup until explained. The prior rows on these keys become `superseded`. Recorded here before any RAL run (2026-10-28). Amended 2026-10-29, still before any run: the witness and `fit.png` evaluate the solved headline class (D3).
-**Verdict:** pending (draft; no RAL batch has run). Expected, written before the runs: the forward solve dominates every image-plane call, as in the historic breakdown (job 350580: the per-system eager fit is ~2 s, the fused JIT call 0.13 s on RAL CPU for the plain class and 0.135 s for the solved one); the solved headline costs the same order per call as the plain sub-row (laptop smokes disagree on which is faster: runtime 10.7 vs 18.1 ms, breakdown fused 39.8 vs 16.5 ms, both on a loaded single CPU); both parity witnesses are `match`, since the solver finds every image of the `simple` truth at 1.0" (306/306 prior roots, cluster PointSolver campaign); per-call latency favours the A100, but CPU and GPU are compared by projected node throughput, not per call. Class designations are phase 3's decision.
+**Verdict:** pending (no RAL batch has run). Expected, written before the runs: the forward solve dominates every image-plane call, as in the historic breakdown (job 350580: the per-system eager fit is ~2 s, the fused JIT call 0.13 s on RAL CPU for the plain class and 0.135 s for the solved one); the solved headline costs the same order per call as the plain sub-row (laptop smokes disagree on which is faster: runtime 10.7 vs 18.1 ms, breakdown fused 39.8 vs 16.5 ms, both on a loaded single CPU); both parity witnesses are `match`, since the solver finds every image of the `simple` truth at 1.0" (306/306 prior roots, cluster PointSolver campaign); per-call latency favours the A100, but CPU and GPU are compared by projected node throughput, not per call. Class designations are phase 3's decision.
 **Headline:** none yet (laptop smokes only, below).
 **Library PRs:** none (measurement only, tag 2026.10.25.1, which carries PyAutoLens#800 `residual_threshold` and bdb44a87c)
 **Profiling PRs:** the 2e setup draft PR (autolens_profiling#474), then the rows PR after the human's batch go
 **Ledger:** this page; the source-plane half is [likelihood_lifecycle_p2e.md](../source_plane/likelihood_lifecycle_p2e.md); work list [`scripts/misc/campaigns/cluster_p2e.py`](../../../../scripts/misc/campaigns/cluster_p2e.py) and its [README](../../../../scripts/misc/campaigns/README.md)
 **Mind contract:** epic `likelihood-lifecycle`, phase 2 sub-issue 2e; issue autolens_profiling#474; solver settings from epic `cluster-pointsolver-speed` ([cluster PointSolver](cluster_pointsolver.md))
-**Next:** the human reviews decisions D1, D2, D5 and D6 (D3 and D4 decided 2026-10-29), then gives a go for batch 0
+**Next:** batch 0, the 4 image-plane legs (every decision D1-D6 decided; go given 2026-10-29; held: the RAL venv carries jax/jaxlib 0.10.2, which the pin's PyAutoNerves excludes; the human decides the environment); then the walls commit, batch 1 (human go), the rows PR
 **Fit figures:** laptop smoke `fit.png` of the solved headline opened (2026-10-29, runtime and breakdown): every observed image of both systems has a model image from β* on it, χ² = 0.065 (the plain fit's was 2.6, 2026-10-28); none from RAL yet.
 
 ## Why this campaign
@@ -20,16 +20,19 @@ breakdowns from 2026.8.17.1 (job 350580) with a tutorial-scale solver (200x200 @
 
 ## Decisions
 
-D3 is decided (human, 2026-10-29); so is D4, on the source-plane page. D1, D2, D5 and D6 await
-the human.
+All six are decided. D3 (human, 2026-10-29) is below, D4 on the source-plane page. D1, D2, D5
+and D6 were drafted; the human adopted each drafted option on 2026-10-29 ("ok can we do all
+that now then", in reply to the list of open decisions and the batch-0 go). The code already
+implemented the drafts, so the adoption changed no code or submit. The human can still change
+any of them before batch 1.
 
-| # | Decision | Alternative |
+| # | Decision | Alternative (not taken) |
 |---|---|---|
-| D1 | The standard image-plane cell uses the workspace cluster PointSolver the `cluster-pointsolver-speed` epic kept (human 2026-10-23): 100x100 @ 1.0", `pixel_scale_precision` 0.001, `magnification_threshold` 0.1, `residual_threshold` 10 (on), every setting passed explicitly (`cluster_standard.STANDARD_SOLVER`), under `--standard-size`. Not re-tuned here. Without the flag the breakdown keeps its historic solver. | Keep the historic 200x200 @ 0.7" solver for continuity with the 2026.8.17.1 rows. |
-| D2 | cluster/source_plane is planned by analogy with point_source_source (see the [source-plane page](../source_plane/likelihood_lifecycle_p2e.md)). | Leave source_plane unplanned and re-measure it as unplanned rows only. |
+| D1 (decided, human 2026-10-29: adopted the recommended option) | The standard image-plane cell uses the workspace cluster PointSolver the `cluster-pointsolver-speed` epic kept (human 2026-10-23): 100x100 @ 1.0", `pixel_scale_precision` 0.001, `magnification_threshold` 0.1, `residual_threshold` 10 (on), every setting passed explicitly (`cluster_standard.STANDARD_SOLVER`), under `--standard-size`. Not re-tuned here. Without the flag the breakdown keeps its historic solver. | Keep the historic 200x200 @ 0.7" solver for continuity with the 2026.8.17.1 rows. |
+| D2 (decided, human 2026-10-29: adopted the recommended option) | cluster/source_plane is planned by analogy with point_source_source (see the [source-plane page](../source_plane/likelihood_lifecycle_p2e.md)). | Leave source_plane unplanned and re-measure it as unplanned rows only. |
 | D3 (decided, human 2026-10-29) | The headline of each runtime row is the solved fit class: `FitPositionsImagePairRepeatSolved` (`PointSolved`; each source centre is β*, the Jacobian-tensor-weighted mean of its back-traced images), the solved counterpart of the class the cluster breakdowns decomposed. Plain `FitPositionsImagePairRepeat` (free `Point` centres) is a sub-row. The runtime times, vmaps and witnesses the solved class and draws its `fit.png`; the breakdown decomposes it (β*, the solve at β*, the solved fit total; fused solved first). The source plane headlines `FitPositionsSourceSolved`, the fit the workspace cluster search uses (`autolens_workspace/scripts/cluster/modeling.py`). Ruling: "the cluster default setup should use solved as I think it does on the workspace". | Drafted: plain headline, solved sub-row. The library default since PyAutoLens d838ca596 is `FitPositionsImagePairAllSolved`. |
-| D5 | Batch plan: batch 0 = the 4 image-plane legs (they bound every cluster leg), then batch 1 = all 10 runnable legs with walls from batch 0. | One batch: run batch 1 directly under its conservative provisional walls (`P2E_ALLOW_PROVISIONAL_WALL=1`). |
-| D6 | The cell's `parity.json` is written by the runtime (as for imaging); breakdowns write none. Tolerance is the default 1e-4 x |reference| (no cluster override). The vmap batch is declared (CPU 3, GPU 16; the A100 vram table has no cluster entry). | A tighter tolerance; a `--vmap-probe` run first. |
+| D5 (decided, human 2026-10-29: adopted the recommended option) | Batch plan: batch 0 = the 4 image-plane legs (they bound every cluster leg), then batch 1 = all 10 runnable legs with walls from batch 0. | One batch: run batch 1 directly under its conservative provisional walls (`P2E_ALLOW_PROVISIONAL_WALL=1`). |
+| D6 (decided, human 2026-10-29: adopted the recommended option) | The cell's `parity.json` is written by the runtime (as for imaging); breakdowns write none. Tolerance is the default 1e-4 x |reference| (no cluster override). The vmap batch is declared (CPU 3, GPU 16; the A100 vram table has no cluster entry). | A tighter tolerance; a `--vmap-probe` run first. |
 
 D4 (the `jax_gpu_na_fp64@hpc_ral_cpu` source-plane cells, no longer planned) is on the source-plane page.
 
@@ -79,3 +82,14 @@ leg (`cluster_p2e.BATCH0_WALL_GUESS_S`), `--time` 2:30:00.
   images the solver finds; the timing does not test robustness.
 - Per-call times are per device. Compare CPU and GPU setups as projected node throughput, never
   as a per-call "GPU is N x faster".
+
+## Journal
+
+### 2026-10-29 — D1, D2, D5, D6 adopted; batch 0 held
+
+The human adopted the drafted options of D1 (the workspace cluster PointSolver), D2 (plan
+source_plane by analogy with point_source_source), D5 (batch 0 = the 4 image-plane legs, then
+batch 1) and D6 (runtime writes `parity.json`, default tolerance, declared vmap batch): "ok can
+we do all that now then". D3 and D4 were already decided. No code, plan or submit changed.
+
+The batch-0 go was given with the decisions, but batch 0 was not submitted. The shared RAL venv (`/mnt/ral/jnightin/PyAuto/PyAuto`, which every submit activates) carries jax/jaxlib 0.10.2 (`site-packages/jax-0.10.2.dist-info`, `jaxlib-0.10.2.dist-info`), while the pin's PyAutoNerves excludes 0.10.* ("CPU batched LAPACK can deadlock in 0.10.x / 0.11.0", Heart#274). Rows from that environment would not match the pin's dependency floor, so the environment is the human's call. Later the same evening the human also said not to start anything new on RAL. A detached checkout of main 32c0becd was being prepared at `/mnt/ral/jnightin/profiling/autolens_profiling_p2dg`, but nothing has been submitted from it.
