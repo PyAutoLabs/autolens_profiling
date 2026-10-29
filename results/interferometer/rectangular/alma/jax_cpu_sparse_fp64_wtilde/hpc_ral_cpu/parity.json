@@ -1,0 +1,18 @@
+{
+  "schema": "parity-witness",
+  "version": 1,
+  "status": "match",
+  "log_likelihood": -12047728.110555444,
+  "reference_log_likelihood": -12047728.1105565,
+  "tolerance": 0.120477281105565,
+  "tolerance_rule": "1e-08 x |reference_log_likelihood| (fp64)",
+  "reference": {
+    "source": "cached reference task interferometer_rectangular_alma.json (visibility-chunked eager NumPy dense (R6))",
+    "date": "2026-10-28"
+  },
+  "measured_at": "2026-10-28T22:52:42Z",
+  "autolens_version": "2026.8.17.1",
+  "quantity": "log_likelihood_function (the cell's figure of merit, the log evidence) at the standard cell's iid draw 0, vs the visibility-chunked eager NumPy dense reference",
+  "source_pixels": 1225,
+  "source_pixels_requested": 1225
+}

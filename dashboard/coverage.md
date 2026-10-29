@@ -15,7 +15,7 @@ Catalogue generated 2026-10-29T09:46:25Z; catalogue pin `2026.10.25.1` (newest r
 
 | Planned cells | Current | Stale | Superseded | Missing (of which size_fallback) | Superseded records |
 |---|---|---|---|---|---|
-| 272 | 116 | 1 | 0 | 155 (20) | 402 |
+| 272 | 176 | 0 | 0 | 96 (0) | 495 |
 
 ## Likelihood x class x measurement
 
@@ -55,16 +55,16 @@ Catalogue generated 2026-10-29T09:46:25Z; catalogue pin `2026.10.25.1` (newest r
 | imaging/rectangular | optimal | runtime | 8 | 0 | 0 | 0 |
 | imaging/rectangular | secondary | breakdown | 12 | 0 | 0 | 0 |
 | imaging/rectangular | secondary | runtime | 12 | 0 | 0 | 0 |
-| interferometer/delaunay | optimal | breakdown | 0 | 0 | 0 | 8 |
-| interferometer/delaunay | optimal | runtime | 0 | 0 | 0 | 8 |
-| interferometer/delaunay | secondary | breakdown | 0 | 0 | 0 | 6 |
-| interferometer/delaunay | secondary | runtime | 0 | 0 | 0 | 6 |
-| interferometer/mge | optimal | breakdown | 0 | 1 | 0 | 1 |
-| interferometer/mge | optimal | runtime | 0 | 0 | 0 | 2 |
-| interferometer/rectangular | optimal | breakdown | 0 | 0 | 0 | 8 |
-| interferometer/rectangular | optimal | runtime | 0 | 0 | 0 | 8 |
-| interferometer/rectangular | secondary | breakdown | 0 | 0 | 0 | 6 |
-| interferometer/rectangular | secondary | runtime | 0 | 0 | 0 | 6 |
+| interferometer/delaunay | optimal | breakdown | 8 | 0 | 0 | 0 |
+| interferometer/delaunay | optimal | runtime | 8 | 0 | 0 | 0 |
+| interferometer/delaunay | secondary | breakdown | 6 | 0 | 0 | 0 |
+| interferometer/delaunay | secondary | runtime | 6 | 0 | 0 | 0 |
+| interferometer/mge | optimal | breakdown | 2 | 0 | 0 | 0 |
+| interferometer/mge | optimal | runtime | 2 | 0 | 0 | 0 |
+| interferometer/rectangular | optimal | breakdown | 8 | 0 | 0 | 0 |
+| interferometer/rectangular | optimal | runtime | 8 | 0 | 0 | 0 |
+| interferometer/rectangular | secondary | breakdown | 6 | 0 | 0 | 0 |
+| interferometer/rectangular | secondary | runtime | 6 | 0 | 0 | 0 |
 | multi_dataset/delaunay | optimal | breakdown | 0 | 0 | 0 | 2 |
 | multi_dataset/delaunay | optimal | runtime | 0 | 0 | 0 | 2 |
 | multi_dataset/delaunay | secondary | breakdown | 0 | 0 | 0 | 3 |
@@ -96,7 +96,7 @@ Per planned setup cell: match/diverged from its current parity record, not_asses
 
 | Setup cells | Match | Diverged | Not assessed | Missing |
 |---|---|---|---|---|
-| 136 | 58 | 0 | 0 | 78 |
+| 136 | 88 | 0 | 0 | 48 |
 
 | Likelihood | Class | Match | Diverged | Not assessed | Missing |
 |---|---|---|---|---|---|
@@ -117,11 +117,11 @@ Per planned setup cell: match/diverged from its current parity record, not_asses
 | imaging/mge | optimal | 8 | 0 | 0 | 0 |
 | imaging/rectangular | optimal | 8 | 0 | 0 | 0 |
 | imaging/rectangular | secondary | 12 | 0 | 0 | 0 |
-| interferometer/delaunay | optimal | 0 | 0 | 0 | 8 |
-| interferometer/delaunay | secondary | 0 | 0 | 0 | 6 |
-| interferometer/mge | optimal | 0 | 0 | 0 | 2 |
-| interferometer/rectangular | optimal | 0 | 0 | 0 | 8 |
-| interferometer/rectangular | secondary | 0 | 0 | 0 | 6 |
+| interferometer/delaunay | optimal | 8 | 0 | 0 | 0 |
+| interferometer/delaunay | secondary | 6 | 0 | 0 | 0 |
+| interferometer/mge | optimal | 2 | 0 | 0 | 0 |
+| interferometer/rectangular | optimal | 8 | 0 | 0 | 0 |
+| interferometer/rectangular | secondary | 6 | 0 | 0 | 0 |
 | multi_dataset/delaunay | optimal | 0 | 0 | 0 | 2 |
 | multi_dataset/delaunay | secondary | 0 | 0 | 0 | 3 |
 | multi_galaxy/delaunay | optimal | 0 | 0 | 0 | 2 |

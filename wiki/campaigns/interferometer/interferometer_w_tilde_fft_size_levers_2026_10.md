@@ -137,4 +137,4 @@ Both x-stages then run on half the rows.
   `/mnt/ral/jnightin/scratch/fft_levers_results/`.
 - The Pulse task `interferometer_w_tilde_fft_size_levers` (original prompt, filed 2026-09-27).
 - The #320 A100 breakdown JSONs: `results/breakdown/interferometer/{alma,alma_high,jvla}/delaunay_hpc_a100_fp64.json`
-  (alma at `results/interferometer/delaunay/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json`).
+  (alma at `results/interferometer/delaunay/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/history/2026.8.17.1_2026-09-26/breakdown.json`).

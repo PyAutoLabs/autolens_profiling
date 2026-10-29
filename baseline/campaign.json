@@ -5,7 +5,7 @@
   "status": "draft",
   "purpose": "Proposed fresh setup baseline; no measurements or acceptance authorized.",
   "inventory": {
-    "catalogue/registry.json": "e0a72f237c3895e194b8acc854d068995425e5d62648d774b73b854f53d36e15",
+    "catalogue/registry.json": "92d09786b31ec499344a2e56831fbe6d77f5e1be280b3530605e69d81f73a64c",
     "catalogue/script_routes.json": "8cb207779b294b825e902f07a24f61c25a79ff4fc8dc563281bbfed16153fa41"
   },
   "software": {

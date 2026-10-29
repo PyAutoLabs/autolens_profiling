@@ -1,0 +1,419 @@
+{
+  "stage": "complete",
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "hostname": "euclid-ral-gpu-1",
+    "xla_flags": "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 124,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/.cache/pyauto_jax",
+    "autotune_cache_entries_at_start": 204,
+    "cache_fresh": false
+  },
+  "instrument": "sma",
+  "model": "pixelization",
+  "transformer": "TransformerNUFFT",
+  "use_mixed_precision": false,
+  "configuration": {
+    "pixel_scale_arcsec": 0.1,
+    "mask_radius_arcsec": 3.5,
+    "real_space_shape": [
+      256,
+      256
+    ],
+    "image_pixels_masked": 3852,
+    "visibilities": 190,
+    "source_pixels": 1521,
+    "source_pixels_requested": null,
+    "mesh": "RectangularBilinearAdaptImage",
+    "mesh_shape": [
+      39,
+      39
+    ],
+    "rect_mesh": "bilinear",
+    "lens_light": null,
+    "lens_light_note": "simulators/interferometer.py puts no lens emission in the visibilities; mass fixed near truth (tight Gaussian priors), no lens light.",
+    "inversion_path": "sparse",
+    "inversion_class": "InversionInterferometerSparse",
+    "mapper_class": "Mapper",
+    "solve_subset_edge_zeroed": true,
+    "pixels_solved": 1369,
+    "positive_only_solver_requested": "pdip",
+    "positive_only_solver_used": "pdip",
+    "nnls_preconditioning": "jacobi",
+    "sparse_operator_method": "nufft",
+    "sparse_batch_size": 128,
+    "curvature_blocks": 12,
+    "operator_extent_shape": [
+      70,
+      70
+    ],
+    "operator_M": 4900,
+    "operator_fft_shape": [
+      140,
+      140
+    ],
+    "transformer_chunk_size": null,
+    "transformer_chunk_size_preset": null,
+    "nufftax_version": "0.6.1",
+    "n_repeats": 10,
+    "thread_env": {
+      "n_threads": null,
+      "vars": [
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+        "NUMEXPR_NUM_THREADS"
+      ],
+      "set_to": null,
+      "preexisting": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1"
+      },
+      "overridden": {},
+      "note": "Not pinned (legacy variant): recorded as found."
+    },
+    "host_load_avg_start": [
+      0.64,
+      0.13,
+      0.12
+    ],
+    "host_load_avg_end": [
+      9.53,
+      3.91,
+      1.53
+    ]
+  },
+  "regularization": {
+    "scheme": "constant",
+    "coefficient": 1.0
+  },
+  "operator_build_s": 2.1609054489817936,
+  "steps": {
+    "Ray-trace grids (data)": 0.00037885360070504247,
+    "Border relocation + mesh interpolation (mapper)": 0.0022811646980699153,
+    "Mapping matrix L": 0.011225424602162092,
+    "Regularization matrix H": -0.0012174035015050325,
+    "Sparse triplets (extent grid)": 7.483009831048548e-05,
+    "Data vector D = L\u1d40 d~": 0.018456915600108915,
+    "Curvature matrix F = A\u1d40 W~ A (12 blocks of 128)": 0.4445677289011655,
+    "Reconstruction (pdip)": 0.4327743450005073,
+    "Log-det terms (2 Choleskys)": 0.07005928310099989,
+    "Fast chi-squared + figure of merit": 0.0014834714005701245
+  },
+  "total_step_by_step": 0.9800846135010943,
+  "setup_split": {
+    "Ray-trace grids (data)": 0.00037885360070504247,
+    "Border relocation + mesh interpolation (mapper)": 0.0022811646980699153,
+    "Mapping matrix L": 0.011225424602162092,
+    "Regularization matrix H": -0.0012174035015050325
+  },
+  "setup_prefix_per_call_s": {
+    "1": 0.00037885360070504247,
+    "2": 0.0026600182987749576,
+    "3": 0.01388544290093705,
+    "4": 0.012668039399432018
+  },
+  "steps_sub_rows": {
+    "FitInterferometer.figure_of_merit (library, single JIT)": 1.022829557300429
+  },
+  "full_pipeline_single_jit": 0.9828833111998392,
+  "full_pipeline": {
+    "status": "ok",
+    "per_call_s": 0.9828833111998392,
+    "figure_of_merit": -3168.595092427823,
+    "abs_diff_vs_library_nats": 0.0,
+    "solver": "pdip",
+    "hlo_census": {
+      "full_pipeline": {
+        "fft": 2,
+        "while": 5,
+        "cholesky": 169,
+        "triangular_solve": 6,
+        "scatter": 5,
+        "custom_call": 11,
+        "status": "ok"
+      },
+      "library_fit_figure_of_merit": {
+        "fft": 2,
+        "while": 5,
+        "cholesky": 169,
+        "triangular_solve": 6,
+        "scatter": 5,
+        "custom_call": 11,
+        "status": "ok"
+      },
+      "standalone_curvature_F": {
+        "fft": 2,
+        "while": 1,
+        "cholesky": 0,
+        "triangular_solve": 0,
+        "scatter": 2,
+        "custom_call": 0,
+        "status": "ok"
+      },
+      "standalone_reconstruction": {
+        "fft": 0,
+        "while": 1,
+        "cholesky": 89,
+        "triangular_solve": 6,
+        "scatter": 1,
+        "custom_call": 8,
+        "status": "ok"
+      },
+      "standalone_log_dets": {
+        "fft": 0,
+        "while": 0,
+        "cholesky": 90,
+        "triangular_solve": 0,
+        "scatter": 0,
+        "custom_call": 2,
+        "status": "ok"
+      }
+    }
+  },
+  "step_sum_over_full_jit": 0.9971525636188406,
+  "figure_of_merit_reference": -3168.595092427823,
+  "figure_of_merit_step_by_step": -3168.595092427824,
+  "step_fidelity": {
+    "figure_of_merit_steps": -3168.595092427824,
+    "figure_of_merit_library": -3168.595092427823,
+    "abs_diff_nats": 9.094947017729282e-13,
+    "data_vector_max_rel_diff": 0.0,
+    "curvature_matrix_max_rel_diff": 0.0,
+    "reconstruction_max_rel_diff": 0.0,
+    "log_det_curvature_reg_abs_diff": 0.0,
+    "log_det_regularization_abs_diff": 0.0,
+    "nnz_triplets": 15408
+  },
+  "nnls": {
+    "solver": "pdip",
+    "converged": 1,
+    "iterations": 13
+  },
+  "dense_steps": {
+    "Ray-trace grids (data)": 0.00037885360070504247,
+    "Border relocation + mesh interpolation (mapper)": 0.0022811646980699153,
+    "Mapping matrix L": 0.011225424602162092,
+    "Regularization matrix H": -0.0012174035015050325,
+    "Transformed mapping matrix T (NUFFT, 50-column chunks)": 4.237703072800651,
+    "Data vector D (dense, Re + Im)": 0.0004506905999733135,
+    "Curvature matrix F (dense T\u1d40 N\u207b\u00b9 T, Re + Im)": 0.03082656750048045,
+    "Reconstruction (pdip)": 0.4436637845996302,
+    "Log-det terms (2 Choleskys)": 0.06883779769996182,
+    "Fast chi-squared + figure of merit": 0.001519866898888722
+  },
+  "dense_total_step_by_step": 4.795669819499017,
+  "dense": {
+    "status": "ok",
+    "total_step_by_step": 4.795669819499017,
+    "transform": "script_chunked",
+    "transform_column_batch": 50,
+    "figure_of_merit": -3168.595092427824,
+    "figure_of_merit_sparse": -3168.595092427824,
+    "sparse_vs_dense_abs_diff_nats": 0.0,
+    "witness_threshold_nats": 1e-06,
+    "witness_pass": true,
+    "curvature_sparse_vs_dense_max_rel_diff": 5.764925390701176e-14,
+    "data_vector_sparse_vs_dense_max_rel_diff": 7.136386352292987e-16,
+    "nnls": {
+      "converged": 1,
+      "iterations": 13
+    },
+    "note": "Steps 1-4 are shared with the sparse arm (same library mapper / L / H); T is formed column-chunked (the library's one-shot nufft2d2 over every column needs S x (2Ny) x (2Nx) complex128)."
+  },
+  "solver_ab": {
+    "note": "standalone step-8 rows on the same (D, F + H); fom recomputed with the step-9/10 functions",
+    "pdip": {
+      "per_call_s": 0.4504459260002477,
+      "converged": 1,
+      "iterations": 13,
+      "figure_of_merit": -3168.595092427824,
+      "negative_pixels": 0,
+      "zero_pixels": 152
+    },
+    "certified": {
+      "per_call_s": 0.3443172645987943,
+      "certified": 1,
+      "passes": 8,
+      "figure_of_merit": -3168.5950924277904,
+      "negative_pixels": 0,
+      "zero_pixels": 279
+    },
+    "certified_over_pdip": 0.7643920051762328,
+    "figure_of_merit_abs_diff_nats": 3.3651303965598345e-11,
+    "solve_share_of_full_pipeline": 0.4403110115606754
+  },
+  "curvature_batch_size_sweep": null,
+  "curvature_kernel_split": {
+    "scatter_per_block_s": 0.00022886130027472974,
+    "fft_apply_per_block_s": 0.03473350309941452,
+    "gather_segment_sum_per_block_s": 0.0016840999014675617,
+    "n_blocks": 12,
+    "batch_size": 128,
+    "predicted_F_s": 0.43975757161388174,
+    "measured_F_s": 0.4445677289011655,
+    "fft_share_of_predicted": 0.947799569802375,
+    "scatter_share_of_predicted": 0.006245112717941123,
+    "gather_share_of_predicted": 0.04595531747968385,
+    "note": "Each part jitted alone on one block (block 0) and scaled by n_blocks; the measured F runs them fused inside lax.fori_loop."
+  },
+  "fp32_fft_arm": null,
+  "mixed_precision": null,
+  "vmap": [],
+  "source_revisions": {
+    "autolens_profiling": "9721d3912a565ec05bbf53e539eadaaba538cb25",
+    "PyAutoNerves": "eb27da2464e2f07e0ad67e7fb18ee84be76c479a",
+    "PyAutoFit": "5468c6cefa0ae8bb08a449497cbd3c620f3720e2",
+    "PyAutoArray": "14d63360f341912b209f2045d7e388e264692f1d",
+    "PyAutoGalaxy": "879a9308b709b3705eb95904de6b349a5c034d61",
+    "PyAutoLens": "def4decf68a245a9c3dd1eb276ee0578897b220c"
+  },
+  "jit_phases": {
+    "setup_prefix_1": {
+      "lower_s": 0.09877504600444809,
+      "compile_s": 0.2415458080067765,
+      "first_call_s": 0.0012158559984527528,
+      "steady_per_call_s": 0.00037885360070504247
+    },
+    "setup_prefix_2": {
+      "lower_s": 0.5705918669991661,
+      "compile_s": 0.8095302369911224,
+      "first_call_s": 0.004365808010334149,
+      "steady_per_call_s": 0.0026600182987749576
+    },
+    "setup_prefix_3": {
+      "lower_s": 0.602523697016295,
+      "compile_s": 0.9183490019931924,
+      "first_call_s": 0.016283796983771026,
+      "steady_per_call_s": 0.01388544290093705
+    },
+    "setup_prefix_4": {
+      "lower_s": 0.6221681429888122,
+      "compile_s": 0.9377489910111763,
+      "first_call_s": 0.01353017901419662,
+      "steady_per_call_s": 0.012668039399432018
+    },
+    "sparse_triplets": {
+      "lower_s": 0.012667868984863162,
+      "compile_s": 0.04816487699281424,
+      "first_call_s": 0.00047158499364741147,
+      "steady_per_call_s": 7.483009831048548e-05
+    },
+    "data_vector_sparse": {
+      "lower_s": 0.005422874994110316,
+      "compile_s": 0.05784276200574823,
+      "first_call_s": 0.016098118998343125,
+      "steady_per_call_s": 0.018456915600108915
+    },
+    "curvature_sparse": {
+      "lower_s": 0.0397619669965934,
+      "compile_s": 0.1408662649919279,
+      "first_call_s": 0.5142520070075989,
+      "steady_per_call_s": 0.4445677289011655
+    },
+    "reconstruction_pdip": {
+      "lower_s": 0.06062743000802584,
+      "compile_s": 0.4284678959811572,
+      "first_call_s": 0.43196674398495816,
+      "steady_per_call_s": 0.4327743450005073
+    },
+    "log_dets": {
+      "lower_s": 0.023512621002737433,
+      "compile_s": 0.07395935099339113,
+      "first_call_s": 0.055500510992715135,
+      "steady_per_call_s": 0.07005928310099989
+    },
+    "figure_of_merit": {
+      "lower_s": 0.013816045975545421,
+      "compile_s": 0.10426697001093999,
+      "first_call_s": 0.0017589500057511032,
+      "steady_per_call_s": 0.0014834714005701245
+    },
+    "full_pipeline": {
+      "lower_s": 0.8181642529962119,
+      "compile_s": 1.6202831779955886,
+      "first_call_s": 0.9346695590065792,
+      "steady_per_call_s": 0.9828833111998392
+    },
+    "library_fit_figure_of_merit": {
+      "lower_s": 0.7358191130042542,
+      "compile_s": 1.6589299380138982,
+      "first_call_s": 1.021955109987175,
+      "steady_per_call_s": 1.022829557300429
+    },
+    "solver_ab_pdip": {
+      "lower_s": 0.061904184985905886,
+      "compile_s": 0.43062831001589075,
+      "first_call_s": 0.4579969659971539,
+      "steady_per_call_s": 0.4504459260002477
+    },
+    "solver_ab_certified": {
+      "lower_s": 0.0931047240155749,
+      "compile_s": 0.6840377379849087,
+      "first_call_s": 0.34371250300318934,
+      "steady_per_call_s": 0.3443172645987943
+    },
+    "kernel_scatter": {
+      "lower_s": 0.013117292983224615,
+      "compile_s": 0.04474688900518231,
+      "first_call_s": 0.0010233380016870797,
+      "steady_per_call_s": 0.00022886130027472974
+    },
+    "kernel_fft_apply": {
+      "lower_s": 0.01213531501707621,
+      "compile_s": 0.11181490099988878,
+      "first_call_s": 0.036631163995480165,
+      "steady_per_call_s": 0.03473350309941452
+    },
+    "kernel_gather_segment_sum": {
+      "lower_s": 0.01040851601283066,
+      "compile_s": 0.04109399000299163,
+      "first_call_s": 0.0021519250003620982,
+      "steady_per_call_s": 0.0016840999014675617
+    },
+    "dense_transformed_mapping_matrix": {
+      "lower_s": 0.11360734899062663,
+      "compile_s": 0.3726775590039324,
+      "first_call_s": 4.186897345993202,
+      "steady_per_call_s": 4.237703072800651
+    },
+    "dense_data_vector": {
+      "lower_s": 0.010999170015566051,
+      "compile_s": 0.04637271899264306,
+      "first_call_s": 0.0036509259953163564,
+      "steady_per_call_s": 0.0004506905999733135
+    },
+    "dense_curvature_matrix": {
+      "lower_s": 0.009230469993781298,
+      "compile_s": 0.06335121599840932,
+      "first_call_s": 0.03192917100386694,
+      "steady_per_call_s": 0.03082656750048045
+    },
+    "dense_reconstruction": {
+      "lower_s": 0.05971104098716751,
+      "compile_s": 0.4271061219915282,
+      "first_call_s": 0.44414929999038577,
+      "steady_per_call_s": 0.4436637845996302
+    },
+    "dense_log_dets": {
+      "lower_s": 0.02326512400759384,
+      "compile_s": 0.07481904001906514,
+      "first_call_s": 0.06820122900535353,
+      "steady_per_call_s": 0.06883779769996182
+    },
+    "dense_figure_of_merit": {
+      "lower_s": 0.013812716002576053,
+      "compile_s": 0.11512447000131942,
+      "first_call_s": 0.0018647179822437465,
+      "steady_per_call_s": 0.001519866898888722
+    }
+  },
+  "peak_rss_mb": 1621.84765625,
+  "pinned_expected": null,
+  "pinned_drift": []
+}

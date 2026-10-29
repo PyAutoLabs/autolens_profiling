@@ -442,12 +442,12 @@
       "description": "Historical rule 1: similar masked-pixel extents with different visibility counts had similar per-call costs in these rows; inspect masked pixels alongside visibility count. This is an observation, not a calibrated size predictor.",
       "applies_to": {
         "setup_ids": [
-          "interferometer/delaunay/alma/fa2d3e07d987f846293d",
-          "interferometer/delaunay/alma/8ced88b7d8f5fea0aed8",
+          "interferometer/delaunay/alma/05d52d06391a9894c80c",
+          "interferometer/delaunay/alma/70ec7607aeaf79cc99cb",
           "interferometer/delaunay/sdp81/e69a84a60787315b9cb0",
           "interferometer/delaunay/sdp81/d902694ddca4cfa88ade",
-          "interferometer/rectangular/alma/39e1b1f8aa1c07b1c730",
-          "interferometer/rectangular/alma/616d536fdc11c9793e17",
+          "interferometer/rectangular/alma/0647cc781df1af8d601c",
+          "interferometer/rectangular/alma/5981ee2d443aa17de93c",
           "interferometer/rectangular/sdp81/78d57b6ccae57892a1f2",
           "interferometer/rectangular/sdp81/36c9d616cd093a5bad14"
         ],
@@ -468,7 +468,7 @@
           "precision": "float64",
           "configuration_scope": "Only the enumerated setup IDs and recorded configurations; never extrapolate by model label.",
           "measured_software_by_record": {
-            "measurement/c9b684e9c2034e17bd57": {
+            "measurement/64439f0124361e2d2fba": {
               "PyAutoArray": "14d63360f341912b209f2045d7e388e264692f1d",
               "PyAutoFit": "cf83504e8c7f3cc196ffef4d8a4ff86dd456bb6b",
               "PyAutoGalaxy": "0e4b89cff42882a6cf5bbed6c9686f7212d7e24c",
@@ -551,7 +551,7 @@
               "numpy.dependency_versions": "2.2.6",
               "scipy.dependency_versions": "1.17.1"
             },
-            "measurement/8512047e24a377b7dd04": {
+            "measurement/2c100cc4dc7e3e661248": {
               "PyAutoArray": "e281abf3257e9efd4915f1daa9acc0498be250a5",
               "PyAutoFit": "c156a9d8e8eb9f82b6da169b1d50b7e64580fe98",
               "PyAutoGalaxy": "ba8a08fabcb13d9472f2bd43ef4fea6039284d50",
@@ -559,7 +559,7 @@
               "PyAutoNerves": "bf104102312852537159b7fad2f998ab6677b4e4",
               "autolens_profiling": "92a20614c6c23faefae429e7b9ec4cfae7c9611c"
             },
-            "measurement/e998a4bd854d3210b8fa": {
+            "measurement/db2d5d1d37a7b1b98259": {
               "PyAutoArray": "14d63360f341912b209f2045d7e388e264692f1d",
               "PyAutoFit": "cf83504e8c7f3cc196ffef4d8a4ff86dd456bb6b",
               "PyAutoGalaxy": "0e4b89cff42882a6cf5bbed6c9686f7212d7e24c",
@@ -567,7 +567,7 @@
               "PyAutoNerves": "2b3bc53388a15e1d51fb70b583061bc2ee3294f0",
               "autolens_profiling": "66e45e906ce77dc9a58fe2cf7870adc343c98929"
             },
-            "measurement/daa41ae9e0d6eef2428e": {
+            "measurement/22c5db906214a402e356": {
               "PyAutoArray": "e281abf3257e9efd4915f1daa9acc0498be250a5",
               "PyAutoFit": "c156a9d8e8eb9f82b6da169b1d50b7e64580fe98",
               "PyAutoGalaxy": "ba8a08fabcb13d9472f2bd43ef4fea6039284d50",
@@ -602,7 +602,7 @@
             }
           },
           "hardware_by_record": {
-            "measurement/c9b684e9c2034e17bd57": {
+            "measurement/64439f0124361e2d2fba": {
               "device": "a100",
               "backend": "gpu",
               "hardware_details": {
@@ -661,7 +661,7 @@
                 "xla_flags": "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
               }
             },
-            "measurement/8512047e24a377b7dd04": {
+            "measurement/2c100cc4dc7e3e661248": {
               "device": "cpu",
               "backend": "cpu",
               "hardware_details": {
@@ -675,7 +675,7 @@
                 "xla_flags": "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 --xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
               }
             },
-            "measurement/e998a4bd854d3210b8fa": {
+            "measurement/db2d5d1d37a7b1b98259": {
               "device": "a100",
               "backend": "gpu",
               "hardware_details": {
@@ -690,7 +690,7 @@
                 "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
               }
             },
-            "measurement/daa41ae9e0d6eef2428e": {
+            "measurement/22c5db906214a402e356": {
               "device": "cpu",
               "backend": "cpu",
               "hardware_details": {
@@ -725,13 +725,13 @@
         "limitations": "Unreviewed historical observations, confined to the supporting exact setups and measured revisions. Simulated source with real SDP.81 uv coverage; not a fit to observed SDP.81 visibilities. Unknown metadata prevents cross-file scientific equivalence or current-performance claims."
       },
       "record_ids": [
-        "measurement/c9b684e9c2034e17bd57",
+        "measurement/64439f0124361e2d2fba",
         "measurement/1c0e53474fb1cfb105e6",
         "measurement/8c9b4ac2b75b5cbae601",
         "measurement/37c07b149bb961fc0f3a",
-        "measurement/8512047e24a377b7dd04",
-        "measurement/e998a4bd854d3210b8fa",
-        "measurement/daa41ae9e0d6eef2428e",
+        "measurement/2c100cc4dc7e3e661248",
+        "measurement/db2d5d1d37a7b1b98259",
+        "measurement/22c5db906214a402e356",
         "measurement/92b414c78390bf591591"
       ],
       "evidence": [
@@ -741,7 +741,7 @@
         },
         {
           "fragment": "/full_pipeline_single_jit",
-          "path": "results/interferometer/delaunay/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json"
+          "path": "results/interferometer/delaunay/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/history/2026.8.17.1_2026-09-26/breakdown.json"
         },
         {
           "fragment": "/full_pipeline_single_jit",
@@ -757,15 +757,15 @@
         },
         {
           "fragment": "/full_call/mean_s",
-          "path": "results/interferometer/delaunay/alma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json"
+          "path": "results/interferometer/delaunay/alma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/history/2026.8.17.1_2026-09-27/breakdown.json"
         },
         {
           "fragment": "/full_pipeline_single_jit",
-          "path": "results/interferometer/rectangular/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json"
+          "path": "results/interferometer/rectangular/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/history/2026.8.17.1_2026-09-26/breakdown.json"
         },
         {
           "fragment": "/full_call/mean_s",
-          "path": "results/interferometer/rectangular/alma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json"
+          "path": "results/interferometer/rectangular/alma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/history/2026.8.17.1_2026-09-27/breakdown.json"
         },
         {
           "fragment": "/full_call/mean_s",
