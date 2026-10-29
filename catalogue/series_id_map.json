@@ -6,12 +6,12 @@
  "source": "catalogue/migration_day_zero.json",
  "note": "Pre-move dashboard series ids (legacy file grammar) -> the v3 ids they publish under, with the releases each held; sources attaches pre-move points outside the mirrored tree. Generated; do not edit.",
  "counts": {
-  "series": 151,
-  "remapped_to_v3": 107,
-  "kept_legacy": 44,
-  "published_series": 144,
-  "points": 158,
-  "sources": 65
+  "series": 159,
+  "remapped_to_v3": 113,
+  "kept_legacy": 46,
+  "published_series": 148,
+  "points": 162,
+  "sources": 67
  },
  "series": {
   "breakdown:cluster/image_plane:hpc_ral_cpu_fp64": {
@@ -862,6 +862,26 @@
     "2026.7.6.649"
    ]
   },
+  "runtime:interferometer/delaunay/sma:hpc_a100_fp64": {
+   "id": "runtime:interferometer/delaunay:sma:jax_gpu_dense_fp64_nufft:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "runtime:interferometer/delaunay/sma:hpc_a100_fp64_sparse": {
+   "id": "runtime:interferometer/delaunay:sma:jax_gpu_sparse_fp64_wtilde:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "runtime:interferometer/delaunay/sma:hpc_ral_cpu_fp64": {
+   "id": "runtime:interferometer/delaunay:sma:jax_cpu_dense_fp64_nufft:hpc_ral_cpu:default",
+   "releases": []
+  },
+  "runtime:interferometer/delaunay/sma:hpc_ral_cpu_fp64_sparse": {
+   "id": "legacy:runtime:interferometer/delaunay/sma:hpc_ral_cpu_fp64_sparse",
+   "releases": []
+  },
   "runtime:interferometer/delaunay/sma:local_cpu_fp64": {
    "id": "legacy:runtime:interferometer/delaunay/sma:local_cpu_fp64",
    "releases": [
@@ -885,6 +905,26 @@
    "releases": [
     "2026.7.6.649"
    ]
+  },
+  "runtime:interferometer/pixelization/sma:hpc_a100_fp64": {
+   "id": "runtime:interferometer/rectangular:sma:jax_gpu_dense_fp64_nufft:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "runtime:interferometer/pixelization/sma:hpc_a100_fp64_sparse": {
+   "id": "runtime:interferometer/rectangular:sma:jax_gpu_sparse_fp64_wtilde:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "runtime:interferometer/pixelization/sma:hpc_ral_cpu_fp64": {
+   "id": "runtime:interferometer/rectangular:sma:jax_cpu_dense_fp64_nufft:hpc_ral_cpu:default",
+   "releases": []
+  },
+  "runtime:interferometer/pixelization/sma:hpc_ral_cpu_fp64_sparse": {
+   "id": "legacy:runtime:interferometer/pixelization/sma:hpc_ral_cpu_fp64_sparse",
+   "releases": []
   },
   "runtime:interferometer/pixelization/sma:local_cpu_fp64": {
    "id": "legacy:runtime:interferometer/pixelization/sma:local_cpu_fp64",
@@ -1130,6 +1170,10 @@
    "id": "legacy:runtime:interferometer/delaunay/alma:local_cpu_mp",
    "version": "2026.7.6.649"
   },
+  "results/interferometer/delaunay/sma/comparison.json#hpc_ral_cpu_fp64_sparse": {
+   "id": "legacy:runtime:interferometer/delaunay/sma:hpc_ral_cpu_fp64_sparse",
+   "version": "2026.8.17.1"
+  },
   "results/interferometer/delaunay/sma/comparison.json#local_cpu_fp64": {
    "id": "legacy:runtime:interferometer/delaunay/sma:local_cpu_fp64",
    "version": "2026.7.6.649"
@@ -1137,6 +1181,10 @@
   "results/interferometer/delaunay/sma/comparison.json#local_cpu_mp": {
    "id": "legacy:runtime:interferometer/delaunay/sma:local_cpu_mp",
    "version": "2026.7.6.649"
+  },
+  "results/interferometer/rectangular/sma/comparison.json#hpc_ral_cpu_fp64_sparse": {
+   "id": "legacy:runtime:interferometer/pixelization/sma:hpc_ral_cpu_fp64_sparse",
+   "version": "2026.8.17.1"
   },
   "results/interferometer/rectangular/sma/comparison.json#local_cpu_fp64": {
    "id": "legacy:runtime:interferometer/pixelization/sma:local_cpu_fp64",
