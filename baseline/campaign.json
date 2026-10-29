@@ -5,7 +5,7 @@
   "status": "draft",
   "purpose": "Proposed fresh setup baseline; no measurements or acceptance authorized.",
   "inventory": {
-    "catalogue/registry.json": "714a2bff995241ed2db0cb28ccd335a9e870c3502efc18ea485b6d7fd63dfc41",
+    "catalogue/registry.json": "e0a72f237c3895e194b8acc854d068995425e5d62648d774b73b854f53d36e15",
     "catalogue/script_routes.json": "53b7c144657ae6f91894676b5d577840ce86ada20a84ac8ba24d9852b88514ee"
   },
   "software": {
@@ -645,6 +645,20 @@
         "relative_tolerance": null
       },
       "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "weak/isothermal/simple",
+      "dataset": "weak",
+      "model": "isothermal",
+      "instrument": "simple",
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze the shear catalogue (positions, noise, seed), mass model, parameter vector and seed as applicable."
     }
   ],
   "unknowns": [

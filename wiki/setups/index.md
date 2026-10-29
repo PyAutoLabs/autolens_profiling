@@ -17,3 +17,4 @@ Choose dataset → model → instrument → exact configuration. Imported eviden
 - [multi_galaxy](multi_galaxy/index.md)
 - [point_source_image](point_source_image/index.md)
 - [point_source_source](point_source_source/index.md)
+- [weak](weak/index.md)

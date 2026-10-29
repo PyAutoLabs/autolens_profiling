@@ -10,6 +10,7 @@ the same list.
 | [`imaging_p2a.py`](imaging_p2a.py) | Phase 2a, `imaging/{mge, rectangular, delaunay, delaunay_nn}` at the standard size on 2026.10.23.1 (autolens_profiling#456) | `hpc/batch_cpu/submit_campaign_p2a_imaging_*`, `hpc/batch_gpu/submit_campaign_p2a_imaging_*` |
 | [`imaging_p2a.py`](imaging_p2a.py) (`rect28_tasks`) | Phase 2a size variant: hst rectangular at 28x28 = 784 source pixels on 2026.10.25.1 (autolens_profiling#468) | `hpc/batch_cpu/submit_campaign_p2a_rect28_ral_cpu_fp64`, `hpc/batch_gpu/submit_campaign_p2a_rect28_a100_fp64` |
 | [`interferometer_p2b.py`](interferometer_p2b.py) | Phase 2b, `interferometer/{mge, rectangular, delaunay}` at the standard size on 2026.10.25.1 (autolens_profiling#469), plus the dense parity references and the matrix-free experiment | `hpc/batch_cpu/submit_campaign_p2b_*`, `hpc/batch_gpu/submit_campaign_p2b_*` |
+| [`weak_p2g.py`](weak_p2g.py) | Phase 2g DRAFT, `weak/isothermal/simple` (new weak cells) on 2026.10.25.1 (autolens_profiling#476); awaiting the human's review of decisions D1-D10 | `hpc/batch_cpu/submit_campaign_p2g_*`, `hpc/batch_gpu/submit_campaign_p2g_*` |
 | [`multi_galaxy_group_p2d.py`](multi_galaxy_group_p2d.py) | Phase 2d DRAFT, `{multi_galaxy,group}/{mge, rectangular, delaunay}` at the standard size on 2026.10.25.1 (autolens_profiling#473); decisions D1-D11 await the human (D12 decided 2026-10-29) | `hpc/batch_cpu/submit_campaign_p2d_*`, `hpc/batch_gpu/submit_campaign_p2d_*` |
 | [`cluster_p2e.py`](cluster_p2e.py) | Phase 2e, `cluster/{image_plane, source_plane}` on 2026.10.25.1 (autolens_profiling#474). DRAFT for review: nothing has run | `hpc/batch_cpu/submit_campaign_p2e_*`, `hpc/batch_gpu/submit_campaign_p2e_*` |
 | [`_common.py`](_common.py) | The submit machinery the generators share (preamble, guards, WALL-BASIS rows, `#SBATCH` block) | none of its own |
@@ -22,6 +23,9 @@ python scripts/misc/campaigns/imaging_p2a.py --check   # exit 1 if a submit is o
 python scripts/misc/campaigns/interferometer_p2b.py --list    # the 60 cells, 6 references, 7 matrix-free legs
 python scripts/misc/campaigns/interferometer_p2b.py --write   # re-render the 2b submits
 python scripts/misc/campaigns/interferometer_p2b.py --check
+python scripts/misc/campaigns/weak_p2g.py --list    # the 6 planned weak cells, all runnable
+python scripts/misc/campaigns/weak_p2g.py --write
+python scripts/misc/campaigns/weak_p2g.py --check
 python scripts/misc/campaigns/multi_galaxy_group_p2d.py --list   # the 48 draft 2d cells
 python scripts/misc/campaigns/multi_galaxy_group_p2d.py --write  # re-render the 2d submits
 python scripts/misc/campaigns/multi_galaxy_group_p2d.py --check
@@ -382,6 +386,43 @@ simulated under a lock (`prepare_dataset`, by instrument: hst -> multi_galaxy, e
 **Local check.** Every cell script takes `--fast` (2 repeats, a 5-call median, vmap batch 2, a
 4-instance stream) and, without `--output-path`, writes into the gitignored
 `output/p2d_local/results/...`, never `results/`.
+
+## Phase 2g weak lensing (DRAFT, awaiting review)
+
+**Cells.** Weak lensing had no profiling script and no planned cell. 2g adds the registry cell
+`weak/isothermal/simple`; the §3.3 weak row then plans 6 cells, runtime and breakdown:
+`jax_cpu_dense_fp64` (provisional optimal) on both reference hosts and `jax_gpu_dense_fp64`
+(secondary) on `hpc_a100` only (the planner plans a GPU setup only on a GPU host,
+autolens_profiling#481, which settles decision D5). The manifest has 6 legs: 2 on `ral`, 4 in one
+A100 job. The
+`jax_cpu_dense_fp64@hpc_a100` legs run on the A100 node's CPU (`JAX_PLATFORMS=cpu`), before the
+GPU legs in the same job. Every leg evaluates the standard weak cell
+(`scripts/misc/likelihood_breakdown/weak_standard.py`): the `simple` catalogue of
+`scripts/misc/simulators/weak.py` (1500 galaxies in the 50"-200" annulus, sigma 0.25, plain
+shear), fitted with a free elliptical isothermal lens at the simulator truth. The decisions
+behind this design are on the campaign page
+([`wiki/campaigns/weak/likelihood_lifecycle_p2g.md`](../../../wiki/campaigns/weak/likelihood_lifecycle_p2g.md)).
+
+**Submits.**
+
+| Submit | Partition | Tasks | `--time` | `--mem` |
+|--------|-----------|-------|----------|---------|
+| `batch_cpu/submit_campaign_p2g_batch0_ral_cpu_fp64` | `ral`, array `%8` | 2 (batch 0) | 1:30:00 | 16 GB |
+| `batch_gpu/submit_campaign_p2g_batch0_a100_fp64` | `gpu`, `--gres=gpu:1` | 4 legs in turn (batch 0) | 1:30:00 | 32 GB |
+| `batch_cpu/submit_campaign_p2g_weak_ral_cpu_simple_fp64` | `ral`, array `%8` | 2 (batch 1) | 1:30:00 (provisional) | 16 GB |
+| `batch_gpu/submit_campaign_p2g_weak_a100_simple_fp64` | `gpu`, `--gres=gpu:1` | 4 legs in turn (batch 1) | 1:30:00 (provisional) | 32 GB |
+
+The pin, private checkout, import and revision guards, `walls.tsv` lines and dataset lock are
+2b's (`_common.py`); the catalogue is simulated under `output/p2g_dataset_<instrument>.lock`.
+Logs go to `output/p2g_logs/`, rows to `output/p2g_batch{0,1}/`.
+
+**Batches.** Batch 0 runs every runnable cell once with declared wall guesses (`source:
+unmeasured`, 1200 s per row, 3x floor; the laptop ran each leg in under 50 s). Batch 1 is the
+same six legs and refuses to run while `WALL_BASIS_STATUS = "provisional"`
+(`P2G_ALLOW_PROVISIONAL_WALL=1` overrides). After batch 0, fill `BATCH0_WALLS`, set
+`WALL_BASIS_STATUS = "measured"` and `--write`, as in 2b. Batch 0's rows are at the pinned tag
+from the private checkout at the standard size, so decision D9 proposes accepting them as the
+campaign's rows and skipping batch 1. Nothing is submitted before the human's go.
 
 ## Phase 2e cluster (DRAFT, autolens_profiling#474)
 

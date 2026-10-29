@@ -12,7 +12,8 @@
     "multi_galaxy": "Multi-galaxy lenses",
     "group": "Group-scale lenses",
     "lens": "Library components",
-    "experiments": "Other experiments"
+    "experiments": "Other experiments",
+    "weak": "Weak lensing"
   },
   "model_aliases": {
     "pixelization": "rectangular",
@@ -292,6 +293,12 @@
       "dataset": "group",
       "model": "delaunay",
       "instrument": "euclid"
+    },
+    {
+      "id": "weak/isothermal/simple",
+      "dataset": "weak",
+      "model": "isothermal",
+      "instrument": "simple"
     }
   ],
   "devices": [

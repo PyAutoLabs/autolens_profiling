@@ -19,8 +19,8 @@ ROOT = next(p for p in Path(__file__).resolve().parents if (p / "ruff.toml").exi
 sys.path.insert(0, str(ROOT))
 import _profile_cli as pc  # noqa: E402
 
-#: Every profiled cell script that renders a fit.png: the 13 runtime scripts plus the two
-#: breakdown-only cluster cells.
+#: Every profiled cell script that renders a fit.png: the 13 runtime scripts, the two
+#: breakdown-only cluster cells and the weak runtime and breakdown cells (2g, #476).
 WIRED = {
     "scripts/imaging/mge/likelihood_runtime.py": "imaging",
     "scripts/imaging/rectangular/likelihood_runtime.py": "imaging",
@@ -37,6 +37,8 @@ WIRED = {
     "scripts/point_source_source/source_plane/likelihood_runtime.py": "point_source",
     "scripts/cluster/image_plane/likelihood_breakdown.py": "cluster",
     "scripts/cluster/source_plane/likelihood_breakdown.py": "cluster",
+    "scripts/weak/isothermal/likelihood_runtime.py": "weak",
+    "scripts/weak/isothermal/likelihood_breakdown.py": "weak",
 }
 #: Likelihood-lifecycle 2b (#469): renders outside the one-call-per-cell module pattern. The
 #: shared standard-size driver renders for the interferometer runtime / breakdown cells that call
@@ -157,6 +159,27 @@ def cluster_fits():
     return [fit, fit]
 
 
+@pytest.fixture(scope="module")
+def weak_fit():
+    """A small weak-lensing shear fit (eager NumPy), simulated in memory."""
+    import autolens as al
+    import numpy as np
+
+    tracer = al.Tracer(
+        galaxies=[
+            al.Galaxy(redshift=0.5, mass=al.mp.Isothermal(centre=(0.0, 0.0), einstein_radius=25.0)),
+            al.Galaxy(redshift=1.0),
+        ]
+    )
+    rng = np.random.default_rng(1)
+    radii, phi = rng.uniform(50.0, 200.0, 60), rng.uniform(0.0, 2.0 * np.pi, 60)
+    grid = al.Grid2DIrregular(values=np.stack([radii * np.sin(phi), radii * np.cos(phi)], axis=1))
+    dataset = al.SimulatorShearYX(noise_sigma=0.25, seed=1).via_tracer_from(
+        tracer=tracer, grid=grid
+    )
+    return al.FitWeak(dataset=dataset, tracer=tracer)
+
+
 @pytest.fixture
 def no_smoke(monkeypatch):
     monkeypatch.delenv("AUTOLENS_PROFILING_SMOKE", raising=False)
@@ -195,6 +218,7 @@ def test_renders_fit_png_beside_the_row_and_keeps_nothing_else(imaging_fit, repo
         ("interferometer_fit", "interferometer"),
         ("point_fit", "point_source"),
         ("cluster_fits", "cluster"),
+        ("weak_fit", "weak"),
     ],
 )
 def test_every_dataset_type_plotter_writes_fit_png(fixture, dataset_type, repo, no_smoke, request):
