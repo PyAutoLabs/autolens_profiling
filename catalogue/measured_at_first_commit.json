@@ -262,11 +262,11 @@
   "results/interferometer/rectangular/sma/jax_gpu_sparse_mixed_wtilde/hpc_a100/breakdown.json": "2026-09-26",
   "results/interferometer/rectangular/sma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json": "2026-09-27",
   "results/interferometer/rectangular/sma/numba_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json": "2026-09-07",
-  "results/point_source_image/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/breakdown.json": "2026-09-26",
   "results/point_source_image/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/p4/breakdown.json": "2026-09-26",
+  "results/point_source_image/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/history/2026.8.17.1_2026-09-23/breakdown.json": "2026-09-26",
   "results/point_source_image/image_plane/simple/jax_cpu_na_fp64/local_laptop/breakdown.json": "2026-09-26",
-  "results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/breakdown.json": "2026-09-26",
+  "results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/history/2026.8.17.1_2026-09-26/breakdown.json": "2026-09-26",
   "results/point_source_source/source_plane/simple/jax_cpu_na_fp64/local_laptop/breakdown.json": "2026-09-26",
-  "results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/breakdown.json": "2026-09-26"
+  "results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/history/2026.8.17.1_2026-09-26/breakdown.json": "2026-09-26"
  }
 }

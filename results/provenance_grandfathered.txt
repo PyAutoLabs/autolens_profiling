@@ -396,7 +396,7 @@ results/interferometer/rectangular/sma/jax_gpu_sparse_fp64_wtilde/hpc_a100/break
 results/interferometer/rectangular/sma/jax_gpu_sparse_mixed_wtilde/hpc_a100/breakdown.json
 results/interferometer/rectangular/sma/jax_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json
 results/interferometer/rectangular/sma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json
-results/point_source_image/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/breakdown.json
+results/point_source_image/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/history/2026.8.17.1_2026-09-23/breakdown.json
 results/point_source_image/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/p4/breakdown.json
 results/point_source_image/image_plane/simple/jax_cpu_na_fp64/local_laptop/breakdown.json
 results/misc/likelihood_breakdown/point_source_image/solver_config_sweep_hpc_ral_cpu_fp64.json
@@ -427,8 +427,8 @@ results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/expe
 results/point_source_source/source_plane/simple/jax_cpu_na_fp64/local_laptop/experiments/gradient_mode_library_ab/breakdown.json
 results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/experiments/pytree_input_ab/breakdown.json
 results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/pytree_input_ab/breakdown.json
-results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/breakdown.json
-results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/breakdown.json
+results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/history/2026.8.17.1_2026-09-26/breakdown.json
+results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/history/2026.8.17.1_2026-09-26/breakdown.json
 results/point_source_source/source_plane/simple/jax_cpu_na_fp64/local_laptop/breakdown.json
 results/lens/deflections/basis_summary_euclid_v2026.8.17.1.json
 results/lens/deflections/basis_summary_hst_v2026.8.17.1.json
