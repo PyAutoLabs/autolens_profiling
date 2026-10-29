@@ -16,11 +16,20 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 
 | Exact configuration | Evidence source | Records |
 |---|---|---|
+| [0a9bfa16db6a9aa1b16e](3865f6852f35d78fcef2.md) | results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/history/2026.8.17.1_2026-09-26/breakdown.json | 84 |
+| [1020d181790bd06fca9b](12df1a33c0533ff481a3.md) | results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_a100/breakdown.json | 87 |
 | [1b26d0c1ba15bdfed7db](e7ab869a56e4fbee4b27.md) | results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/runtime.json | 4 |
+| [218d6d299652f0860e17](c7e1095978b364f2354d.md) | results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/plain_runtime/runtime.json | 2 |
+| [26cbd78579ed0ef0d558](4dcb1f69c45382117bdd.md) | results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/history/2026.10.17.1_2026-10-17/runtime.json | 4 |
 | [2f605473881c049c49cd](8514d9b281c27f84b168.md) | results/point_source_source/source_plane/simple/jax_cpu_na_fp64/local_laptop/breakdown.json | 84 |
-| [4775d03652d5402261c7](52f5164e10defb6b7518.md) | results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/breakdown.json | 84 |
-| [63b1bbcab9f8ae0f0393](e8b066671999ea2aad2d.md) | results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/breakdown.json | 85 |
-| [f8de905fbc524a9f3207](84db8ebb52f2fa89f429.md) | results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/runtime.json | 4 |
+| [454796f33be5f6ff4459](b310f3aa503fe9f6a898.md) | results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/breakdown.json | 86 |
+| [60859d374c276ea53275](7790334b7c30ad7fe45b.md) | results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/breakdown.json | 85 |
+| [672992f3099eeff57eff](08b0c6d4e1d03b42efd5.md) | results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/experiments/plain_runtime/runtime.json | 2 |
+| [c727c7ddf06adeec1b66](f8cac32988fb5a97bb4b.md) | results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/history/2026.10.17.1_2026-10-17/runtime.json | 4 |
+| [d975fdb15a82acc3e73a](aea470758acffa0c0f85.md) | results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_a100/experiments/plain_runtime/runtime.json | 2 |
+| [ea16834a47e489938c09](0f9bbc3aedb5aa9768f1.md) | results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/runtime.json | 4 |
+| [f057646123b60470578b](770b4c0f367011494bb3.md) | results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/history/2026.8.17.1_2026-09-26/breakdown.json | 85 |
+| [f067898529f33c94ce60](eb4673b2e6c1c7c357d3.md) | results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_a100/runtime.json | 4 |
 
 ## unspecified
 

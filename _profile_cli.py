@@ -1322,9 +1322,13 @@ FIT_PNG = "fit.png"
 #: - ``cluster``: ``PlotterPoint.fit_point_combined`` -> ``plot_fit_positions`` of every source
 #:   (the cluster producer's ``VisualizerPoint.visualize_combined``); ``fit`` is the list of fits.
 #:
+#: - ``weak``: ``PlotterWeak.fit_weak`` -> ``subplot_fit_weak`` (the weak producer's
+#:   ``VisualizerWeak.visualize``, which keeps ``subplot_fit_weak.png`` as ``fit.png``; renamed
+#:   here the same way, likelihood-lifecycle 2g).
+#:
 #: Each is called with ``quick_update=True``, the switch that always writes the plain ``fit.png``
 #: whatever ``config/visualize/plots.yaml`` says.
-FIT_PNG_DATASET_TYPES = ("imaging", "interferometer", "point_source", "cluster")
+FIT_PNG_DATASET_TYPES = ("imaging", "interferometer", "point_source", "cluster", "weak")
 
 
 def fit_png_enabled(cli: ProfileCLI | None = None) -> bool:
@@ -1358,6 +1362,13 @@ def _draw_fit(fit, image_path: Path, dataset_type: str, solver=None) -> None:
             )
         else:
             plotter.fit_point(fit=fits[0], quick_update=True, curves=curves)
+    elif dataset_type == "weak":
+        from autolens.weak.model.plotter import PlotterWeak
+
+        PlotterWeak(image_path=image_path).fit_weak(fit=fit, quick_update=True)
+        written = Path(image_path) / "subplot_fit_weak.png"
+        if written.is_file():
+            os.replace(written, Path(image_path) / FIT_PNG)
     else:
         raise ValueError(
             f"no fit.png plotter for dataset_type={dataset_type!r}; "

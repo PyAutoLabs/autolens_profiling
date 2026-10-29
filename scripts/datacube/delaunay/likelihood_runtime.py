@@ -158,6 +158,17 @@ from _profile_cli import (
 
 _cli = parse_profile_cli()
 
+if _cli.standard_size:
+    # Likelihood-lifecycle 2f (autolens_profiling#475): the standard-size datacube cell (decision
+    # D2: the 2b interferometer standard cell in every channel, channel visibilities scaled by an
+    # emission line, FactorGraphModel with shared_preloads) -- sparse W~ with --sparse, the dense
+    # NUFFT route without -- with resources, fit.png and parity.json. The cell below is the
+    # historic fiducial and is unchanged.
+    from likelihood_breakdown.datacube_standard import run_jax
+
+    run_jax(_cli, script_file=__file__, profiling_root=_profiling_root())
+    sys.exit(0)
+
 instrument = (
     _cli.instrument or "sma"
 )  # default; override via --instrument (cube is N copies of the per-instrument dataset)

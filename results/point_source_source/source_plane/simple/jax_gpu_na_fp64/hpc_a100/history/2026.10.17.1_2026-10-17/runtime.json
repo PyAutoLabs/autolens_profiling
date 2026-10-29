@@ -1,0 +1,93 @@
+{
+  "autolens_version": "2026.10.17.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "hostname": "euclid-ral-gpu-2",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": null,
+    "cpu_count": 124,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_wt/ps-source-gradient-admission/output/jax_cache/runtime_ps_source_plane_solved_412517",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-10-17T13:41:15Z",
+      "host": "euclid-ral-gpu-2",
+      "slurm": {
+        "job_id": "412517",
+        "array_job_id": null,
+        "array_task_id": null
+      },
+      "loadavg_at_import": [
+        0.71,
+        0.19,
+        0.06
+      ],
+      "loadavg_at_write": [
+        0.76,
+        0.22,
+        0.08
+      ],
+      "profiling_revision": "95b4e8a0ce52ea92326ea4fb336abe75abb53f4d",
+      "library_revisions": {
+        "autolens_profiling": "95b4e8a0ce52ea92326ea4fb336abe75abb53f4d",
+        "PyAutoNerves": "unavailable: CalledProcessError",
+        "PyAutoFit": "unavailable: CalledProcessError",
+        "PyAutoArray": "unavailable: CalledProcessError",
+        "PyAutoGalaxy": "unavailable: CalledProcessError",
+        "PyAutoLens": "unavailable: CalledProcessError"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.10.17.1",
+        "PyAutoFit": "2026.10.17.1",
+        "PyAutoArray": "2026.10.17.1",
+        "PyAutoGalaxy": "2026.10.17.1",
+        "PyAutoLens": "2026.10.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
+        "numpy": "2.5.4",
+        "scipy": "1.17.1",
+        "numba": null,
+        "nufftax": null
+      }
+    },
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 441 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB; NVIDIA A100 80GB PCIe, 427 MiB, 81920 MiB"
+  },
+  "dataset": "simple",
+  "fit_positions_cls": "FitPositionsSourceSolved",
+  "configuration": {
+    "observed_image_positions": 4,
+    "positions_noise_sigma": 0.05,
+    "free_parameters": 5,
+    "free_parameters_source_plane_plain": 8,
+    "free_parameters_delta": -3,
+    "point_source_profile": "PointSolved"
+  },
+  "eager_per_call": 0.0064420672599226235,
+  "eager_log_likelihood": 0.598650453950647,
+  "full_pipeline_jits": true,
+  "full_pipeline_single_jit": 0.0003466109978035092,
+  "full_pipeline_single_jit_median": 0.00023301457986235619,
+  "full_pipeline_single_jit_median_ms": 0.23301457986235619,
+  "full_pipeline_single_jit_p10_ms": 0.22877876181155443,
+  "full_pipeline_single_jit_p90_ms": 0.26155905798077583,
+  "full_pipeline_single_jit_median_protocol": {
+    "n_warm": 5,
+    "n_timed": 200,
+    "statistic": "median of individually timed calls after warm calls",
+    "full_pipeline_single_jit_is": "mean of one 10-call block after one first call (first block after compile)",
+    "issue": "autolens_profiling#371; timing-noise audit P8 (#362)"
+  },
+  "full_pipeline_log_likelihood": 0.5986504555533365,
+  "vmap": {
+    "batch_size": 64,
+    "batch_time": 0.00030517608392983676,
+    "per_call": 4.768376311403699e-06,
+    "speedup_vs_single_jit": 72.7
+  },
+  "pinned_expected": 0.5986504555530896,
+  "pinned_drift": []
+}

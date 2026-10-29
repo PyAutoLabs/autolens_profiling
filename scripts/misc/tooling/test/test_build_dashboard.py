@@ -776,7 +776,9 @@ def test_every_committed_comparison_endpoint_resolves_to_a_record():
 
 
 #: The comparisons Pulse refused at ae55ed31 (before the dashboard carry-forward), all for a
-#: host change between their endpoints. No other comparison may be refused now.
+#: host change between their endpoints. A comparison outside this set may be refused only for a
+#: host change between two measured (uncarried) endpoints: a new campaign row taken on another
+#: node of the same host class (RAL assigns nodes per job). A carried endpoint may never be refused.
 _REFUSED_AT_AE55ED31 = {
     f"{kind}:imaging/{cell}:hst:{setup}:hpc_a100:default"
     for kind, cell, setup in (
@@ -793,9 +795,24 @@ _REFUSED_AT_AE55ED31 = {
 }
 
 
+def _carried_endpoints() -> set[str]:
+    """``<series key>@<published pin>`` of every carried point in the committed series."""
+    doc = json.loads((_TOOLING.parents[2] / "dashboard/series.json").read_text())
+    return {
+        f"{s['key']}@{p['version']}"
+        for s in doc["series"]
+        for p in s["points"]
+        if "measured_version" in p
+    }
+
+
 def test_no_committed_comparison_that_paired_before_the_carry_is_refused():
     doc = json.loads((_TOOLING.parents[2] / "dashboard/summary.json").read_text())
     refused = {p.key: p.refused for p in _pulse_pair()(doc) if p.refused}
-    assert set(refused) <= _REFUSED_AT_AE55ED31
+    carried = _carried_endpoints()
+    by_key = {c["comparison_key"]: c for c in doc["comparisons"]}
+    for key in set(refused) - _REFUSED_AT_AE55ED31:
+        ends = {f"{key}@{by_key[key][side]}" for side in ("baseline", "candidate")}
+        assert not ends & carried, (key, sorted(ends & carried))
     for reasons in refused.values():
         assert all(r.startswith("hardware identity changed (host ") for r in reasons), reasons
