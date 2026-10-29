@@ -2861,32 +2861,6 @@
    "record": "lifecycle/fcb319f0f24b8cc9fd37",
    "setup_id": "jax_gpu_na_fp64",
    "state": "current"
-  },
-  {
-   "cell": "point_source_source/source_plane/simple jax_gpu_na_fp64@hpc_ral_cpu [breakdown]",
-   "class": "secondary",
-   "host_class": "hpc_ral_cpu",
-   "instrument": "simple",
-   "likelihood": "point_source_source/source_plane",
-   "measurement": "breakdown",
-   "model_variant": "default",
-   "reason": "no record",
-   "record": null,
-   "setup_id": "jax_gpu_na_fp64",
-   "state": "missing"
-  },
-  {
-   "cell": "point_source_source/source_plane/simple jax_gpu_na_fp64@hpc_ral_cpu [runtime]",
-   "class": "secondary",
-   "host_class": "hpc_ral_cpu",
-   "instrument": "simple",
-   "likelihood": "point_source_source/source_plane",
-   "measurement": "runtime",
-   "model_variant": "default",
-   "reason": "no record",
-   "record": null,
-   "setup_id": "jax_gpu_na_fp64",
-   "state": "missing"
   }
  ],
  "class_mismatches": [],
@@ -3238,7 +3212,7 @@
    "current": 1,
    "likelihood": "point_source_source/source_plane",
    "measurement": "breakdown",
-   "missing": 1,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
@@ -3247,7 +3221,7 @@
    "current": 1,
    "likelihood": "point_source_source/source_plane",
    "measurement": "runtime",
-   "missing": 1,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   }
@@ -3913,12 +3887,6 @@
     "class": "secondary",
     "record": "lifecycle/403a31905c1445a750ba",
     "state": "match"
-   },
-   {
-    "cell": "point_source_source/source_plane/simple jax_gpu_na_fp64@hpc_ral_cpu [parity]",
-    "class": "secondary",
-    "record": null,
-    "state": "missing"
    }
   ],
   "matrix": [
@@ -4079,16 +4047,16 @@
     "diverged": 0,
     "likelihood": "point_source_source/source_plane",
     "match": 1,
-    "missing": 1,
+    "missing": 0,
     "not_assessed": 0
    }
   ],
   "totals": {
    "diverged": 0,
    "match": 58,
-   "missing": 53,
+   "missing": 52,
    "not_assessed": 0,
-   "setup_cells": 111
+   "setup_cells": 110
   }
  },
  "release_pin_source": "newest record",
@@ -4107,9 +4075,9 @@
  "totals": {
   "current": 116,
   "current_records_unplanned": 117,
-  "missing": 105,
+  "missing": 103,
   "missing_size_fallback": 20,
-  "planned_cells": 222,
+  "planned_cells": 220,
   "records_superseded": 404,
   "stale": 1,
   "superseded": 0
