@@ -1,0 +1,254 @@
+{
+  "experiment": "numpy_cpu_matrixfree",
+  "release_label": "unreleased main",
+  "library_shas": {
+    "autolens_profiling": "80bbb028284ad8eb36d34692a414319f881b1d1e",
+    "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+    "PyAutoFit": "8740092dc12b809847be07255ff427b50eae059e",
+    "PyAutoArray": "7eba0c07872a6c83ac2d12a72c4b6613cb3b6a0f",
+    "PyAutoGalaxy": "a1080929d52e5f2546adf8583b4b21040b201c13",
+    "PyAutoLens": "a8eb094e539185ea2485beda25e7411df176da65"
+  },
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "hostname": "euclid-ral-compute-10-5",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 236,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2a/output/jax_cache/p2b_413206_2",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-10-28T22:48:42Z",
+      "host": "euclid-ral-compute-10-5",
+      "slurm": {
+        "job_id": "413206",
+        "array_job_id": "413191",
+        "array_task_id": "2"
+      },
+      "loadavg_at_import": [
+        30.15,
+        8.71,
+        4.74
+      ],
+      "loadavg_at_write": [
+        67.01,
+        38.57,
+        17.48
+      ],
+      "profiling_revision": "80bbb028284ad8eb36d34692a414319f881b1d1e",
+      "library_revisions": {
+        "autolens_profiling": "80bbb028284ad8eb36d34692a414319f881b1d1e",
+        "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+        "PyAutoFit": "8740092dc12b809847be07255ff427b50eae059e",
+        "PyAutoArray": "7eba0c07872a6c83ac2d12a72c4b6613cb3b6a0f",
+        "PyAutoGalaxy": "a1080929d52e5f2546adf8583b4b21040b201c13",
+        "PyAutoLens": "a8eb094e539185ea2485beda25e7411df176da65"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.10.2",
+        "jaxlib": "0.10.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.65.1",
+        "nufftax": "0.6.1",
+        "finufft": "2.5.1"
+      }
+    }
+  },
+  "resources": {
+    "resources_schema": 1,
+    "engine": "numba",
+    "device": "cpu",
+    "cpus_per_eval": 1,
+    "cpus_per_eval_basis": "numba: one serial evaluation, numba and BLAS threads pinned to 1",
+    "devices_per_eval": 0,
+    "peak_rss_gb": 2.353598,
+    "peak_rss_basis": "in_process_ru_maxrss",
+    "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
+  },
+  "instrument": "alma_high",
+  "model": "rectangular_matrixfree",
+  "configuration": {
+    "mesh": "RectangularUniform",
+    "mesh_shape": [
+      35,
+      35
+    ],
+    "source_pixels": 1225,
+    "regularization": {
+      "scheme": "MaternSparse",
+      "coefficient": 1.0,
+      "scale": 1.0,
+      "nu": 1.0,
+      "declared": true
+    },
+    "settings": {
+      "interferometer_route": "matrix_free",
+      "use_edge_zeroed_pixels": false,
+      "use_positive_only_solver": true
+    },
+    "lens_light": null,
+    "mass": "Isothermal + ExternalShear, interferometer standard-cell priors",
+    "visibilities": 5000000,
+    "image_pixels_masked": 61572,
+    "mask_radius_arcsec": 3.5,
+    "pixel_scale_arcsec": 0.025,
+    "n_instances": 10,
+    "instance_stream": {
+      "kind": "iid",
+      "seed": 235,
+      "unit_range": [
+        0.4,
+        0.6
+      ]
+    },
+    "thread_env": {
+      "n_threads": 1,
+      "vars": [
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+        "NUMEXPR_NUM_THREADS"
+      ],
+      "set_to": "1",
+      "preexisting": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1"
+      },
+      "overridden": {},
+      "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+    },
+    "memo_provenance": {
+      "requested": "off",
+      "settings_extra": {
+        "interferometer_route": "matrix_free",
+        "use_edge_zeroed_pixels": false,
+        "use_positive_only_solver": true
+      },
+      "settings_nnls_warm_start_memo": false,
+      "env_AUTOARRAY_NNLS_WARM_START": "0",
+      "env_before": null,
+      "note": "Both gates are set for memo=off: the Settings flag and the AUTOARRAY_NNLS_WARM_START env kill-switch (autoarray/inversion/inversion/nnls_memo.py:63). settings_nnls_warm_start_memo is read back off the constructed Settings, so it records what took effect. The library default is true and both production projects leave it unset."
+    },
+    "preload": {
+      "cache": "on",
+      "cache_hit": true,
+      "cache_path": "dataset/interferometer/alma_high/nufft_precision_operator_nufft_800x800_r3.5.npy",
+      "operator_build_s": 2.076444130972959,
+      "note": "One-off per dataset + geometry (W~ preload + dirty image); not a per-evaluation step. A cache hit times only the dirty image and operator wrap."
+    },
+    "inversion_path": "matrix_free"
+  },
+  "full_pipeline_single_jit": 8.339477238012478,
+  "protocol": "instance 0 discarded (numba compile / cold-cache hazard); the next n_cold evaluations are cold evals comparable to PyAutoFit's logged 'Log Likelihood Function Evaluation Time'; the rest are warm iid evaluations.",
+  "warmup_incl_numba_compile_s": 9.180301342974417,
+  "cold_eval_s": [
+    8.893036469991785,
+    7.962438336980995,
+    6.919804703036789
+  ],
+  "cold_eval_median_s": 7.962438336980995,
+  "warm_iid_median_s": 8.339477238012478,
+  "warm_iid_mean_s": 8.347862299337672,
+  "n_warm": 6,
+  "n_cold": 3,
+  "log_likelihood_sequence": [
+    -60246193.54552313,
+    -60244553.76135367,
+    -60244957.89860467,
+    -60245616.48998754,
+    -60244860.754573494,
+    -60245366.190091565,
+    -60245882.72011678,
+    -60244399.24359901,
+    -60244643.74095591,
+    -60245090.98072024
+  ],
+  "matrix_free_diagnostics": {
+    "inversion_class": "InversionInterferometerMatrixFree",
+    "positive_result": {
+      "interior_point_steps": 17,
+      "polish_iterations": 1,
+      "gap": 2.5863465050876468e-14,
+      "residual": 1.0816530297273103e-10,
+      "converged": true,
+      "free_pixels": 1085
+    },
+    "log_det_curvature_reg": 12684.325626049796,
+    "log_det_regularization": 4386.13486358374,
+    "regularization_term": 6.2116202637870375,
+    "figure_of_merit": -60246193.54552313,
+    "slq": {
+      "n_probes": 10,
+      "n_steps": 40,
+      "seed": 20221,
+      "probe_values": [
+        12561.701786043039,
+        12640.855523714312,
+        12857.085903592628,
+        12701.142742862528,
+        12640.314637704907,
+        12595.349084840758,
+        12668.577710634325,
+        12652.126526598451,
+        12928.177222175542,
+        12597.925122331457
+      ],
+      "probe_std": 111.8581260577497,
+      "standard_error": 37.2860420192499
+    }
+  },
+  "dense_fft": {
+    "route": "fft",
+    "inversion": "InversionInterferometerSparse (dense F, H; Cholesky)",
+    "log_evidence_instance0": -60246194.04836255,
+    "first_call_s": 16.315726806002203,
+    "warm_call_s": [
+      11.408441203995608,
+      11.586980004969519,
+      11.53627051296644
+    ],
+    "warm_median_s": 11.53627051296644,
+    "diagnostics_instance0": {
+      "inversion_class": "InversionInterferometerSparse",
+      "log_det_curvature_reg": 12685.331304901118,
+      "log_det_regularization": 4386.134863583733,
+      "regularization_term": 6.211620261978262,
+      "figure_of_merit": -60246194.04836255
+    },
+    "status": "ok"
+  },
+  "chunked_dense_reference": {
+    "status": "skipped",
+    "reason": "N_vis 5000000 > 100000: costly (pass --chunked-reference)"
+  },
+  "agreement": {
+    "quantity": "log evidence at iid draw 0",
+    "matrix_free": -60246193.54552313,
+    "dense_fft": {
+      "log_evidence": -60246194.04836255,
+      "abs_delta": 0.5028394237160683,
+      "rel_delta": 8.346409788349693e-09
+    },
+    "log_det_curvature_reg": {
+      "slq": 12684.325626049796,
+      "exact_cholesky": 12685.331304901118,
+      "abs_delta": 1.0056788513211359,
+      "rel_delta": 7.927887945130615e-05
+    }
+  },
+  "never_current": "experiment / scan row (likelihood-lifecycle 2b); no parity.json"
+}

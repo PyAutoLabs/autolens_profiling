@@ -1,0 +1,286 @@
+{
+  "experiment": "numpy_cpu_matrixfree",
+  "release_label": "unreleased main",
+  "library_shas": {
+    "autolens_profiling": "80bbb028284ad8eb36d34692a414319f881b1d1e",
+    "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+    "PyAutoFit": "8740092dc12b809847be07255ff427b50eae059e",
+    "PyAutoArray": "7eba0c07872a6c83ac2d12a72c4b6613cb3b6a0f",
+    "PyAutoGalaxy": "a1080929d52e5f2546adf8583b4b21040b201c13",
+    "PyAutoLens": "a8eb094e539185ea2485beda25e7411df176da65"
+  },
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "hostname": "euclid-ral-compute-10-5",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 236,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2a/output/jax_cache/p2b_413200_0",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-10-28T22:44:48Z",
+      "host": "euclid-ral-compute-10-5",
+      "slurm": {
+        "job_id": "413200",
+        "array_job_id": "413191",
+        "array_task_id": "0"
+      },
+      "loadavg_at_import": [
+        2.2,
+        1.56,
+        2.39
+      ],
+      "loadavg_at_write": [
+        7.53,
+        2.89,
+        2.81
+      ],
+      "profiling_revision": "80bbb028284ad8eb36d34692a414319f881b1d1e",
+      "library_revisions": {
+        "autolens_profiling": "80bbb028284ad8eb36d34692a414319f881b1d1e",
+        "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+        "PyAutoFit": "8740092dc12b809847be07255ff427b50eae059e",
+        "PyAutoArray": "7eba0c07872a6c83ac2d12a72c4b6613cb3b6a0f",
+        "PyAutoGalaxy": "a1080929d52e5f2546adf8583b4b21040b201c13",
+        "PyAutoLens": "a8eb094e539185ea2485beda25e7411df176da65"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.10.2",
+        "jaxlib": "0.10.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.65.1",
+        "nufftax": "0.6.1",
+        "finufft": "2.5.1"
+      }
+    }
+  },
+  "resources": {
+    "resources_schema": 1,
+    "engine": "numba",
+    "device": "cpu",
+    "cpus_per_eval": 1,
+    "cpus_per_eval_basis": "numba: one serial evaluation, numba and BLAS threads pinned to 1",
+    "devices_per_eval": 0,
+    "peak_rss_gb": 0.574546,
+    "peak_rss_basis": "in_process_ru_maxrss",
+    "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
+  },
+  "instrument": "sma",
+  "model": "rectangular_matrixfree",
+  "configuration": {
+    "mesh": "RectangularUniform",
+    "mesh_shape": [
+      35,
+      35
+    ],
+    "source_pixels": 1225,
+    "regularization": {
+      "scheme": "MaternSparse",
+      "coefficient": 1.0,
+      "scale": 1.0,
+      "nu": 1.0,
+      "declared": true
+    },
+    "settings": {
+      "interferometer_route": "matrix_free",
+      "use_edge_zeroed_pixels": false,
+      "use_positive_only_solver": true
+    },
+    "lens_light": null,
+    "mass": "Isothermal + ExternalShear, interferometer standard-cell priors",
+    "visibilities": 190,
+    "image_pixels_masked": 3852,
+    "mask_radius_arcsec": 3.5,
+    "pixel_scale_arcsec": 0.1,
+    "n_instances": 20,
+    "instance_stream": {
+      "kind": "iid",
+      "seed": 235,
+      "unit_range": [
+        0.4,
+        0.6
+      ]
+    },
+    "thread_env": {
+      "n_threads": 1,
+      "vars": [
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+        "NUMEXPR_NUM_THREADS"
+      ],
+      "set_to": "1",
+      "preexisting": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1"
+      },
+      "overridden": {},
+      "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+    },
+    "memo_provenance": {
+      "requested": "off",
+      "settings_extra": {
+        "interferometer_route": "matrix_free",
+        "use_edge_zeroed_pixels": false,
+        "use_positive_only_solver": true
+      },
+      "settings_nnls_warm_start_memo": false,
+      "env_AUTOARRAY_NNLS_WARM_START": "0",
+      "env_before": null,
+      "note": "Both gates are set for memo=off: the Settings flag and the AUTOARRAY_NNLS_WARM_START env kill-switch (autoarray/inversion/inversion/nnls_memo.py:63). settings_nnls_warm_start_memo is read back off the constructed Settings, so it records what took effect. The library default is true and both production projects leave it unset."
+    },
+    "preload": {
+      "cache": "on",
+      "cache_hit": true,
+      "cache_path": "dataset/interferometer/sma/nufft_precision_operator_nufft_256x256_r3.5.npy",
+      "operator_build_s": 0.042092876974493265,
+      "note": "One-off per dataset + geometry (W~ preload + dirty image); not a per-evaluation step. A cache hit times only the dirty image and operator wrap."
+    },
+    "inversion_path": "matrix_free"
+  },
+  "full_pipeline_single_jit": 0.48407307697925717,
+  "protocol": "instance 0 discarded (numba compile / cold-cache hazard); the next n_cold evaluations are cold evals comparable to PyAutoFit's logged 'Log Likelihood Function Evaluation Time'; the rest are warm iid evaluations.",
+  "warmup_incl_numba_compile_s": 0.5499116769642569,
+  "cold_eval_s": [
+    0.5134104939643294,
+    0.4854990249732509,
+    0.4620974640129134
+  ],
+  "cold_eval_median_s": 0.4854990249732509,
+  "warm_iid_median_s": 0.48407307697925717,
+  "warm_iid_mean_s": 0.4866436236843583,
+  "n_warm": 16,
+  "n_cold": 3,
+  "log_likelihood_sequence": [
+    -3161.9428287145843,
+    -3161.913416958968,
+    -3161.9364418657783,
+    -3161.947014224474,
+    -3161.9142894466495,
+    -3161.940058990486,
+    -3161.953231421354,
+    -3161.918838216374,
+    -3161.912009934051,
+    -3161.8969730717813,
+    -3161.895726622245,
+    -3161.9325879750186,
+    -3161.935099933545,
+    -3161.897847260303,
+    -3161.940818399808,
+    -3161.898582753882,
+    -3161.916282708606,
+    -3161.931761213642,
+    -3161.9131726385576,
+    -3161.908848468563
+  ],
+  "matrix_free_diagnostics": {
+    "inversion_class": "InversionInterferometerMatrixFree",
+    "positive_result": {
+      "interior_point_steps": 31,
+      "polish_iterations": 1,
+      "gap": 1.6946276714804617e-19,
+      "residual": 5.868764808192402e-10,
+      "converged": true,
+      "free_pixels": 1076
+    },
+    "log_det_curvature_reg": 4429.458349305582,
+    "log_det_regularization": 4412.258330586294,
+    "regularization_term": 1.2017794466362721,
+    "figure_of_merit": -3161.9428287145843,
+    "slq": {
+      "n_probes": 10,
+      "n_steps": 40,
+      "seed": 20221,
+      "probe_values": [
+        4426.871517558397,
+        4443.189937628894,
+        4427.6555782194955,
+        4428.599152756509,
+        4430.956681074751,
+        4422.769634918142,
+        4437.79806391455,
+        4419.665608326599,
+        4432.358142673372,
+        4424.719175985116
+      ],
+      "probe_std": 6.652349193277178,
+      "standard_error": 2.2174497310923926
+    }
+  },
+  "dense_fft": {
+    "route": "fft",
+    "inversion": "InversionInterferometerSparse (dense F, H; Cholesky)",
+    "log_evidence_instance0": -3162.1736990309764,
+    "first_call_s": 2.852366683015134,
+    "warm_call_s": [
+      0.8781916259904392,
+      0.8651030490291305,
+      0.8767349130357616
+    ],
+    "warm_median_s": 0.8767349130357616,
+    "diagnostics_instance0": {
+      "inversion_class": "InversionInterferometerSparse",
+      "log_det_curvature_reg": 4429.920089938373,
+      "log_det_regularization": 4412.258330586301,
+      "regularization_term": 1.2017794466363207,
+      "figure_of_merit": -3162.1736990309764
+    },
+    "status": "ok"
+  },
+  "chunked_dense_reference": {
+    "status": "ok",
+    "log_evidence": -3162.1736990309764,
+    "chi_squared": 357.19656200126883,
+    "regularization_term": 1.2017794466361558,
+    "log_det_curvature_reg": 4429.920089938373,
+    "log_det_regularization": 4412.258330586301,
+    "noise_normalization": 5948.287297261975,
+    "inversion_class": "InversionInterferometerMapping",
+    "source_pixels": 1225,
+    "visibilities": 190,
+    "vis_chunk": 500000,
+    "column_chunk": 64,
+    "n_vis_chunks": 1,
+    "nufft_eps": 1e-12,
+    "transform_s": 9.040112757997122,
+    "accumulate_s": 0.03629496495705098,
+    "solve_and_evidence_s": 0.4653214979916811,
+    "total_s": 9.556674301973544,
+    "method": "eager NumPy dense route (InversionInterferometerMapping via FitInterferometer(xp=np) on the dataset without its sparse operator); T formed per visibility chunk and column block by TransformerNUFFT (finufft on the NumPy path) and accumulated into F and D, which the library inversion then solves (positive-only, edge-zeroed subset, log determinants); chi-squared s^T F s - 2 s^T D + d^T N^-1 d. Independent of the W~ operator, numba and JAX (ruling R6)."
+  },
+  "agreement": {
+    "quantity": "log evidence at iid draw 0",
+    "matrix_free": -3161.9428287145843,
+    "dense_fft": {
+      "log_evidence": -3162.1736990309764,
+      "abs_delta": 0.23087031639215638,
+      "rel_delta": 7.301000462526925e-05
+    },
+    "chunked_dense": {
+      "log_evidence": -3162.1736990309764,
+      "abs_delta": 0.23087031639215638,
+      "rel_delta": 7.301000462526925e-05
+    },
+    "log_det_curvature_reg": {
+      "slq": 4429.458349305582,
+      "exact_cholesky": 4429.920089938373,
+      "abs_delta": 0.4617406327915887,
+      "rel_delta": 0.0001042322713315608
+    }
+  },
+  "never_current": "experiment / scan row (likelihood-lifecycle 2b); no parity.json"
+}
