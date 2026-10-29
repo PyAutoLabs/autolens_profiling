@@ -118,10 +118,10 @@ def screen(evidence):
 
 def test_inventory_is_complete_and_unknowns_do_not_become_ready(draft):
     plan = baseline.enumerate_cells(draft)
-    assert len(plan["cells"]) == 30 * 3 * 2 * 6
+    assert len(plan["cells"]) == 36 * 3 * 2 * 6
     assert len({c["id"] for c in plan["cells"]}) == len(plan["cells"])
     assert plan["status"] == "blocked"
-    assert plan["counts"] == {"unverified": 648, "unsupported": 372, "not_applicable": 60}
+    assert plan["counts"] == {"unverified": 708, "unsupported": 516, "not_applicable": 72}
     assert all(
         c["capability"] == "unsupported"
         for c in plan["cells"]
@@ -138,7 +138,7 @@ def test_empty_report_is_missing_never_accepted(draft):
     )
     assert report["accepted"] is False
     assert report["status"] == "blocked"
-    assert report["counts"] == {"missing": 1020, "not_applicable": 60}
+    assert report["counts"] == {"missing": 1224, "not_applicable": 72}
 
 
 @pytest.mark.parametrize(
@@ -201,7 +201,7 @@ def test_valid_fixture_is_only_candidate_and_other_cells_stay_missing(evidence):
     row, report, _ = screen(evidence)
     assert row["status"] == "candidate_for_human_review"
     assert report["status"] == "blocked" and report["accepted"] is False
-    assert report["counts"]["missing"] == 1019
+    assert report["counts"]["missing"] == 1223
     assert "not independently observed" in report["qualification"]
 
 

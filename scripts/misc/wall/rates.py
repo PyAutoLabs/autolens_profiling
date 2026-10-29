@@ -219,6 +219,13 @@ HEADLINE_MEDIAN_SCRIPTS = frozenset(
         "scripts/datacube/delaunay/likelihood_runtime.py",
         "scripts/imaging/mge_mass/likelihood_runtime_jax.py",
         "scripts/imaging/rectangular/likelihood_runtime_numba_mge_mass.py",
+        # likelihood-lifecycle 2d (#473): the JAX runtime cells of the shared galaxy/group driver
+        "scripts/group/delaunay/likelihood_runtime.py",
+        "scripts/group/mge/likelihood_runtime.py",
+        "scripts/group/rectangular/likelihood_runtime.py",
+        "scripts/multi_galaxy/delaunay/likelihood_runtime.py",
+        "scripts/multi_galaxy/mge/likelihood_runtime.py",
+        "scripts/multi_galaxy/rectangular/likelihood_runtime.py",
         # likelihood-lifecycle 2e (#474): the cluster runtime cells (shared driver
         # likelihood_breakdown/cluster_standard.py)
         "scripts/cluster/image_plane/likelihood_runtime.py",
