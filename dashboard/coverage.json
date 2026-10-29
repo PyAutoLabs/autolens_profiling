@@ -55,6 +55,84 @@
    "state": "missing"
   },
   {
+   "cell": "cluster/source_plane/simple jax_cpu_na_fp64@hpc_a100 [breakdown]",
+   "class": "optimal",
+   "host_class": "hpc_a100",
+   "instrument": "simple",
+   "likelihood": "cluster/source_plane",
+   "measurement": "breakdown",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_cpu_na_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "cluster/source_plane/simple jax_cpu_na_fp64@hpc_a100 [runtime]",
+   "class": "optimal",
+   "host_class": "hpc_a100",
+   "instrument": "simple",
+   "likelihood": "cluster/source_plane",
+   "measurement": "runtime",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_cpu_na_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "cluster/source_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [breakdown]",
+   "class": "optimal",
+   "host_class": "hpc_ral_cpu",
+   "instrument": "simple",
+   "likelihood": "cluster/source_plane",
+   "measurement": "breakdown",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_cpu_na_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "cluster/source_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [runtime]",
+   "class": "optimal",
+   "host_class": "hpc_ral_cpu",
+   "instrument": "simple",
+   "likelihood": "cluster/source_plane",
+   "measurement": "runtime",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_cpu_na_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "cluster/source_plane/simple jax_gpu_na_fp64@hpc_a100 [breakdown]",
+   "class": "secondary",
+   "host_class": "hpc_a100",
+   "instrument": "simple",
+   "likelihood": "cluster/source_plane",
+   "measurement": "breakdown",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_gpu_na_fp64",
+   "state": "missing"
+  },
+  {
+   "cell": "cluster/source_plane/simple jax_gpu_na_fp64@hpc_a100 [runtime]",
+   "class": "secondary",
+   "host_class": "hpc_a100",
+   "instrument": "simple",
+   "likelihood": "cluster/source_plane",
+   "measurement": "runtime",
+   "model_variant": "default",
+   "reason": "no record",
+   "record": null,
+   "setup_id": "jax_gpu_na_fp64",
+   "state": "missing"
+  },
+  {
    "cell": "datacube/delaunay/alma jax_cpu_dense_fp64_nufft@hpc_ral_cpu [breakdown]",
    "class": "secondary",
    "host_class": "hpc_ral_cpu",
@@ -2861,32 +2939,6 @@
    "record": "lifecycle/fcb319f0f24b8cc9fd37",
    "setup_id": "jax_gpu_na_fp64",
    "state": "stale"
-  },
-  {
-   "cell": "point_source_source/source_plane/simple jax_gpu_na_fp64@hpc_ral_cpu [breakdown]",
-   "class": "secondary",
-   "host_class": "hpc_ral_cpu",
-   "instrument": "simple",
-   "likelihood": "point_source_source/source_plane",
-   "measurement": "breakdown",
-   "model_variant": "default",
-   "reason": "no record",
-   "record": null,
-   "setup_id": "jax_gpu_na_fp64",
-   "state": "missing"
-  },
-  {
-   "cell": "point_source_source/source_plane/simple jax_gpu_na_fp64@hpc_ral_cpu [runtime]",
-   "class": "secondary",
-   "host_class": "hpc_ral_cpu",
-   "instrument": "simple",
-   "likelihood": "point_source_source/source_plane",
-   "measurement": "runtime",
-   "model_variant": "default",
-   "reason": "no record",
-   "record": null,
-   "setup_id": "jax_gpu_na_fp64",
-   "state": "missing"
   }
  ],
  "class_mismatches": [],
@@ -2906,6 +2958,42 @@
    "likelihood": "cluster/image_plane",
    "measurement": "runtime",
    "missing": 2,
+   "stale": 0,
+   "superseded": 0
+  },
+  {
+   "class": "optimal",
+   "current": 0,
+   "likelihood": "cluster/source_plane",
+   "measurement": "breakdown",
+   "missing": 2,
+   "stale": 0,
+   "superseded": 0
+  },
+  {
+   "class": "optimal",
+   "current": 0,
+   "likelihood": "cluster/source_plane",
+   "measurement": "runtime",
+   "missing": 2,
+   "stale": 0,
+   "superseded": 0
+  },
+  {
+   "class": "secondary",
+   "current": 0,
+   "likelihood": "cluster/source_plane",
+   "measurement": "breakdown",
+   "missing": 1,
+   "stale": 0,
+   "superseded": 0
+  },
+  {
+   "class": "secondary",
+   "current": 0,
+   "likelihood": "cluster/source_plane",
+   "measurement": "runtime",
+   "missing": 1,
    "stale": 0,
    "superseded": 0
   },
@@ -3238,7 +3326,7 @@
    "current": 0,
    "likelihood": "point_source_source/source_plane",
    "measurement": "breakdown",
-   "missing": 1,
+   "missing": 0,
    "stale": 1,
    "superseded": 0
   },
@@ -3247,7 +3335,7 @@
    "current": 0,
    "likelihood": "point_source_source/source_plane",
    "measurement": "runtime",
-   "missing": 1,
+   "missing": 0,
    "stale": 1,
    "superseded": 0
   }
@@ -3263,6 +3351,24 @@
    {
     "cell": "cluster/image_plane/simple jax_gpu_na_fp64@hpc_a100 [parity]",
     "class": "optimal",
+    "record": null,
+    "state": "missing"
+   },
+   {
+    "cell": "cluster/source_plane/simple jax_cpu_na_fp64@hpc_a100 [parity]",
+    "class": "optimal",
+    "record": null,
+    "state": "missing"
+   },
+   {
+    "cell": "cluster/source_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [parity]",
+    "class": "optimal",
+    "record": null,
+    "state": "missing"
+   },
+   {
+    "cell": "cluster/source_plane/simple jax_gpu_na_fp64@hpc_a100 [parity]",
+    "class": "secondary",
     "record": null,
     "state": "missing"
    },
@@ -3913,12 +4019,6 @@
     "class": "secondary",
     "record": null,
     "state": "missing"
-   },
-   {
-    "cell": "point_source_source/source_plane/simple jax_gpu_na_fp64@hpc_ral_cpu [parity]",
-    "class": "secondary",
-    "record": null,
-    "state": "missing"
    }
   ],
   "matrix": [
@@ -3928,6 +4028,22 @@
     "likelihood": "cluster/image_plane",
     "match": 0,
     "missing": 2,
+    "not_assessed": 0
+   },
+   {
+    "class": "optimal",
+    "diverged": 0,
+    "likelihood": "cluster/source_plane",
+    "match": 0,
+    "missing": 2,
+    "not_assessed": 0
+   },
+   {
+    "class": "secondary",
+    "diverged": 0,
+    "likelihood": "cluster/source_plane",
+    "match": 0,
+    "missing": 1,
     "not_assessed": 0
    },
    {
@@ -4079,16 +4195,16 @@
     "diverged": 0,
     "likelihood": "point_source_source/source_plane",
     "match": 0,
-    "missing": 2,
+    "missing": 1,
     "not_assessed": 0
    }
   ],
   "totals": {
    "diverged": 0,
    "match": 83,
-   "missing": 28,
+   "missing": 30,
    "not_assessed": 0,
-   "setup_cells": 111
+   "setup_cells": 113
   }
  },
  "release_pin_source": "newest record",
@@ -4107,9 +4223,9 @@
  "totals": {
   "current": 166,
   "current_records_unplanned": 134,
-  "missing": 50,
+  "missing": 54,
   "missing_size_fallback": 0,
-  "planned_cells": 222,
+  "planned_cells": 226,
   "records_superseded": 477,
   "stale": 6,
   "superseded": 0
