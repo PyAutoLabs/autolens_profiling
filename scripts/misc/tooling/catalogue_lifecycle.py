@@ -400,6 +400,9 @@ _INSTRUMENT_SCOPED = tuple(
     for rule in _DESIGNATIONS.get("instrument_scoped_setups", [])
 )
 _PIXELIZED_VARIANTS = tuple(_DESIGNATIONS["pixelized_variants"])
+#: Hosts with a GPU. A GPU setup is designated on every host its table lists it for, but planned
+#: only on these: a GPU-less host (``hpc_ral_cpu``, ``laptop``) cannot run it.
+_GPU_HOSTS = frozenset(_DESIGNATIONS["gpu_hosts"])
 
 
 def _table_name(dataset_type: str, variant: str) -> str | None:
@@ -467,7 +470,8 @@ def planned_setups(
 
     Regime-only setups (``_dft``, ``_streaming``) are never planned; an instrument-scoped setup
     (``instrument_scoped_setups``, e.g. the dense pixelized interferometer NUFFT route, sma only)
-    is planned only on its instruments. ``instrument`` None skips the instrument scoping.
+    is planned only on its instruments. ``instrument`` None skips the instrument scoping. A GPU
+    setup is planned only on a ``gpu_hosts`` host.
     """
     table = _table(dataset_type, variant)
     if table is None:
@@ -480,6 +484,7 @@ def planned_setups(
         for sid in sorted(plan)
         if not sid.endswith(_REGIME_ONLY)
         and not _instrument_scoped_out(dataset_type, sid, instrument)
+        and (host_class in _GPU_HOSTS or sid.split("_")[1] != "gpu")
     }
 
 
