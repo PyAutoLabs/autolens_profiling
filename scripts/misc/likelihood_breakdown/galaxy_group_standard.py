@@ -82,8 +82,9 @@ STAGE_NOTE = (
 #: futex). It reproduces from the exported StableHLO alone in a process that imports only jax
 #: (no PyAuto library, no numba), and goes away with either ``--xla_cpu_multi_thread_eigen=false``
 #: or ``--xla_cpu_enable_concurrency_optimized_scheduler=false``. The first is the cheaper one
-#: (laptop per call within ~25 % of the deadlocking default, against ~2.4x for the second), so the
-#: JAX legs append it to ``XLA_FLAGS``; the row records it in ``device.xla_flags`` and
+#: (laptop, per call: the second is about 2x slower than it on the MGE cells and within ~15 % on
+#: the pixelized cells), so every JAX leg appends it to ``XLA_FLAGS`` (one flag for every cell,
+#: human 2026-10-29); the row records it in ``device.xla_flags`` and
 #: ``configuration.xla_cpu_workaround``. It only changes XLA:CPU code (no effect on a GPU
 #: executable), and it is a library-free change to how the cell is compiled, not to what it computes.
 XLA_CPU_WORKAROUND_FLAG = "--xla_cpu_multi_thread_eigen=false"
