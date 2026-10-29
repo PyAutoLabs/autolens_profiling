@@ -3,7 +3,7 @@
 
 [Model index](index.md)
 
-Exact setup ID: `point_source_source/source_plane/simple/5c34df6324a502e6ec40`.
+Exact setup ID: `point_source_source/source_plane/simple/ea16834a47e489938c09`.
 
 Imported support is unreviewed; this page grants no baseline acceptance. Timing axes remain separate; no total fit-time prediction is made.
 
@@ -34,7 +34,7 @@ Identity limitations: Isolated to source row: legacy metadata is insufficient fo
 
 ## Evidence
 
-[Original setup artifact](../../../../results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/experiments/solved_runtime/runtime.json); JSON pointer: `(document root)`.
+[Original setup artifact](../../../../results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/runtime.json); JSON pointer: `(document root)`.
 
 ### Selected references
 
@@ -46,10 +46,10 @@ No selected reference for this exact setup; archive evidence is available below.
 
 | Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
 |---|---|---|---|---|---|---|
-| `measurement/31b5cd9eeb52919713a6` | single_jit_block | {"single_jit_block": 0.00031455529970116915} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/experiments/solved_runtime/runtime.json) `/full_pipeline_single_jit` |
-| `measurement/75b4823a9e8b9265f4d8` | vmap.batch_time | {"vmap.batch_time": 0.0003261951031163335} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/experiments/solved_runtime/runtime.json) `/vmap/batch_time` |
-| `measurement/a88de81b88e08276dc0c` | single_jit_median | {"single_jit_median": 0.00026165152667090297} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/experiments/solved_runtime/runtime.json) `/full_pipeline_single_jit_median` |
-| `measurement/a9349916222b0e0e0445` | vmap.per_call | {"vmap.per_call": 0.00010873170103877784} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/experiments/solved_runtime/runtime.json) `/vmap/per_call` |
+| `measurement/121a97d51c07bcc06138` | single_jit_median | {"single_jit_median": 0.00026165152667090297} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/runtime.json) `/full_pipeline_single_jit_median` |
+| `measurement/9bcc41c7ce5232aafa34` | vmap.per_call | {"vmap.per_call": 0.00010873170103877784} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/runtime.json) `/vmap/per_call` |
+| `measurement/a95c3a5feebc8d4fef51` | single_jit_block | {"single_jit_block": 0.00031455529970116915} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/runtime.json) `/full_pipeline_single_jit` |
+| `measurement/edcdade3c1c1c5016a3d` | vmap.batch_time | {"vmap.batch_time": 0.0003261951031163335} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/runtime.json) `/vmap/batch_time` |
 
 </details>
 

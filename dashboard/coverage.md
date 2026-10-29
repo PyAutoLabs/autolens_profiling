@@ -15,7 +15,7 @@ Catalogue generated 2026-10-29T09:46:25Z; catalogue pin `2026.10.25.1` (newest r
 
 | Planned cells | Current | Stale | Superseded | Missing (of which size_fallback) | Superseded records |
 |---|---|---|---|---|---|
-| 220 | 116 | 1 | 0 | 103 (20) | 404 |
+| 220 | 116 | 1 | 0 | 103 (20) | 402 |
 
 ## Likelihood x class x measurement
 
