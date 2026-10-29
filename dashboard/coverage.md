@@ -15,7 +15,7 @@ Catalogue generated 2026-10-27T12:25:45Z; catalogue pin `2026.10.25.1` (newest r
 
 | Planned cells | Current | Stale | Superseded | Missing (of which size_fallback) | Superseded records |
 |---|---|---|---|---|---|
-| 220 | 106 | 7 | 0 | 107 (20) | 384 |
+| 226 | 106 | 7 | 0 | 113 (20) | 384 |
 
 ## Likelihood x class x measurement
 
@@ -23,6 +23,10 @@ Catalogue generated 2026-10-27T12:25:45Z; catalogue pin `2026.10.25.1` (newest r
 |---|---|---|---|---|---|---|
 | cluster/image_plane | optimal | breakdown | 0 | 0 | 0 | 2 |
 | cluster/image_plane | optimal | runtime | 0 | 0 | 0 | 2 |
+| cluster/source_plane | optimal | breakdown | 0 | 0 | 0 | 2 |
+| cluster/source_plane | optimal | runtime | 0 | 0 | 0 | 2 |
+| cluster/source_plane | secondary | breakdown | 0 | 0 | 0 | 1 |
+| cluster/source_plane | secondary | runtime | 0 | 0 | 0 | 1 |
 | datacube/delaunay | optimal | breakdown | 0 | 0 | 0 | 6 |
 | datacube/delaunay | optimal | runtime | 0 | 0 | 0 | 6 |
 | datacube/delaunay | secondary | breakdown | 0 | 0 | 0 | 9 |
@@ -68,11 +72,13 @@ Per planned setup cell: match/diverged from its current parity record, not_asses
 
 | Setup cells | Match | Diverged | Not assessed | Missing |
 |---|---|---|---|---|
-| 110 | 53 | 0 | 0 | 57 |
+| 113 | 53 | 0 | 0 | 60 |
 
 | Likelihood | Class | Match | Diverged | Not assessed | Missing |
 |---|---|---|---|---|---|
 | cluster/image_plane | optimal | 0 | 0 | 0 | 2 |
+| cluster/source_plane | optimal | 0 | 0 | 0 | 2 |
+| cluster/source_plane | secondary | 0 | 0 | 0 | 1 |
 | datacube/delaunay | optimal | 0 | 0 | 0 | 6 |
 | datacube/delaunay | secondary | 0 | 0 | 0 | 9 |
 | imaging/delaunay | optimal | 8 | 0 | 0 | 0 |
