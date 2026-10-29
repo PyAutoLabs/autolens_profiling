@@ -3,17 +3,18 @@ JAX Profiling: Cluster Image-Plane Likelihood (Runtime)
 =======================================================
 
 The per-evaluation runtime of the cluster image-plane likelihood (likelihood-lifecycle 2e,
-autolens_profiling#474): the image-plane chi-squared (``FitPositionsImagePairRepeat``): every source's
-images are forward-solved with the ``PointSolver`` (``--standard-size``: the workspace cluster
-solver, 100 x 100 @ 1.0", precision 0.001, ``residual_threshold`` 10, decision D1) and paired
-with the observed ones.
+autolens_profiling#474): the solved image-plane chi-squared (``FitPositionsImagePairRepeatSolved``
+with ``PointSolved``, decision D3, human 2026-10-29): each source's centre is solved analytically
+(beta*, the tensor-weighted mean of its back-traced images), its images are forward-solved with the
+``PointSolver`` (``--standard-size``: the workspace cluster solver, 100 x 100 @ 1.0", precision
+0.001, ``residual_threshold`` 10, decision D1) and paired with the observed ones.
 
 The cell is the standard cluster of ``dataset/cluster/simple`` (2 main dPIE + 10 scaling dPIE +
 NFW host; 2 sources at z = 1 and 2), one ``AnalysisPoint(use_jax=True)`` per system summed the
 way a ``FactorGraphModel`` sums its factors, JIT-compiled end to end from a model instance whose
 free parameters are arguments. The row records lower / compile / first call / steady state, the
-steady median, the vmap per call (the catalogue's JAX headline), the solved fit class as a
-sub-row, ``resources``, ``parity.json`` (JIT vs eager NumPy) and ``fit.png``. The shared
+steady median, the vmap per call (the catalogue's JAX headline), the plain fit class
+(``FitPositionsImagePairRepeat``, free ``Point`` centres) as a sub-row, ``resources``, ``parity.json`` (JIT vs eager NumPy) and ``fit.png``. The shared
 driver is ``scripts/misc/likelihood_breakdown/cluster_standard.py`` (``run_runtime``).
 
 Output: the mirrored cell named by ``--output-path`` (the campaign submits always pass one),

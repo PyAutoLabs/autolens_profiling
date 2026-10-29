@@ -3,9 +3,14 @@ JAX Profiling: Cluster Image-Plane Likelihood — Per-Step Breakdown
 ===================================================================
 
 Decomposes the cluster point-source **image-plane chi-squared** likelihood
-(``FitPositionsImagePairRepeat``, the model-fit default) into its pipeline
-steps for the standard cluster model (2 main dPIE + 10 scaling dPIE + NFW
-host at z = 0.5; 2 point sources at z = 1.0 / 2.0 — multi-plane).
+into its pipeline steps for the standard cluster model (2 main dPIE + 10
+scaling dPIE + NFW host at z = 0.5; 2 point sources at z = 1.0 / 2.0 —
+multi-plane). The decomposed class is the solved
+``FitPositionsImagePairRepeatSolved`` (``PointSolved``: each source centre is
+solved analytically as beta*), the headline of the cluster runtime row
+(decision D3, human 2026-10-29: "the cluster default setup should use
+solved"); the plain ``FitPositionsImagePairRepeat`` (free ``Point`` centres) is
+a sub-row.
 
 Where the source-plane likelihood (``source_plane.py``) only ray-traces the
 observed positions *backwards*, the image-plane likelihood **forward-solves
@@ -16,27 +21,39 @@ else by orders of magnitude and is the reason cluster image-plane fits need
 JAX — this script makes its cost (and its one-off JIT compile cost, which a
 sampler pays once but a single fit pays in full) visible per source plane.
 
-Steps profiled:
+Steps profiled (headline, ``FitPositionsImagePairRepeatSolved``):
 
-1. Back-trace observed positions → model source centres (setup, eager).
-2. Triangle-tiling PointSolver solve, JIT-compiled per source plane — the
-   dominant step. Lower/compile/first-call/steady-state are reported
-   separately so compile amortisation is explicit.
-3. ``FitPositionsImagePairRepeat`` log-likelihood per system (eager,
-   nearest-pair chi-squared given the solved positions).
-4. ``FitPositionsImagePairRepeatSolved`` per system (eager; see the addendum
-   below).
+1. The solved source centre beta* per system: the observed images
+   back-traced and tensor-weighted by the lensing Jacobian, read from the
+   production fit class (eager; a glafic-style extension, **not** a result from
+   Lombardi 2024, arXiv:2406.15280 — see ``autolens/point/fit/solved.py``'s
+   module docstring for the attribution split).
+2. Triangle-tiling PointSolver solve at beta*, JIT-compiled per source plane —
+   the dominant step. Lower/compile/first-call/steady-state are reported
+   separately so compile amortisation is explicit. ``solver.solve()`` only
+   consumes a source-plane coordinate and the tracer's mass profiles, never the
+   point-source profile type.
+3. ``FitPositionsImagePairRepeatSolved`` per system (eager fit total:
+   beta*, the solve, nearest-pair chi-squared).
+
+Plain sub-row (``FitPositionsImagePairRepeat``): P1 the back-traced centroid
+of each system's images (its ``Point`` centres), step 4 the plain fit total per
+system (eager). A printed summary reports the per-system fit-total delta
+(step 3 − step 4), to be weighed against the 2 fewer free centre parameters
+per point source (4 total for this cluster's 2 systems) the solved fit leaves
+out of a model-fit.
+
 5. FUSED full likelihoods (autolens_profiling#297): the production
    ``AnalysisPoint`` likelihood summed over every system, JIT-compiled end to
-   end from a parameterised model instance — ``fused_full_plain_s``
-   (``FitPositionsImagePairRepeat``, free ``Point`` centres) and
-   ``fused_full_solved_s`` (``FitPositionsImagePairRepeatSolved``,
-   ``PointSolved``). The model's free parameters enter the compiled function
-   as arguments, so constant folding cannot pre-evaluate the solve; each row
+   end from a parameterised model instance — ``fused_full_solved_s`` (the
+   headline, ``FitPositionsImagePairRepeatSolved``, ``PointSolved``) and
+   ``fused_full_plain_s`` (``FitPositionsImagePairRepeat``, free ``Point``
+   centres). The model's free parameters enter the compiled function as
+   arguments, so constant folding cannot pre-evaluate the solve; each row
    records its lower / compile / first-call / steady phases under
    ``jit_phases``. These two rows — not the eager step totals — are what a
    sampler pays per likelihood call. They are reported next to the steps, not
-   inside ``total_step_by_step``.
+   inside ``total_step_by_step``. ``fit.png`` draws the solved fused instance.
 
 Without ``--standard-size`` the solver grid (200x200 @ 0.7", precision 0.01") is
 the historic tutorial-scale configuration the committed rows used. With
@@ -48,24 +65,6 @@ explicitly (``likelihood_breakdown/cluster_standard.py``: ``STANDARD_SOLVER``), 
 this breakdown decomposes the likelihood the cluster runtime cell times. The
 cell's ``parity.json`` is the runtime's (``likelihood_runtime.py``), never this
 script's.
-
-Solved-variant addendum (issue #657 phase 3)
-----------------------------------------------
-
-Alongside the plain ``FitPositionsImagePairRepeat`` steps above, step 4
-times ``FitPositionsImagePairRepeatSolved`` per system against a second
-tracer (``tracer_solved``) built with zero-parameter ``al.ps.PointSolved``
-profiles in place of ``al.ps.Point`` — the analytic β* extension in the
-image plane. This is a glafic-style extension, **not** a result from
-Lombardi 2024 (arXiv:2406.15280); see ``autolens/point/fit/solved.py``'s
-module docstring for the attribution split. Step 2's forward-solve is
-unaffected by (and shared with) the solved variant: ``solver.solve()`` only
-consumes an explicit ``source_plane_coordinate`` + the tracer's mass
-profiles, never the point-source profile type, so only step 3's non-solved
-fit and step 4's solved fit differ. A printed summary reports the
-per-system fit-total runtime delta (step 4 − step 3), to be weighed against
-the 2 fewer free centre parameters per point source (4 total for this
-cluster's 2 systems) a full model-fit would otherwise sample.
 
 Output
 ------
@@ -275,10 +274,9 @@ tracer = al.Tracer(
 n_mass_profiles = len(main_lens_galaxies) + len(scaling_galaxies) + 1
 print(f"Tracer: {len(tracer.planes)} planes, {n_mass_profiles} mass components.")
 
-# Solved-variant tracer: `al.ps.PointSolved` (0 params) in place of `al.ps.Point`
-# (2 centre params) per source, name-paired the same way. Used only by step 4
-# below — step 1/2's back-trace + forward-solve don't read the point-source
-# profile type at all, so they're shared as-is with the plain-path tracer.
+# Solved tracer (the headline): `al.ps.PointSolved` (0 params) in place of `al.ps.Point`
+# (2 centre params) per source, name-paired the same way. Steps 1 and 3 read it; step
+# 2's forward solve does not read the point-source profile type at all.
 source_galaxies_solved = [
     al.Galaxy(redshift=float(d.redshift), **{d.name: al.ps.PointSolved()}) for d in dataset_list
 ]
@@ -292,18 +290,51 @@ plane_indices = [
 ]
 
 # ---------------------------------------------------------------------------
-# Step 1 — model source centres: back-trace the observed images and take the
-# per-system centroid (what a model fit derives from its Point centre; here
-# the truth-adjacent centroid keeps the solve realistic). Eager + cheap.
+# Step 1 — the headline's solved source centres (decision D3, human
+# 2026-10-29): FitPositionsImagePairRepeatSolved reads beta*, the
+# tensor-weighted mean of the observed images back-traced to the source plane
+# (W_i = A_i^-T A_i^-1 / sigma_i^2 from the lensing Jacobian;
+# ``autolens/point/fit/solved.py``: ``SolvedCentre.source_plane_coordinate``).
+# Taken from the production fit class itself (eager; no solve happens here).
 # ---------------------------------------------------------------------------
+solved_centres = []
+for dataset in dataset_list:
+    with timer.section(f"step1_solved_centre_{dataset.name}"):
+        beta_star = al.FitPositionsImagePairRepeatSolved(
+            name=dataset.name,
+            data=dataset.positions,
+            noise_map=dataset.positions_noise_map,
+            tracer=tracer_solved,
+            solver=None,
+        ).source_plane_coordinate
+        solved_centres.append(tuple(float(v) for v in beta_star))
+    likelihood_steps.append(
+        (
+            f"1.{dataset.name} solved source centre beta* (back-trace + Jacobian)",
+            timer.records[-1][1],
+        )
+    )
+
+# Plain sub-row: the Point centres of the plain fit (FitPositionsImagePairRepeat) are the
+# per-system centroid of the back-traced observed images (truth-adjacent, so the solve is
+# realistic); the fused plain model's Point priors sit on them too. Timed as sub-row step P1.
 source_centres = []
-with timer.section("step1_source_centres"):
+with timer.section("stepP1_plain_source_centres"):
     for positions, plane_index in zip(positions_list, plane_indices):
         traced = np.asarray(
             tracer.traced_grid_2d_list_from(grid=al.Grid2DIrregular(positions))[plane_index]
         )
         source_centres.append(tuple(traced.mean(axis=0)))
-likelihood_steps.append(("1 source centres (back-trace)", timer.records[-1][1]))
+plain_centres_s = timer.records[-1][1]
+tracer_plain = al.Tracer(
+    galaxies=main_lens_galaxies
+    + scaling_galaxies
+    + [host_halo_galaxy]
+    + [
+        al.Galaxy(redshift=float(d.redshift), **{d.name: al.ps.Point(centre=c)})
+        for d, c in zip(dataset_list, source_centres)
+    ]
+)
 
 # ---------------------------------------------------------------------------
 # Step 2 — the triangle-tiling PointSolver forward-solve, per source plane.
@@ -358,7 +389,7 @@ SOLVER_SETTINGS = solver_settings(_cli.standard_size)
 solver = build_solver(SOLVER_SETTINGS, use_jax=True)
 
 predicted_per_system = []
-for dataset, centre in zip(dataset_list, source_centres):
+for dataset, centre in zip(dataset_list, solved_centres):
 
     def solve(source_plane_coordinate, _z=float(dataset.redshift)):
         return solver.solve(
@@ -373,53 +404,24 @@ for dataset, centre in zip(dataset_list, source_centres):
     predicted_per_system.append(predicted)
     likelihood_steps.append(
         (
-            f"2.{dataset.name} PointSolver solve (z={float(dataset.redshift):.1f})",
+            f"2.{dataset.name} PointSolver solve at beta* (z={float(dataset.redshift):.1f})",
             timer.records[-1][1] / N_REPEATS,
         )
     )
 
 # ---------------------------------------------------------------------------
-# Step 3 — pairing + chi-squared: the production FitPositionsImagePairRepeat,
-# timed eagerly per system (the pairing is trivial next to the solve; the fit
-# re-runs the solve internally, so its time is reported as fit-total and the
-# pairing overhead is the difference from step 2).
+# Step 3 — the headline FitPositionsImagePairRepeatSolved per system, timed
+# eagerly (beta*, the forward solve at it, nearest-pair chi-squared). The fit
+# re-runs steps 1-2 internally, so its time is reported as fit-total; the
+# pairing overhead is the difference from steps 1-2. `tracer_solved` carries
+# `PointSolved` in place of `Point` so the *Solved fit class's name pairing
+# finds a parameter-free profile (a centre-bearing profile raises
+# `PointProfileMismatchException`).
 # ---------------------------------------------------------------------------
-fit_log_likelihoods = []
-fit_total_times = []
-for dataset in dataset_list:
-    with timer.section(f"step3_fit_total_{dataset.name}"):
-        fit = al.FitPositionsImagePairRepeat(
-            name=dataset.name,
-            data=dataset.positions,
-            noise_map=dataset.positions_noise_map,
-            tracer=tracer,
-            solver=solver,
-        )
-        fit_log_likelihoods.append(float(fit.log_likelihood))
-    fit_total_times.append(timer.records[-1][1])
-    likelihood_steps.append(
-        (f"3.{dataset.name} FitPositionsImagePairRepeat (fit total)", timer.records[-1][1])
-    )
-
-log_likelihood_total = sum(fit_log_likelihoods)
-print(f"\n  image-plane log likelihood (sum over systems): {log_likelihood_total:.6e}")
-
-# ---------------------------------------------------------------------------
-# Step 4 — FitPositionsImagePairRepeatSolved per system: same forward-solve
-# machinery as steps 2/3, but the source-plane centre driving the
-# PointSolver is analytically solved (β*, tensor-weighted precision) rather
-# than read from a centre-bearing profile. `tracer_solved` carries
-# `PointSolved` in place of `Point` so the *Solved fit class's name-pairing
-# finds a parameter-free profile — pairing a centre-bearing profile with a
-# *Solved fit class raises `PointProfileMismatchException`. Eager-timed,
-# matching step 3's pattern (the fit re-runs the forward-solve internally).
-# ---------------------------------------------------------------------------
-_n_plain_steps = len(likelihood_steps)
-
 fit_solved_log_likelihoods = []
 fit_solved_total_times = []
 for dataset in dataset_list:
-    with timer.section(f"step4_fit_total_solved_{dataset.name}"):
+    with timer.section(f"step3_fit_total_solved_{dataset.name}"):
         fit_solved = al.FitPositionsImagePairRepeatSolved(
             name=dataset.name,
             data=dataset.positions,
@@ -431,7 +433,7 @@ for dataset in dataset_list:
     fit_solved_total_times.append(timer.records[-1][1])
     likelihood_steps.append(
         (
-            f"4.{dataset.name} FitPositionsImagePairRepeatSolved (fit total, analytic β*)",
+            f"3.{dataset.name} FitPositionsImagePairRepeatSolved (fit total, analytic β*)",
             timer.records[-1][1],
         )
     )
@@ -440,6 +442,34 @@ log_likelihood_total_solved = sum(fit_solved_log_likelihoods)
 print(
     f"\n  image-plane log likelihood, solved (sum over systems): {log_likelihood_total_solved:.6e}"
 )
+
+_n_headline_steps = len(likelihood_steps)
+
+# ---------------------------------------------------------------------------
+# Plain sub-row: P1 the back-traced centroids (above), then step 4 the
+# production FitPositionsImagePairRepeat per system with free `Point` centres
+# on those centroids (`tracer_plain`), eager fit-total like step 3.
+# ---------------------------------------------------------------------------
+likelihood_steps.append(("P1 plain: Point centres (back-traced centroid)", plain_centres_s))
+fit_log_likelihoods = []
+fit_total_times = []
+for dataset in dataset_list:
+    with timer.section(f"step4_fit_total_plain_{dataset.name}"):
+        fit = al.FitPositionsImagePairRepeat(
+            name=dataset.name,
+            data=dataset.positions,
+            noise_map=dataset.positions_noise_map,
+            tracer=tracer_plain,
+            solver=solver,
+        )
+        fit_log_likelihoods.append(float(fit.log_likelihood))
+    fit_total_times.append(timer.records[-1][1])
+    likelihood_steps.append(
+        (f"4.{dataset.name} FitPositionsImagePairRepeat (fit total)", timer.records[-1][1])
+    )
+
+log_likelihood_total = sum(fit_log_likelihoods)
+print(f"\n  image-plane log likelihood, plain (sum over systems): {log_likelihood_total:.6e}")
 
 print("\n--- Solved vs plain: per-system fit-total runtime delta ---")
 delta_per_system = {}
@@ -463,9 +493,10 @@ print(f"  TOTAL delta across {len(dataset_list)} systems: {delta_total:+.6f}s")
 # `scripts/point_source_image/image_plane/likelihood_breakdown.py`: priors are tight
 # Gaussians centred on this cell's fiducial values, so the prior-median
 # instance IS the step 1-4 lens model (main lenses fully free, one shared
-# scaling-relation normalisation, free NFW centre). The plain model's `Point`
-# centres sit on step 1's back-traced centroids, i.e. the centres step 2
-# solves for. Steps 1-4 are not touched by this block.
+# scaling-relation normalisation, free NFW centre). The headline solved model
+# carries `PointSolved` (beta* is solved inside every call, as in step 1); the
+# plain sub-row model's `Point` centres sit on P1's back-traced centroids.
+# Steps 1-4 are not touched by this block.
 # ---------------------------------------------------------------------------
 from autofit.jax import register_model as _register_fused_pytrees  # noqa: E402
 
@@ -517,10 +548,11 @@ def _fused_model(*, solved: bool):
     return af.Collection(galaxies=af.Collection(**galaxies))
 
 
-fused_models = {"plain": _fused_model(solved=False), "solved": _fused_model(solved=True)}
+# The headline (solved, D3) first, then the plain sub-row.
+fused_models = {"solved": _fused_model(solved=True), "plain": _fused_model(solved=False)}
 fused_fit_cls = {
-    "plain": al.FitPositionsImagePairRepeat,
     "solved": al.FitPositionsImagePairRepeatSolved,
+    "plain": al.FitPositionsImagePairRepeat,
 }
 fused_instances = {}
 fused_params = {}
@@ -570,7 +602,7 @@ for variant in fused_models:
 
 print("\n--- Step 5: fused full likelihoods (JIT, parameterised instance) ---")
 fused_jit = {}
-fused_label = {"plain": "fused_full_plain", "solved": "fused_full_solved"}
+fused_label = {"solved": "fused_full_solved", "plain": "fused_full_plain"}
 for variant in fused_models:
     _, value = jit_profile(
         _fused_full(variant), fused_label[variant], fused_params[variant], n_repeats=N_REPEATS
@@ -621,25 +653,25 @@ print("\n" + "=" * 70)
 print(f"PER-STEP BREAKDOWN SUMMARY — CLUSTER IMAGE-PLANE — v{al_version}")
 print("=" * 70)
 max_label = max(len(label) for label, _ in likelihood_steps)
-# `step_total` stays scoped to the original (plain-path) decomposition —
-# steps 1-3 — so it keeps meaning "sum of the decomposed likelihood steps"
-# for the README auto-table / XLA-fusion-caveat comparison against
-# full_pipeline_single_jit. Step 4 (solved) is an additive extra
-# measurement, not part of that decomposition; its cost is reported
-# separately as `total_step_solved_extra`.
+# `step_total` is the headline decomposition (steps 1-3,
+# FitPositionsImagePairRepeatSolved, D3), so it means "sum of the decomposed
+# likelihood steps" for the README auto-table / XLA-fusion-caveat comparison
+# against full_pipeline_single_jit. The plain sub-row (P1, step 4) is an
+# additive extra measurement, not part of that decomposition; its cost is
+# reported separately as `total_step_extra`.
 step_total = 0.0
-step_total_solved_extra = 0.0
+step_total_extra = 0.0
 for i, (label, per_call) in enumerate(likelihood_steps, 1):
     print(f"  {i:>2}. {label:<{max_label}}  {per_call:>12.6f} s")
-    if i <= _n_plain_steps:
+    if i <= _n_headline_steps:
         step_total += per_call
     else:
-        step_total_solved_extra += per_call
+        step_total_extra += per_call
 print("-" * 70)
-print(f"      {'TOTAL (step-by-step, plain)':<{max_label}}  {step_total:>12.6f} s")
-print(f"      {'TOTAL (solved, extra)':<{max_label}}  {step_total_solved_extra:>12.6f} s")
-print(f"      {'FUSED full likelihood, plain':<{max_label}}  {fused_full_plain_s:>12.6f} s")
+print(f"      {'TOTAL (step-by-step, solved)':<{max_label}}  {step_total:>12.6f} s")
+print(f"      {'TOTAL (plain sub-row, extra)':<{max_label}}  {step_total_extra:>12.6f} s")
 print(f"      {'FUSED full likelihood, solved':<{max_label}}  {fused_full_solved_s:>12.6f} s")
+print(f"      {'FUSED full likelihood, plain':<{max_label}}  {fused_full_plain_s:>12.6f} s")
 print("=" * 70)
 
 config_name = _cli.config_name or (
@@ -660,7 +692,9 @@ breakdown_summary = {
         "n_images_total": int(sum(len(p) for p in positions_list)),
         "n_planes": len(tracer.planes),
         "n_mass_profiles": n_mass_profiles,
-        "likelihood": "image_plane (FitPositionsImagePairRepeat)",
+        "likelihood": "image_plane (FitPositionsImagePairRepeatSolved)",
+        "headline_arm": "solved",
+        "sub_row_arm": "plain",
         "solver_grid": (
             f"{SOLVER_SETTINGS['shape_native'][0]}x{SOLVER_SETTINGS['shape_native'][1]} "
             f"@ {SOLVER_SETTINGS['pixel_scales']} arcsec"
@@ -676,25 +710,32 @@ breakdown_summary = {
     },
     "steps": {label: per_call for label, per_call in likelihood_steps},
     "total_step_by_step": step_total,
-    "fused_full_plain_s": float(fused_full_plain_s),
+    "total_step_extra": step_total_extra,
+    "headline_arm": "solved",
     "fused_full_solved_s": float(fused_full_solved_s),
+    "fused_full_plain_s": float(fused_full_plain_s),
     "fused_likelihoods": {
-        "plain_eager": fused_eager["plain"],
-        "plain_jit": fused_jit["plain"],
         "solved_eager": fused_eager["solved"],
         "solved_jit": fused_jit["solved"],
+        "plain_eager": fused_eager["plain"],
+        "plain_jit": fused_jit["plain"],
     },
     "fused_solved_positions": fused_solved_positions,
     "jit_phases": jit_records,
-    "log_likelihood": log_likelihood_total,
+    "log_likelihood": log_likelihood_total_solved,
     "solved": {
         "fit_positions_cls": "FitPositionsImagePairRepeatSolved",
         "log_likelihood": log_likelihood_total_solved,
-        "total_step_solved_extra": step_total_solved_extra,
-        "delta_per_system_s": delta_per_system,
-        "delta_total_s": delta_total,
+        "solved_source_centres": {d.name: list(c) for d, c in zip(dataset_list, solved_centres)},
         "free_centre_params_removed_per_point_source": 2,
         "free_centre_params_removed_total": 2 * len(dataset_list),
+    },
+    "plain": {
+        "fit_positions_cls": "FitPositionsImagePairRepeat",
+        "log_likelihood": log_likelihood_total,
+        "point_centres": {d.name: list(c) for d, c in zip(dataset_list, source_centres)},
+        "delta_solved_minus_plain_per_system_s": delta_per_system,
+        "delta_solved_minus_plain_total_s": delta_total,
     },
 }
 
@@ -709,10 +750,10 @@ dict_path.write_text(json.dumps(breakdown_summary, indent=2))
 print(f"\n  Results dict saved to: {dict_path}")
 
 labels = [label for label, _ in likelihood_steps] + [
-    "5. FUSED full likelihood, plain (JIT, all systems)",
     "5. FUSED full likelihood, solved (JIT, all systems)",
+    "5. FUSED full likelihood, plain (JIT, all systems)",
 ]
-times = [per_call for _, per_call in likelihood_steps] + [fused_full_plain_s, fused_full_solved_s]
+times = [per_call for _, per_call in likelihood_steps] + [fused_full_solved_s, fused_full_plain_s]
 colours = ["#4C72B0"] * len(likelihood_steps) + ["#DD8452", "#DD8452"]
 fig, ax = plt.subplots(figsize=(11, 6))
 y_pos = range(len(labels))
@@ -737,12 +778,12 @@ fig.savefig(chart_path, dpi=150)
 print(f"  Bar chart saved to:    {chart_path}")
 
 
-# Fit figure (likelihood-lifecycle 1B): every system's eager fit at the plain fused instance (the
-# step 1-4 lens model), drawn after every timed region and kept as fit.png beside this row, the
+# Fit figure (likelihood-lifecycle 1B): every system's eager headline (solved) fit at the solved
+# fused instance (the step 1-4 lens model), drawn after every timed region and kept as fit.png beside this row, the
 # way the cluster viz producer draws all sources together. Off under AUTOLENS_PROFILING_SMOKE
 # and with --no-fit-png.
 render_fit_png(
-    [a.fit_from(instance=fused_instances["plain"]) for a in eager_analyses["plain"]],
+    [a.fit_from(instance=fused_instances["solved"]) for a in eager_analyses["solved"]],
     dict_path.parent,
     dataset_type="cluster",
     cli=_cli,

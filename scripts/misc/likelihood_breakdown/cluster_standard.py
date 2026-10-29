@@ -21,13 +21,17 @@ the workspace cluster solver the ``cluster-pointsolver-speed`` epic decided to k
 passed explicitly so a later library default cannot move the cell. Without ``--standard-size``
 the breakdown keeps its historic 200 x 200 @ 0.7", precision 0.01 solver.
 
-The headline of each runtime row is the plain fit class the cluster breakdowns decompose
-(``FitPositionsImagePairRepeat`` / ``FitPositionsSource``; decision D3), summed over the two
+The headline of each runtime row is the solved fit class (``FitPositionsImagePairRepeatSolved`` /
+``FitPositionsSourceSolved`` with ``PointSolved``: the source centre is solved analytically, so no
+free centre is sampled), the class the workspace cluster search uses (decision D3, decided by the
+human 2026-10-29: "the cluster default setup should use solved"). It is summed over the two
 systems the way a ``FactorGraphModel`` sums its factors and JIT-compiled end to end from a model
-instance whose free parameters are arguments. The solved class (``...Solved`` with
-``PointSolved``) is a sub-row. Every row records ``resources``, writes ``parity.json`` (the JIT
-value against the eager NumPy ``AnalysisPoint`` in the same process, tolerance 1e-4 x |reference|
-in fp64) and renders ``fit.png``.
+instance whose free parameters are arguments. The plain class (``FitPositionsImagePairRepeat`` /
+``FitPositionsSource``, free ``Point`` centres) is a sub-row. Every row records ``resources``,
+writes ``parity.json`` for the headline class (the JIT value against the eager NumPy
+``AnalysisPoint`` in the same process, tolerance 1e-4 x |reference| in fp64) and renders
+``fit.png`` from the headline class's eager fits. The two breakdowns decompose the same headline
+class.
 """
 
 from __future__ import annotations
@@ -73,7 +77,7 @@ MASS_AT_200 = 10**15.3
 #: The simulator's true source centres, the source-plane cell's ``Point`` centres.
 TRUTH_SOURCE_CENTRES = ((0.3, 0.5), (-0.8, 1.2))
 
-#: The fit classes per likelihood: the plain headline and the solved sub-row (decision D3).
+#: The fit classes per likelihood: the solved headline and the plain sub-row (decision D3).
 FIT_CLASS_NAMES = {
     "image_plane": {
         "plain": "FitPositionsImagePairRepeat",
@@ -81,6 +85,10 @@ FIT_CLASS_NAMES = {
     },
     "source_plane": {"plain": "FitPositionsSource", "solved": "FitPositionsSourceSolved"},
 }
+#: The arm the row is headlined by (timed, vmapped, witnessed, drawn) and its sub-row (D3, human
+#: 2026-10-29). The workspace cluster search fits ``FitPositionsSourceSolved``.
+HEADLINE_ARM = "solved"
+SUB_ARM = "plain"
 #: Steady repeats of the JIT block: the image-plane call re-runs the multi-plane forward solve.
 N_REPEATS = {"image_plane": 3, "source_plane": 10}
 #: The vmap batch per backend: the A100 table has no cluster entry, and on CPU the batch is
@@ -88,8 +96,8 @@ N_REPEATS = {"image_plane": 3, "source_plane": 10}
 VMAP_BATCH = {"cpu": 3, "gpu": 16}
 #: The parity quantity both runtime rows compare.
 PARITY_QUANTITY = (
-    "log_likelihood_function summed over both systems (JIT AnalysisPoint, plain fit class) at "
-    "the prior-median instance, vs the eager NumPy AnalysisPoint in the same process"
+    "log_likelihood_function summed over both systems (JIT AnalysisPoint, the headline solved fit "
+    "class) at the prior-median instance, vs the eager NumPy AnalysisPoint in the same process"
 )
 
 
@@ -299,8 +307,9 @@ def _summed(analysis_list):
 
 def run_runtime(likelihood: str, cli, *, profiling_root: Path) -> Path:
     """The JAX runtime row of a cluster likelihood: eager NumPy reference, JIT full pipeline
-    (lower / compile / first call / steady), the steady median, the vmap per call, the solved
-    sub-row, ``resources``, ``parity.json`` and ``fit.png``. Returns the row's path."""
+    (lower / compile / first call / steady), the steady median and the vmap per call of the
+    headline (solved) class, the plain sub-row, ``resources``, ``parity.json`` and ``fit.png``.
+    Returns the row's path."""
     if likelihood not in LIKELIHOODS:
         raise ValueError(f"unknown cluster likelihood {likelihood!r}; expected {LIKELIHOODS}")
     import time
@@ -339,16 +348,20 @@ def run_runtime(likelihood: str, cli, *, profiling_root: Path) -> Path:
         with timer.section("solver_build"):
             solver = build_solver(settings)
         point_centres = backtraced_centres(cell)
-        point_centres_source = "back-traced centroid of each system's observed images"
+        point_centres_source = (
+            "plain sub-row only: back-traced centroid of each system's observed images"
+        )
     else:
         settings, solver = None, None
         point_centres = list(TRUTH_SOURCE_CENTRES)
-        point_centres_source = "the simulator's true source centres"
+        point_centres_source = "plain sub-row only: the simulator's true source centres"
 
     arms: dict[str, Any] = {}
-    plain_compiled = None
+    headline_compiled = None
     eager_fits = None
-    for arm in ("plain", "solved"):
+    solved_centres = None
+    # The headline first: its compiled pipeline is kept for the steady median.
+    for arm in (HEADLINE_ARM, SUB_ARM):
         print(f"\n--- {likelihood} {arm}: {FIT_CLASS_NAMES[likelihood][arm]} ---")
         m = model(cell, solved=arm == "solved", point_centres=point_centres)
         instance = m.instance_from_vector(vector=m.physical_values_from_prior_medians)
@@ -360,8 +373,12 @@ def run_runtime(likelihood: str, cli, *, profiling_root: Path) -> Path:
         eager_value = float(sum(a.log_likelihood_function(instance=instance) for a in eager))
         eager_s = time.perf_counter() - t0
         print(f"  eager NumPy log L = {eager_value!r} ({eager_s:.3f} s)")
-        if arm == "plain":
+        if arm == HEADLINE_ARM:
             eager_fits = [a.fit_from(instance=instance) for a in eager]
+            # The analytically solved source centre (beta*) of each system, as the fit read it.
+            solved_centres = [
+                [float(v) for v in fit.positions.source_plane_coordinate] for fit in eager_fits
+            ]
 
         full = _summed(analyses(cell, likelihood, arm, solver, use_jax=True))
         compiled, result = timing.jit_profile(
@@ -383,34 +400,35 @@ def run_runtime(likelihood: str, cli, *, profiling_root: Path) -> Path:
             "single_jit_block_s": jit_records[f"full_pipeline_{arm}"]["steady_per_call_s"],
             "jit_phases": jit_records[f"full_pipeline_{arm}"],
         }
-        if arm == "plain":
-            plain_compiled, plain_params = compiled, params
+        if arm == HEADLINE_ARM:
+            headline_compiled, headline_params = compiled, params
         else:
             del compiled
         gc.collect()
 
-    full_per_call = arms["plain"]["single_jit_block_s"]
+    headline_cls = FIT_CLASS_NAMES[likelihood][HEADLINE_ARM]
+    full_per_call = arms[HEADLINE_ARM]["single_jit_block_s"]
     full_median = timing.headline_steady_median(
-        plain_compiled, plain_params, block_mean_s=full_per_call
+        headline_compiled, headline_params, block_mean_s=full_per_call
     )
-    del plain_compiled
+    del headline_compiled
     jax.clear_caches()
     gc.collect()
 
     # vmap: the batched cost a sampler pays per point (the catalogue's JAX per-call headline).
     backend = jax.default_backend()
     batch_size = VMAP_BATCH["gpu" if backend == "gpu" else "cpu"]
-    print(f"\n--- vmap (batch {batch_size}, declared cluster_standard.VMAP_BATCH) ---")
-    full_plain = _summed(analyses(cell, likelihood, "plain", solver, use_jax=True))
+    print(f"\n--- vmap {headline_cls} (batch {batch_size}, cluster_standard.VMAP_BATCH) ---")
+    full_headline = _summed(analyses(cell, likelihood, HEADLINE_ARM, solver, use_jax=True))
     vmap: dict[str, Any] | None = None
     attempts = []
     for nb in sorted({batch_size, max(1, batch_size // 2), 1}, reverse=True):
         batched = jax.tree_util.tree_map(
-            lambda leaf, n=nb: jnp.broadcast_to(leaf, (n, *jnp.shape(leaf))), plain_params
+            lambda leaf, n=nb: jnp.broadcast_to(leaf, (n, *jnp.shape(leaf))), headline_params
         )
         try:
             per_call = timing.vmap_profile(
-                full_plain,
+                full_headline,
                 "full_pipeline",
                 batched,
                 nb,
@@ -442,12 +460,18 @@ def run_runtime(likelihood: str, cli, *, profiling_root: Path) -> Path:
 
     al_version = al.__version__
     configuration = {
-        "likelihood": f"{likelihood} ({FIT_CLASS_NAMES[likelihood]['plain']})",
+        "likelihood": f"{likelihood} ({headline_cls})",
+        "headline_arm": HEADLINE_ARM,
+        "sub_row_arm": SUB_ARM,
         "n_systems": len(cell["dataset_list"]),
         "n_images_total": int(sum(len(p) for p in cell["positions_list"])),
         "n_planes": len(cell["tracer"].planes),
         "n_mass_profiles": cell["n_mass_profiles"],
-        "free_parameters": arms["plain"]["free_parameters"],
+        "free_parameters": arms[HEADLINE_ARM]["free_parameters"],
+        "solved_source_centres": solved_centres,
+        "solved_source_centres_source": (
+            "the headline fit's analytic beta* (source_plane_coordinate) per system, eager"
+        ),
         "point_centres": [list(c) for c in point_centres],
         "point_centres_source": point_centres_source,
         "instance": "prior medians of tight Gaussians on the truth (cluster_standard.model)",
@@ -463,17 +487,19 @@ def run_runtime(likelihood: str, cli, *, profiling_root: Path) -> Path:
         "thread_environment": thread_environment(),
         "instrument": INSTRUMENT,
         "model": likelihood,
-        "fit_positions_cls": FIT_CLASS_NAMES[likelihood]["plain"],
+        "fit_positions_cls": headline_cls,
         "use_mixed_precision": bool(cli.use_mixed_precision),
         "configuration": configuration,
-        "eager_log_likelihood": arms["plain"]["eager_log_likelihood"],
-        "log_likelihood_jit": arms["plain"]["log_likelihood_jit"],
+        "eager_log_likelihood": arms[HEADLINE_ARM]["eager_log_likelihood"],
+        "log_likelihood_jit": arms[HEADLINE_ARM]["log_likelihood_jit"],
         "full_pipeline_single_jit": full_per_call,
         **full_median,
         "vmap": vmap
         if vmap is not None
         else {"status": "failed", "attempts": attempts, "note": "every vmap batch failed"},
         "jit_phases": jit_records,
+        # Both arms in full; ``headline_arm`` names the one the top-level fields report.
+        "headline_arm": HEADLINE_ARM,
         "solved": arms["solved"],
         "plain": arms["plain"],
     }
@@ -492,11 +518,11 @@ def run_runtime(likelihood: str, cli, *, profiling_root: Path) -> Path:
     # instance and solver in this process, after every timed region (1e-4 x |reference|, fp64).
     write_parity_json(
         dict_path.parent,
-        log_likelihood=arms["plain"]["log_likelihood_jit"],
-        reference_log_likelihood=arms["plain"]["eager_log_likelihood"],
+        log_likelihood=arms[HEADLINE_ARM]["log_likelihood_jit"],
+        reference_log_likelihood=arms[HEADLINE_ARM]["eager_log_likelihood"],
         use_mixed_precision=cli.use_mixed_precision,
         reference_source=(
-            f"eager NumPy AnalysisPoint(use_jax=False, {FIT_CLASS_NAMES[likelihood]['plain']}) "
+            f"eager NumPy AnalysisPoint(use_jax=False, {headline_cls}) "
             f"summed over {len(cell['dataset_list'])} systems in the same process: same dataset, "
             "model, instance and solver"
         ),
@@ -504,8 +530,9 @@ def run_runtime(likelihood: str, cli, *, profiling_root: Path) -> Path:
         quantity=PARITY_QUANTITY,
         dataset_type="cluster",
     )
-    # Fit figure (likelihood-lifecycle 1B): every system's eager fit at the headline instance.
-    if not np.isfinite(arms["plain"]["eager_log_likelihood"]):
+    # Fit figure (likelihood-lifecycle 1B): every system's eager headline (solved) fit at the
+    # headline instance.
+    if not np.isfinite(arms[HEADLINE_ARM]["eager_log_likelihood"]):
         print("  WARNING: the eager reference is not finite; fit.png still drawn")
     render_fit_png(eager_fits, dict_path.parent, dataset_type="cluster", cli=cli, solver=solver)
     return dict_path

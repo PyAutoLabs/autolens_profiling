@@ -3,16 +3,18 @@ JAX Profiling: Cluster Source-Plane Likelihood (Runtime)
 ========================================================
 
 The per-evaluation runtime of the cluster source-plane likelihood (likelihood-lifecycle 2e,
-autolens_profiling#474): the source-plane chi-squared (``FitPositionsSource``): the observed images are
-ray-traced back to each source's plane and weighted by the lensing Jacobian's precision tensor
-(PyAutoLens bdb44a87c). No PointSolver; ``--standard-size`` is recorded and changes nothing.
+autolens_profiling#474): the solved source-plane chi-squared (``FitPositionsSourceSolved`` with
+``PointSolved``, the workspace cluster search's fit; decision D3, human 2026-10-29): the observed
+images are ray-traced back to each source's plane, weighted by the lensing Jacobian's precision
+tensor (PyAutoLens bdb44a87c), and measured from the analytically solved centre beta*, which is
+marginalised over. No PointSolver; ``--standard-size`` is recorded and changes nothing.
 
 The cell is the standard cluster of ``dataset/cluster/simple`` (2 main dPIE + 10 scaling dPIE +
 NFW host; 2 sources at z = 1 and 2), one ``AnalysisPoint(use_jax=True)`` per system summed the
 way a ``FactorGraphModel`` sums its factors, JIT-compiled end to end from a model instance whose
 free parameters are arguments. The row records lower / compile / first call / steady state, the
-steady median, the vmap per call (the catalogue's JAX headline), the solved fit class as a
-sub-row, ``resources``, ``parity.json`` (JIT vs eager NumPy) and ``fit.png``. The shared
+steady median, the vmap per call (the catalogue's JAX headline), the plain fit class
+(``FitPositionsSource``, free ``Point`` centres) as a sub-row, ``resources``, ``parity.json`` (JIT vs eager NumPy) and ``fit.png``. The shared
 driver is ``scripts/misc/likelihood_breakdown/cluster_standard.py`` (``run_runtime``).
 
 Output: the mirrored cell named by ``--output-path`` (the campaign submits always pass one),
