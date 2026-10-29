@@ -328,9 +328,16 @@ run unless all five HEADs equal `MF_LIBRARY_SHAS` (origin/main on 2026-10-27). I
 unreleased. Open question for the human: PyAutoArray `7eba0c07` is also tag 2026.10.26.1, which
 is on PyPI, so this experiment could instead pin that release.
 
+Known gap (`BATCH1_LIMITATIONS`, human ruling 2026-10-29, "go ahead with cell missing"): the alma
+192x192 scan leg (RAL 413191_6) hit TIMEOUT at 12:00:29. Its 20 matrix-free instances finished
+(about 12-15 s each); the dense_fft comparison arm at 36,864 source pixels did not, so it wrote no
+row. It is recorded as missing and not resubmitted. The other six matrix-free legs landed.
+
 **PR B** copies only complete cells from `output/p2b_batch1/results/` into `results/`, as in 2a:
 the final row, `fit.png`, a `parity.json` that passes `parity_witness.py --check` (not
 `not_assessed`), and `library_revisions` that match the pinned checkout. It moves the 20
 `size_fallback` rows and the stale MGE row to `history/<release_pin>_<date>/` first, then
-regenerates the catalogue and coverage.
+regenerates the catalogue and coverage. Done for batch 1: all 60 cells (30 witnesses, all `match`) and 6
+of the 7 matrix-free legs; the 21 superseded rows are in `history/`. The campaign page is
+[`likelihood_lifecycle_p2b.md`](../../../wiki/campaigns/interferometer/likelihood_lifecycle_p2b.md).
 

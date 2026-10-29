@@ -166,6 +166,13 @@ def test_reference_and_matrixfree_tasks():
         assert (ROOT / "scripts" / f"{t.script}.py").is_file()
 
 
+def test_every_batch1_limitation_names_a_leg_with_no_committed_row():
+    legs = {t.cell: t for t in p2b.planned_tasks() + p2b.matrixfree_tasks()}
+    assert set(p2b.BATCH1_LIMITATIONS) <= set(legs)
+    for cell, reason in p2b.BATCH1_LIMITATIONS.items():
+        assert reason and not (ROOT / legs[cell].output).exists()
+
+
 # -------------------------------------------------------------------------------- submits
 
 
