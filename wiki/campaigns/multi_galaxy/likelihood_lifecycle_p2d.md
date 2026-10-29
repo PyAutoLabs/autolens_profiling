@@ -200,3 +200,16 @@ the drafts, so no code, plan or submit changed: 48 cells, batch 0 = the 24 group
 all 48 with batch 0's walls. The human can still change any decision before batch 1.
 
 The batch-0 go was given with the decisions, but batch 0 was not submitted. The shared RAL venv (`/mnt/ral/jnightin/PyAuto/PyAuto`, which every submit activates) carries jax/jaxlib 0.10.2 (`site-packages/jax-0.10.2.dist-info`, `jaxlib-0.10.2.dist-info`), while the pin's PyAutoNerves excludes 0.10.* ("CPU batched LAPACK can deadlock in 0.10.x / 0.11.0", Heart#274). Rows from that environment would not match the pin's dependency floor, so the environment is the human's call. Later the same evening the human also said not to start anything new on RAL. A detached checkout of main 32c0becd was being prepared at `/mnt/ral/jnightin/profiling/autolens_profiling_p2dg`, but nothing has been submitted from it.
+
+### 2026-10-29 — the eigen flag moves into the shared submit preamble, for every campaign
+
+RAL's shared venv was upgraded to jax/jaxlib 0.11.2 (human, 2026-10-29), so every campaign's JAX
+CPU legs now run on the jaxlib that deadlocks. The human picked "All JAX CPU legs": the shared
+campaign preamble (`scripts/misc/campaigns/_common.py`, `run_leg`) appends
+`--xla_cpu_multi_thread_eigen=false` to `XLA_FLAGS` on every `JAX_PLATFORMS=cpu` leg of 2a-2g
+(the A100 nodes' CPU legs included; numba legs also run with `JAX_PLATFORMS=cpu` and so carry the
+inert flag), and never on a GPU leg (`cuda` / `cuda,cpu`). Each row records it in
+`device.xla_flags`. The 2d driver still appends the flag only when absent, so a 2d leg carries it
+once and keeps `configuration.xla_cpu_workaround`. D12's scope widens from 2d to every campaign;
+the 2a-2c rows already landed were measured on jax 0.10.2 without the flag (phase-3 Q7 covers
+that comparison).
