@@ -1,6 +1,6 @@
 """Likelihood-lifecycle phase 2c: the point-source campaign's task manifest and its SLURM submits.
 
-autolens_profiling#472 measures the 12 planned point-source cells
+autolens_profiling#472 measures the 10 planned point-source cells
 (``point_source_image/image_plane`` and ``point_source_source/source_plane``, instrument
 ``simple``; ``dashboard/coverage.json``) on the pinned release 2026.10.25.1 from a private RAL
 checkout, the pin and checkout of phase 2b (decision D1). This module is the one copy of that work
@@ -12,11 +12,13 @@ share (``_common.py``)::
     python scripts/misc/campaigns/point_source_p2c.py --check   # exit 1 if a submit is stale
     python scripts/misc/campaigns/point_source_p2c.py --list    # print the manifest
 
-Of the 12 planned cells, 10 are measurable. Two, ``point_source_source/source_plane/simple
-jax_gpu_na_fp64@hpc_ral_cpu`` [runtime] and [breakdown], ask for a GPU setup on the RAL CPU host
-class, which has no GPU: they get no task and stay ``missing`` (decision D2; see
-:data:`MIS_DESIGNATED`). The ``jax_cpu_na_fp64@hpc_a100`` source-plane cells run JAX on the A100
-node's CPU (``JAX_PLATFORMS=cpu``) inside the A100 job, as 2a's ``jax_cpu_sparse@hpc_a100`` legs did.
+Every planned cell gets a task. The batch was planned against 12 cells, two of them
+``point_source_source/source_plane/simple jax_gpu_na_fp64@hpc_ral_cpu`` [runtime] and
+[breakdown], a GPU setup on the GPU-less RAL CPU host class that got no task (decision D2); the
+planner fix (#481, human ruling 2026-10-29 "fix the planner gap") plans a GPU setup only on a GPU
+host, so those two cells are no longer planned. The ``jax_cpu_na_fp64@hpc_a100`` source-plane
+cells run JAX on the A100 node's CPU (``JAX_PLATFORMS=cpu``) inside the A100 job, as 2a's
+``jax_cpu_sparse@hpc_a100`` legs did.
 
 There is no timing batch (decision D3): every evaluation is milliseconds, so one batch runs every
 cell under a fixed 1:00:00 wall, checked against the laptop walls of the same scripts
@@ -29,13 +31,16 @@ cell under a fixed 1:00:00 wall, checked against the laptop walls of the same sc
 
 Both write into the gitignored ``output/p2c/`` tree, never ``results/``.
 
-Besides the cells, each submit runs the solved-likelihood runtime script
-(``likelihood_runtime_solved.py``) on the same setup, as an ``experiments/solved_runtime/`` row
-(never current; :func:`solved_tasks`). The cell runtime scripts time the free-centre likelihoods
-(``FitPositionsImagePairAll``, ``FitPositionsSource``), while the breakdowns, the library default
-(``AnalysisPoint``'s ``fit_positions_cls``) and the stale source-plane runtime rows these cells
-supersede are the solved ones. Running both lets the human choose which one publishes as the cell
-without a second batch.
+The runtime cell is the solved likelihood (human ruling 2026-10-29, "Switch 2c to Solved"): its
+leg runs ``likelihood_runtime_solved.py`` (``FitPositionsImagePairAllSolved`` /
+``FitPositionsSourceSolved`` with ``PointSolved``, 5 free parameters), the library default
+(``AnalysisPoint``'s ``fit_positions_cls``) and what every breakdown and the stale source-plane
+runtime rows measure. Beside each runtime cell, each submit runs the free-centre
+``likelihood_runtime.py`` (``FitPositionsImagePairAll`` / ``FitPositionsSource``, 8 parameters)
+on the same setup as an ``experiments/plain_runtime/`` row (never current; :func:`plain_tasks`),
+the non-published comparison. Batch 413192/413193 ran the submits of autolens_profiling 2f98e01a,
+which had the two scripts the other way round (plain as the cell, solved in
+``experiments/solved_runtime/``); PR B moved the rows to match this definition, no rerun.
 
 Stdlib only; nothing here imports the modelling stack.
 """
@@ -83,24 +88,14 @@ SETUPS = {
         "hpc_a100": ("jax_cpu_na_fp64", "jax_gpu_na_fp64"),
     },
 }
-#: Planned cells with no task (decision D2). provisional_designations.json copies the §3.3 row's
-#: host-independent ``secondary`` column (``jax_gpu_dense_fp64``) into every host table of
-#: ``point_source_source``, so the RAL CPU host class (no GPU) is planned a GPU setup. Left
-#: ``missing`` for a human ruling on the designation, never measured on another host.
-MIS_DESIGNATED = {
-    ("point_source_source", "source_plane", "jax_gpu_na_fp64", "hpc_ral_cpu"): (
-        "designation/planner bug awaiting a human ruling: provisional_designations.json plans a "
-        "GPU setup on hpc_ral_cpu (RAL `ral`, no GPU)"
-    ),
-}
 MEASUREMENTS = ("runtime", "breakdown")
 CONFIG_NAMES = {
     ("hpc_ral_cpu", "cpu"): "hpc_ral_cpu_fp64",
     ("hpc_a100", "gpu"): "hpc_a100_fp64",
     ("hpc_a100", "cpu"): "hpc_a100_cpu_fp64",
 }
-#: The ``experiments/`` run name of the solved-likelihood runtime legs.
-SOLVED_RUN = "solved_runtime"
+#: The ``experiments/`` run name of the free-centre (plain) runtime comparison legs.
+PLAIN_RUN = "plain_runtime"
 
 #: Decision D3: one batch, fixed walls.
 TIME = {"ral_cpu": "1:00:00", "a100": "1:00:00"}
@@ -137,8 +132,8 @@ _ROUTES = {row["path"]: row["legacy"] for row in load_routes(ROOT)["routes"]}
 @dataclass(frozen=True, order=True)
 class Task:
     """One leg. ``kind``: ``cell`` (a planned coverage cell,
-    ``<dataset_type>/<variant>/simple <setup_id>@<host_class> [<measurement>]``) or ``solved``
-    (the solved-likelihood runtime of the same setup, an ``experiments/`` row)."""
+    ``<dataset_type>/<variant>/simple <setup_id>@<host_class> [<measurement>]``) or ``plain``
+    (the free-centre runtime of the same setup, an ``experiments/`` row)."""
 
     dataset_type: str
     variant: str
@@ -158,14 +153,15 @@ class Task:
     @property
     def cell(self) -> str:
         where = f"{self.dataset_type}/{self.variant}/{INSTRUMENT}"
-        if self.kind == "solved":
-            return f"{where} {self.setup_id}@{self.host_class} [{SOLVED_RUN} experiment]"
+        if self.kind == "plain":
+            return f"{where} {self.setup_id}@{self.host_class} [{PLAIN_RUN} experiment]"
         return f"{where} {self.setup_id}@{self.host_class} [{self.measurement}]"
 
     @property
     def script(self) -> str:
-        """The leg's script, relative to ``scripts/`` and without ``.py``."""
-        suffix = "_solved" if self.kind == "solved" else ""
+        """The leg's script, relative to ``scripts/`` and without ``.py``: the runtime cell times
+        the solved likelihood (ruling 2026-10-29), the ``plain`` experiment the free-centre one."""
+        suffix = "_solved" if self.kind == "cell" and self.measurement == "runtime" else ""
         return f"{self.dataset_type}/{self.variant}/likelihood_{self.measurement}{suffix}"
 
     @property
@@ -191,8 +187,8 @@ class Task:
             f"results/{self.dataset_type}/{self.variant}/{INSTRUMENT}/{self.setup_id}/"
             f"{self.host_class}"
         )
-        if self.kind == "solved":
-            return f"{cell}/experiments/{SOLVED_RUN}/runtime.json"
+        if self.kind == "plain":
+            return f"{cell}/experiments/{PLAIN_RUN}/runtime.json"
         return f"{cell}/{self.measurement}.json"
 
     @property
@@ -203,7 +199,7 @@ class Task:
 
 
 def planned_tasks() -> list[Task]:
-    """The 10 measurable planned point-source cells, sorted (4 RAL CPU + 6 A100)."""
+    """The 10 planned point-source cells, sorted (4 RAL CPU + 6 A100)."""
     return sorted(
         Task(dataset_type, variant, setup_id, host_class, measurement)
         for dataset_type, variant in LIKELIHOODS
@@ -213,30 +209,21 @@ def planned_tasks() -> list[Task]:
     )
 
 
-def mis_designated_cells() -> list[str]:
-    """The planned cells that get no task (decision D2)."""
+def plain_tasks() -> list[Task]:
+    """The free-centre runtime of every runtime setup (``experiments/`` rows, never current)."""
     return sorted(
-        f"{dt}/{variant}/{INSTRUMENT} {setup_id}@{host_class} [{m}]"
-        for (dt, variant, setup_id, host_class) in MIS_DESIGNATED
-        for m in MEASUREMENTS
-    )
-
-
-def solved_tasks() -> list[Task]:
-    """The solved-likelihood runtime of every measurable setup (``experiments/`` rows)."""
-    return sorted(
-        Task(t.dataset_type, t.variant, t.setup_id, t.host_class, "runtime", "solved")
+        Task(t.dataset_type, t.variant, t.setup_id, t.host_class, "runtime", "plain")
         for t in planned_tasks()
         if t.measurement == "runtime"
     )
 
 
 def ral_cpu_tasks() -> list[Task]:
-    return [t for t in planned_tasks() + solved_tasks() if t.host_class == "hpc_ral_cpu"]
+    return [t for t in planned_tasks() + plain_tasks() if t.host_class == "hpc_ral_cpu"]
 
 
 def a100_tasks() -> list[Task]:
-    return [t for t in planned_tasks() + solved_tasks() if t.host_class == "hpc_a100"]
+    return [t for t in planned_tasks() + plain_tasks() if t.host_class == "hpc_a100"]
 
 
 def measured_wall(task: Task) -> tuple[int, str]:
@@ -315,12 +302,14 @@ def render(name: str, tasks: list[Task], *, kind: str, title: str) -> str:
         "# checks the row's library_revisions equal the checkout's HEADs. The shared mirror is never",
         "# pulled or used. AP_ROOT is the checkout this was submitted from (hpc/<batch>/../..).",
         "#",
-        "# CELLS. Every cell leg runs its likelihood_runtime.py or likelihood_breakdown.py on the",
+        "# CELLS. Every cell leg runs its likelihood_runtime_solved.py (the runtime cell is the solved",
+        "# likelihood, human ruling 2026-10-29) or likelihood_breakdown.py on the",
         "# committed dataset/point_source/simple positions and writes its row, fit.png and",
         "# parity.json (JIT vs the eager NumPy AnalysisPoint(use_jax=False) value) into the",
         "# mirrored cell named by --output-path under the gitignored output/p2c/ scratch tree, never",
-        "# in place over committed rows. The solved_runtime legs run likelihood_runtime_solved.py",
-        f"# on the same setup into the cell's experiments/{SOLVED_RUN}/ folder (never current).",
+        "# in place over committed rows. The plain_runtime legs run the free-centre",
+        f"# likelihood_runtime.py on the same setup into the cell's experiments/{PLAIN_RUN}/ folder",
+        "# (the non-published comparison, never current).",
         "#",
         f"# MEMORY. --mem={mem}gb: the laptop smokes peaked at {LAPTOP_PEAK_RSS_GB} GB resident; the",
         "# 2026-09 point-source submits asked 16-32 GB.",
@@ -396,10 +385,8 @@ def main(argv=None) -> int:
     mode.add_argument("--list", action="store_true", help="print the manifest")
     args = parser.parse_args(argv)
     if args.list:
-        for task in planned_tasks() + solved_tasks():
+        for task in planned_tasks() + plain_tasks():
             print(f"{task.cell:<84} {task.script}.py {task.flags}")
-        for cell in mis_designated_cells():
-            print(f"{cell:<84} NO TASK (decision D2: mis-designated, awaiting a human ruling)")
         return 0
     return _common.write_or_check(submits(), ROOT, args=args, generator="point_source_p2c.py")
 

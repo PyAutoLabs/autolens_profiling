@@ -13,12 +13,14 @@
 # checks the row's library_revisions equal the checkout's HEADs. The shared mirror is never
 # pulled or used. AP_ROOT is the checkout this was submitted from (hpc/<batch>/../..).
 #
-# CELLS. Every cell leg runs its likelihood_runtime.py or likelihood_breakdown.py on the
+# CELLS. Every cell leg runs its likelihood_runtime_solved.py (the runtime cell is the solved
+# likelihood, human ruling 2026-10-29) or likelihood_breakdown.py on the
 # committed dataset/point_source/simple positions and writes its row, fit.png and
 # parity.json (JIT vs the eager NumPy AnalysisPoint(use_jax=False) value) into the
 # mirrored cell named by --output-path under the gitignored output/p2c/ scratch tree, never
-# in place over committed rows. The solved_runtime legs run likelihood_runtime_solved.py
-# on the same setup into the cell's experiments/solved_runtime/ folder (never current).
+# in place over committed rows. The plain_runtime legs run the free-centre
+# likelihood_runtime.py on the same setup into the cell's experiments/plain_runtime/ folder
+# (the non-published comparison, never current).
 #
 # MEMORY. --mem=32gb: the laptop smokes peaked at 1.1 GB resident; the
 # 2026-09 point-source submits asked 16-32 GB.
@@ -39,7 +41,7 @@
 #   1 leg(s): image_plane jax_gpu_na_fp64 runtime
 #   cell: point_source_image/image_plane_solved/simple  device: a100  precision: fp64
 #   source: measured-wall  wall: 192  ref: laptop-p2c-smoke-2026-10-28  measured-on: simple  headroom: 1.25  median: included
-#   4 leg(s): source_plane jax_cpu_na_fp64 breakdown, source_plane jax_cpu_na_fp64 runtime, source_plane jax_gpu_na_fp64 breakdown, source_plane jax_gpu_na_fp64 runtime
+#   4 leg(s): source_plane jax_cpu_na_fp64 breakdown, source_plane jax_gpu_na_fp64 breakdown, source_plane jax_cpu_na_fp64 runtime, source_plane jax_gpu_na_fp64 runtime
 #   cell: point_source_source/source_plane/simple  device: a100  precision: fp64
 #   source: measured-wall  wall: 596  ref: laptop-p2c-smoke-2026-10-28  measured-on: simple  headroom: 1.25  median: included
 #   2 leg(s): source_plane jax_cpu_na_fp64 runtime, source_plane jax_gpu_na_fp64 runtime
@@ -163,20 +165,20 @@ CELLNAMES=(
     "point_source_source/source_plane/simple jax_cpu_na_fp64@hpc_a100 [runtime]"
     "point_source_source/source_plane/simple jax_gpu_na_fp64@hpc_a100 [breakdown]"
     "point_source_source/source_plane/simple jax_gpu_na_fp64@hpc_a100 [runtime]"
-    "point_source_image/image_plane/simple jax_gpu_na_fp64@hpc_a100 [solved_runtime experiment]"
-    "point_source_source/source_plane/simple jax_cpu_na_fp64@hpc_a100 [solved_runtime experiment]"
-    "point_source_source/source_plane/simple jax_gpu_na_fp64@hpc_a100 [solved_runtime experiment]"
+    "point_source_image/image_plane/simple jax_gpu_na_fp64@hpc_a100 [plain_runtime experiment]"
+    "point_source_source/source_plane/simple jax_cpu_na_fp64@hpc_a100 [plain_runtime experiment]"
+    "point_source_source/source_plane/simple jax_gpu_na_fp64@hpc_a100 [plain_runtime experiment]"
 )
 CELLS=(
     point_source_image/image_plane/likelihood_breakdown
-    point_source_image/image_plane/likelihood_runtime
-    point_source_source/source_plane/likelihood_breakdown
-    point_source_source/source_plane/likelihood_runtime
-    point_source_source/source_plane/likelihood_breakdown
-    point_source_source/source_plane/likelihood_runtime
     point_source_image/image_plane/likelihood_runtime_solved
+    point_source_source/source_plane/likelihood_breakdown
     point_source_source/source_plane/likelihood_runtime_solved
+    point_source_source/source_plane/likelihood_breakdown
     point_source_source/source_plane/likelihood_runtime_solved
+    point_source_image/image_plane/likelihood_runtime
+    point_source_source/source_plane/likelihood_runtime
+    point_source_source/source_plane/likelihood_runtime
 )
 INSTS=(
     simple
@@ -218,9 +220,9 @@ OUTS=(
     results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_a100/runtime.json
     results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/breakdown.json
     results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/runtime.json
-    results/point_source_image/image_plane/simple/jax_gpu_na_fp64/hpc_a100/experiments/solved_runtime/runtime.json
-    results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_a100/experiments/solved_runtime/runtime.json
-    results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/experiments/solved_runtime/runtime.json
+    results/point_source_image/image_plane/simple/jax_gpu_na_fp64/hpc_a100/experiments/plain_runtime/runtime.json
+    results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_a100/experiments/plain_runtime/runtime.json
+    results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/experiments/plain_runtime/runtime.json
 )
 RESULTS_ROOT="$AP_ROOT/output/p2c"
 

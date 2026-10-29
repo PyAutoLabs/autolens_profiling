@@ -1,9 +1,10 @@
 """The phase-2c point-source campaign manifest and its submits (autolens_profiling#472).
 
-The manifest must be the 12 planned point-source cells: 10 with a task, and the two
-``jax_gpu_na_fp64@hpc_ral_cpu`` source-plane cells (a GPU setup on a host class with no GPU) with
-none (decision D2). The submits must be what the generator renders, run every measurable cell
-once (4 on `ral`, 6 in one `--gres=gpu:1` job, the ``jax_cpu@hpc_a100`` legs on the node's CPU),
+The manifest must be the 10 planned point-source cells, every one with a task (since #481 the
+planner no longer plans the ``jax_gpu_na_fp64@hpc_ral_cpu`` source-plane cells, a GPU setup on a
+host class with no GPU). The runtime cell runs the solved likelihood (human ruling 2026-10-29) and
+the free-centre runtime runs beside it as an ``experiments/plain_runtime/`` row. The submits must
+be what the generator renders, run every cell once (4 on `ral`, 6 in one `--gres=gpu:1` job, the ``jax_cpu@hpc_a100`` legs on the node's CPU),
 never put a CPU-only job on the `gpu` partition, pass the wall gate inside the fixed 1:00:00
 walls (decision D3) and pin the private checkout at 2026.10.25.1 (decision D1). The 2a and 2b
 submits stay byte-identical. Modules are loaded by path; no cell script is run.
@@ -74,17 +75,13 @@ def legs(path):
 # ------------------------------------------------------------------------------- manifest
 
 
-def test_manifest_is_the_planned_cells_less_the_two_mis_designated():
+def test_manifest_is_the_planned_cells():
     tasks = p2c.planned_tasks()
     cells = {t.cell for t in tasks}
     assert len(tasks) == len(cells) == 10
-    missing = set(p2c.mis_designated_cells())
-    assert missing == {
-        "point_source_source/source_plane/simple jax_gpu_na_fp64@hpc_ral_cpu [runtime]",
-        "point_source_source/source_plane/simple jax_gpu_na_fp64@hpc_ral_cpu [breakdown]",
-    }
-    assert cells | missing == planned_point_source_cells()
-    assert not cells & missing
+    assert cells == planned_point_source_cells()
+    # #481: no GPU setup is planned on the GPU-less RAL CPU host class.
+    assert not any("jax_gpu" in c and "hpc_ral_cpu" in c for c in planned_point_source_cells())
     assert Counter(t.host_class for t in tasks) == {"hpc_ral_cpu": 4, "hpc_a100": 6}
     # A GPU setup only ever runs on the A100 host class.
     for t in tasks:
@@ -99,7 +96,7 @@ def test_manifest_is_the_planned_cells_less_the_two_mis_designated():
 
 
 def test_every_task_names_a_real_script_its_flags_parse_and_its_own_cell():
-    for task in p2c.planned_tasks() + p2c.solved_tasks():
+    for task in p2c.planned_tasks() + p2c.plain_tasks():
         assert (ROOT / "scripts" / f"{task.script}.py").is_file(), task.script
         cli = pc.parse_profile_cli(argv=["--instrument", task.instrument, *task.flags.split()])
         assert cli.instrument == "simple"
@@ -124,17 +121,19 @@ def test_every_task_names_a_real_script_its_flags_parse_and_its_own_cell():
         assert facts["model_variant"] == "default"
         if task.kind == "cell":
             assert facts["location"] == "cell"
-            assert task.script.endswith(f"likelihood_{task.measurement}")
+            # Ruling 2026-10-29: the runtime cell is the solved likelihood.
+            expected = {"runtime": "likelihood_runtime_solved", "breakdown": "likelihood_breakdown"}
+            assert task.script.endswith(expected[task.measurement])
         else:
-            assert (facts["location"], facts["run"]) == ("experiments", "solved_runtime")
-            assert task.script.endswith("likelihood_runtime_solved")
+            assert (facts["location"], facts["run"]) == ("experiments", "plain_runtime")
+            assert task.script.endswith("likelihood_runtime")
         assert task.platform == ("cuda" if task.device == "gpu" else "cpu")
 
 
-def test_solved_runtime_runs_beside_every_runtime_cell():
+def test_plain_runtime_runs_beside_every_runtime_cell():
     runtime = {(t.dataset_type, t.setup_id, t.host_class) for t in p2c.planned_tasks()}
-    solved = {(t.dataset_type, t.setup_id, t.host_class) for t in p2c.solved_tasks()}
-    assert solved == runtime and len(p2c.solved_tasks()) == 5
+    plain = {(t.dataset_type, t.setup_id, t.host_class) for t in p2c.plain_tasks()}
+    assert plain == runtime and len(p2c.plain_tasks()) == 5
 
 
 # -------------------------------------------------------------------------------- submits
@@ -153,15 +152,14 @@ def test_phase_2a_and_2b_submits_stay_byte_identical():
             assert (ROOT / rel).read_text() == text, rel
 
 
-def test_every_measurable_cell_runs_once_4_on_ral_and_6_in_one_gpu_job():
+def test_every_cell_runs_once_4_on_ral_and_6_in_one_gpu_job():
     ran = Counter()
     for path in ALL:
         ran.update(legs(path)[1])
     cells = {t.cell for t in p2c.planned_tasks()}
-    solved = {t.cell for t in p2c.solved_tasks()}
+    plain = {t.cell for t in p2c.plain_tasks()}
     assert set(ran.values()) == {1}
-    assert set(ran) == cells | solved
-    assert not set(ran) & set(p2c.mis_designated_cells())
+    assert set(ran) == cells | plain
 
     text, names = legs(RAL)
     assert sbatch(text, "partition") == "ral" and "--gres" not in text
@@ -216,7 +214,7 @@ def test_walls_are_one_hour_and_hold_the_laptop_walls():
         for row in rows:
             assert row["source"] == "measured-wall" and row["ref"] == p2c.LAPTOP_REF
             assert float(row["headroom"]) >= 1.25
-    assert set(p2c.LAPTOP_WALLS) == {t.script for t in p2c.planned_tasks() + p2c.solved_tasks()}
+    assert set(p2c.LAPTOP_WALLS) == {t.script for t in p2c.planned_tasks() + p2c.plain_tasks()}
 
 
 def test_memory():
