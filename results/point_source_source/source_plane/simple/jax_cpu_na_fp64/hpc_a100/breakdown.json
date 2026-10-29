@@ -1,0 +1,400 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "package_versions": {
+    "jax": "0.10.2",
+    "jaxlib": "0.10.2"
+  },
+  "source_revisions": {
+    "autolens_profiling": "2f98e01a150d2f59aebb5735c4c12ae286a7b1d3",
+    "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+    "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+    "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+    "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+    "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
+  },
+  "instrument": "simple",
+  "config_name": "hpc_a100_cpu_fp64",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "hostname": "euclid-ral-gpu-1",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 124,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2c/output/jax_cache/p2c_413193_2",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-10-28T21:54:57Z",
+      "host": "euclid-ral-gpu-1",
+      "slurm": {
+        "job_id": "413193",
+        "array_job_id": null,
+        "array_task_id": null
+      },
+      "loadavg_at_import": [
+        2.39,
+        1.72,
+        0.77
+      ],
+      "loadavg_at_write": [
+        1.71,
+        1.63,
+        0.78
+      ],
+      "profiling_revision": "2f98e01a150d2f59aebb5735c4c12ae286a7b1d3",
+      "library_revisions": {
+        "autolens_profiling": "2f98e01a150d2f59aebb5735c4c12ae286a7b1d3",
+        "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+        "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+        "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+        "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+        "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.10.2",
+        "jaxlib": "0.10.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.65.1",
+        "nufftax": "0.6.1",
+        "finufft": "2.5.1"
+      }
+    }
+  },
+  "resources": {
+    "resources_schema": 1,
+    "engine": "jax",
+    "device": "cpu",
+    "cpus_per_eval": 8,
+    "cpus_per_eval_basis": "jax cpu: NPROC threads in XLA's CPU intra-op pool",
+    "devices_per_eval": 0,
+    "peak_rss_gb": 1.413886,
+    "peak_rss_basis": "in_process_ru_maxrss",
+    "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
+  },
+  "thread_environment": {
+    "NPROC": "8",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "host_load_average": {
+    "start": [
+      2.39,
+      1.72,
+      0.77
+    ],
+    "end": [
+      1.71,
+      1.63,
+      0.78
+    ]
+  },
+  "precision": {
+    "jax_enable_x64": true,
+    "mixed_precision_requested": false,
+    "note": "The source-plane fit has no Settings mixed-precision switch."
+  },
+  "configuration": {
+    "likelihood": "source_plane_solved (FitPositionsSourceSolved + PointSolved)",
+    "plain_control": "source_plane (FitPositionsSource + PointFlux)",
+    "fit_positions_cls": {
+      "solved": "FitPositionsSourceSolved",
+      "plain_control": "FitPositionsSource"
+    },
+    "weighting": {
+      "solved": "jacobian",
+      "plain_control": "jacobian"
+    },
+    "hessian_method": "jacfwd",
+    "solver": null,
+    "n_positions": 4,
+    "positions_noise_sigma": 0.05,
+    "free_parameters": {
+      "solved": 5,
+      "plain_control": 8
+    },
+    "lens_redshift": 0.5,
+    "source_redshift": 1.0,
+    "n_repeats": 500
+  },
+  "steps": {
+    "Ray trace: _beta_hat (deflections at observed positions)": 0.00024800197570584714,
+    "Precision tensor W_i (jacfwd Hessian -> A^-T Theta A^-1)": 9.100011084228754e-06,
+    "Solved centre beta* (rebuilds W_i and _beta_hat)": 6.105517968535423e-06,
+    "Chi-squared (rebuilds W_i, beta*, _beta_hat)": -1.2215517926961184e-05,
+    "Marginalisation term (rebuilds W_i)": 7.880007615312934e-06,
+    "fit.log_likelihood (re-evaluates every term)": 1.104490365833044e-06,
+    "Fused-wrapper residual (fused - last prefix)": 5.855108611285686e-07
+  },
+  "prefix_steady_per_call_s": {
+    "Ray trace: _beta_hat (deflections at observed positions)": 0.00024800197570584714,
+    "Precision tensor W_i (jacfwd Hessian -> A^-T Theta A^-1)": 0.0002571019867900759,
+    "Solved centre beta* (rebuilds W_i and _beta_hat)": 0.0002632075047586113,
+    "Chi-squared (rebuilds W_i, beta*, _beta_hat)": 0.00025099198683165014,
+    "Marginalisation term (rebuilds W_i)": 0.00025887199444696307,
+    "fit.log_likelihood (re-evaluates every term)": 0.0002599764848127961
+  },
+  "total_step_by_step": 0.0002605619956739247,
+  "plain_control_steps": {
+    "Ray trace: model_data (deflections at observed positions)": 0.00024771702010184526,
+    "Magnifications (jacfwd Hessian)": 1.4519464457407594e-05,
+    "Chi-squared map (rebuilds model_data + magnifications)": -5.809473805129528e-06,
+    "fit.log_likelihood (noise norm re-evaluates magnifications)": 2.520013367757201e-06,
+    "Fused-wrapper residual (fused - last prefix)": 5.264475475996733e-06
+  },
+  "plain_control_prefix_steady_per_call_s": {
+    "Ray trace: model_data (deflections at observed positions)": 0.00024771702010184526,
+    "Magnifications (jacfwd Hessian)": 0.00026223648455925286,
+    "Chi-squared map (rebuilds model_data + magnifications)": 0.00025642701075412333,
+    "fit.log_likelihood (noise norm re-evaluates magnifications)": 0.00025894702412188053
+  },
+  "fused_full_solved_s": 0.0002605619956739247,
+  "fused_full_plain_control_s": 0.00026421149959787726,
+  "dispatch_floor": {
+    "params_pytree_solved_s": 4.471000283956528e-05,
+    "params_pytree_plain_s": 4.749448271468282e-05,
+    "scalar_array_s": 1.042999792844057e-05,
+    "reading": "jit(sum of the ModelInstance leaves) and jit(x + 1) on a scalar: the per-call cost paid before any lensing work (argument flattening + dispatch)"
+  },
+  "cse_probe": {
+    "precision_once_s": 0.0002598415012471378,
+    "precision_thrice_s": 0.00025920147891156375,
+    "precision_thrice_over_once": 0.9975368740847702,
+    "magnifications_once_s": 0.0002594520046841353,
+    "magnifications_twice_s": 0.0002537070249672979,
+    "magnifications_twice_over_once": 0.9778572544705079,
+    "reading": "ratio ~1 => XLA merged the repeated evaluations inside one JIT; ratio ~k => each repeat is paid"
+  },
+  "gradient_cost": {
+    "grad_per_call_s": 0.0008413259929511696,
+    "forward_per_call_s": 0.0002605619956739247,
+    "grad_over_forward": 3.228889887702698,
+    "note": "jit(jax.value_and_grad(full_solved)); value and gradient in one call"
+  },
+  "jit_phases": {
+    "full_solved": {
+      "lower_s": 1.022978614026215,
+      "compile_s": 0.5699472409905866,
+      "first_call_s": 0.003399818961042911,
+      "steady_per_call_s": 0.00027183834603056314,
+      "median_per_call_s": 0.0002605619956739247,
+      "p10_per_call_s": 0.00023428595741279424,
+      "p90_per_call_s": 0.00030102303717285397
+    },
+    "full_plain_control": {
+      "lower_s": 0.2916628460516222,
+      "compile_s": 0.3188324979855679,
+      "first_call_s": 0.00112548703327775,
+      "steady_per_call_s": 0.0002570110419765115,
+      "median_per_call_s": 0.00026421149959787726,
+      "p10_per_call_s": 0.00023501499090343713,
+      "p90_per_call_s": 0.00029494099435396494
+    },
+    "floor_params_pytree_solved": {
+      "lower_s": 0.006740328040905297,
+      "compile_s": 0.026712168008089066,
+      "first_call_s": 0.0004533850005827844,
+      "steady_per_call_s": 4.60168260615319e-05,
+      "median_per_call_s": 4.471000283956528e-05,
+      "p10_per_call_s": 4.412903217598796e-05,
+      "p90_per_call_s": 5.314592272043229e-05
+    },
+    "floor_params_pytree_plain": {
+      "lower_s": 0.005828930006828159,
+      "compile_s": 0.02739519003080204,
+      "first_call_s": 0.0003172560245729983,
+      "steady_per_call_s": 4.87223919481039e-05,
+      "median_per_call_s": 4.749448271468282e-05,
+      "p10_per_call_s": 4.685986205004156e-05,
+      "p90_per_call_s": 5.594109534285963e-05
+    },
+    "floor_scalar_array": {
+      "lower_s": 0.0038072150200605392,
+      "compile_s": 0.02225983195239678,
+      "first_call_s": 0.0002816370106302202,
+      "steady_per_call_s": 1.062917395029217e-05,
+      "median_per_call_s": 1.042999792844057e-05,
+      "p10_per_call_s": 1.0248966282233596e-05,
+      "p90_per_call_s": 1.265108585357666e-05
+    },
+    "solved_beta_hat": {
+      "lower_s": 0.07210907101398334,
+      "compile_s": 0.1746673349989578,
+      "first_call_s": 0.0011317969765514135,
+      "steady_per_call_s": 0.0002487269419943914,
+      "median_per_call_s": 0.00024800197570584714,
+      "p10_per_call_s": 0.00022276101517491043,
+      "p90_per_call_s": 0.00027764076949097214
+    },
+    "solved_precision_tensor": {
+      "lower_s": 0.37594991899095476,
+      "compile_s": 0.3237502090050839,
+      "first_call_s": 0.0010899470071308315,
+      "steady_per_call_s": 0.00025180758605711164,
+      "median_per_call_s": 0.0002571019867900759,
+      "p10_per_call_s": 0.00023398700286634267,
+      "p90_per_call_s": 0.0002879129897337407
+    },
+    "solved_source_plane_coordinate": {
+      "lower_s": 0.5360950899776071,
+      "compile_s": 0.46679570502601564,
+      "first_call_s": 0.0010920059867203236,
+      "steady_per_call_s": 0.00026169258798472585,
+      "median_per_call_s": 0.0002632075047586113,
+      "p10_per_call_s": 0.0002368129906244576,
+      "p90_per_call_s": 0.0002919619728345424
+    },
+    "solved_chi_squared": {
+      "lower_s": 1.145415956969373,
+      "compile_s": 0.7672846140339971,
+      "first_call_s": 0.0010963270324282348,
+      "steady_per_call_s": 0.0002586620239308104,
+      "median_per_call_s": 0.00025099198683165014,
+      "p10_per_call_s": 0.00022731604985892773,
+      "p90_per_call_s": 0.0002780747949145734
+    },
+    "solved_marginalization_term": {
+      "lower_s": 1.3588913750136271,
+      "compile_s": 0.8585422750329599,
+      "first_call_s": 0.0013481040368787944,
+      "steady_per_call_s": 0.0002586529420223087,
+      "median_per_call_s": 0.00025887199444696307,
+      "p10_per_call_s": 0.00023604591842740774,
+      "p90_per_call_s": 0.0002939341007731855
+    },
+    "solved_log_likelihood": {
+      "lower_s": 2.200530442991294,
+      "compile_s": 1.2586279429960996,
+      "first_call_s": 0.001086656004190445,
+      "steady_per_call_s": 0.0002620795820839703,
+      "median_per_call_s": 0.0002599764848127961,
+      "p10_per_call_s": 0.0002358289551921189,
+      "p90_per_call_s": 0.00029272399842739105
+    },
+    "plain_model_data": {
+      "lower_s": 0.06736333796288818,
+      "compile_s": 0.17723637400195003,
+      "first_call_s": 0.0013482249923981726,
+      "steady_per_call_s": 0.0002557086399756372,
+      "median_per_call_s": 0.00024771702010184526,
+      "p10_per_call_s": 0.00022711893543601037,
+      "p90_per_call_s": 0.00027645599329844116
+    },
+    "plain_magnifications_at_positions": {
+      "lower_s": 0.2830662190099247,
+      "compile_s": 0.32118478999473155,
+      "first_call_s": 0.0011619459837675095,
+      "steady_per_call_s": 0.00025734920194372534,
+      "median_per_call_s": 0.00026223648455925286,
+      "p10_per_call_s": 0.00023763799108564854,
+      "p90_per_call_s": 0.00030243698274716734
+    },
+    "plain_chi_squared_map": {
+      "lower_s": 0.5259890710003674,
+      "compile_s": 0.4585897049983032,
+      "first_call_s": 0.0010322870220988989,
+      "steady_per_call_s": 0.0002595610920106992,
+      "median_per_call_s": 0.00025642701075412333,
+      "p10_per_call_s": 0.0002332700416445732,
+      "p90_per_call_s": 0.0002899948740378022
+    },
+    "plain_log_likelihood": {
+      "lower_s": 0.8854039899888448,
+      "compile_s": 0.6019244969938882,
+      "first_call_s": 0.0011609360226429999,
+      "steady_per_call_s": 0.00026031512196641413,
+      "median_per_call_s": 0.00025894702412188053,
+      "p10_per_call_s": 0.00023469712468795478,
+      "p90_per_call_s": 0.0002947219996713102
+    },
+    "cse_precision_once": {
+      "lower_s": 0.22512698697391897,
+      "compile_s": 0.24378449301002547,
+      "first_call_s": 0.0010235479567199945,
+      "steady_per_call_s": 0.0002586509600514546,
+      "median_per_call_s": 0.0002598415012471378,
+      "p10_per_call_s": 0.00023495102650485932,
+      "p90_per_call_s": 0.00029293112456798556
+    },
+    "cse_precision_thrice": {
+      "lower_s": 0.6108753189910203,
+      "compile_s": 0.384184620983433,
+      "first_call_s": 0.0010501659708097577,
+      "steady_per_call_s": 0.00025797575199976565,
+      "median_per_call_s": 0.00025920147891156375,
+      "p10_per_call_s": 0.00023285201168619097,
+      "p90_per_call_s": 0.0002935430034995079
+    },
+    "cse_magnifications_once": {
+      "lower_s": 0.322375044983346,
+      "compile_s": 0.232657436048612,
+      "first_call_s": 0.0011700670002028346,
+      "steady_per_call_s": 0.0002577722939895466,
+      "median_per_call_s": 0.0002594520046841353,
+      "p10_per_call_s": 0.0002351100032683462,
+      "p90_per_call_s": 0.00029499807278625666
+    },
+    "cse_magnifications_twice": {
+      "lower_s": 0.4156999199767597,
+      "compile_s": 0.31679308298043907,
+      "first_call_s": 0.0011792650329880416,
+      "steady_per_call_s": 0.00025664604804478584,
+      "median_per_call_s": 0.0002537070249672979,
+      "p10_per_call_s": 0.00022832798422314226,
+      "p90_per_call_s": 0.00028505002846941353
+    },
+    "value_and_grad_solved": {
+      "lower_s": 1.6794189019710757,
+      "compile_s": 2.4805578180239536,
+      "first_call_s": 0.0020040959934704006,
+      "steady_per_call_s": 0.0008275767880259082,
+      "median_per_call_s": 0.0008413259929511696,
+      "p10_per_call_s": 0.0005417118954937905,
+      "p90_per_call_s": 0.0009569170069880784
+    }
+  },
+  "likelihoods": {
+    "solved_eager": 0.598650453950647,
+    "solved_jit": 0.5986504555536349,
+    "plain_eager": 12.752810040089676,
+    "plain_jit": 12.752810039006024,
+    "expected_solved": 0.5986504555536349,
+    "expected_plain": 12.752810039006214,
+    "literals_checked": true,
+    "literal_rtol": 1e-08
+  },
+  "numerical_controls": {
+    "eager_vs_jit_rtol": 0.0001,
+    "vmap_batch": 2,
+    "vmap_values_solved": [
+      0.598650455553221,
+      0.598650455553221
+    ],
+    "vmap_values_plain": [
+      12.752810039006022,
+      12.752810039006022
+    ],
+    "gradient_all_finite": true,
+    "gradient_l2": 337.6202541500455,
+    "gradient_leaves": 5
+  },
+  "methodology": {
+    "prefix_rows": "successive differences of cumulative JIT prefixes (per-call medians over n_repeats); each prefix returns the sum of every intermediate reached so far",
+    "timing_statistic": "median_per_call_s from jit_phases; steady_per_call_s (mean, from jit_profile) is also recorded",
+    "negative_rows": "retained; XLA fusion, CSE and timing noise can move work across boundaries (telescoping caveat: the step rows sum to the fused time by construction, individual rows are not independent stage costs)",
+    "repeated_evaluations": "fit properties are uncached: the plain lane evaluates magnifications_at_positions twice per likelihood (chi-squared map + noise normalisation); the solved lane rebuilds the precision tensor three times (solved centre, chi-squared map, marginalisation term) and _beta_hat twice. Whether XLA CSE merges them is phase-2 hypothesis #1; see cse_probe and the fused-vs-prefix rows for the observed evidence.",
+    "solver": "solver=None; FitPositionsSource never invokes a PointSolver",
+    "eager_hessian": "use_jax=False uses the finite-difference Hessian, so eager vs JIT agree to rtol 1e-4, not bit-for-bit",
+    "authoritative_runtime": "fused_full_solved_s"
+  }
+}

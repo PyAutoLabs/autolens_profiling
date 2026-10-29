@@ -1,5 +1,5 @@
 {
- "catalogue_generated_at": "2026-10-27T12:25:45Z",
+ "catalogue_generated_at": "2026-10-29T09:46:25Z",
  "catalogue_release_pin": "2026.10.25.1",
  "cells": [
   {
@@ -3338,10 +3338,10 @@
    "likelihood": "point_source_image/image_plane",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "release_pin 2026.8.17.1 behind 2026.10.25.1",
+   "reason": null,
    "record": "lifecycle/cb90f6f5a85337f51dfd",
    "setup_id": "jax_cpu_na_fp64",
-   "state": "stale"
+   "state": "current"
   },
   {
    "cell": "point_source_image/image_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [runtime]",
@@ -3351,10 +3351,10 @@
    "likelihood": "point_source_image/image_plane",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/6cbf08c848ae6cdb820f",
    "setup_id": "jax_cpu_na_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "point_source_image/image_plane/simple jax_gpu_na_fp64@hpc_a100 [breakdown]",
@@ -3364,10 +3364,10 @@
    "likelihood": "point_source_image/image_plane",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "release_pin 2026.8.17.1 behind 2026.10.25.1",
+   "reason": null,
    "record": "lifecycle/4d30b4c98e64be2a52c0",
    "setup_id": "jax_gpu_na_fp64",
-   "state": "stale"
+   "state": "current"
   },
   {
    "cell": "point_source_image/image_plane/simple jax_gpu_na_fp64@hpc_a100 [runtime]",
@@ -3377,10 +3377,10 @@
    "likelihood": "point_source_image/image_plane",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/6282556b81be530f7bce",
    "setup_id": "jax_gpu_na_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "point_source_source/source_plane/simple jax_cpu_na_fp64@hpc_a100 [breakdown]",
@@ -3390,10 +3390,10 @@
    "likelihood": "point_source_source/source_plane",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/34401722a28437bc0319",
    "setup_id": "jax_cpu_na_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "point_source_source/source_plane/simple jax_cpu_na_fp64@hpc_a100 [runtime]",
@@ -3403,10 +3403,10 @@
    "likelihood": "point_source_source/source_plane",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/c2bfeea342f97959dc7c",
    "setup_id": "jax_cpu_na_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "point_source_source/source_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [breakdown]",
@@ -3416,10 +3416,10 @@
    "likelihood": "point_source_source/source_plane",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "release_pin 2026.8.17.1 behind 2026.10.25.1",
+   "reason": null,
    "record": "lifecycle/844ac46ac2bd6937c74f",
    "setup_id": "jax_cpu_na_fp64",
-   "state": "stale"
+   "state": "current"
   },
   {
    "cell": "point_source_source/source_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [runtime]",
@@ -3429,10 +3429,10 @@
    "likelihood": "point_source_source/source_plane",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "release_pin 2026.10.17.1 behind 2026.10.25.1",
+   "reason": null,
    "record": "lifecycle/61082dc032d7280b3bd1",
    "setup_id": "jax_cpu_na_fp64",
-   "state": "stale"
+   "state": "current"
   },
   {
    "cell": "point_source_source/source_plane/simple jax_gpu_na_fp64@hpc_a100 [breakdown]",
@@ -3442,10 +3442,10 @@
    "likelihood": "point_source_source/source_plane",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "release_pin 2026.8.17.1 behind 2026.10.25.1",
+   "reason": null,
    "record": "lifecycle/d505d66aee0ffbf0e5c4",
    "setup_id": "jax_gpu_na_fp64",
-   "state": "stale"
+   "state": "current"
   },
   {
    "cell": "point_source_source/source_plane/simple jax_gpu_na_fp64@hpc_a100 [runtime]",
@@ -3455,10 +3455,10 @@
    "likelihood": "point_source_source/source_plane",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "release_pin 2026.10.17.1 behind 2026.10.25.1",
+   "reason": null,
    "record": "lifecycle/fcb319f0f24b8cc9fd37",
    "setup_id": "jax_gpu_na_fp64",
-   "state": "stale"
+   "state": "current"
   },
   {
    "cell": "weak/isothermal/simple jax_cpu_dense_fp64@hpc_a100 [breakdown]",
@@ -4065,56 +4065,56 @@
   },
   {
    "class": "optimal",
-   "current": 0,
+   "current": 2,
    "likelihood": "point_source_image/image_plane",
    "measurement": "breakdown",
    "missing": 0,
-   "stale": 2,
-   "superseded": 0
-  },
-  {
-   "class": "optimal",
-   "current": 0,
-   "likelihood": "point_source_image/image_plane",
-   "measurement": "runtime",
-   "missing": 2,
    "stale": 0,
    "superseded": 0
   },
   {
    "class": "optimal",
-   "current": 0,
-   "likelihood": "point_source_source/source_plane",
-   "measurement": "breakdown",
-   "missing": 1,
-   "stale": 1,
+   "current": 2,
+   "likelihood": "point_source_image/image_plane",
+   "measurement": "runtime",
+   "missing": 0,
+   "stale": 0,
    "superseded": 0
   },
   {
    "class": "optimal",
-   "current": 0,
-   "likelihood": "point_source_source/source_plane",
-   "measurement": "runtime",
-   "missing": 1,
-   "stale": 1,
-   "superseded": 0
-  },
-  {
-   "class": "secondary",
-   "current": 0,
+   "current": 2,
    "likelihood": "point_source_source/source_plane",
    "measurement": "breakdown",
    "missing": 0,
-   "stale": 1,
+   "stale": 0,
+   "superseded": 0
+  },
+  {
+   "class": "optimal",
+   "current": 2,
+   "likelihood": "point_source_source/source_plane",
+   "measurement": "runtime",
+   "missing": 0,
+   "stale": 0,
    "superseded": 0
   },
   {
    "class": "secondary",
-   "current": 0,
+   "current": 1,
+   "likelihood": "point_source_source/source_plane",
+   "measurement": "breakdown",
+   "missing": 0,
+   "stale": 0,
+   "superseded": 0
+  },
+  {
+   "class": "secondary",
+   "current": 1,
    "likelihood": "point_source_source/source_plane",
    "measurement": "runtime",
    "missing": 0,
-   "stale": 1,
+   "stale": 0,
    "superseded": 0
   },
   {
@@ -4927,32 +4927,32 @@
    {
     "cell": "point_source_image/image_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [parity]",
     "class": "optimal",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/a884951a80a697791744",
+    "state": "match"
    },
    {
     "cell": "point_source_image/image_plane/simple jax_gpu_na_fp64@hpc_a100 [parity]",
     "class": "optimal",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/f4dfadf54484b22e9f69",
+    "state": "match"
    },
    {
     "cell": "point_source_source/source_plane/simple jax_cpu_na_fp64@hpc_a100 [parity]",
     "class": "optimal",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/5e68a4c3f41437c52c70",
+    "state": "match"
    },
    {
     "cell": "point_source_source/source_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [parity]",
     "class": "optimal",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/fa18efad842f4cc9fa73",
+    "state": "match"
    },
    {
     "cell": "point_source_source/source_plane/simple jax_gpu_na_fp64@hpc_a100 [parity]",
     "class": "secondary",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/403a31905c1445a750ba",
+    "state": "match"
    },
    {
     "cell": "weak/isothermal/simple jax_cpu_dense_fp64@hpc_a100 [parity]",
@@ -5210,24 +5210,24 @@
     "class": "optimal",
     "diverged": 0,
     "likelihood": "point_source_image/image_plane",
-    "match": 0,
-    "missing": 2,
+    "match": 2,
+    "missing": 0,
     "not_assessed": 0
    },
    {
     "class": "optimal",
     "diverged": 0,
     "likelihood": "point_source_source/source_plane",
-    "match": 0,
-    "missing": 2,
+    "match": 2,
+    "missing": 0,
     "not_assessed": 0
    },
    {
     "class": "secondary",
     "diverged": 0,
     "likelihood": "point_source_source/source_plane",
-    "match": 0,
-    "missing": 1,
+    "match": 1,
+    "missing": 0,
     "not_assessed": 0
    },
    {
@@ -5249,8 +5249,8 @@
   ],
   "totals": {
    "diverged": 0,
-   "match": 53,
-   "missing": 83,
+   "match": 58,
+   "missing": 78,
    "not_assessed": 0,
    "setup_cells": 136
   }
@@ -5269,13 +5269,13 @@
   "designations": "catalogue/provisional_designations.json"
  },
  "totals": {
-  "current": 106,
-  "current_records_unplanned": 116,
-  "missing": 159,
+  "current": 116,
+  "current_records_unplanned": 117,
+  "missing": 155,
   "missing_size_fallback": 20,
   "planned_cells": 272,
-  "records_superseded": 384,
-  "stale": 7,
+  "records_superseded": 402,
+  "stale": 1,
   "superseded": 0
  },
  "unplanned_current_records": [
@@ -5297,6 +5297,7 @@
   "lifecycle/2b67848ae18e606cd9b0",
   "lifecycle/2bf12cddf0685668b20e",
   "lifecycle/340c91f9524b196bdbed",
+  "lifecycle/345b903cfcd5d079c143",
   "lifecycle/35270561ac7db6553c22",
   "lifecycle/37e9df544efcc48cc78e",
   "lifecycle/39dd12f09aa8fbd82104",

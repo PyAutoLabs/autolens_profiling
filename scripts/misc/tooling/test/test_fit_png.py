@@ -20,7 +20,8 @@ sys.path.insert(0, str(ROOT))
 import _profile_cli as pc  # noqa: E402
 
 #: Every profiled cell script that renders a fit.png: the 13 runtime scripts, the two
-#: breakdown-only cluster cells and the weak runtime and breakdown cells (2g, #476).
+#: breakdown-only cluster cells, the weak runtime and breakdown cells (2g, #476), and
+#: (likelihood-lifecycle 2c, #472) the point-source breakdowns and solved-likelihood runtimes.
 WIRED = {
     "scripts/imaging/mge/likelihood_runtime.py": "imaging",
     "scripts/imaging/rectangular/likelihood_runtime.py": "imaging",
@@ -35,6 +36,10 @@ WIRED = {
     "scripts/datacube/delaunay/likelihood_runtime.py": "interferometer",
     "scripts/point_source_image/image_plane/likelihood_runtime.py": "point_source",
     "scripts/point_source_source/source_plane/likelihood_runtime.py": "point_source",
+    "scripts/point_source_image/image_plane/likelihood_runtime_solved.py": "point_source",
+    "scripts/point_source_source/source_plane/likelihood_runtime_solved.py": "point_source",
+    "scripts/point_source_image/image_plane/likelihood_breakdown.py": "point_source",
+    "scripts/point_source_source/source_plane/likelihood_breakdown.py": "point_source",
     "scripts/cluster/image_plane/likelihood_breakdown.py": "cluster",
     "scripts/cluster/source_plane/likelihood_breakdown.py": "cluster",
     "scripts/weak/isothermal/likelihood_runtime.py": "weak",
