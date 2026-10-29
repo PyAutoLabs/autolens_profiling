@@ -2,14 +2,14 @@
 
 **Status:** draft
 **Question:** What does every planned multi_galaxy/{mge, rectangular, delaunay} and group/{mge, rectangular, delaunay} cell cost at the standard size on the pinned release 2026.10.25.1, on the §3.3 "as imaging" setups, and does each cell's log evidence match an eager NumPy dense reference?
-**Pre-registered rule:** every one of the 48 planned cells (20 RAL CPU, 28 A100) lands `current`, with runtime and breakdown rows, provenance, `resources`, `fit.png` and a `parity.json` whose status is `match` against the eager NumPy dense-mapping reference in the same process (tolerance 1e-4 x |reference| in fp64, the imaging rule). Any `diverged` witness blocks that setup until explained. Written 2026-10-28, before any run, and before the human has ruled on decisions D1-D11 below; a ruling that changes the cell set re-bases the count, not the rule.
+**Pre-registered rule:** every one of the 48 planned cells (20 RAL CPU, 28 A100) lands `current`, with runtime and breakdown rows, provenance, `resources`, `fit.png` and a `parity.json` whose status is `match` against the eager NumPy dense-mapping reference in the same process (tolerance 1e-4 x |reference| in fp64, the imaging rule). Any `diverged` witness blocks that setup until explained. Written 2026-10-28, before any run, and before the human has ruled on decisions D1-D12 below; a ruling that changes the cell set re-bases the count, not the rule.
 **Verdict:** pending (nothing run). Expected, written before the runs: as imaging, `jax_gpu_dense_fp64` is the fastest per call on the A100 and `numba_cpu_sparse_fp64` is the RAL CPU per-worker route for the pixelized cells; group is slower than multi_galaxy for every setup (1.6x the masked pixels, two dPIE extra galaxies); the extra lens galaxies cost little against the inversion (the light is linear, the mass adds deflections only); every parity witness is `match`. Class designations are phase 3's decision, not this page's.
 **Headline:** none yet.
 **Library PRs:** none (measurement only, tag 2026.10.25.1)
 **Profiling PRs:** the 2d draft PR (new cell scripts, shared driver, cell builder, registry cells, campaign submits, this page), stacked on #471; then a walls commit after batch 0; then PR B (rows, catalogue, coverage, result)
 **Ledger:** this page and the group page [`../group/likelihood_lifecycle_p2d.md`](../group/likelihood_lifecycle_p2d.md); rows will land under `results/{multi_galaxy,group}/{mge,rectangular,delaunay}/`; work list [`scripts/misc/campaigns/multi_galaxy_group_p2d.py`](../../../scripts/misc/campaigns/multi_galaxy_group_p2d.py) and its [README](../../../scripts/misc/campaigns/README.md)
 **Mind contract:** epic `likelihood-lifecycle`, phase 2 sub-issue 2d; issue autolens_profiling#473
-**Next:** the human rules on D1-D11; then batch 0 (human go)
+**Next:** the human rules on D1-D12; then batch 0 (human go)
 **Fit figures:** none yet (laptop smoke figures only, not reviewed as campaign rows)
 
 ## Why this campaign
@@ -40,6 +40,7 @@ implements the draft; each alternative is a small change in `catalogue/registry.
 | D9 | Batch 0 = every group leg (24: RAL 10, A100 14), as the timing arm; batch 1 = all 48 cells, walls from batch 0's group leg of the same script, setup and host class. | Group bounds multi_galaxy (1.6x the masked pixels, more mass components), and every leg is cheap enough to run them all (imaging hst legs took 1-6 min). | Run both types in batch 0 (48 legs) and promote them, with no batch 1; or the slowest setups only. |
 | D10 | Breakdowns: a new generic stage walk of `AnalysisImaging.fit_from`. JAX: seven jitted prefixes (traced grids, blurred image, data vector, curvature, F + H, reconstruction, figure of merit) split by successive differences. numba: each lazily evaluated stage timed on first access, median over the warm iid instances. | One harness for both types and every variant, built from the library's own stages. The imaging breakdowns' hand-written per-step kernels assume one lens and one source. | Port the imaging per-step breakdowns (larger change; the step names would then match imaging's). |
 | D11 | Walls and memory, provisional: batch 0 guesses 3600 s a leg (`source: unmeasured`, 3x floor), `--time=4:00:00`, `--mem=32gb`; batch 1 renders `WALL_BASIS_STATUS=provisional` and refuses to run until batch 0's walls and MaxRSS replace the placeholders (RAL 4:00:00, A100 job 2-00:00:00). | About 10x the imaging hst legs of the nearest size, and about 3x their 10.2 GiB peak. | Tighter guesses. |
+| D12 | Every JAX leg compiles with `--xla_cpu_multi_thread_eigen=false` appended to `XLA_FLAGS` (the driver does it; the row records it in `device.xla_flags` and `configuration.xla_cpu_workaround`). | Without it the 2d executables deadlock on jaxlib 0.11.2's XLA:CPU after a few calls (see "XLA:CPU deadlock" below). The flag is the cheaper of the two that avoid it on the laptop and touches only CPU-compiled code; it applies to the RAL CPU legs and the A100 node's `jax_cpu_sparse_fp64` leg, and is inert for a GPU executable. It is a compile option the 2a/2b imaging rows did not use, so a 2d JAX CPU row is not like-for-like with an imaging row on that axis. | `--xla_cpu_enable_concurrency_optimized_scheduler=false` instead (also avoids it; ~2.4x slower per call on the laptop MGE cells); or no flag and a jaxlib that fixes it (none known yet); or drop the JAX CPU setups from 2d. |
 
 ### The cells (draft)
 
@@ -68,6 +69,58 @@ complete rows are copied into `results/` by PR B. Every submit imports the libra
 private checkout `/mnt/ral/jnightin/profiling/PyAuto_2026.10.25.1` at tag 2026.10.25.1 and
 checks each row's library revisions against it.
 
+## XLA:CPU deadlock (found in the laptop smokes, avoided by D12)
+
+**Symptom.** Every 2d JAX cell on the CPU backend (dense and sparse, MGE, rectangular and
+Delaunay, multi_galaxy and group) hung after its compiled likelihood had run a few times: lower,
+compile and the first call return, then a later call of the same compiled executable never does.
+The process sits at 0 % CPU; `faulthandler` puts the Python thread in `stages.py` `__call__`, and
+native stacks (`py-spy record --native --idle`, started as the parent) show it in
+`CpuPjRtRawLoadedExecutable::Execute` -> `tsl::BlockUntilReady` -> `absl::Mutex` futex wait,
+with no thread doing work. Which call hangs varies run to run (call 1 to call ~35); a cell's
+`--fast` smoke (2 steady calls) could pass by luck.
+
+**What it is not.** Not the persistent compilation cache (hangs with
+`JAX_ENABLE_COMPILATION_CACHE=false`); not BLAS threads (`OPENBLAS/OMP/MKL_NUM_THREADS=1`); not
+the Delaunay `pure_callback` (the MGE cells have no host callback and hang too); not the
+flat-leaves change or `dPIEMassSph` (multi_galaxy has no dPIE and hangs); not
+`--xla_disable_hlo_passes=constant_folding` (hangs without it). A plain jitted `A.T @ A`
+(17,692 x 1,300), with and without a scipy `pure_callback` beside it, ran 30 calls fine. Prefix
+bisection (the breakdown stages): group MGE hangs from prefix 3 (data vector) on, group Delaunay
+from prefix 4 (curvature matrix); prefixes 1-2 ran 300 calls.
+
+**Minimal reproduction (no PyAuto library in the process).** Export the jitted group MGE prefix-3
+function with `jax.export` and run it in a fresh `python -I` process that imports only jax:
+
+```python
+exp = jax.export.deserialize(blob)  # serialized in the cell's process
+c = jax.jit(exp.call).lower(params).compile()
+for i in range(300):
+    c(params).block_until_ready()  # deadlocks at call ~14 with XLA_FLAGS=""
+```
+
+It deadlocks with the default flags and runs 300 calls with either
+`--xla_cpu_multi_thread_eigen=false` or `--xla_cpu_enable_concurrency_optimized_scheduler=false`,
+so the fault is in XLA:CPU (jax / jaxlib 0.11.2), in the interplay of multi-threaded Eigen ops
+and the concurrency-optimized thunk schedule. Not patched here (it is not PyAuto code); worth a
+JAX issue with the exported module.
+
+**Full pipelines, laptop, 8 cores, calls before the hang / steady median per call:**
+
+| Cell (dense JAX CPU) | default flags | `multi_thread_eigen=false` | `concurrency_optimized_scheduler=false` |
+|---|---|---|---|
+| group/mge | hung after 35 (0.064 s) | 150 of 150, 0.080 s | 150 of 150, 0.154 s |
+| multi_galaxy/mge | hung after 1 | 40 of 40, 0.053 s | 40 of 40, 0.104 s |
+| group/delaunay | hung after 1 | 15 of 15, 4.57 s | 15 of 15, 4.42 s |
+| multi_galaxy/rectangular | hung after 1 | 15 of 15, 2.19 s | 15 of 15, 1.90 s |
+
+**RAL on the pin.** The PyAuto code involved is identical at tag 2026.10.25.1 (`Tracer.traced_grid_2d_list_from`,
+`dPIEMassSph`), and the pin's dependency floor excludes jax 0.10.*, so the RAL venv runs jaxlib
+0.11.x: its 2026.10.17.1 `hpc_ral_cpu` point_source_source rows record jaxlib 0.11.2. Whether the
+deadlock fires on a 236-core RAL node was not tested (no RAL runs before review); D12 applies the
+flag there regardless, so a leg cannot sit on its `--time` doing nothing. The GPU executables are
+not affected by the flag; whether the GPU runtime has an analogue was not tested.
+
 ## A finding on the workspace dataset
 
 `autolens_workspace/scripts/multi_galaxy/simulator.py` writes `mask_extra_galaxies.fits` with
@@ -84,6 +137,8 @@ Open each new row's `fit.png` before you accept it (`skills/profile_likelihood/r
 
 ## Caveats
 
+- Every JAX leg compiles with `--xla_cpu_multi_thread_eigen=false` (D12): CPU-compiled Eigen ops
+  run single-threaded inside their thunk, which the 2a/2b JAX CPU rows did not do.
 - The laptop smokes ran on the local library main checkouts, not tag 2026.10.25.1; the RAL
   submits pin the tag.
 - The JAX breakdown rows are prefix differences: XLA can move work across a prefix boundary, so a
@@ -97,3 +152,19 @@ Open each new row's `fit.png` before you accept it (`skills/profile_likelihood/r
 Scripts, cell builder, shared driver, registry cells, campaign generator and submits written;
 local smokes on the laptop (see the PR). Decisions D1-D11 await the human; batch 0 is not
 submitted.
+
+### 2026-10-29 — the JAX smoke hangs: an XLA:CPU deadlock, avoided
+
+Two driver fixes for the JAX legs: the jitted functions take the instance's flat pytree leaves
+and unflatten inside the trace (`dPIEMassSph` computes `b0` from `sigma` in its constructor, so
+`jax.jit(f).lower(tree)` cannot rebuild it from abstract leaves), and the breakdown's ray-trace
+prefix passes `xp=jnp` (the NumPy default raised `TracerArrayConversionError`). The remaining
+hangs were a jaxlib 0.11.2 XLA:CPU deadlock (section above), reproduced without any PyAuto code
+and avoided by D12. Every JAX smoke then completed; the table is in the 2d draft PR.
+
+### 2026-10-29 — the GPU-host planner fix merged in
+
+#481 (a GPU setup is planned only on a `gpu_hosts` host) is merged into this branch. It does not
+change 2d's plan: the imaging tables list no GPU setup at `hpc_ral_cpu` for these cells, so 2d
+stays 48 cells (20 `hpc_ral_cpu`, 28 `hpc_a100`); the catalogue total goes 270 -> 268 from the
+two point_source_source cells #481 drops.

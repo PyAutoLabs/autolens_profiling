@@ -9,7 +9,7 @@
 **Profiling PRs:** the 2d draft PR, stacked on #471
 **Ledger:** the shared campaign page [`../multi_galaxy/likelihood_lifecycle_p2d.md`](../multi_galaxy/likelihood_lifecycle_p2d.md); rows will land under `results/group/{mge,rectangular,delaunay}/euclid/`
 **Mind contract:** epic `likelihood-lifecycle`, phase 2 sub-issue 2d; issue autolens_profiling#473
-**Next:** the human rules on D1-D11 (shared page); then batch 0, which is every group leg
+**Next:** the human rules on D1-D12 (shared page); then batch 0, which is every group leg
 **Fit figures:** none yet
 
 ## The group cell
@@ -38,3 +38,10 @@
 ### 2026-10-28 — draft for review
 
 Cells declared and scripts written with the multi_galaxy cells; see the shared page.
+
+### 2026-10-29 — XLA:CPU deadlock
+
+The group JAX legs (Delaunay dense first) were where the hang was first seen: a compiled
+likelihood that blocks for ever after a few calls. It is a jaxlib 0.11.2 XLA:CPU deadlock, not a
+group-specific one (multi_galaxy hangs too); the evidence and the D12 workaround are on the
+shared page.

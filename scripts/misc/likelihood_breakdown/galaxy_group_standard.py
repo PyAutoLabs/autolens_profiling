@@ -76,9 +76,31 @@ STAGE_NOTE = (
     "row is noise; numba rows time each cached property on first access, per instance, and "
     "report the median over the warm instances."
 )
+#: XLA:CPU deadlock workaround (autolens_profiling#473, decision D12). On jaxlib 0.11.2 a compiled
+#: 2d likelihood on the CPU backend deadlocks after a few calls: execution blocks in
+#: ``CpuPjRtRawLoadedExecutable::Execute`` / ``BlockUntilReady`` with every thread idle (0 % CPU,
+#: futex). It reproduces from the exported StableHLO alone in a process that imports only jax
+#: (no PyAuto library, no numba), and goes away with either ``--xla_cpu_multi_thread_eigen=false``
+#: or ``--xla_cpu_enable_concurrency_optimized_scheduler=false``. The first is the cheaper one
+#: (laptop per call within ~25 % of the deadlocking default, against ~2.4x for the second), so the
+#: JAX legs append it to ``XLA_FLAGS``; the row records it in ``device.xla_flags`` and
+#: ``configuration.xla_cpu_workaround``. It only changes XLA:CPU code (no effect on a GPU
+#: executable), and it is a library-free change to how the cell is compiled, not to what it computes.
+XLA_CPU_WORKAROUND_FLAG = "--xla_cpu_multi_thread_eigen=false"
+XLA_CPU_WORKAROUND_NOTE = (
+    f"{XLA_CPU_WORKAROUND_FLAG} appended to XLA_FLAGS: jaxlib 0.11.2 XLA:CPU deadlocks on these "
+    "executables after a few calls with the default (autolens_profiling#473, D12)"
+)
 PARITY_QUANTITY = (
     "figure_of_merit (the cell's log_likelihood_function value: the log evidence) at iid draw 0"
 )
+
+
+def _avoid_xla_cpu_deadlock() -> None:
+    """Append :data:`XLA_CPU_WORKAROUND_FLAG` to ``XLA_FLAGS`` before the JAX backend starts."""
+    flags = os.environ.get("XLA_FLAGS", "")
+    if "xla_cpu_multi_thread_eigen" not in flags:
+        os.environ["XLA_FLAGS"] = f"{flags} {XLA_CPU_WORKAROUND_FLAG}".strip()
 
 
 def _driver_parser() -> argparse.ArgumentParser:
@@ -235,14 +257,27 @@ def _jax_cell(dataset_type, variant, cli, root, n_instances=1):
     )
 
 
-def _check_route(analysis, params_tree, sparse: bool) -> str:
+def _flat_params(instance):
+    """``(leaves, treedef)`` of the instance pytree. The jitted functions take the flat leaves and
+    unflatten inside the trace: ``jax.jit(f).lower(tree)`` rebuilds the tree from abstract
+    ``ArgInfo`` leaves, and a profile whose constructor computes on its parameters
+    (``dPIEMassSph`` derives ``b0`` from ``sigma``) cannot be built from those (the group cells).
+    """
+    import jax
+    import jax.numpy as jnp
+
+    leaves, treedef = jax.tree_util.tree_flatten(jax.tree_util.tree_map(jnp.asarray, instance))
+    return leaves, treedef
+
+
+def _check_route(analysis, params_tree, sparse: bool, treedef) -> str:
     """The inversion class the traced pipeline builds (a shape-only trace, no compute)."""
     import jax
 
     info: dict[str, str] = {}
 
     def traced(params):
-        fit = analysis.fit_from(instance=params)
+        fit = analysis.fit_from(instance=jax.tree_util.tree_unflatten(treedef, params))
         info["inversion_class"] = type(fit.inversion).__name__
         return fit.figure_of_merit
 
@@ -274,13 +309,15 @@ def run_jax_runtime(dataset_type, variant, cli, args, *, script_file, root) -> P
     instance = cell["instances"][0]
     model = cell["model"]
     register_model(model)
-    params_tree = jax.tree_util.tree_map(jnp.asarray, instance)
+    params_tree, treedef = _flat_params(instance)
     analysis = _analysis(cell, instance, use_jax=True)
-    inversion_class = _check_route(analysis, params_tree, sparse)
+    inversion_class = _check_route(analysis, params_tree, sparse, treedef)
     n_repeats = 2 if args.fast else 10
 
     def full_pipeline(params):
-        return analysis.log_likelihood_function(instance=params)
+        return analysis.log_likelihood_function(
+            instance=jax.tree_util.tree_unflatten(treedef, params)
+        )
 
     print("\n--- Full pipeline: jax.jit(AnalysisImaging.log_likelihood_function) ---")
     compiled, full_result = timing.jit_profile(
@@ -365,6 +402,7 @@ def run_jax_runtime(dataset_type, variant, cli, args, *, script_file, root) -> P
             fast=bool(args.fast),
             host_load_avg_start=load_start,
             host_load_avg_end=list(os.getloadavg()),
+            xla_cpu_workaround=XLA_CPU_WORKAROUND_NOTE,
         ),
         "log_evidence_jit": value,
         "full_pipeline_single_jit": full_per_call,
@@ -407,7 +445,7 @@ def _stage_value(fit, stage: int):
     def raw(x):
         return jnp.asarray(getattr(x, "array", x))
 
-    total = jnp.sum(raw(fit.tracer.traced_grid_2d_list_from(grid=fit.grids.lp)[-1]))
+    total = jnp.sum(raw(fit.tracer.traced_grid_2d_list_from(grid=fit.grids.lp, xp=jnp)[-1]))
     if stage >= 2:
         total = total + jnp.sum(raw(fit.blurred_image))
     inversion = fit.inversion
@@ -442,9 +480,9 @@ def run_jax_breakdown(dataset_type, variant, cli, args, *, script_file, root) ->
         cell = _jax_cell(dataset_type, variant, cli, root)
     instance = cell["instances"][0]
     register_model(cell["model"])
-    params_tree = jax.tree_util.tree_map(jnp.asarray, instance)
+    params_tree, treedef = _flat_params(instance)
     analysis = _analysis(cell, instance, use_jax=True)
-    inversion_class = _check_route(analysis, params_tree, sparse)
+    inversion_class = _check_route(analysis, params_tree, sparse, treedef)
     n_repeats = 2 if args.fast else 10
 
     prefix_per_call: dict[int, float] = {}
@@ -452,7 +490,8 @@ def run_jax_breakdown(dataset_type, variant, cli, args, *, script_file, root) ->
         print(f"\n--- prefix {stage}: {label} ---")
 
         def prefix(params, stage=stage):
-            return _stage_value(analysis.fit_from(instance=params), stage)
+            fit = analysis.fit_from(instance=jax.tree_util.tree_unflatten(treedef, params))
+            return _stage_value(fit, stage)
 
         compiled, _ = timing.jit_profile(
             prefix,
@@ -483,6 +522,7 @@ def run_jax_breakdown(dataset_type, variant, cli, args, *, script_file, root) ->
             sparse_batch_size=int(cli.sparse_batch_size) if sparse else None,
             n_repeats=n_repeats,
             fast=bool(args.fast),
+            xla_cpu_workaround=XLA_CPU_WORKAROUND_NOTE,
         ),
         "steps": steps,
         "total_step_by_step": float(sum(steps.values())),
@@ -717,5 +757,6 @@ def main(dataset_type: str, variant: str, measurement: str, engine: str, *, scri
         numba.set_num_threads(1)
         run = run_numba_runtime if measurement == "runtime" else run_numba_breakdown
         return run(dataset_type, variant, cli, args, thread_env, script_file=script_file, root=root)
+    _avoid_xla_cpu_deadlock()
     run = run_jax_runtime if measurement == "runtime" else run_jax_breakdown
     return run(dataset_type, variant, cli, args, script_file=script_file, root=root)
