@@ -78,6 +78,8 @@ from _profile_cli import (
     record_pinned_check,  # noqa: E402
     render_fit_png,
     resolve_output_paths,
+    resources_dict,
+    write_parity_json,
 )
 
 _cli = parse_profile_cli()
@@ -482,6 +484,8 @@ print("=" * 70)
 
 likelihood_summary = {
     "autolens_version": al_version,
+    "device": device_info_dict(),
+    "resources": resources_dict("jax"),
     "dataset": instrument,
     "fit_positions_cls": "FitPositionsSource",
     "configuration": {
@@ -590,7 +594,10 @@ print(f"  Bar chart saved to:    {chart_path}")
 _pinned_drift: list = []
 _pinned_expected = None
 
-EXPECTED_LOG_LIKELIHOOD_SOURCE_PLANE = -33788.35731127962
+# Re-captured 2026-10-28 (likelihood-lifecycle 2c, #472) on tag 2026.10.25.1, eager NumPy:
+# PyAutoLens bdb44a87c (2026.10.22.1 onward) defaults FitPositionsSource to jacobian weighting
+# and corrects its magnification normalisation (previous value -33788.35731127962).
+EXPECTED_LOG_LIKELIHOOD_SOURCE_PLANE = 12.752810040089676
 _pinned_expected = EXPECTED_LOG_LIKELIHOOD_SOURCE_PLANE
 
 _rec = check_pinned(log_likelihood_ref, _pinned_expected, label="eager", rtol=1e-4)
@@ -613,6 +620,25 @@ record_pinned_check(dict_path, _pinned_expected, _pinned_drift)
 if _pinned_expected is not None and not _pinned_drift:
     print("  Pinned-value check PASSED (recorded in result JSON).")
 
+
+# Parity witness (likelihood-lifecycle 2c, #472): the JIT full pipeline against the eager NumPy
+# AnalysisPoint(use_jax=False) computed above in the same process on the same dataset, solver,
+# model and instance (the non-JIT xp=np code path), written beside the row after every timed
+# region. Tolerance per _profile_cli.parity_rtol("point_source", ...).
+write_parity_json(
+    dict_path.parent,
+    log_likelihood=float(full_result),
+    reference_log_likelihood=figure_of_merit_ref,
+    use_mixed_precision=_cli.use_mixed_precision,
+    reference_source=(
+        "eager NumPy AnalysisPoint(use_jax=False).fit_from(instance).figure_of_merit in the same "
+        f"process: {instrument}, FitPositionsSource (source-plane chi-squared), same dataset, PointSolver, "
+        "model and instance"
+    ),
+    autolens_version=al_version,
+    quantity="log_likelihood_function (JIT cell vs eager NumPy reference)",
+    dataset_type="point_source",
+)
 
 # Fit figure (likelihood-lifecycle 1B): the eager fit, drawn after every timed region and kept as
 # fit.png beside this row. Off under AUTOLENS_PROFILING_SMOKE and with --no-fit-png.

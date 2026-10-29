@@ -1,59 +1,71 @@
 {
-  "autolens_version": "2026.10.17.1",
+  "autolens_version": "2026.8.17.1",
   "device": {
     "backend": "cpu",
     "device": "cpu:0",
-    "hostname": "euclid-ral-compute-10-2",
+    "hostname": "euclid-ral-compute-10-5",
     "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
     "omp_num_threads": "1",
     "cpu_count": 236,
-    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_wt/ps-source-gradient-admission/output/jax_cache/runtime_ps_source_plane_solved_cpu_412518",
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2c/output/jax_cache/p2c_413192_5",
     "autotune_cache_entries_at_start": 0,
     "cache_fresh": true,
     "provenance": {
       "provenance_schema": 1,
-      "captured_at": "2026-10-17T13:40:34Z",
-      "host": "euclid-ral-compute-10-2",
+      "captured_at": "2026-10-28T22:45:42Z",
+      "host": "euclid-ral-compute-10-5",
       "slurm": {
-        "job_id": "412518",
-        "array_job_id": null,
-        "array_task_id": null
+        "job_id": "413192",
+        "array_job_id": "413192",
+        "array_task_id": "5"
       },
       "loadavg_at_import": [
-        10.15,
-        10.04,
-        10.06
+        33.42,
+        9.75,
+        5.1
       ],
       "loadavg_at_write": [
-        10.22,
-        10.06,
-        10.06
+        43.87,
+        13.67,
+        6.49
       ],
-      "profiling_revision": "95b4e8a0ce52ea92326ea4fb336abe75abb53f4d",
+      "profiling_revision": "2f98e01a150d2f59aebb5735c4c12ae286a7b1d3",
       "library_revisions": {
-        "autolens_profiling": "95b4e8a0ce52ea92326ea4fb336abe75abb53f4d",
-        "PyAutoNerves": "unavailable: CalledProcessError",
-        "PyAutoFit": "unavailable: CalledProcessError",
-        "PyAutoArray": "unavailable: CalledProcessError",
-        "PyAutoGalaxy": "unavailable: CalledProcessError",
-        "PyAutoLens": "unavailable: CalledProcessError"
+        "autolens_profiling": "2f98e01a150d2f59aebb5735c4c12ae286a7b1d3",
+        "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+        "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+        "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+        "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+        "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
       },
       "library_versions": {
-        "PyAutoNerves": "2026.10.17.1",
-        "PyAutoFit": "2026.10.17.1",
-        "PyAutoArray": "2026.10.17.1",
-        "PyAutoGalaxy": "2026.10.17.1",
-        "PyAutoLens": "2026.10.17.1"
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
       },
       "dependency_versions": {
-        "jax": "0.11.2",
-        "jaxlib": "0.11.2",
-        "numpy": "2.5.4",
+        "jax": "0.10.2",
+        "jaxlib": "0.10.2",
+        "numpy": "2.2.6",
         "scipy": "1.17.1",
-        "numba": null,
-        "nufftax": null
+        "numba": "0.65.1",
+        "nufftax": "0.6.1",
+        "finufft": "2.5.1"
       }
     }
+  },
+  "resources": {
+    "resources_schema": 1,
+    "engine": "jax",
+    "device": "cpu",
+    "cpus_per_eval": 8,
+    "cpus_per_eval_basis": "jax cpu: NPROC threads in XLA's CPU intra-op pool",
+    "devices_per_eval": 0,
+    "peak_rss_gb": 0.572756,
+    "peak_rss_basis": "in_process_ru_maxrss",
+    "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
   },
   "dataset": "simple",
   "fit_positions_cls": "FitPositionsSourceSolved",
@@ -65,14 +77,14 @@
     "free_parameters_delta": -3,
     "point_source_profile": "PointSolved"
   },
-  "eager_per_call": 0.004463637208100408,
+  "eager_per_call": 0.004529430199763738,
   "eager_log_likelihood": 0.5986504539443818,
   "full_pipeline_jits": true,
-  "full_pipeline_single_jit": 0.00017663601320236922,
-  "full_pipeline_single_jit_median": 0.00014712498523294926,
-  "full_pipeline_single_jit_median_ms": 0.14712498523294926,
-  "full_pipeline_single_jit_p10_ms": 0.12622419744729996,
-  "full_pipeline_single_jit_p90_ms": 0.16768919304013252,
+  "full_pipeline_single_jit": 0.00019971719593740999,
+  "full_pipeline_single_jit_median": 0.00015573750715702772,
+  "full_pipeline_single_jit_median_ms": 0.15573750715702772,
+  "full_pipeline_single_jit_p10_ms": 0.13556185876950622,
+  "full_pipeline_single_jit_p90_ms": 0.20762646454386413,
   "full_pipeline_single_jit_median_protocol": {
     "n_warm": 5,
     "n_timed": 200,
@@ -80,12 +92,12 @@
     "full_pipeline_single_jit_is": "mean of one 10-call block after one first call (first block after compile)",
     "issue": "autolens_profiling#371; timing-noise audit P8 (#362)"
   },
-  "full_pipeline_log_likelihood": 0.5986504555533987,
+  "full_pipeline_log_likelihood": 0.5986504555536349,
   "vmap": {
     "batch_size": 3,
-    "batch_time": 0.00015783628914505242,
-    "per_call": 5.261209638168414e-05,
-    "speedup_vs_single_jit": 3.4
+    "batch_time": 0.00018256300245411694,
+    "per_call": 6.0854334151372313e-05,
+    "speedup_vs_single_jit": 3.3
   },
   "pinned_expected": 0.5986504555530896,
   "pinned_drift": []

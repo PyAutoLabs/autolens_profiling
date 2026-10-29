@@ -85,8 +85,10 @@ from _profile_cli import (  # noqa: E402
     auto_simulate_if_missing,
     device_info_dict,
     parse_profile_cli,
+    render_fit_png,
     resolve_output_paths,
     resources_dict,
+    write_parity_json,
 )
 
 _cli = parse_profile_cli()
@@ -104,7 +106,11 @@ INSTRUMENT = "simple"
 N_REPEATS = 500
 
 EXPECTED_LOG_LIKELIHOOD_SOLVED = 0.5986504555536349
-EXPECTED_LOG_LIKELIHOOD_PLAIN = -33788.35531560625
+# Re-captured 2026-10-28 (likelihood-lifecycle 2c, #472) on tag 2026.10.25.1: PyAutoLens
+# bdb44a87c (in 2026.10.22.1 onward) defaults FitPositionsSource to jacobian weighting and
+# corrects its magnification normalisation, so the plain lane's value moved from
+# -33788.35531560625. The solved lane is unchanged.
+EXPECTED_LOG_LIKELIHOOD_PLAIN = 12.752810039006214
 LITERAL_RTOL = 1.0e-8
 
 timer = Timer()
@@ -594,3 +600,34 @@ print(f"  value_and_grad / forward = {gradient_cost['grad_over_forward']:.2f}")
 print(f"  Results JSON: {dict_path}")
 print(f"  Results PNG:  {chart_path}")
 timer.summary()
+
+
+# Parity witness (likelihood-lifecycle 2c, #472): the fused JIT solved likelihood (the
+# authoritative runtime of this breakdown) against the eager NumPy AnalysisPoint(use_jax=False)
+# value computed above in the same process on the same dataset, model and instance (the non-JIT
+# xp=np code path). Tolerance per _profile_cli.parity_rtol("point_source", ...).
+# The eager solved lane takes a finite-difference Hessian (the JIT lane jacfwd), so the two
+# agree to rtol 1e-4, not bit-for-bit (methodology.eager_hessian above).
+write_parity_json(
+    dict_path.parent,
+    log_likelihood=float(solved_result),
+    reference_log_likelihood=solved_eager,
+    use_mixed_precision=_cli.use_mixed_precision,
+    reference_source=(
+        "eager NumPy AnalysisPoint(use_jax=False).log_likelihood_function(instance) in the same "
+        f"process: {INSTRUMENT}, PointSolved / FitPositionsSourceSolved (source-plane chi-squared, the solved lane), "
+        "same dataset, model and instance"
+    ),
+    autolens_version=al_version,
+    quantity="log_likelihood_function of the solved lane (fused JIT vs eager NumPy reference)",
+    dataset_type="point_source",
+)
+
+# Fit figure (likelihood-lifecycle 1B): the eager solved fit, drawn after every timed region and
+# kept as fit.png beside this row. Off under AUTOLENS_PROFILING_SMOKE and with --no-fit-png.
+render_fit_png(
+    analysis_solved_eager.fit_from(instance=instance_solved),
+    dict_path.parent,
+    dataset_type="point_source",
+    cli=_cli,
+)
