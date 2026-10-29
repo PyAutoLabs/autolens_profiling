@@ -10,7 +10,7 @@ the same list.
 | [`imaging_p2a.py`](imaging_p2a.py) | Phase 2a, `imaging/{mge, rectangular, delaunay, delaunay_nn}` at the standard size on 2026.10.23.1 (autolens_profiling#456) | `hpc/batch_cpu/submit_campaign_p2a_imaging_*`, `hpc/batch_gpu/submit_campaign_p2a_imaging_*` |
 | [`imaging_p2a.py`](imaging_p2a.py) (`rect28_tasks`) | Phase 2a size variant: hst rectangular at 28x28 = 784 source pixels on 2026.10.25.1 (autolens_profiling#468) | `hpc/batch_cpu/submit_campaign_p2a_rect28_ral_cpu_fp64`, `hpc/batch_gpu/submit_campaign_p2a_rect28_a100_fp64` |
 | [`interferometer_p2b.py`](interferometer_p2b.py) | Phase 2b, `interferometer/{mge, rectangular, delaunay}` at the standard size on 2026.10.25.1 (autolens_profiling#469), plus the dense parity references and the matrix-free experiment | `hpc/batch_cpu/submit_campaign_p2b_*`, `hpc/batch_gpu/submit_campaign_p2b_*` |
-| [`multi_galaxy_group_p2d.py`](multi_galaxy_group_p2d.py) | Phase 2d DRAFT, `{multi_galaxy,group}/{mge, rectangular, delaunay}` at the standard size on 2026.10.25.1 (autolens_profiling#473); decisions D1-D12 await the human | `hpc/batch_cpu/submit_campaign_p2d_*`, `hpc/batch_gpu/submit_campaign_p2d_*` |
+| [`multi_galaxy_group_p2d.py`](multi_galaxy_group_p2d.py) | Phase 2d DRAFT, `{multi_galaxy,group}/{mge, rectangular, delaunay}` at the standard size on 2026.10.25.1 (autolens_profiling#473); decisions D1-D11 await the human (D12 decided 2026-10-29) | `hpc/batch_cpu/submit_campaign_p2d_*`, `hpc/batch_gpu/submit_campaign_p2d_*` |
 | [`_common.py`](_common.py) | The submit machinery both generators share (preamble, guards, WALL-BASIS rows, `#SBATCH` block) | none of its own |
 | [`peak_rss_backfill.py`](peak_rss_backfill.py) | Phase 2x backfill of 2a's peak memory and cores per call from sacct (autolens_profiling#462) | writes `catalogue/peak_rss_backfill.json`, no submits |
 
@@ -341,7 +341,7 @@ regenerates the catalogue and coverage.
 ## Phase 2d multi_galaxy + group (DRAFT, not submitted)
 
 **Status.** A draft for the human's review (autolens_profiling#473). The cell design is
-decisions D1-D12 on the campaign page (D12: the JAX legs append `--xla_cpu_multi_thread_eigen=false`, an XLA:CPU deadlock workaround),
+decisions D1-D12 on the campaign page (D12, decided by the human 2026-10-29: the JAX legs append `--xla_cpu_multi_thread_eigen=false`, an XLA:CPU deadlock workaround),
 [`wiki/campaigns/multi_galaxy/likelihood_lifecycle_p2d.md`](../../../wiki/campaigns/multi_galaxy/likelihood_lifecycle_p2d.md).
 No submit has run; each batch needs the human's go.
 

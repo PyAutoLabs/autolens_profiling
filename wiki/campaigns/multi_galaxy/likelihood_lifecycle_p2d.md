@@ -9,7 +9,7 @@
 **Profiling PRs:** the 2d draft PR (new cell scripts, shared driver, cell builder, registry cells, campaign submits, this page), stacked on #471; then a walls commit after batch 0; then PR B (rows, catalogue, coverage, result)
 **Ledger:** this page and the group page [`../group/likelihood_lifecycle_p2d.md`](../group/likelihood_lifecycle_p2d.md); rows will land under `results/{multi_galaxy,group}/{mge,rectangular,delaunay}/`; work list [`scripts/misc/campaigns/multi_galaxy_group_p2d.py`](../../../scripts/misc/campaigns/multi_galaxy_group_p2d.py) and its [README](../../../scripts/misc/campaigns/README.md)
 **Mind contract:** epic `likelihood-lifecycle`, phase 2 sub-issue 2d; issue autolens_profiling#473
-**Next:** the human rules on D1-D12; then batch 0 (human go)
+**Next:** the human rules on D1-D11 (D12 decided 2026-10-29); then batch 0 (human go)
 **Fit figures:** none yet (laptop smoke figures only, not reviewed as campaign rows)
 
 ## Why this campaign
@@ -40,7 +40,14 @@ implements the draft; each alternative is a small change in `catalogue/registry.
 | D9 | Batch 0 = every group leg (24: RAL 10, A100 14), as the timing arm; batch 1 = all 48 cells, walls from batch 0's group leg of the same script, setup and host class. | Group bounds multi_galaxy (1.6x the masked pixels, more mass components), and every leg is cheap enough to run them all (imaging hst legs took 1-6 min). | Run both types in batch 0 (48 legs) and promote them, with no batch 1; or the slowest setups only. |
 | D10 | Breakdowns: a new generic stage walk of `AnalysisImaging.fit_from`. JAX: seven jitted prefixes (traced grids, blurred image, data vector, curvature, F + H, reconstruction, figure of merit) split by successive differences. numba: each lazily evaluated stage timed on first access, median over the warm iid instances. | One harness for both types and every variant, built from the library's own stages. The imaging breakdowns' hand-written per-step kernels assume one lens and one source. | Port the imaging per-step breakdowns (larger change; the step names would then match imaging's). |
 | D11 | Walls and memory, provisional: batch 0 guesses 3600 s a leg (`source: unmeasured`, 3x floor), `--time=4:00:00`, `--mem=32gb`; batch 1 renders `WALL_BASIS_STATUS=provisional` and refuses to run until batch 0's walls and MaxRSS replace the placeholders (RAL 4:00:00, A100 job 2-00:00:00). | About 10x the imaging hst legs of the nearest size, and about 3x their 10.2 GiB peak. | Tighter guesses. |
-| D12 | Every JAX leg compiles with `--xla_cpu_multi_thread_eigen=false` appended to `XLA_FLAGS` (the driver does it; the row records it in `device.xla_flags` and `configuration.xla_cpu_workaround`). | Without it the 2d executables deadlock on jaxlib 0.11.2's XLA:CPU after a few calls (see "XLA:CPU deadlock" below). The flag is the cheaper of the two that avoid it on the laptop and touches only CPU-compiled code; it applies to the RAL CPU legs and the A100 node's `jax_cpu_sparse_fp64` leg, and is inert for a GPU executable. It is a compile option the 2a/2b imaging rows did not use, so a 2d JAX CPU row is not like-for-like with an imaging row on that axis. | `--xla_cpu_enable_concurrency_optimized_scheduler=false` instead (also avoids it; ~2.4x slower per call on the laptop MGE cells); or no flag and a jaxlib that fixes it (none known yet); or drop the JAX CPU setups from 2d. |
+| D12 (**decided**, human 2026-10-29: keep) | Every JAX leg compiles with `--xla_cpu_multi_thread_eigen=false` appended to `XLA_FLAGS` (the driver does it; the row records it in `device.xla_flags` and `configuration.xla_cpu_workaround`). | Without it the 2d executables deadlock on jaxlib 0.11.2's XLA:CPU after a few calls (see "XLA:CPU deadlock" below). The flag is the cheaper of the two that avoid it on the laptop and touches only CPU-compiled code; it applies to the RAL CPU legs and the A100 node's `jax_cpu_sparse_fp64` leg, and is inert for a GPU executable. It is a compile option the 2a/2b imaging rows did not use, so a 2d JAX CPU row is not like-for-like with an imaging row on that axis. | `--xla_cpu_enable_concurrency_optimized_scheduler=false` instead (also avoids it; about 2x slower per call than the eigen flag on the laptop MGE cells, within ~15 % and slightly faster on the pixelized cells); or no flag and a jaxlib that fixes it (none known yet); or drop the JAX CPU setups from 2d. |
+
+**D12 decided (human, 2026-10-29), verbatim:** "keep the workaround which ensures we retain the fastest run times and make sure this knowledge is retained in Pulse for going forward". Kept as drafted: the JAX legs compile
+with `--xla_cpu_multi_thread_eigen=false`, which the driver already applies
+(`XLA_CPU_WORKAROUND_FLAG` in `scripts/misc/likelihood_breakdown/galaxy_group_standard.py`), so no
+code changed. The knowledge is kept in Pulse:
+[XLA:CPU deadlock on repeated calls (jaxlib 0.11.2)](https://github.com/PyAutoLabs/PyAutoPulse/blob/main/knowledge/xla_cpu_deadlock_jaxlib_0_11_2.md) and the decision record
+[xla-cpu-deadlock-eigen-workaround](https://github.com/PyAutoLabs/PyAutoPulse/blob/main/decisions/xla-cpu-deadlock-eigen-workaround.md) (PyAutoPulse#81).
 
 ### The cells (draft)
 
@@ -103,7 +110,8 @@ It deadlocks with the default flags and runs 300 calls with either
 `--xla_cpu_multi_thread_eigen=false` or `--xla_cpu_enable_concurrency_optimized_scheduler=false`,
 so the fault is in XLA:CPU (jax / jaxlib 0.11.2), in the interplay of multi-threaded Eigen ops
 and the concurrency-optimized thunk schedule. Not patched here (it is not PyAuto code); worth a
-JAX issue with the exported module.
+JAX issue with the exported module. The lasting record is the Pulse
+[knowledge page](https://github.com/PyAutoLabs/PyAutoPulse/blob/main/knowledge/xla_cpu_deadlock_jaxlib_0_11_2.md).
 
 **Full pipelines, laptop, 8 cores, calls before the hang / steady median per call:**
 
@@ -161,6 +169,14 @@ and unflatten inside the trace (`dPIEMassSph` computes `b0` from `sigma` in its 
 prefix passes `xp=jnp` (the NumPy default raised `TracerArrayConversionError`). The remaining
 hangs were a jaxlib 0.11.2 XLA:CPU deadlock (section above), reproduced without any PyAuto code
 and avoided by D12. Every JAX smoke then completed; the table is in the 2d draft PR.
+
+### 2026-10-29 — D12 decided: keep the eigen flag
+
+The human ruled "keep the workaround which ensures we retain the fastest run times and make sure this knowledge is retained in Pulse for going forward". D12 stands as drafted (`--xla_cpu_multi_thread_eigen=false`, already
+in the driver; no code change). The deadlock, its repro, both flags' costs and the open
+questions (RAL, the 2a/2b JAX CPU cells, when a jaxlib change should trigger a re-test) are kept
+in Pulse: [knowledge page](https://github.com/PyAutoLabs/PyAutoPulse/blob/main/knowledge/xla_cpu_deadlock_jaxlib_0_11_2.md), [decision record](https://github.com/PyAutoLabs/PyAutoPulse/blob/main/decisions/xla-cpu-deadlock-eigen-workaround.md) (PyAutoPulse#81). D1-D11 still
+await the human.
 
 ### 2026-10-29 — the GPU-host planner fix merged in
 

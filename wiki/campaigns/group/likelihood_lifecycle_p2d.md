@@ -9,7 +9,7 @@
 **Profiling PRs:** the 2d draft PR, stacked on #471
 **Ledger:** the shared campaign page [`../multi_galaxy/likelihood_lifecycle_p2d.md`](../multi_galaxy/likelihood_lifecycle_p2d.md); rows will land under `results/group/{mge,rectangular,delaunay}/euclid/`
 **Mind contract:** epic `likelihood-lifecycle`, phase 2 sub-issue 2d; issue autolens_profiling#473
-**Next:** the human rules on D1-D12 (shared page); then batch 0, which is every group leg
+**Next:** the human rules on D1-D11 (shared page; D12 decided 2026-10-29); then batch 0, which is every group leg
 **Fit figures:** none yet
 
 ## The group cell
