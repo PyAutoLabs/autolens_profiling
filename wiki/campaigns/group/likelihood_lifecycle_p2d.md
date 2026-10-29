@@ -1,6 +1,6 @@
 # Likelihood lifecycle phase 2d: group at the standard size
 
-**Status:** draft
+**Status:** open
 **Question:** What does every planned group/{mge, rectangular, delaunay} cell cost at the standard size on the pinned release 2026.10.25.1, on the §3.3 "as imaging" setups, with a parity witness?
 **Pre-registered rule:** the 24 planned group cells (10 RAL CPU, 14 A100) land `current` with runtime and breakdown, provenance, `resources`, `fit.png` and a `parity.json` whose status is `match` against the eager NumPy dense reference (1e-4 x |reference| in fp64). The campaign's rule, decisions and batch plan are on the shared 2d page; this page holds the group-specific parts. Written 2026-10-28, before any run.
 **Verdict:** pending (nothing run). Expected: group is slower than multi_galaxy for every setup, and it bounds multi_galaxy's walls (batch 0 runs every group leg, decision D9); the two dPIE extra galaxies add deflection cost only; every witness is `match`.
@@ -9,7 +9,7 @@
 **Profiling PRs:** the 2d draft PR, stacked on #471
 **Ledger:** the shared campaign page [`../multi_galaxy/likelihood_lifecycle_p2d.md`](../multi_galaxy/likelihood_lifecycle_p2d.md); rows will land under `results/group/{mge,rectangular,delaunay}/euclid/`
 **Mind contract:** epic `likelihood-lifecycle`, phase 2 sub-issue 2d; issue autolens_profiling#473
-**Next:** the human rules on D1-D11 (shared page; D12 decided 2026-10-29); then batch 0, which is every group leg
+**Next:** batch 0, every group leg (go given 2026-10-29 with decisions D1-D12 all decided on the shared page; held: the RAL venv carries jax/jaxlib 0.10.2, which the pin's PyAutoNerves excludes; the human decides the environment); then the walls commit and batch 1
 **Fit figures:** none yet
 
 ## The group cell
@@ -45,3 +45,8 @@ The group JAX legs (Delaunay dense first) were where the hang was first seen: a 
 likelihood that blocks for ever after a few calls. It is a jaxlib 0.11.2 XLA:CPU deadlock, not a
 group-specific one (multi_galaxy hangs too); the evidence and the D12 workaround are on the
 shared page.
+
+### 2026-10-29 — decisions adopted; batch 0 held
+
+D1-D11 adopted as drafted (shared page); batch 0 (every group leg) was held, as the shared page's
+journal records.
