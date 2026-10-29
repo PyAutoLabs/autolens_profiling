@@ -15,7 +15,7 @@ Catalogue generated 2026-10-27T12:25:45Z; catalogue pin `2026.10.25.1` (newest r
 
 | Planned cells | Current | Stale | Superseded | Missing (of which size_fallback) | Superseded records |
 |---|---|---|---|---|---|
-| 232 | 106 | 7 | 0 | 119 (20) | 384 |
+| 280 | 106 | 7 | 0 | 167 (20) | 384 |
 
 ## Likelihood x class x measurement
 
@@ -31,6 +31,16 @@ Catalogue generated 2026-10-27T12:25:45Z; catalogue pin `2026.10.25.1` (newest r
 | datacube/delaunay | optimal | runtime | 0 | 0 | 0 | 6 |
 | datacube/delaunay | secondary | breakdown | 0 | 0 | 0 | 9 |
 | datacube/delaunay | secondary | runtime | 0 | 0 | 0 | 9 |
+| group/delaunay | optimal | breakdown | 0 | 0 | 0 | 2 |
+| group/delaunay | optimal | runtime | 0 | 0 | 0 | 2 |
+| group/delaunay | secondary | breakdown | 0 | 0 | 0 | 3 |
+| group/delaunay | secondary | runtime | 0 | 0 | 0 | 3 |
+| group/mge | optimal | breakdown | 0 | 0 | 0 | 2 |
+| group/mge | optimal | runtime | 0 | 0 | 0 | 2 |
+| group/rectangular | optimal | breakdown | 0 | 0 | 0 | 2 |
+| group/rectangular | optimal | runtime | 0 | 0 | 0 | 2 |
+| group/rectangular | secondary | breakdown | 0 | 0 | 0 | 3 |
+| group/rectangular | secondary | runtime | 0 | 0 | 0 | 3 |
 | imaging/delaunay | optimal | breakdown | 8 | 0 | 0 | 0 |
 | imaging/delaunay | optimal | runtime | 8 | 0 | 0 | 0 |
 | imaging/delaunay | secondary | breakdown | 12 | 0 | 0 | 0 |
@@ -59,6 +69,16 @@ Catalogue generated 2026-10-27T12:25:45Z; catalogue pin `2026.10.25.1` (newest r
 | multi_dataset/delaunay | optimal | runtime | 0 | 0 | 0 | 2 |
 | multi_dataset/delaunay | secondary | breakdown | 0 | 0 | 0 | 3 |
 | multi_dataset/delaunay | secondary | runtime | 0 | 0 | 0 | 3 |
+| multi_galaxy/delaunay | optimal | breakdown | 0 | 0 | 0 | 2 |
+| multi_galaxy/delaunay | optimal | runtime | 0 | 0 | 0 | 2 |
+| multi_galaxy/delaunay | secondary | breakdown | 0 | 0 | 0 | 3 |
+| multi_galaxy/delaunay | secondary | runtime | 0 | 0 | 0 | 3 |
+| multi_galaxy/mge | optimal | breakdown | 0 | 0 | 0 | 2 |
+| multi_galaxy/mge | optimal | runtime | 0 | 0 | 0 | 2 |
+| multi_galaxy/rectangular | optimal | breakdown | 0 | 0 | 0 | 2 |
+| multi_galaxy/rectangular | optimal | runtime | 0 | 0 | 0 | 2 |
+| multi_galaxy/rectangular | secondary | breakdown | 0 | 0 | 0 | 3 |
+| multi_galaxy/rectangular | secondary | runtime | 0 | 0 | 0 | 3 |
 | point_source_image/image_plane | optimal | breakdown | 0 | 2 | 0 | 0 |
 | point_source_image/image_plane | optimal | runtime | 0 | 0 | 0 | 2 |
 | point_source_source/source_plane | optimal | breakdown | 0 | 1 | 0 | 1 |
@@ -76,7 +96,7 @@ Per planned setup cell: match/diverged from its current parity record, not_asses
 
 | Setup cells | Match | Diverged | Not assessed | Missing |
 |---|---|---|---|---|
-| 116 | 53 | 0 | 0 | 63 |
+| 140 | 53 | 0 | 0 | 87 |
 
 | Likelihood | Class | Match | Diverged | Not assessed | Missing |
 |---|---|---|---|---|---|
@@ -85,6 +105,11 @@ Per planned setup cell: match/diverged from its current parity record, not_asses
 | cluster/source_plane | secondary | 0 | 0 | 0 | 1 |
 | datacube/delaunay | optimal | 0 | 0 | 0 | 6 |
 | datacube/delaunay | secondary | 0 | 0 | 0 | 9 |
+| group/delaunay | optimal | 0 | 0 | 0 | 2 |
+| group/delaunay | secondary | 0 | 0 | 0 | 3 |
+| group/mge | optimal | 0 | 0 | 0 | 2 |
+| group/rectangular | optimal | 0 | 0 | 0 | 2 |
+| group/rectangular | secondary | 0 | 0 | 0 | 3 |
 | imaging/delaunay | optimal | 8 | 0 | 0 | 0 |
 | imaging/delaunay | secondary | 12 | 0 | 0 | 0 |
 | imaging/delaunay_nn | optimal | 2 | 0 | 0 | 0 |
@@ -99,6 +124,11 @@ Per planned setup cell: match/diverged from its current parity record, not_asses
 | interferometer/rectangular | secondary | 0 | 0 | 0 | 6 |
 | multi_dataset/delaunay | optimal | 0 | 0 | 0 | 2 |
 | multi_dataset/delaunay | secondary | 0 | 0 | 0 | 3 |
+| multi_galaxy/delaunay | optimal | 0 | 0 | 0 | 2 |
+| multi_galaxy/delaunay | secondary | 0 | 0 | 0 | 3 |
+| multi_galaxy/mge | optimal | 0 | 0 | 0 | 2 |
+| multi_galaxy/rectangular | optimal | 0 | 0 | 0 | 2 |
+| multi_galaxy/rectangular | secondary | 0 | 0 | 0 | 3 |
 | point_source_image/image_plane | optimal | 0 | 0 | 0 | 2 |
 | point_source_source/source_plane | optimal | 0 | 0 | 0 | 2 |
 | point_source_source/source_plane | secondary | 0 | 0 | 0 | 1 |

@@ -795,6 +795,13 @@ iteration counts, budgets in iterations, geometry or formatting, not a measured 
   median (5 and 100, `timing.steady_median_profile`). They size a statistic, not a gate: no
   verdict reads them and nothing passes or fails on the median.
   S1 is still the gate.
+- `scripts/misc/campaigns/multi_galaxy_group_p2d.py::WALL_HEADROOM` and
+  `scripts/misc/campaigns/multi_galaxy_group_p2d.py::MEM_HEADROOM` (autolens_profiling#473): the
+  2d generator's copies of the same two multipliers, with the same meaning (batch 1's `--time` at
+  1.25x batch 0's measured walls once they exist; `--mem` at 1.5x measured MaxRSS). S1 is the
+  gate. `scripts/misc/campaigns/test/test_multi_galaxy_group_p2d.py::test_the_jax_runtime_cells_take_the_headline_median_in_the_wall_gate`
+  is a count of scripts (the six 2d JAX runtime scripts are in `HEADLINE_MEDIAN_SCRIPTS`), not a
+  timing comparison.
 - `scripts/misc/campaigns/cluster_p2e.py::WALL_HEADROOM` and
   `scripts/misc/campaigns/cluster_p2e.py::MEM_HEADROOM` (autolens_profiling#474): the 2e
   generator's copies of the same two multipliers, unused until batch 0 lands (its walls are

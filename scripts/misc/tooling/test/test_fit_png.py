@@ -47,6 +47,9 @@ WIRED = {
 SHARED_RENDERERS = {
     "scripts/misc/likelihood_breakdown/interferometer_standard.py",
     "scripts/interferometer/rectangular/likelihood_runtime_matrixfree.py",
+    # likelihood-lifecycle 2d (#473): the multi_galaxy / group runtime scripts are thin wrappers;
+    # the driver renders after the row and the parity witness.
+    "scripts/misc/likelihood_breakdown/galaxy_group_standard.py",
     # Likelihood-lifecycle 2e (#474): the cluster runtime driver renders for the two cluster
     # likelihood_runtime.py cells that call it, after their row write.
     "scripts/misc/likelihood_breakdown/cluster_standard.py",

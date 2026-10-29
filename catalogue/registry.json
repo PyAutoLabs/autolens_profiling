@@ -9,9 +9,11 @@
     "point_source_source": "Point source: source plane",
     "cluster": "Cluster",
     "multi_dataset": "Multiple datasets",
-    "weak": "Weak lensing",
+    "multi_galaxy": "Multi-galaxy lenses",
+    "group": "Group-scale lenses",
     "lens": "Library components",
-    "experiments": "Other experiments"
+    "experiments": "Other experiments",
+    "weak": "Weak lensing"
   },
   "model_aliases": {
     "pixelization": "rectangular",
@@ -255,6 +257,42 @@
       "dataset": "multi_dataset",
       "model": "delaunay",
       "instrument": null
+    },
+    {
+      "id": "multi_galaxy/mge/hst",
+      "dataset": "multi_galaxy",
+      "model": "mge",
+      "instrument": "hst"
+    },
+    {
+      "id": "multi_galaxy/rectangular/hst",
+      "dataset": "multi_galaxy",
+      "model": "rectangular",
+      "instrument": "hst"
+    },
+    {
+      "id": "multi_galaxy/delaunay/hst",
+      "dataset": "multi_galaxy",
+      "model": "delaunay",
+      "instrument": "hst"
+    },
+    {
+      "id": "group/mge/euclid",
+      "dataset": "group",
+      "model": "mge",
+      "instrument": "euclid"
+    },
+    {
+      "id": "group/rectangular/euclid",
+      "dataset": "group",
+      "model": "rectangular",
+      "instrument": "euclid"
+    },
+    {
+      "id": "group/delaunay/euclid",
+      "dataset": "group",
+      "model": "delaunay",
+      "instrument": "euclid"
     },
     {
       "id": "weak/isothermal/simple",
