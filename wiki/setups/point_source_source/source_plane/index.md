@@ -16,11 +16,20 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 
 | Exact configuration | Evidence source | Records |
 |---|---|---|
-| [1b26d0c1ba15bdfed7db](e7ab869a56e4fbee4b27.md) | results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/runtime.json | 4 |
+| [0a9bfa16db6a9aa1b16e](3865f6852f35d78fcef2.md) | results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/history/2026.8.17.1_2026-09-26/breakdown.json | 84 |
+| [1020d181790bd06fca9b](12df1a33c0533ff481a3.md) | results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_a100/breakdown.json | 87 |
+| [26cbd78579ed0ef0d558](4dcb1f69c45382117bdd.md) | results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/history/2026.10.17.1_2026-10-17/runtime.json | 4 |
 | [2f605473881c049c49cd](8514d9b281c27f84b168.md) | results/point_source_source/source_plane/simple/jax_cpu_na_fp64/local_laptop/breakdown.json | 84 |
-| [4775d03652d5402261c7](52f5164e10defb6b7518.md) | results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/breakdown.json | 84 |
-| [63b1bbcab9f8ae0f0393](e8b066671999ea2aad2d.md) | results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/breakdown.json | 85 |
-| [f8de905fbc524a9f3207](84db8ebb52f2fa89f429.md) | results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/runtime.json | 4 |
+| [454796f33be5f6ff4459](b310f3aa503fe9f6a898.md) | results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/breakdown.json | 86 |
+| [4e0eff80f234ab25b914](0f55ffe1994e4bf8ad51.md) | results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_a100/runtime.json | 2 |
+| [59059704ebd395e836ba](df849c22e68f79e3ea80.md) | results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/runtime.json | 2 |
+| [5c34df6324a502e6ec40](b8d5863784db43e842ec.md) | results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/experiments/solved_runtime/runtime.json | 4 |
+| [60859d374c276ea53275](7790334b7c30ad7fe45b.md) | results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/breakdown.json | 85 |
+| [bae1d9d6f0feeb646102](c8589ac62e55f5fc9122.md) | results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/runtime.json | 2 |
+| [c22b5b1a47aea71b90a2](63859c8f27753382e400.md) | results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/solved_runtime/runtime.json | 4 |
+| [c727c7ddf06adeec1b66](f8cac32988fb5a97bb4b.md) | results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/history/2026.10.17.1_2026-10-17/runtime.json | 4 |
+| [da27047578abf1b32256](e52baea13ef0a54c6cda.md) | results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_a100/experiments/solved_runtime/runtime.json | 4 |
+| [f057646123b60470578b](770b4c0f367011494bb3.md) | results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/history/2026.8.17.1_2026-09-26/breakdown.json | 85 |
 
 ## unspecified
 
