@@ -15,7 +15,7 @@ Catalogue generated 2026-10-29T09:46:25Z; catalogue pin `2026.10.25.1` (newest r
 
 | Planned cells | Current | Stale | Superseded | Missing (of which size_fallback) | Superseded records |
 |---|---|---|---|---|---|
-| 226 | 116 | 1 | 0 | 109 (20) | 402 |
+| 272 | 116 | 1 | 0 | 155 (20) | 402 |
 
 ## Likelihood x class x measurement
 
@@ -29,8 +29,18 @@ Catalogue generated 2026-10-29T09:46:25Z; catalogue pin `2026.10.25.1` (newest r
 | cluster/source_plane | secondary | runtime | 0 | 0 | 0 | 1 |
 | datacube/delaunay | optimal | breakdown | 0 | 0 | 0 | 6 |
 | datacube/delaunay | optimal | runtime | 0 | 0 | 0 | 6 |
-| datacube/delaunay | secondary | breakdown | 0 | 0 | 0 | 9 |
-| datacube/delaunay | secondary | runtime | 0 | 0 | 0 | 9 |
+| datacube/delaunay | secondary | breakdown | 0 | 0 | 0 | 5 |
+| datacube/delaunay | secondary | runtime | 0 | 0 | 0 | 5 |
+| group/delaunay | optimal | breakdown | 0 | 0 | 0 | 2 |
+| group/delaunay | optimal | runtime | 0 | 0 | 0 | 2 |
+| group/delaunay | secondary | breakdown | 0 | 0 | 0 | 3 |
+| group/delaunay | secondary | runtime | 0 | 0 | 0 | 3 |
+| group/mge | optimal | breakdown | 0 | 0 | 0 | 2 |
+| group/mge | optimal | runtime | 0 | 0 | 0 | 2 |
+| group/rectangular | optimal | breakdown | 0 | 0 | 0 | 2 |
+| group/rectangular | optimal | runtime | 0 | 0 | 0 | 2 |
+| group/rectangular | secondary | breakdown | 0 | 0 | 0 | 3 |
+| group/rectangular | secondary | runtime | 0 | 0 | 0 | 3 |
 | imaging/delaunay | optimal | breakdown | 8 | 0 | 0 | 0 |
 | imaging/delaunay | optimal | runtime | 8 | 0 | 0 | 0 |
 | imaging/delaunay | secondary | breakdown | 12 | 0 | 0 | 0 |
@@ -59,12 +69,26 @@ Catalogue generated 2026-10-29T09:46:25Z; catalogue pin `2026.10.25.1` (newest r
 | multi_dataset/delaunay | optimal | runtime | 0 | 0 | 0 | 2 |
 | multi_dataset/delaunay | secondary | breakdown | 0 | 0 | 0 | 3 |
 | multi_dataset/delaunay | secondary | runtime | 0 | 0 | 0 | 3 |
+| multi_galaxy/delaunay | optimal | breakdown | 0 | 0 | 0 | 2 |
+| multi_galaxy/delaunay | optimal | runtime | 0 | 0 | 0 | 2 |
+| multi_galaxy/delaunay | secondary | breakdown | 0 | 0 | 0 | 3 |
+| multi_galaxy/delaunay | secondary | runtime | 0 | 0 | 0 | 3 |
+| multi_galaxy/mge | optimal | breakdown | 0 | 0 | 0 | 2 |
+| multi_galaxy/mge | optimal | runtime | 0 | 0 | 0 | 2 |
+| multi_galaxy/rectangular | optimal | breakdown | 0 | 0 | 0 | 2 |
+| multi_galaxy/rectangular | optimal | runtime | 0 | 0 | 0 | 2 |
+| multi_galaxy/rectangular | secondary | breakdown | 0 | 0 | 0 | 3 |
+| multi_galaxy/rectangular | secondary | runtime | 0 | 0 | 0 | 3 |
 | point_source_image/image_plane | optimal | breakdown | 2 | 0 | 0 | 0 |
 | point_source_image/image_plane | optimal | runtime | 2 | 0 | 0 | 0 |
 | point_source_source/source_plane | optimal | breakdown | 2 | 0 | 0 | 0 |
 | point_source_source/source_plane | optimal | runtime | 2 | 0 | 0 | 0 |
 | point_source_source/source_plane | secondary | breakdown | 1 | 0 | 0 | 0 |
 | point_source_source/source_plane | secondary | runtime | 1 | 0 | 0 | 0 |
+| weak/isothermal | optimal | breakdown | 0 | 0 | 0 | 2 |
+| weak/isothermal | optimal | runtime | 0 | 0 | 0 | 2 |
+| weak/isothermal | secondary | breakdown | 0 | 0 | 0 | 1 |
+| weak/isothermal | secondary | runtime | 0 | 0 | 0 | 1 |
 
 ## Parity witnesses
 
@@ -72,7 +96,7 @@ Per planned setup cell: match/diverged from its current parity record, not_asses
 
 | Setup cells | Match | Diverged | Not assessed | Missing |
 |---|---|---|---|---|
-| 113 | 58 | 0 | 0 | 55 |
+| 136 | 58 | 0 | 0 | 78 |
 
 | Likelihood | Class | Match | Diverged | Not assessed | Missing |
 |---|---|---|---|---|---|
@@ -80,7 +104,12 @@ Per planned setup cell: match/diverged from its current parity record, not_asses
 | cluster/source_plane | optimal | 0 | 0 | 0 | 2 |
 | cluster/source_plane | secondary | 0 | 0 | 0 | 1 |
 | datacube/delaunay | optimal | 0 | 0 | 0 | 6 |
-| datacube/delaunay | secondary | 0 | 0 | 0 | 9 |
+| datacube/delaunay | secondary | 0 | 0 | 0 | 5 |
+| group/delaunay | optimal | 0 | 0 | 0 | 2 |
+| group/delaunay | secondary | 0 | 0 | 0 | 3 |
+| group/mge | optimal | 0 | 0 | 0 | 2 |
+| group/rectangular | optimal | 0 | 0 | 0 | 2 |
+| group/rectangular | secondary | 0 | 0 | 0 | 3 |
 | imaging/delaunay | optimal | 8 | 0 | 0 | 0 |
 | imaging/delaunay | secondary | 12 | 0 | 0 | 0 |
 | imaging/delaunay_nn | optimal | 2 | 0 | 0 | 0 |
@@ -95,6 +124,13 @@ Per planned setup cell: match/diverged from its current parity record, not_asses
 | interferometer/rectangular | secondary | 0 | 0 | 0 | 6 |
 | multi_dataset/delaunay | optimal | 0 | 0 | 0 | 2 |
 | multi_dataset/delaunay | secondary | 0 | 0 | 0 | 3 |
+| multi_galaxy/delaunay | optimal | 0 | 0 | 0 | 2 |
+| multi_galaxy/delaunay | secondary | 0 | 0 | 0 | 3 |
+| multi_galaxy/mge | optimal | 0 | 0 | 0 | 2 |
+| multi_galaxy/rectangular | optimal | 0 | 0 | 0 | 2 |
+| multi_galaxy/rectangular | secondary | 0 | 0 | 0 | 3 |
 | point_source_image/image_plane | optimal | 2 | 0 | 0 | 0 |
 | point_source_source/source_plane | optimal | 2 | 0 | 0 | 0 |
 | point_source_source/source_plane | secondary | 1 | 0 | 0 | 0 |
+| weak/isothermal | optimal | 0 | 0 | 0 | 2 |
+| weak/isothermal | secondary | 0 | 0 | 0 | 1 |
