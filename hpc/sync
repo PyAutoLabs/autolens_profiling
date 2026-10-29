@@ -59,7 +59,7 @@ PROJECT_NAME="${PROJECT_NAME:-autolens_profiling}"
 # result rows under `results/`; a pull is ~2 GB of run directories and would bury both.
 # It goes to a separate mirror instead — a local-only Science project whose whole job is
 # to hold RAL runs so they can be read (see its README). Override in sync.conf.
-LOCAL_PULL_ROOT="${LOCAL_PULL_ROOT:-/mnt/c/Users/Jammy/Science/profiling/autolens_profiling}"
+LOCAL_PULL_ROOT="${LOCAL_PULL_ROOT:-/mnt/c/Users/Jammy/Workspace/Science/profiling/autolens_profiling}"
 
 REMOTE="${HPC_HOST}:${HPC_BASE}/${PROJECT_NAME}"
 REMOTE_ROOT="${HPC_BASE}/${PROJECT_NAME}"
