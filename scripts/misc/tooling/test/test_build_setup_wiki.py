@@ -208,13 +208,14 @@ def test_historical_matrix_uses_correct_mge_arm_and_exact_alma_analogues():
         for sid in extent["applies_to"]["setup_ids"]
         if setups[sid]["instrument"] == "alma"
     }
-    # Evidence paths are the mirrored cells (#442): the canonical row of each setup.
+    # Evidence paths are the mirrored cells (#442). Phase 2b (#469) superseded the 2026-09 alma
+    # rows the finding cites, so they sit in each cell's history/<release_pin>_<date>/.
     assert alma == {
-        f"results/interferometer/{model}/alma/{setup}/breakdown.json"
+        f"results/interferometer/{model}/alma/{setup}/history/{when}/breakdown.json"
         for model in ["delaunay", "rectangular"]
-        for setup in [
-            "jax_gpu_sparse_fp64_wtilde/hpc_a100",
-            "numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu",
+        for setup, when in [
+            ("jax_gpu_sparse_fp64_wtilde/hpc_a100", "2026.8.17.1_2026-09-26"),
+            ("numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu", "2026.8.17.1_2026-09-27"),
         ]
     }
     assert len(extent["applies_to"]["setup_ids"]) == 8
