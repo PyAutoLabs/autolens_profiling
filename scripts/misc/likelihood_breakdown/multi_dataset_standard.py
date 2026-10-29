@@ -86,7 +86,9 @@ def multi_args() -> argparse.Namespace:
 
 def _require_standard_size(cli, script: str) -> None:
     if not cli.standard_size:
-        raise SystemExit(f"{script}: this driver runs only the standard-size cell; pass --standard-size")
+        raise SystemExit(
+            f"{script}: this driver runs only the standard-size cell; pass --standard-size"
+        )
     instrument = cli.instrument or INSTRUMENT
     if instrument != INSTRUMENT:
         raise SystemExit(f"{script}: the multi-dataset cell is planned at {INSTRUMENT} only")
@@ -385,7 +387,13 @@ def run_jax(cli, *, script_file: str, profiling_root: Path) -> Path:
         )
         try:
             vper = timing.vmap_profile(
-                full, "full_pipeline", batched, nb, n_repeats=10, timer=timer, jit_records=jit_records
+                full,
+                "full_pipeline",
+                batched,
+                nb,
+                n_repeats=10,
+                timer=timer,
+                jit_records=jit_records,
             )
         except Exception as exc:  # noqa: BLE001
             text = str(exc)
@@ -540,7 +548,9 @@ def run_numba(cli, thread_env: dict, *, script_file: str, profiling_root: Path) 
         hints=summary,
     )
     dict_path.write_text(json.dumps(summary, indent=2, default=float))
-    print(f"\n  warm iid median {stats['warm_iid_median_s']:.6f} s per summed call; row {dict_path}")
+    print(
+        f"\n  warm iid median {stats['warm_iid_median_s']:.6f} s per summed call; row {dict_path}"
+    )
     _finish(
         summary,
         dict_path,

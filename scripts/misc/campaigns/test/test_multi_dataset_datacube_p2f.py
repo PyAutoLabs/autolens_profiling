@@ -46,9 +46,7 @@ import _profile_cli as pc  # noqa: E402
 
 CPU = "hpc/batch_cpu/submit_campaign_p2f_"
 GPU = "hpc/batch_gpu/submit_campaign_p2f_"
-RAL1 = [
-    f"{CPU}{d}_ral_cpu_{i}_fp64" for d in p2f.DATASET_TYPES for i in p2f.INSTRUMENTS[d]
-]
+RAL1 = [f"{CPU}{d}_ral_cpu_{i}_fp64" for d in p2f.DATASET_TYPES for i in p2f.INSTRUMENTS[d]]
 A1001 = [f"{GPU}{d}_a100_{i}_fp64" for d in p2f.DATASET_TYPES for i in p2f.INSTRUMENTS[d]]
 REFS1 = f"{CPU}references_ral_cpu_fp64"
 BATCH1 = RAL1 + A1001 + [REFS1]
@@ -128,10 +126,14 @@ def test_every_task_names_a_real_script_its_flags_parse_and_its_own_cell():
         if task.dataset == "datacube":
             assert flags[flags.index("--n-channels") + 1] == "34"
             assert cli.use_sparse_operator == (
-                task.backend == "jax" and task.operator == "sparse" and task.measurement == "runtime"
+                task.backend == "jax"
+                and task.operator == "sparse"
+                and task.measurement == "runtime"
             )
             assert ("--dense" in flags) == (
-                task.backend == "jax" and task.operator == "dense" and task.measurement == "breakdown"
+                task.backend == "jax"
+                and task.operator == "dense"
+                and task.measurement == "breakdown"
             )
             if task.backend == "numba":
                 assert cli.n_instances == {"sma": 20, "alma": 20, "alma_high": 10}[task.instrument]
@@ -229,7 +231,9 @@ def test_every_run_writes_to_a_scratch_tree_and_marks_each_leg_start():
         assert root.startswith("$AP_ROOT/output/p2f_batch"), path
         assert "output/p2f_logs/walls.tsv" in text and "printf 'START" in text
         for out in bash_array(text, "OUTS"):
-            assert out.startswith(("results/multi_dataset/", "results/datacube/", "../p2b_references/"))
+            assert out.startswith(
+                ("results/multi_dataset/", "results/datacube/", "../p2b_references/")
+            )
 
 
 def test_no_cpu_only_job_on_the_gpu_partition():

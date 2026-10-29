@@ -855,7 +855,9 @@ def step_is_invariant(name: str) -> bool:
 def cube_projection(row: dict, n_channels: int) -> dict:
     """The cube block of a breakdown row: invariant steps once, the rest ``n_channels`` times."""
     steps = row.get("steps_median") or row.get("steps") or {}
-    invariant = {k: v for k, v in steps.items() if isinstance(v, (int, float)) and step_is_invariant(k)}
+    invariant = {
+        k: v for k, v in steps.items() if isinstance(v, (int, float)) and step_is_invariant(k)
+    }
     variant = {
         k: v for k, v in steps.items() if isinstance(v, (int, float)) and not step_is_invariant(k)
     }
@@ -918,7 +920,8 @@ def run_breakdown(cli, cell_args, spec, *, numba: bool, thread_env, script_file,
     datasets, _preload = channel_datasets(
         ds,
         scales,
-        sparse="numpy" if numba or row.get("configuration", {}).get("inversion_path") != "dense"
+        sparse="numpy"
+        if numba or row.get("configuration", {}).get("inversion_path") != "dense"
         else None,
         batch_size=cli.sparse_batch_size,
         timer=timer,

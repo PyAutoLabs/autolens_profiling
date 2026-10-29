@@ -53,7 +53,9 @@ from likelihood_breakdown import interferometer_pixelized as shared  # noqa: E40
 from likelihood_breakdown import interferometer_pixelized_numpy as harness  # noqa: E402
 
 if not _cli.standard_size or not _cli.output_path:
-    raise SystemExit(f"{__file__}: runs only the standard-size cell; pass --standard-size and --output-path")
+    raise SystemExit(
+        f"{__file__}: runs only the standard-size cell; pass --standard-size and --output-path"
+    )
 
 _cell_parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
 harness.add_cell_args(_cell_parser)

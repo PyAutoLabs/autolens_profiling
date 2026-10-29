@@ -40,7 +40,8 @@ if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
     _sys.exit(0)
 
-from _profile_cli import parse_profile_cli  # noqa: E402
 from likelihood_breakdown.multi_dataset_standard import run_jax  # noqa: E402
+
+from _profile_cli import parse_profile_cli  # noqa: E402
 
 run_jax(parse_profile_cli(), script_file=__file__, profiling_root=_profiling_root())

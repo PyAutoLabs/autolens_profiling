@@ -202,9 +202,17 @@ class Task:
         flags = ["--standard-size"]
         if self.dataset == "datacube":
             flags += ["--n-channels", str(N_CHANNELS)]
-            if self.backend == "jax" and self.operator == "sparse" and self.measurement == "runtime":
+            if (
+                self.backend == "jax"
+                and self.operator == "sparse"
+                and self.measurement == "runtime"
+            ):
                 flags.append("--sparse")
-            if self.backend == "jax" and self.operator == "dense" and self.measurement == "breakdown":
+            if (
+                self.backend == "jax"
+                and self.operator == "dense"
+                and self.measurement == "breakdown"
+            ):
                 flags.append("--dense")
             if self.backend == "numba":
                 flags += ["--n-instances", str(NUMBA_N_INSTANCES[self.instrument])]
@@ -293,7 +301,9 @@ def batch0_ral_cpu() -> list[Task]:
 
 def batch0_a100() -> list[Task]:
     return [
-        replace(t, batch=0) for t in planned_tasks() if t.host_class == "hpc_a100" and _is_bounding(t)
+        replace(t, batch=0)
+        for t in planned_tasks()
+        if t.host_class == "hpc_a100" and _is_bounding(t)
     ]
 
 

@@ -20,7 +20,6 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts" / "misc" / "tooling"))
 sys.path.insert(0, str(ROOT / "scripts" / "misc"))
 import parity_witness  # noqa: E402
-
 from likelihood_breakdown import datacube_standard as dc  # noqa: E402
 from likelihood_breakdown import multi_dataset_standard as md  # noqa: E402
 
@@ -174,7 +173,9 @@ def test_cube_projection_counts_invariant_steps_once():
     )
     # The dense route's T is per channel (D = Tᵀ N⁻¹ d needs it in every channel).
     dense = dc.cube_projection({"steps": {**DENSE_ONLY}}, 2)
-    assert "Transformed mapping matrix T (NUFFT, 50-column chunks)" in dense["channel_variant_steps"]
+    assert (
+        "Transformed mapping matrix T (NUFFT, 50-column chunks)" in dense["channel_variant_steps"]
+    )
 
 
 # ------------------------------------------------------------------------------ D6 / D8
@@ -196,7 +197,10 @@ def test_multi_dataset_scales_and_cell():
         ("scripts/datacube/delaunay/likelihood_runtime.py", "datacube_standard import run_jax"),
         ("scripts/datacube/delaunay/likelihood_runtime_numba.py", "import run_numba"),
         ("scripts/datacube/delaunay/likelihood_breakdown.py", "datacube_standard.run_breakdown"),
-        ("scripts/datacube/delaunay/likelihood_breakdown_numba.py", "datacube_standard.run_breakdown"),
+        (
+            "scripts/datacube/delaunay/likelihood_breakdown_numba.py",
+            "datacube_standard.run_breakdown",
+        ),
         ("scripts/datacube/delaunay/parity_reference.py", "finalise_parity"),
         ("scripts/multi_dataset/delaunay/likelihood_runtime.py", "import run_jax"),
         ("scripts/multi_dataset/delaunay/likelihood_runtime_numba.py", "import run_numba"),
