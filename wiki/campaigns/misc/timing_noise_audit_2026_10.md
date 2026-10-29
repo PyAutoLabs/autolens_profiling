@@ -787,6 +787,13 @@ iteration counts, budgets in iterations, geometry or formatting, not a measured 
   `scripts/misc/campaigns/test/test_interferometer_p2b.py::test_batch1_walls_are_measured_by_batch0_and_batch0_never_guards`
   checks it, as the 2a test does.
   S1 is still the gate.
+- `scripts/misc/campaigns/multi_galaxy_group_p2d.py::WALL_HEADROOM` and
+  `scripts/misc/campaigns/multi_galaxy_group_p2d.py::MEM_HEADROOM` (autolens_profiling#473): the
+  2d generator's copies of the same two multipliers, with the same meaning (batch 1's `--time` at
+  1.25x batch 0's measured walls once they exist; `--mem` at 1.5x measured MaxRSS). S1 is the
+  gate. `scripts/misc/campaigns/test/test_multi_galaxy_group_p2d.py::test_the_jax_runtime_cells_take_the_headline_median_in_the_wall_gate`
+  is a count of scripts (the six 2d JAX runtime scripts are in `HEADLINE_MEDIAN_SCRIPTS`), not a
+  timing comparison.
 - `scripts/misc/tooling/build_readme.py::_format_time` and
   `scripts/misc/tooling/build_readme.py::_render_runtime_table`: unit formatting.
 
