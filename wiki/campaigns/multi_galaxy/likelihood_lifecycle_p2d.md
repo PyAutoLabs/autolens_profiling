@@ -187,3 +187,16 @@ await the human.
 change 2d's plan: the imaging tables list no GPU setup at `hpc_ral_cpu` for these cells, so 2d
 stays 48 cells (20 `hpc_ral_cpu`, 28 `hpc_a100`); the catalogue total goes 270 -> 268 from the
 two point_source_source cells #481 drops.
+
+### 2026-10-29 — the eigen flag moves into the shared submit preamble, for every campaign
+
+RAL's shared venv was upgraded to jax/jaxlib 0.11.2 (human, 2026-10-29), so every campaign's JAX
+CPU legs now run on the jaxlib that deadlocks. The human picked "All JAX CPU legs": the shared
+campaign preamble (`scripts/misc/campaigns/_common.py`, `run_leg`) appends
+`--xla_cpu_multi_thread_eigen=false` to `XLA_FLAGS` on every `JAX_PLATFORMS=cpu` leg of 2a-2g
+(the A100 nodes' CPU legs included; numba legs also run with `JAX_PLATFORMS=cpu` and so carry the
+inert flag), and never on a GPU leg (`cuda` / `cuda,cpu`). Each row records it in
+`device.xla_flags`. The 2d driver still appends the flag only when absent, so a 2d leg carries it
+once and keeps `configuration.xla_cpu_workaround`. D12's scope widens from 2d to every campaign;
+the 2a-2c rows already landed were measured on jax 0.10.2 without the flag (phase-3 Q7 covers
+that comparison).

@@ -70,6 +70,11 @@ export NPROC=${SLURM_CPUS_PER_TASK:-8}
 export JAX_ENABLE_X64=True
 export XLA_PYTHON_CLIENT_PREALLOCATE=false
 export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
+# XLA:CPU deadlock workaround (autolens_profiling#473, D12): jaxlib 0.11.2 XLA:CPU executables can
+# hang on a repeated call; run_leg appends this to XLA_FLAGS on every JAX_PLATFORMS=cpu leg (A100
+# nodes' CPU legs included), never on a GPU leg. Rows record it in device.xla_flags.
+XLA_FLAGS_BASE="$XLA_FLAGS"
+XLA_CPU_WORKAROUND_FLAG="--xla_cpu_multi_thread_eigen=false"
 unset PYAUTO_SMALL_DATASETS
 export NUMBA_CACHE_DIR="$AP_ROOT/output/numba_cache/p2f_${SLURM_JOB_ID:-local}_${SLURM_ARRAY_TASK_ID:-0}"
 mkdir -p "$NUMBA_CACHE_DIR" "$MPLCONFIGDIR" "$AP_ROOT/output/p2f_logs"
@@ -134,6 +139,11 @@ run_leg() {
     local I=$1
     local LOG="$AP_ROOT/output/p2f_logs/submit_campaign_p2f_datacube_a100_alma_high_fp64_${SLURM_JOB_ID:-local}_${I}.log"
     export JAX_PLATFORMS=${PLATFORMS[$I]}
+    if [ "$JAX_PLATFORMS" = cpu ]; then
+        export XLA_FLAGS="$XLA_FLAGS_BASE $XLA_CPU_WORKAROUND_FLAG"
+    else
+        export XLA_FLAGS="$XLA_FLAGS_BASE"
+    fi
     export JAX_COMPILATION_CACHE_DIR="$AP_ROOT/output/jax_cache/p2f_${SLURM_JOB_ID:-local}_${I}"
     rm -rf "$JAX_COMPILATION_CACHE_DIR" && mkdir -p "$JAX_COMPILATION_CACHE_DIR"
     prepare_dataset ${INSTS[$I]} || { echo "LEG $I: dataset preparation FAILED"; STATUS=5; return 0; }
@@ -141,6 +151,7 @@ run_leg() {
     echo "LEG $I: ${CELLNAMES[$I]}"
     echo "  cell script: scripts/${CELLS[$I]}.py ${FLAGS[$I]} -> $RESULTS_ROOT/${OUTS[$I]}"
     echo "  JAX_PLATFORMS=$JAX_PLATFORMS  NPROC=$NPROC  log=$LOG"
+    echo "  XLA_FLAGS=$XLA_FLAGS"
     local T0=$(date +%s)
     # A START line first, so a leg killed at --time (which never reaches its WALL line) still shows.
     printf 'START\t%s\t%s\t%s\t%s\n' "${SLURM_JOB_ID:-local}" "$I" "$T0" "${CELLNAMES[$I]}" >> "$AP_ROOT/output/p2f_logs/walls.tsv"

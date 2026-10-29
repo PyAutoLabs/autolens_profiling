@@ -38,6 +38,13 @@ def slurm_time(seconds: float, *, headroom: float, slack_s: int, round_s: int) -
 
 # --------------------------------------------------------------------------- the preamble
 
+#: The XLA:CPU deadlock workaround every ``JAX_PLATFORMS=cpu`` leg appends to ``XLA_FLAGS``
+#: (autolens_profiling#473, decision D12; one flag for every cell, human 2026-10-29). jaxlib 0.11.2
+#: XLA:CPU executables can block forever on a repeated call; this flag removes it. GPU legs
+#: (``cuda`` / ``cuda,cpu``) keep the base flags. The 2d driver appends the same flag only if it is
+#: absent, so a 2d CPU leg carries it once.
+XLA_CPU_WORKAROUND_FLAG = "--xla_cpu_multi_thread_eigen=false"
+
 #: The import guard of a release-pinned campaign: every library imports from the private
 #: checkout, which sits at the pinned tag.
 TAG_GUARD = r"""# The libraries must import from the private checkout at the pinned tag, never the shared mirror.
@@ -91,6 +98,11 @@ export NPROC=${SLURM_CPUS_PER_TASK:-8}
 export JAX_ENABLE_X64=True
 export XLA_PYTHON_CLIENT_PREALLOCATE=false
 export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
+# XLA:CPU deadlock workaround (autolens_profiling#473, D12): jaxlib 0.11.2 XLA:CPU executables can
+# hang on a repeated call; run_leg appends this to XLA_FLAGS on every JAX_PLATFORMS=cpu leg (A100
+# nodes' CPU legs included), never on a GPU leg. Rows record it in device.xla_flags.
+XLA_FLAGS_BASE="$XLA_FLAGS"
+XLA_CPU_WORKAROUND_FLAG="@XLA_CPU_WORKAROUND_FLAG@"
 unset PYAUTO_SMALL_DATASETS
 export NUMBA_CACHE_DIR="$AP_ROOT/output/numba_cache/@PREFIX@_${SLURM_JOB_ID:-local}_${SLURM_ARRAY_TASK_ID:-0}"
 mkdir -p "$NUMBA_CACHE_DIR" "$MPLCONFIGDIR" "$AP_ROOT/output/@LOGS@"
@@ -140,6 +152,11 @@ run_leg() {
     local I=$1
     local LOG="$AP_ROOT/output/@LOGS@/@NAME@_${SLURM_JOB_ID:-local}_${I}.log"
     export JAX_PLATFORMS=${PLATFORMS[$I]}
+    if [ "$JAX_PLATFORMS" = cpu ]; then
+        export XLA_FLAGS="$XLA_FLAGS_BASE $XLA_CPU_WORKAROUND_FLAG"
+    else
+        export XLA_FLAGS="$XLA_FLAGS_BASE"
+    fi
     export JAX_COMPILATION_CACHE_DIR="$AP_ROOT/output/jax_cache/@PREFIX@_${SLURM_JOB_ID:-local}_${I}"
     rm -rf "$JAX_COMPILATION_CACHE_DIR" && mkdir -p "$JAX_COMPILATION_CACHE_DIR"
     prepare_dataset ${INSTS[$I]} || { echo "LEG $I: dataset preparation FAILED"; STATUS=5; return 0; }
@@ -147,6 +164,7 @@ run_leg() {
     echo "LEG $I: ${CELLNAMES[$I]}"
     echo "  cell script: scripts/${CELLS[$I]}.py ${FLAGS[$I]} -> $RESULTS_ROOT/${OUTS[$I]}"
     echo "  JAX_PLATFORMS=$JAX_PLATFORMS  NPROC=$NPROC  log=$LOG"
+    echo "  XLA_FLAGS=$XLA_FLAGS"
     local T0=$(date +%s)
     # A START line first, so a leg killed at --time (which never reaches its WALL line) still shows.
     printf 'START\t%s\t%s\t%s\t%s\n' "${SLURM_JOB_ID:-local}" "$I" "$T0" "${CELLNAMES[$I]}" >> "$AP_ROOT/output/@LOGS@/walls.tsv"
@@ -193,6 +211,7 @@ def preamble(c: Campaign, name: str) -> str:
         .replace("@PREFIX@", c.prefix)
         .replace("@MODULE@", c.module)
         .replace("@NAME@", name)
+        .replace("@XLA_CPU_WORKAROUND_FLAG@", XLA_CPU_WORKAROUND_FLAG)
     )
 
 
