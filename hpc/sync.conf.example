@@ -20,4 +20,4 @@ PROJECT_NAME=autolens_profiling
 #   RAL results/                ->  $LOCAL_PULL_ROOT/results/   (staging copy)
 #   RAL hpc/batch_gpu/output/   ->  $LOCAL_PULL_ROOT/logs/output/
 #   RAL hpc/batch_gpu/error/    ->  $LOCAL_PULL_ROOT/logs/error/
-LOCAL_PULL_ROOT=/mnt/c/Users/Jammy/Science/profiling/autolens_profiling
+LOCAL_PULL_ROOT=/mnt/c/Users/Jammy/Workspace/Science/profiling/autolens_profiling
