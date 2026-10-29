@@ -226,6 +226,10 @@ HEADLINE_MEDIAN_SCRIPTS = frozenset(
         "scripts/multi_galaxy/delaunay/likelihood_runtime.py",
         "scripts/multi_galaxy/mge/likelihood_runtime.py",
         "scripts/multi_galaxy/rectangular/likelihood_runtime.py",
+        # likelihood-lifecycle 2e (#474): the cluster runtime cells (shared driver
+        # likelihood_breakdown/cluster_standard.py)
+        "scripts/cluster/image_plane/likelihood_runtime.py",
+        "scripts/cluster/source_plane/likelihood_runtime.py",
     }
 )
 

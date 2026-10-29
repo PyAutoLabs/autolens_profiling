@@ -219,6 +219,12 @@ def test_every_opted_in_script_is_in_the_wall_basis_set():
         for dt in ("multi_galaxy", "group")
         for v in ("mge", "rectangular", "delaunay")
     }
+    # The cluster driver (2e) runs inside the two cluster likelihood_runtime.py cells.
+    sites.discard("scripts/misc/likelihood_breakdown/cluster_standard.py")
+    sites |= {
+        "scripts/cluster/image_plane/likelihood_runtime.py",
+        "scripts/cluster/source_plane/likelihood_runtime.py",
+    }
     sites |= {
         "scripts/interferometer/delaunay/likelihood_breakdown.py",
         "scripts/interferometer/rectangular/likelihood_breakdown.py",

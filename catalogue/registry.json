@@ -246,6 +246,12 @@
       "instrument": null
     },
     {
+      "id": "cluster/source_plane/unspecified",
+      "dataset": "cluster",
+      "model": "source_plane",
+      "instrument": null
+    },
+    {
       "id": "multi_dataset/delaunay/unspecified",
       "dataset": "multi_dataset",
       "model": "delaunay",

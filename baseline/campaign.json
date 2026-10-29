@@ -5,8 +5,8 @@
   "status": "draft",
   "purpose": "Proposed fresh setup baseline; no measurements or acceptance authorized.",
   "inventory": {
-    "catalogue/registry.json": "ce17d8bf47f341e5f3fd09e39a48f703475be28ac3d0a6df5990a6b62bb15bcf",
-    "catalogue/script_routes.json": "2e473caa8b46f7a3134d088fc172bd7abc8756902622bd6e2af5b9681b9f09f5"
+    "catalogue/registry.json": "714a2bff995241ed2db0cb28ccd335a9e870c3502efc18ea485b6d7fd63dfc41",
+    "catalogue/script_routes.json": "53b7c144657ae6f91894676b5d577840ce86ada20a84ac8ba24d9852b88514ee"
   },
   "software": {
     "revisions": {
@@ -524,6 +524,20 @@
       "id": "cluster/image_plane/unspecified",
       "dataset": "cluster",
       "model": "image_plane",
+      "instrument": null,
+      "configuration": null,
+      "input_sha256": null,
+      "correctness": {
+        "reference_sha256": null,
+        "absolute_tolerance": null,
+        "relative_tolerance": null
+      },
+      "notes": "Instrument label is a selector, not a complete setup. Freeze mask/grid/PSF/over-sampling, visibilities/channels, mesh/solver/regularization, parameter vector and seed as applicable."
+    },
+    {
+      "id": "cluster/source_plane/unspecified",
+      "dataset": "cluster",
+      "model": "source_plane",
       "instrument": null,
       "configuration": null,
       "input_sha256": null,
