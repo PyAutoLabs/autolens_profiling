@@ -121,7 +121,9 @@ def _row(tmp_path, revisions, unit_vector, scales):
     return cell
 
 
-def test_finalise_parity_rewrites_only_rows_of_the_reference_instance(tmp_path):
+def test_finalise_parity_rewrites_only_rows_of_the_reference_instance(tmp_path, monkeypatch):
+    # write_parity_json is a no-op in a smoke run; other test modules set the flag at import.
+    monkeypatch.delenv("AUTOLENS_PROFILING_SMOKE", raising=False)
     revisions = {"PyAutoArray": "abc"}
     reference = {
         "log_evidence": -4.0,
