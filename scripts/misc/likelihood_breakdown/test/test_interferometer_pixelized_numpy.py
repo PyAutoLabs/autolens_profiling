@@ -129,7 +129,10 @@ def test__arms_map_to_the_library_inversion_classes():
     assert harness.ARM_CLASSES == {
         "numba": "InversionInterferometerSparseNumba",
         "numpy_fft": "InversionInterferometerSparse",
+        # 2b ruling R4: the packaged cost-model route, whichever class it builds.
+        "default": None,
     }
+    assert harness.STANDARD_ARMS == "default,numba,numpy_fft"
     # The numba arm must be admitted whatever the geometry (alma_high Delaunay is ~123
     # non-zeros per column, twice the packaged gate).
     assert harness.NUMBA_GATE_FORCED > 1e6
@@ -141,7 +144,8 @@ def test__cell_flags_parse():
     parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     harness.add_cell_args(parser)
     args = parser.parse_args([])
-    assert args.arms == "numba,numpy_fft"
+    # None resolves to numba,numpy_fft, or default,numba,numpy_fft under --standard-size.
+    assert args.arms is None
     assert args.numba_gate == harness.NUMBA_GATE_FORCED
     assert args.mask_radius is None
     assert args.preload_cache == "on"

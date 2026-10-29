@@ -208,6 +208,9 @@ def test_every_opted_in_script_is_in_the_wall_basis_set():
     }
     # The pixelized breakdown harness runs inside the interferometer delaunay / rectangular cells.
     sites.discard("scripts/misc/likelihood_breakdown/interferometer_pixelized.py")
+    # The standard-size driver (2b) runs inside the interferometer delaunay / rectangular
+    # likelihood_runtime.py cells, which are already in the set.
+    sites.discard("scripts/misc/likelihood_breakdown/interferometer_standard.py")
     sites |= {
         "scripts/interferometer/delaunay/likelihood_breakdown.py",
         "scripts/interferometer/rectangular/likelihood_breakdown.py",

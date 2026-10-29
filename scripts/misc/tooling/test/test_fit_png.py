@@ -38,6 +38,14 @@ WIRED = {
     "scripts/cluster/image_plane/likelihood_breakdown.py": "cluster",
     "scripts/cluster/source_plane/likelihood_breakdown.py": "cluster",
 }
+#: Likelihood-lifecycle 2b (#469): renders outside the one-call-per-cell module pattern. The
+#: shared standard-size driver renders for the interferometer runtime / breakdown cells that call
+#: it (after their last row write), and the matrix-free experiment renders beside its
+#: experiments/ or scans/ row.
+SHARED_RENDERERS = {
+    "scripts/misc/likelihood_breakdown/interferometer_standard.py",
+    "scripts/interferometer/rectangular/likelihood_runtime_matrixfree.py",
+}
 
 
 @pytest.fixture(scope="module")
@@ -278,5 +286,5 @@ def test_every_profiled_cell_renders_after_its_last_write(script):
 def test_unwired_scripts_carry_no_render_call():
     for path in sorted((ROOT / "scripts").rglob("*.py")):
         rel = path.relative_to(ROOT).as_posix()
-        if rel not in WIRED and "/test/" not in rel:
+        if rel not in WIRED and rel not in SHARED_RENDERERS and "/test/" not in rel:
             assert "render_fit_png(" not in path.read_text(), rel

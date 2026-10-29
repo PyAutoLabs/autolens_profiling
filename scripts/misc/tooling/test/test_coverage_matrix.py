@@ -268,3 +268,29 @@ def test_a_declared_size_variant_row_is_never_coverage():
     assert {c["state"] for c in cov["parity"]["cells"]} == {"missing"}
     cov = cm.build(catalogue([], witnesses=[witness]), DESIGNATIONS)
     assert {c["state"] for c in cov["parity"]["cells"]} == {"match"}
+
+
+def test_dense_pixelized_interferometer_nufft_is_planned_at_sma_only():
+    """Ruling R1(a) on #469: the dense pixelized NUFFT route is planned only at sma (84 -> 60)."""
+    dense = {"jax_cpu_dense_fp64_nufft", "jax_gpu_dense_fp64_nufft"}
+    for variant in ("rectangular", "delaunay"):
+        for host in ("hpc_ral_cpu", "hpc_a100"):
+            at_sma = set(lc.planned_setups("interferometer", variant, host, "sma"))
+            assert dense & at_sma, (variant, host)
+            for instrument in ("alma", "alma_high", "jvla"):
+                planned = set(lc.planned_setups("interferometer", variant, host, instrument))
+                assert not dense & planned, (variant, host, instrument)
+                # Still designated (a measured dense row above sma is secondary, not unplanned
+                # experimental), and the sparse routes stay planned.
+                assert any(s.endswith("_wtilde") for s in planned)
+    for sid in dense:
+        host = "hpc_a100" if "gpu" in sid else "hpc_ral_cpu"
+        assert lc.designation("interferometer", "rectangular", host, sid) == "secondary"
+    # The scope names the interferometer only: a datacube cell's plan is unchanged.
+    assert lc.planned_setups("datacube", "delaunay", "hpc_a100", "alma") == lc.planned_setups(
+        "datacube", "delaunay", "hpc_a100"
+    )
+    # MGE (its own table) is untouched.
+    assert "jax_cpu_dense_fp64_nufft" in lc.planned_setups(
+        "interferometer", "mge", "hpc_ral_cpu", "sma"
+    )

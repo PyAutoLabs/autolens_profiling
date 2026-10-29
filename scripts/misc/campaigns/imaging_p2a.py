@@ -46,6 +46,10 @@ if str(ROOT) not in sys.path:
 
 from _script_routes import load_routes  # noqa: E402
 
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _common  # noqa: E402
+
 #: The release every cell is measured on (human ruling 2026-10-24), and where the private RAL
 #: checkout of the five libraries at that tag lives (override with ``PYAUTO_PRIVATE_BASE``).
 PIN = "2026.10.23.1"
@@ -399,18 +403,25 @@ def measured_wall(task: Task) -> tuple[int, str]:
 def batch1_wall_s(tasks: list[Task], *, sequential: bool) -> int:
     """The measured wall a batch-1 submit must hold: the slowest leg of an array (one leg per
     task), or the sum of the legs of a job that runs them in turn."""
-    walls = [measured_wall(t)[0] for t in tasks]
-    return sum(walls) if sequential else max(walls)
+    return _common.batch_wall_s(tasks, WALL_BASIS, sequential=sequential)
 
 
 def slurm_time(seconds: float) -> str:
     """``H:MM:SS`` at WALL_HEADROOM x ``seconds`` plus WALL_MIN_SLACK_S, rounded up to the next
     WALL_ROUND_S."""
-    import math
+    return _common.slurm_time(
+        seconds, headroom=WALL_HEADROOM, slack_s=WALL_MIN_SLACK_S, round_s=WALL_ROUND_S
+    )
 
-    need = WALL_HEADROOM * seconds + WALL_MIN_SLACK_S
-    total = math.ceil(need / WALL_ROUND_S) * WALL_ROUND_S
-    return f"{total // 3600}:{total % 3600 // 60:02d}:00"
+
+#: How batch 1 cites batch 0 (``_common.wall_rows``).
+WALL_BASIS = _common.WallBasis(
+    measured_wall=measured_wall,
+    basis_leg=basis_leg,
+    limitations=BATCH0_LIMITATIONS,
+    walls=BATCH0_WALLS,
+    headroom=WALL_HEADROOM,
+)
 
 
 # --------------------------------------------------------------------------- dataset preflight
@@ -469,156 +480,17 @@ def prepare_dataset(instrument: str, root: Path = ROOT) -> None:
 # --------------------------------------------------------------------------- submit rendering
 
 
-def _wall_rows(
-    tasks: list[Task], device: str, guess: int | None, *, measured: bool, sequential: bool
-) -> list[str]:
-    """One WALL-BASIS row per (gate cell, instrument). Batch 0 declares its guess; batch 1 cites
-    the batch-0 legs that bound it (:func:`basis_leg`): the slowest leg of an array task, or the
-    sum of the legs a sequential job runs. Prose lines carry no ``key: value`` pairs."""
-    rows = []
-    for gate_cell, instrument in sorted({(t.gate_cell, t.instrument) for t in tasks}):
-        legs = [t for t in tasks if (t.gate_cell, t.instrument) == (gate_cell, instrument)]
-        names = ", ".join(f"{t.variant} {t.setup_id} {t.measurement}" for t in legs)
-        rows.append(f"#   {len(legs)} leg(s): {names}")
-        for t in legs if measured else []:
-            if t.cell in BATCH0_LIMITATIONS:
-                ref = BATCH0_WALLS[t.cell][2]
-                rows.append(
-                    f"#   KNOWN LIMITATION, kept in - {t.variant} {t.setup_id} {t.measurement} "
-                    f"({BATCH0_LIMITATIONS[t.cell]}; batch 0 task {ref}); it fails fast"
-                )
-        rows.append(f"#   cell: {gate_cell}/{instrument}  device: {device}  precision: fp64")
-        if measured:
-            wall = batch1_wall_s(legs, sequential=sequential)
-            refs = ",".join(sorted({measured_wall(t)[1] for t in legs}))
-            on = ",".join(sorted({basis_leg(t).instrument for t in legs}))
-            rows.append(
-                f"#   source: measured-wall  wall: {wall}  ref: {refs}  measured-on: {on}  "
-                f"headroom: {WALL_HEADROOM}  median: included"
-            )
-        elif guess is None:
-            rows.append("#   source: unmeasured  probe-first: yes")
-        else:
-            rows.append(f"#   source: unmeasured  probe-first: yes  wall: {guess}  headroom: 3.0")
-    return rows
-
-
-def _bash_array(name: str, values: list[str], *, quote: bool = False) -> str:
-    """A bash array, one value per line. Values the wall gate resolves (cell scripts,
-    instruments) stay bare: ``check_submits.resolve_var`` splits an array on whitespace."""
-    body = "\n".join(f"    {json.dumps(v) if quote else v}" for v in values)
-    return f"{name}=(\n{body}\n)"
-
-
-_PREAMBLE = r"""export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
-export PYAUTO_HPC_BASE="${PYAUTO_HPC_BASE:-@HPC_BASE@}"
-export PYAUTO_PRIVATE_BASE="${PYAUTO_PRIVATE_BASE:-@PRIVATE_BASE@}"
-export P2A_PIN=@PIN@
-echo "AP_ROOT=$AP_ROOT  PYAUTO_PRIVATE_BASE=$PYAUTO_PRIVATE_BASE  pin=$P2A_PIN"
-source "$AP_ROOT/activate.sh"
-export PYTHONPATH=$PYAUTO_PRIVATE_BASE/PyAutoNerves:$PYAUTO_PRIVATE_BASE/PyAutoFit:$PYAUTO_PRIVATE_BASE/PyAutoArray:$PYAUTO_PRIVATE_BASE/PyAutoGalaxy:$PYAUTO_PRIVATE_BASE/PyAutoLens:$PYTHONPATH
-
-export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 NUMBA_NUM_THREADS=1
-export NPROC=${SLURM_CPUS_PER_TASK:-8}
-export JAX_ENABLE_X64=True
-export XLA_PYTHON_CLIENT_PREALLOCATE=false
-export XLA_FLAGS="--xla_disable_hlo_passes=constant_folding"
-unset PYAUTO_SMALL_DATASETS
-export NUMBA_CACHE_DIR="$AP_ROOT/output/numba_cache/p2a_${SLURM_JOB_ID:-local}_${SLURM_ARRAY_TASK_ID:-0}"
-mkdir -p "$NUMBA_CACHE_DIR" "$MPLCONFIGDIR" "$AP_ROOT/output/p2a_logs"
-
-echo "=========================================="
-date
-hostname
-lscpu | grep 'Model name' || true
-echo "partition: ${SLURM_JOB_PARTITION:-unset}  nodelist: ${SLURM_JOB_NODELIST:-unset}  cpus: ${SLURM_CPUS_PER_TASK:-unset}"
-echo "loadavg:   $(cat /proc/loadavg)"
-for r in PyAutoNerves PyAutoFit PyAutoArray PyAutoGalaxy PyAutoLens; do
-    printf '%-14s %s %s\n' "$r" "$(git -C $PYAUTO_PRIVATE_BASE/$r rev-parse HEAD 2>&1)" "$(git -C $PYAUTO_PRIVATE_BASE/$r describe --tags 2>&1)"
-done
-echo "AP_ROOT rev: $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
-
-cd "$AP_ROOT"
-# The libraries must import from the private checkout at the pinned tag, never the shared mirror.
-python3 - <<'EOF_PY' || exit 3
-import os, subprocess
-import autoarray, autofit, autogalaxy, autolens, autonerves
-base, pin = os.path.realpath(os.environ["PYAUTO_PRIVATE_BASE"]), os.environ["P2A_PIN"]
-for m in (autonerves, autofit, autoarray, autogalaxy, autolens):
-    print(f"{m.__name__:<11} {m.__file__}")
-    if not os.path.realpath(m.__file__).startswith(base + os.sep):
-        raise SystemExit(f"REFUSING: {m.__name__} imported from {m.__file__}, not {base}")
-    repo = os.path.dirname(os.path.dirname(os.path.realpath(m.__file__)))
-    tag = subprocess.check_output(["git", "-C", repo, "describe", "--tags"], text=True).strip()
-    if tag != pin:
-        raise SystemExit(f"REFUSING: {repo} is at {tag}, not tag {pin}")
-print(f"import origin + tag {pin}: OK")
-EOF_PY
-
-# After each leg: the row's recorded library revisions must be the private checkout's HEADs.
-check_revisions() {
-python3 - "$1" <<'EOF_PY'
-import json, os, subprocess, sys
-path = sys.argv[1]
-revs = json.load(open(path))["device"]["provenance"]["library_revisions"]
-base = os.environ["PYAUTO_PRIVATE_BASE"]
-for repo in ("PyAutoNerves", "PyAutoFit", "PyAutoArray", "PyAutoGalaxy", "PyAutoLens"):
-    head = subprocess.check_output(["git", "-C", f"{base}/{repo}", "rev-parse", "HEAD"], text=True).strip()
-    if revs.get(repo) != head:
-        raise SystemExit(f"MISMATCH {path}: {repo} row {revs.get(repo)} != private checkout {head}")
-print("revisions OK", path)
-EOF_PY
-}
-
-# Simulate a missing dataset and cache its adapt image once per instrument, under a lock.
-prepare_dataset() {
-python3 - "$1" <<'EOF_PY'
-import sys
-sys.path.insert(0, "scripts/misc/campaigns")
-from imaging_p2a import prepare_dataset
-prepare_dataset(sys.argv[1])
-EOF_PY
-}
-
-# One leg: fresh JAX compile cache, the leg's platform, wall clock logged, revisions checked.
-# A failed leg is recorded and the job carries on (|| keeps activate.sh's ERR trap out of it).
-STATUS=0
-run_leg() {
-    local I=$1
-    local LOG="$AP_ROOT/output/p2a_logs/@NAME@_${SLURM_JOB_ID:-local}_${I}.log"
-    export JAX_PLATFORMS=${PLATFORMS[$I]}
-    export JAX_COMPILATION_CACHE_DIR="$AP_ROOT/output/jax_cache/p2a_${SLURM_JOB_ID:-local}_${I}"
-    rm -rf "$JAX_COMPILATION_CACHE_DIR" && mkdir -p "$JAX_COMPILATION_CACHE_DIR"
-    prepare_dataset ${INSTS[$I]} || { echo "LEG $I: dataset preparation FAILED"; STATUS=5; return 0; }
-    echo "------------------------------------------"
-    echo "LEG $I: ${CELLNAMES[$I]}"
-    echo "  cell script: scripts/${CELLS[$I]}.py ${FLAGS[$I]} -> $RESULTS_ROOT/${OUTS[$I]}"
-    echo "  JAX_PLATFORMS=$JAX_PLATFORMS  NPROC=$NPROC  log=$LOG"
-    local T0=$(date +%s)
-    # A START line first, so a leg killed at --time (which never reaches its WALL line) still shows.
-    printf 'START\t%s\t%s\t%s\t%s\n' "${SLURM_JOB_ID:-local}" "$I" "$T0" "${CELLNAMES[$I]}" >> "$AP_ROOT/output/p2a_logs/walls.tsv"
-    python3 -u scripts/${CELLS[$I]}.py --instrument ${INSTS[$I]} ${FLAGS[$I]} --output-path "$RESULTS_ROOT/${OUTS[$I]}" > "$LOG" 2>&1 \
-        || { echo "LEG $I FAILED (rc $?), see $LOG"; tail -20 "$LOG"; STATUS=4; }
-    local WALL=$(( $(date +%s) - T0 ))
-    printf 'WALL\t%s\t%s\t%s\t%s\n' "${SLURM_JOB_ID:-local}" "$I" "$WALL" "${CELLNAMES[$I]}" | tee -a "$AP_ROOT/output/p2a_logs/walls.tsv"
-    if [ -f "$RESULTS_ROOT/${OUTS[$I]}" ]; then
-        check_revisions "$RESULTS_ROOT/${OUTS[$I]}" || STATUS=4
-    else
-        echo "LEG $I: no row at $RESULTS_ROOT/${OUTS[$I]}"; STATUS=4
-    fi
-}
-"""
-
-_PROVISIONAL_GUARD = r"""
-# Batch 1 runs only once batch 0's walls have replaced the provisional WALL-BASIS rows above
-# (source: measured-wall, --time from the measurement) and this reads "measured".
-WALL_BASIS_STATUS=@WALL_BASIS_STATUS@
-if [ "$WALL_BASIS_STATUS" != measured ] && [ "${P2A_ALLOW_PROVISIONAL_WALL:-0}" != 1 ]; then
-    echo "REFUSING: WALL_BASIS_STATUS=$WALL_BASIS_STATUS. Run batch 0, set --time from its walls"
-    echo "and mark the WALL-BASIS rows measured-wall first (scripts/misc/campaigns/README.md)."
-    exit 2
-fi
-"""
+def _campaign(pin: str, private_base: str) -> _common.Campaign:
+    return _common.Campaign(
+        pin_var="P2A_PIN",
+        pin=pin,
+        hpc_base=HPC_BASE,
+        private_base=private_base,
+        logs="p2a_logs",
+        prefix="p2a",
+        module="imaging_p2a",
+        allow_var="P2A_ALLOW_PROVISIONAL_WALL",
+    )
 
 
 def render(
@@ -763,92 +635,31 @@ def render(
             "# Every row is `unmeasured` until batch 0 lands, and the job refuses to run while",
             "# WALL_BASIS_STATUS=provisional (export P2A_ALLOW_PROVISIONAL_WALL=1 overrides it).",
         ]
-    header += _wall_rows(tasks, device, guess, measured=measured, sequential=sequential)
+    header += _common.wall_rows(
+        tasks, device, guess, measured=measured, sequential=sequential, basis=WALL_BASIS
+    )
     job = (
         f"p2a_{name.split('p2a_', 1)[1]}"
         if rect28
         else f"p2a_{'b0' if batch == 0 else 'b1'}_{name.split('imaging_', 1)[1]}"
     )
-    sbatch = [f"#SBATCH -J {job}"]
-    if kind == "ral_cpu":
-        throttle = "%8" if batch == 0 else "%16"
-        sbatch += [
-            "#SBATCH --partition=ral",
-            f"#SBATCH --array=0-{n - 1}{throttle}",
-        ]
-    else:
-        sbatch += ["#SBATCH --partition=gpu", "#SBATCH --gres=gpu:1"]
-        if kind == "a100_array":
-            sbatch += [f"#SBATCH --array=0-{n - 1}%2"]
-    sbatch += [
-        "#SBATCH --ntasks=1",
-        "#SBATCH --cpus-per-task=8",
-        f"#SBATCH --mem={mem}gb",
-        f"#SBATCH --time={time}",
-        "#SBATCH -o output/output.%A_%a.out"
-        if "array" in kind or kind == "ral_cpu"
-        else "#SBATCH -o output/output.%A.out",
-        "#SBATCH -e error/error.%A_%a.err"
-        if "array" in kind or kind == "ral_cpu"
-        else "#SBATCH -e error/error.%A.err",
-    ]
-    arrays = [
-        "# The manifest: one entry per leg (imaging_p2a.Task).",
-        _bash_array("CELLNAMES", [t.cell for t in tasks], quote=True),
-        _bash_array("CELLS", [t.script for t in tasks]),
-        _bash_array("INSTS", [t.instrument for t in tasks]),
-        _bash_array("FLAGS", [t.flags for t in tasks], quote=True),
-        _bash_array("PLATFORMS", [t.platform for t in tasks]),
-        _bash_array("OUTS", [t.output for t in tasks]),
-        f'RESULTS_ROOT="{results_root}"',
-    ]
-    if kind == "a100_job":
-        run = [
-            "nvidia-smi || true",
-            'for I in "${!CELLS[@]}"; do',
-            "    run_leg $I",
-            "done",
-        ]
-    else:
-        run = [
-            'I=${SLURM_ARRAY_TASK_ID:?"submit as an array (sbatch from hpc/<batch>/)"}',
-            *(["nvidia-smi || true"] if kind == "a100_array" else []),
-            "run_leg $I",
-        ]
-    body = (
-        _PREAMBLE.replace("@HPC_BASE@", HPC_BASE)
-        .replace("@PRIVATE_BASE@", private_base)
-        .replace("@PIN@", pin)
-        .replace("@NAME@", name)
+    sbatch = _common.sbatch_block(
+        job,
+        kind,
+        n,
+        mem=mem,
+        time=time,
+        throttle=("%8" if batch == 0 else "%16") if kind == "ral_cpu" else None,
     )
-    tail = [
-        'echo "=========================================="',
-        'echo "exit status: $STATUS (0 ok, 4 a leg failed or its revisions/row check failed, 5 dataset)"',
-        'echo "loadavg: $(cat /proc/loadavg)"',
-        "date",
-        "exit $STATUS",
-    ]
-    parts = [
-        "\n".join(header),
-        "",
-        "\n".join(sbatch),
-        "",
-        "# Submit from hpc/batch_cpu/ or hpc/batch_gpu/ (the -o/-e paths are relative).",
-        *(
-            [_PROVISIONAL_GUARD.strip("\n").replace("@WALL_BASIS_STATUS@", WALL_BASIS_STATUS)]
-            if batch == 1
-            else []
-        ),
-        body.rstrip("\n"),
-        "",
-        "\n".join(arrays),
-        "",
-        "\n".join(run),
-        "",
-        "\n".join(tail),
-        "",
-    ]
-    return "\n".join(parts)
+    campaign = _campaign(pin, private_base)
+    return _common.assemble(
+        header,
+        sbatch,
+        _common.provisional_guard(WALL_BASIS_STATUS, campaign.allow_var) if batch == 1 else None,
+        _common.preamble(campaign, name),
+        _common.manifest_arrays(tasks, results_root, module="imaging_p2a"),
+        _common.run_block(kind),
+    )
 
 
 def submits() -> dict[str, str]:
@@ -920,18 +731,7 @@ def main(argv=None) -> int:
         for task in planned_tasks() + rect28_tasks():
             print(f"{task.cell:<72} {task.script}.py {task.flags}")
         return 0
-    stale = []
-    for rel, text in submits().items():
-        path = ROOT / rel
-        if args.write:
-            path.write_text(text)
-            path.chmod(0o755)
-            print(f"wrote {rel}")
-        elif not path.is_file() or path.read_text() != text:
-            stale.append(rel)
-    for rel in stale:
-        print(f"stale: {rel} (run scripts/misc/campaigns/imaging_p2a.py --write)")
-    return 1 if stale else 0
+    return _common.write_or_check(submits(), ROOT, args=args, generator="imaging_p2a.py")
 
 
 if __name__ == "__main__":

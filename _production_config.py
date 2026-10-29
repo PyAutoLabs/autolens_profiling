@@ -244,6 +244,11 @@ class ProductionPreset:
     #: (:data:`PRODUCTION_DATA_SOURCES`). False keeps every existing preset as it was.
     production_data: bool = False
 
+    #: ``imaging`` or ``interferometer``. An interferometer preset (:func:`interferometer_standard_preset`,
+    #: likelihood-lifecycle 2b ruling R3) has no lens light, no over-sampling and no positions
+    #: penalty, and its adapt image is the truth lensed source with no S/N cap.
+    dataset_type: str = "imaging"
+
     @property
     def mesh_vertices(self) -> int:
         """Total Delaunay vertices: Hilbert points plus appended edge points."""
@@ -320,6 +325,22 @@ class ProductionPreset:
                 "shape": [self.rect_pixels_yx, self.rect_pixels_yx],
                 "source_pixels": self.rect_pixels_yx**2,
             }
+        if self.dataset_type == "interferometer":
+            # Ruling R3 (2b): no lens light, no over-sampling and no positions penalty in the
+            # interferometer cells; the adapt image is the truth lensed source, uncapped.
+            payload.update(
+                dataset_type="interferometer",
+                lens_light=None,
+                mge_total_gaussians=0,
+                over_sample_size_lp_rule=None,
+                over_sample_size_pixelization_rule=None,
+                positions_penalty=None,
+                adapt_image="truth lensed source (lensed_source.fits), no S/N cap",
+            )
+            if self.mesh_kind == "rectangular":
+                payload["mesh"]["class"] = "RectangularBilinearAdaptImage"
+                payload["mesh"]["free_weights"] = PRODUCTION_RECT_WEIGHT_PRIORS
+            return payload
         if self.production_data:
             payload["production_data"] = {
                 "enabled": True,
@@ -1035,7 +1056,7 @@ def adapt_images_for(instance, image_plane_mesh_grid=None, adapt_image=None):
 
 
 def analysis_settings(
-    preset: ProductionPreset, memo: str, use_mixed_precision: bool = False
+    preset: ProductionPreset, memo: str, use_mixed_precision: bool = False, **extra: Any
 ) -> tuple[Any, dict[str, Any]]:
     """``(al.Settings, provenance)`` with the NNLS memo explicitly controlled.
 
@@ -1063,10 +1084,14 @@ def analysis_settings(
 
     if use_mixed_precision:  # the JAX standard-size cells' --use-mixed-precision
         kwargs["use_mixed_precision"] = True
+    # Further Settings fields a cell sets explicitly (the interferometer numba arms' route /
+    # gate, likelihood-lifecycle 2b R4); recorded as given.
+    kwargs.update(extra)
     settings = al.Settings(**kwargs)
 
     provenance = {
         "requested": memo,
+        **({"settings_extra": {k: v for k, v in extra.items()}} if extra else {}),
         "settings_nnls_warm_start_memo": bool(settings.nnls_warm_start_memo),
         "env_AUTOARRAY_NNLS_WARM_START": os.environ.get("AUTOARRAY_NNLS_WARM_START"),
         "env_before": env_before,
@@ -1232,26 +1257,30 @@ STANDARD_FAMILY = {
 }
 
 
-def production_image_mesh_grid(dataset, adapt_image, preset: ProductionPreset, mask_radius: float):
+def production_image_mesh_grid(
+    dataset, adapt_image, preset: ProductionPreset, mask_radius: float, mask=None
+):
     """The preset's Hilbert image-plane mesh plus its zeroed circle-edge points.
 
     Production appends ``edge_pixels`` points on the mask edge and zeroes exactly those vertices,
     so the reconstruction cannot put flux outside the data (Euclid initial_lens_model.py:448-455;
     subhalo delaunay_adapt_split.py:49-56). ``adapt_image`` is the (capped) source adapt image.
+    ``mask`` defaults to ``dataset.mask``; an interferometer cell passes its ``real_space_mask``.
     """
     import autolens as al
 
+    mask = dataset.mask if mask is None else mask
     image_mesh = al.image_mesh.Hilbert(
         pixels=preset.hilbert_pixels,
         weight_power=preset.hilbert_weight_power,
         weight_floor=preset.hilbert_weight_floor,
     )
-    grid = image_mesh.image_plane_mesh_grid_from(mask=dataset.mask, adapt_data=adapt_image)
+    grid = image_mesh.image_plane_mesh_grid_from(mask=mask, adapt_data=adapt_image)
     if preset.edge_pixels:
         grid = al.image_mesh.append_with_circle_edge_points(
             image_plane_mesh_grid=grid,
-            centre=dataset.mask.mask_centre,
-            radius=mask_radius + dataset.mask.pixel_scale / 2.0,
+            centre=mask.mask_centre,
+            radius=mask_radius + mask.pixel_scale / 2.0,
             n_points=preset.edge_pixels,
         )
     return grid
@@ -1267,7 +1296,8 @@ def production_mesh(preset: ProductionPreset, *, n_vertices: int | None = None, 
         cls = mesh_class or al.mesh.Delaunay
         return cls(pixels=int(n_vertices), zeroed_pixels=preset.edge_pixels)
     shape = (preset.rect_pixels_yx, preset.rect_pixels_yx)
-    if preset.production_data:  # production's source_pix[2] mesh, weights free
+    # production's source_pix[2] mesh, weights free (imaging --standard-size, interferometer R3)
+    if preset.production_data or preset.dataset_type == "interferometer":
         import autofit as af
 
         mesh = af.Model(al.mesh.RectangularBilinearAdaptImage, shape=shape)
@@ -1535,3 +1565,492 @@ def production_standard_data(dataset, dataset_path, preset: ProductionPreset, sp
         "mesh_adapt_snr_cap": preset.adapt_snr_cap,
     }
     return dataset, mesh_adapt, record
+
+
+# ---------------------------------------------------------------------------
+# Likelihood-lifecycle 2b: the interferometer standard-size cell (ruling R3) and its
+# visibility-chunked dense parity reference (rulings R6, R7)
+# ---------------------------------------------------------------------------
+
+#: The interferometer likelihood variants with a standard-size production cell.
+INTERFEROMETER_STANDARD_VARIANTS = ("delaunay", "rectangular")
+
+#: Ruling R3 (human 2026-10-25, autolens_profiling#469), recorded on every preset it builds.
+INTERFEROMETER_STANDARD_RULING = (
+    "likelihood-lifecycle 2b ruling R3 (human 2026-10-25): the hst source_pix[2] mesh and "
+    "regularization at the standard size, no lens light, the truth lensed-source adapt image "
+    "with no S/N cap"
+)
+
+
+def interferometer_standard_preset(variant: str) -> ProductionPreset:
+    """The standard-size interferometer production cell of ``variant`` (ruling R3).
+
+    No interferometer production pipeline exists to read a preset from, so the cells borrow the
+    hst ``source_pix[2]`` stage's mesh and regularization (the workspace interferometer SLaM uses
+    the same, ``autolens_workspace/scripts/interferometer/features/pixelization/slam.py``):
+
+    - ``delaunay``: Hilbert 1250 (weight power 3.5, floor 0.01) plus 30 zeroed circle-edge points
+      (1280 vertices built), free ``AdaptSplit`` with the production priors;
+    - ``rectangular``: ``RectangularBilinearAdaptImage`` 35 x 35 = 1225 with free weight priors,
+      free ``Adapt``.
+
+    Everything else differs from the imaging stage and is recorded as such: no lens light (the
+    simulated visibilities carry none), no over-sampling and no positions penalty, and the adapt
+    image is the dataset's truth lensed source (``lensed_source.fits``) with no S/N cap. The mass
+    model and its priors are the imaging cells' (Isothermal + ExternalShear near the truth).
+    ``size_override`` is set, so no production witness or imaging pin applies.
+    """
+    from dataclasses import replace
+
+    if variant not in INTERFEROMETER_STANDARD_VARIANTS:
+        raise KeyError(
+            f"No interferometer standard preset for {variant!r}; "
+            f"choose from {INTERFEROMETER_STANDARD_VARIANTS}"
+        )
+    base = HST_SOURCE_PIX_2 if variant == "delaunay" else HST_RECT_ADAPT
+    if variant == "delaunay":
+        size = {"hilbert_pixels": STANDARD_HILBERT_PIXELS}
+        what = f"Hilbert {STANDARD_HILBERT_PIXELS} + {base.edge_pixels} zeroed edge points"
+    else:
+        size = {"rect_pixels_yx": STANDARD_RECT_PIXELS_YX}
+        what = f"RectangularBilinearAdaptImage {STANDARD_RECT_PIXELS_YX}x{STANDARD_RECT_PIXELS_YX}"
+    note = (
+        f"{INTERFEROMETER_STANDARD_RULING}: {what}, {base.regularization} regularization; "
+        "borrows the hst preset's mesh and regularization only"
+    )
+    return replace(
+        base,
+        name=f"interferometer_{base.name}_standard",
+        provenance=f"{base.provenance} — {note}",
+        dataset_type="interferometer",
+        adapt_snr_cap=None,
+        pix_snr_cut=None,
+        pix_low=1,
+        positions_factor=None,
+        positions_minimum_threshold=None,
+        mge_total_gaussians=0,
+        production_data=False,
+        size_override=note,
+        **size,
+    )
+
+
+def interferometer_production_model(preset: ProductionPreset, mesh, regularization=None):
+    """The interferometer cell model: Isothermal + shear near the truth and the pixelized source.
+
+    :func:`production_model` without the lens light (the interferometer cells have none). The
+    priors and their construction order (mass, shear, then the regularization) are fixed here,
+    so every setup's seeded iid draw lands on the same parameters.
+    """
+    import autofit as af
+    import autolens as al
+
+    mass = af.Model(al.mp.Isothermal)
+    mass.centre.centre_0 = af.GaussianPrior(mean=0.0, sigma=0.005)
+    mass.centre.centre_1 = af.GaussianPrior(mean=0.0, sigma=0.005)
+    mass.einstein_radius = af.GaussianPrior(mean=1.6, sigma=0.05)
+    ell = al.convert.ell_comps_from(axis_ratio=0.9, angle=45.0)
+    mass.ell_comps.ell_comps_0 = af.GaussianPrior(mean=ell[0], sigma=0.01)
+    mass.ell_comps.ell_comps_1 = af.GaussianPrior(mean=ell[1], sigma=0.01)
+
+    shear = af.Model(al.mp.ExternalShear)
+    shear.gamma_1 = af.GaussianPrior(mean=0.05, sigma=0.005)
+    shear.gamma_2 = af.GaussianPrior(mean=0.05, sigma=0.005)
+
+    lens = af.Model(al.Galaxy, redshift=0.5, mass=mass)
+    field = af.Model(al.MassField, redshift=0.5, shear=shear)
+    if regularization is None:
+        regularization = regularization_model(preset)
+    if isinstance(regularization, af.Model) or isinstance(mesh, af.Model):
+        pixelization = af.Model(al.Pixelization, mesh=mesh, regularization=regularization)
+    else:
+        pixelization = al.Pixelization(mesh=mesh, regularization=regularization)
+    source = af.Model(al.Galaxy, redshift=1.0, pixelization=pixelization)
+    return af.Collection(galaxies=af.Collection(lens=lens, source=source), fields=field)
+
+
+def iid_unit_vectors(n: int, prior_count: int, preset: ProductionPreset) -> list[list[float]]:
+    """The unit vectors :func:`iid_instances` draws (same seed, same order), for the record."""
+    import numpy as np
+
+    rng = np.random.default_rng(preset.seed)
+    return [
+        [float(u) for u in rng.uniform(preset.iid_unit_low, preset.iid_unit_high, size=prior_count)]
+        for _ in range(n)
+    ]
+
+
+def standard_interferometer_cell(
+    variant: str,
+    instrument: str,
+    *,
+    dataset,
+    adapt_image,
+    mask_radius: float,
+    memo: str = "off",
+    use_mixed_precision: bool = False,
+    n_instances: int = 1,
+    **settings_extra: Any,
+) -> dict[str, Any]:
+    """Everything an interferometer standard-size cell takes from :func:`interferometer_standard_preset`.
+
+    One definition for every setup (JAX sparse / dense, numba runtime and breakdown, the parity
+    reference task), so they all evaluate the same likelihood. ``dataset`` is the masked
+    ``al.Interferometer`` (its ``real_space_mask`` carries the Hilbert mesh and the edge points);
+    ``adapt_image`` the truth lensed source (``_adapt_image_util.adapt_image_for_dataset``).
+
+    Returns a dict: ``preset``, ``image_plane_mesh_grid`` (Delaunay, else None),
+    ``n_source_pixels``, ``source_pixels_requested``, ``model``, ``instances`` (the preset's
+    seeded iid stream, ``n_instances`` long; draw 0 is the profiled / parity instance),
+    ``instance`` (draw 0), ``unit_vector`` (draw 0's unit vector), ``settings`` and
+    ``memo_provenance`` (:func:`analysis_settings`, with ``settings_extra`` passed through) and
+    ``record`` (what a row stores as ``configuration.production_preset``).
+    """
+    preset = interferometer_standard_preset(variant)
+    mask = dataset.real_space_mask
+    if preset.mesh_kind == "delaunay":
+        grid = production_image_mesh_grid(dataset, adapt_image, preset, mask_radius, mask=mask)
+        n_source_pixels = int(grid.shape[0])
+        mesh = production_mesh(preset, n_vertices=n_source_pixels)
+        requested = preset.hilbert_pixels
+    else:
+        grid = None
+        n_source_pixels = preset.rect_pixels_yx**2
+        mesh = production_mesh(preset)
+        requested = n_source_pixels
+    model = interferometer_production_model(preset, mesh)
+    instances = iid_instances(model, max(1, int(n_instances)), preset)
+    unit_vector = iid_unit_vectors(1, model.prior_count, preset)[0]
+    settings, memo_provenance = analysis_settings(
+        preset, memo, use_mixed_precision=use_mixed_precision, **settings_extra
+    )
+    record = {
+        **preset.as_json(),
+        "instance": "iid draw 0 of the preset sequence (seeded)",
+        "instance_unit_vector": unit_vector,
+        "instrument": instrument,
+    }
+    return {
+        "preset": preset,
+        "image_plane_mesh_grid": grid,
+        "n_source_pixels": n_source_pixels,
+        "source_pixels_requested": requested,
+        "model": model,
+        "instances": instances,
+        "instance": instances[0],
+        "unit_vector": unit_vector,
+        "settings": settings,
+        "memo_provenance": memo_provenance,
+        "reg_scheme": preset.regularization,
+        "reg_provenance": preset.as_json()["regularization"],
+        "record": record,
+    }
+
+
+#: The visibility chunk and column block of the chunked dense reference (R6): memory
+#: O(S^2 + chunk x S) — at jvla S = 1280 one 5e5-visibility chunk of T is 10.2 GB complex128 (peak
+#: ~25 GB with the real / imaginary weighted copies; the reference tasks ask 64 GB).
+INTERFEROMETER_REFERENCE_VIS_CHUNK = 500_000
+INTERFEROMETER_REFERENCE_COLUMN_CHUNK = 64
+
+
+def interferometer_dense_reference(
+    dataset,
+    adapt_images,
+    instance,
+    settings,
+    *,
+    vis_chunk: int = INTERFEROMETER_REFERENCE_VIS_CHUNK,
+    column_chunk: int = INTERFEROMETER_REFERENCE_COLUMN_CHUNK,
+    log=print,
+) -> dict[str, Any]:
+    """The eager NumPy dense log evidence of ``instance``, its ``T`` formed visibility-chunked (R6).
+
+    The parity reference of every interferometer pixelized cell: independent of the W~ operator,
+    of numba and of JAX. It runs the library's own dense route
+    (``InversionInterferometerMapping``, built by ``FitInterferometer(xp=np)`` on
+    :func:`numpy_dense_twin` of ``dataset``) for everything except the transformed mapping matrix
+    ``T``, which the library forms in one ``nufft2d2`` over every column and every visibility (at
+    jvla ``T`` alone is 512 GB). Here ``T`` is never held whole: for each chunk of ``vis_chunk``
+    visibilities, a ``TransformerNUFFT`` over that chunk's uv points transforms the mapping matrix
+    ``L`` in blocks of ``column_chunk`` columns (finufft on the NumPy path), and
+
+        F += Re(T_k)^T N_r^-1 Re(T_k) + Im(T_k)^T N_i^-1 Im(T_k)
+        D += Re(T_k)^T N_r^-1 Re(d_k) + Im(T_k)^T N_i^-1 Im(d_k)
+
+    through the library's own ``curvature_matrix_via_mapping_matrix_from`` and
+    ``data_vector_via_transformed_mapping_matrix_from``. ``F`` and ``D`` are then handed to the
+    library inversion (its cached ``curvature_matrix`` / ``data_vector``), so the positive-only
+    solve, the edge-zeroed subset, both log determinants and the regularization term are the
+    library's. The chi-squared is ``s^T F s - 2 s^T D + d^T N^-1 d`` (identical to the residual
+    form) and the evidence is assembled by ``fit_util.log_evidence_from``.
+
+    Returns a dict with ``log_evidence`` and its terms, the chunking and the timings.
+    """
+    import time
+
+    import autolens as al
+    import numpy as np
+    from autoarray.fit import fit_util
+    from autoarray.inversion.inversion import inversion_util
+    from autoarray.inversion.inversion.interferometer import inversion_interferometer_util
+
+    t_start = time.perf_counter()
+    twin = numpy_dense_twin(dataset)
+    tracer = al.Tracer(galaxies=list(instance.galaxies), fields=[instance.fields])
+    fit = al.FitInterferometer(
+        dataset=twin, tracer=tracer, adapt_images=adapt_images, settings=settings, xp=np
+    )
+    inv = fit.inversion
+    inversion_class = type(inv).__name__
+    if inversion_class != "InversionInterferometerMapping":
+        raise RuntimeError(
+            f"the dense reference needs InversionInterferometerMapping, got {inversion_class}"
+        )
+    mapping_matrix = np.asarray(inv.mapping_matrix, dtype=np.float64)
+    n_src = int(mapping_matrix.shape[1])
+    visibilities = np.asarray(inv.data)
+    noise_map = np.asarray(inv.noise_map)
+    uv = np.asarray(dataset.uv_wavelengths)
+    mask = dataset.real_space_mask
+    eps = float(getattr(dataset.transformer, "eps", 1e-12))
+    n_vis = int(uv.shape[0])
+    vis_chunk = max(1, int(vis_chunk))
+    column_chunk = max(1, int(column_chunk))
+    n_chunks = -(-n_vis // vis_chunk)
+
+    curvature = np.zeros((n_src, n_src), dtype=np.float64)
+    data_vector = np.zeros(n_src, dtype=np.float64)
+    transform_s = accumulate_s = 0.0
+    for k, start in enumerate(range(0, n_vis, vis_chunk)):
+        stop = min(n_vis, start + vis_chunk)
+        t0 = time.perf_counter()
+        transformer = al.TransformerNUFFT(
+            uv_wavelengths=uv[start:stop], real_space_mask=mask, eps=eps
+        )
+        tmm = np.empty((stop - start, n_src), dtype=np.complex128)
+        for c in range(0, n_src, column_chunk):
+            tmm[:, c : c + column_chunk] = transformer.transform_mapping_matrix(
+                mapping_matrix[:, c : c + column_chunk], xp=np
+            )
+        t1 = time.perf_counter()
+        noise_k = noise_map[start:stop]
+        curvature += inversion_util.curvature_matrix_via_mapping_matrix_from(
+            mapping_matrix=tmm.real, noise_map=noise_k.real, settings=settings, xp=np
+        )
+        curvature += inversion_util.curvature_matrix_via_mapping_matrix_from(
+            mapping_matrix=tmm.imag, noise_map=noise_k.imag, settings=settings, xp=np
+        )
+        data_vector += (
+            inversion_interferometer_util.data_vector_via_transformed_mapping_matrix_from(
+                transformed_mapping_matrix=tmm,
+                visibilities=visibilities[start:stop],
+                noise_map=noise_k,
+            )
+        )
+        del tmm, transformer
+        t2 = time.perf_counter()
+        transform_s += t1 - t0
+        accumulate_s += t2 - t1
+        if n_chunks > 1:
+            log(
+                f"  [dense reference] chunk {k + 1}/{n_chunks}: T {t1 - t0:.1f} s, "
+                f"F/D {t2 - t1:.1f} s"
+            )
+    if len(inv.no_regularization_index_list) > 0:
+        curvature = inversion_util.curvature_matrix_with_added_to_diag_from(
+            curvature_matrix=curvature,
+            value=inv.settings.no_regularization_add_to_curvature_diag_value,
+            no_regularization_index_list=inv.no_regularization_index_list,
+            xp=np,
+        )
+    # The library inversion's cached properties: everything downstream (the positive-only solve,
+    # the edge-zeroed subset, the log determinants) reads these, and T is never formed.
+    inv.__dict__["curvature_matrix"] = curvature
+    inv.__dict__["data_vector"] = data_vector
+    t3 = time.perf_counter()
+    reconstruction = np.asarray(inv.reconstruction)
+    data_term = float(
+        np.sum(visibilities.real**2 / noise_map.real**2)
+        + np.sum(visibilities.imag**2 / noise_map.imag**2)
+    )
+    chi_squared = float(
+        reconstruction @ curvature @ reconstruction - 2.0 * reconstruction @ data_vector + data_term
+    )
+    regularization_term = float(inv.regularization_term)
+    log_det_curvature_reg = float(inv.log_det_curvature_reg_matrix_term)
+    log_det_regularization = float(inv.log_det_regularization_matrix_term)
+    noise_normalization = float(fit.noise_normalization)
+    log_evidence = float(
+        fit_util.log_evidence_from(
+            chi_squared=chi_squared,
+            regularization_term=regularization_term,
+            log_curvature_regularization_term=log_det_curvature_reg,
+            log_regularization_term=log_det_regularization,
+            noise_normalization=noise_normalization,
+        )
+    )
+    t4 = time.perf_counter()
+    return {
+        "log_evidence": log_evidence,
+        "chi_squared": chi_squared,
+        "regularization_term": regularization_term,
+        "log_det_curvature_reg": log_det_curvature_reg,
+        "log_det_regularization": log_det_regularization,
+        "noise_normalization": noise_normalization,
+        "inversion_class": inversion_class,
+        "source_pixels": n_src,
+        "visibilities": n_vis,
+        "vis_chunk": vis_chunk,
+        "column_chunk": column_chunk,
+        "n_vis_chunks": n_chunks,
+        "nufft_eps": eps,
+        "transform_s": transform_s,
+        "accumulate_s": accumulate_s,
+        "solve_and_evidence_s": t4 - t3,
+        "total_s": t4 - t_start,
+        "method": (
+            "eager NumPy dense route (InversionInterferometerMapping via FitInterferometer(xp=np) "
+            "on the dataset without its sparse operator); T formed per visibility chunk and "
+            "column block by TransformerNUFFT (finufft on the NumPy path) and accumulated into "
+            "F and D, which the library inversion then solves (positive-only, edge-zeroed "
+            "subset, log determinants); chi-squared s^T F s - 2 s^T D + d^T N^-1 d. "
+            "Independent of the W~ operator, numba and JAX (ruling R6)."
+        ),
+    }
+
+
+#: Where the reference task caches each (variant, instrument) reference, under the checkout.
+INTERFEROMETER_REFERENCE_DIR = "output/p2b_references"
+#: The dataset files a cached reference is keyed on (their md5).
+_REFERENCE_DATASET_FILES = (
+    "data.fits",
+    "noise_map.fits",
+    "uv_wavelengths.fits",
+    "lensed_source.fits",
+)
+
+
+def interferometer_reference_path(root, variant: str, instrument: str) -> Path:
+    """``<root>/output/p2b_references/interferometer_<variant>_<instrument>.json``."""
+    return Path(root) / INTERFEROMETER_REFERENCE_DIR / f"interferometer_{variant}_{instrument}.json"
+
+
+def dataset_fingerprint(dataset_path) -> dict[str, str | None]:
+    """md5 of each dataset file a reference depends on (None when absent)."""
+    import hashlib
+
+    out: dict[str, str | None] = {}
+    for name in _REFERENCE_DATASET_FILES:
+        path = Path(dataset_path) / name
+        if not path.is_file():
+            out[name] = None
+            continue
+        digest = hashlib.md5()
+        with open(path, "rb") as handle:
+            for block in iter(lambda: handle.read(1 << 20), b""):
+                digest.update(block)
+        out[name] = digest.hexdigest()
+    return out
+
+
+def load_interferometer_reference(
+    root, variant: str, instrument: str, *, dataset_path, library_revisions, unit_vector
+) -> tuple[dict | None, str]:
+    """``(cached reference, why)``: the reference task's result if it describes this cell.
+
+    It must have been computed on the same dataset files (md5), the same library revisions and
+    the same instance (iid draw 0's unit vector); otherwise ``(None, reason)``.
+    """
+    import json
+
+    path = interferometer_reference_path(root, variant, instrument)
+    if not path.is_file():
+        return None, f"no cached reference at {path}"
+    try:
+        doc = json.loads(path.read_text())
+    except (OSError, ValueError) as exc:
+        return None, f"unreadable reference {path}: {exc}"
+    if doc.get("schema") != "p2b-interferometer-reference" or doc.get("version") != 1:
+        return None, f"{path}: not a p2b-interferometer-reference v1 document"
+    if doc.get("dataset_fingerprint") != dataset_fingerprint(dataset_path):
+        return None, f"{path}: computed on different dataset files"
+    if isinstance(library_revisions, dict) and doc.get("library_revisions") != library_revisions:
+        return None, f"{path}: computed on different library revisions"
+    if unit_vector is not None and doc.get("instance_unit_vector") != unit_vector:
+        return None, f"{path}: computed at a different instance"
+    return doc, "ok"
+
+
+def write_interferometer_parity(
+    cell_dir,
+    *,
+    log_likelihood,
+    variant: str,
+    instrument: str,
+    dataset_path,
+    root,
+    unit_vector,
+    use_mixed_precision: bool,
+    autolens_version: str,
+    source_pixels: int,
+    source_pixels_requested: int | None,
+    quantity: str,
+    compute_reference=None,
+):
+    """Write ``parity.json`` for an interferometer pixelized cell (R6, R7) and return the reference.
+
+    The reference is the reference task's cache (:func:`load_interferometer_reference`) when it
+    describes this cell; otherwise ``compute_reference()`` (a callable returning
+    :func:`interferometer_dense_reference`'s dict) when the cell can afford it in-process (sma);
+    otherwise the witness is ``not_assessed`` with the reason, and the reference task's
+    ``--finalise`` pass rewrites it from the row's ``parity_candidate`` once the reference
+    exists. The tolerance is the interferometer rule (``_profile_cli.PARITY_RTOL_BY_DATASET``).
+    """
+    from _profile_cli import provenance_dict, write_parity_json
+
+    revisions = provenance_dict().get("library_revisions")
+    doc, why = load_interferometer_reference(
+        root,
+        variant,
+        instrument,
+        dataset_path=dataset_path,
+        library_revisions=revisions,
+        unit_vector=unit_vector,
+    )
+    source = None
+    reference = float("nan")
+    if doc is not None:
+        reference = float(doc["log_evidence"])
+        source = (
+            f"cached reference task {interferometer_reference_path(root, variant, instrument).name}"
+            f" ({doc.get('method_short', 'chunked eager NumPy dense')})"
+        )
+    elif compute_reference is not None:
+        try:
+            computed = compute_reference()
+            reference = float(computed["log_evidence"])
+            source = (
+                "visibility-chunked eager NumPy dense reference computed in the same process "
+                f"({computed['n_vis_chunks']} chunk(s) of {computed['vis_chunk']} visibilities)"
+            )
+            doc = computed
+        except Exception as exc:  # noqa: BLE001 — a failed reference must not cost the row
+            why = f"in-process reference failed: {type(exc).__name__}: {exc}"
+            print(f"  WARNING: parity reference failed: {why}")
+    write_parity_json(
+        Path(cell_dir),
+        log_likelihood=log_likelihood,
+        reference_log_likelihood=reference,
+        use_mixed_precision=use_mixed_precision,
+        reference_source=source
+        or "visibility-chunked eager NumPy dense reference (reference task pending)",
+        autolens_version=autolens_version,
+        source_pixels=int(source_pixels),
+        source_pixels_requested=source_pixels_requested,
+        quantity=quantity,
+        dataset_type="interferometer",
+        pending_reason=None if source else f"reference pending: {why}",
+    )
+    return doc

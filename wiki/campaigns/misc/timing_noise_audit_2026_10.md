@@ -780,6 +780,13 @@ iteration counts, budgets in iterations, geometry or formatting, not a measured 
   walls, and the test checks it. It is S1's `measured-wall` floor applied when the submit is
   written; S1 is the gate. `scripts/misc/campaigns/imaging_p2a.py::MEM_HEADROOM` is a `--mem`
   multiplier on measured MaxRSS, not a time.
+- `scripts/misc/campaigns/interferometer_p2b.py::WALL_HEADROOM` and
+  `scripts/misc/campaigns/interferometer_p2b.py::MEM_HEADROOM` (autolens_profiling#469): the
+  2b generator's copies of the two 2a multipliers above, with the same meaning (batch 1's
+  `--time` at 1.25x batch 0's measured walls once they exist; `--mem` at 1.5x measured MaxRSS).
+  `scripts/misc/campaigns/test/test_interferometer_p2b.py::test_batch1_walls_are_measured_by_batch0_and_batch0_never_guards`
+  checks it, as the 2a test does.
+  S1 is still the gate.
 - `scripts/misc/tooling/build_readme.py::_format_time` and
   `scripts/misc/tooling/build_readme.py::_render_runtime_table`: unit formatting.
 

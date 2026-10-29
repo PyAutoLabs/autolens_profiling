@@ -155,6 +155,16 @@ _cli = parse_profile_cli()
 
 instrument = _cli.instrument or "sma"  # default; override via --instrument
 
+if _cli.standard_size:
+    # Likelihood-lifecycle 2b (autolens_profiling#469): the standard-size interferometer
+    # production cell (ruling R3), built by the driver every setup of the likelihood shares --
+    # sparse W~ with --sparse, the dense NUFFT route without -- with resources, fit.png and
+    # parity.json. The cell below is the historic fiducial and is unchanged.
+    from likelihood_breakdown.interferometer_standard import run_jax
+
+    run_jax("delaunay", _cli, script_file=__file__, profiling_root=_profiling_root())
+    sys.exit(0)
+
 hilbert_pixels = 1500  # 1500-tier production fiducial (matches imaging/datacube)
 regularization_coefficient = 1.0
 

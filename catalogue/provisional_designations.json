@@ -14,7 +14,8 @@
     "Machine reading: a point-source likelihood has no linear operator, so its setups are spelled ..._na_... (R1) where the report writes jax_*_dense_fp64.",
     "Machine reading: the interferometer CPU many-core cell names a numba direct_conv vs FFT cost model; it is read as numba_cpu_sparse_fp64_wtilde until a designation decision names the route.",
     "Mixed precision is experimental everywhere at day zero (the report's footnote); a setup in no table is experimental.",
-    "No designation decision exists yet: an 'optimal' here is provisional and is labelled class secondary with 'provisional_optimal: true' on records (R3); planned_cells carry it as optimal."
+    "No designation decision exists yet: an 'optimal' here is provisional and is labelled class secondary with 'provisional_optimal: true' on records (R3); planned_cells carry it as optimal.",
+    "Machine reading: instrument_scoped_setups[] plan a designated setup only on the listed instruments of its dataset types (catalogue_lifecycle.planned_setups); on any other instrument it stays designated but is not planned, like the regime-only suffixes. R1(a) (human 2026-10-25, autolens_profiling#469) scopes the dense pixelized interferometer NUFFT route to sma."
   ],
   "footnote": "Mixed precision is `experimental` everywhere at day zero (the fp32 leg currently runs fp64: Mind bug draft). Compile cost is recorded where available but is not a class axis.",
   "hosts": {
@@ -30,6 +31,24 @@
   "regime_only_suffixes": [
     "_dft",
     "_streaming"
+  ],
+  "instrument_scoped_setups": [
+    {
+      "dataset_types": [
+        "interferometer"
+      ],
+      "table": "interferometer_pixelized",
+      "setups": [
+        "jax_cpu_dense_fp64_nufft",
+        "jax_gpu_dense_fp64_nufft"
+      ],
+      "planned_instruments": [
+        "sma"
+      ],
+      "regime": "n_vis_lt_1e5",
+      "ruling": "R1(a), human 2026-10-25 (autolens_profiling#469)",
+      "reason": "The library forms the dense transformed mapping matrix in one nufft2d2 over every source column: for S ~ 1280 it is 20.5 GB at alma, 102 GB at alma_high and 512 GB at jvla, so the dense pixelized route cannot run above sma (interferometer decision matrix rule 2: meshes above sma run W~, never dense)."
+    }
   ],
   "tables": {
     "parametric": {
