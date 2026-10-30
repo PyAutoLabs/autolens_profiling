@@ -1,0 +1,145 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "dataset": "simple",
+  "instrument": "simple",
+  "likelihood": "weak/isothermal",
+  "setup_id": "jax_cpu_dense_fp64",
+  "use_mixed_precision": false,
+  "configuration": {
+    "variant": "isothermal",
+    "instrument": "simple",
+    "n_galaxies": 1500,
+    "shear_components": 3000,
+    "standard_n_galaxies": 1500,
+    "standard_size": true,
+    "noise_sigma": 0.25,
+    "annulus_arcsec": [
+      50.0,
+      200.0
+    ],
+    "mass_profile": "Isothermal",
+    "is_reduced": false,
+    "redshifts": false,
+    "free_parameters": 5,
+    "instance": "simulator truth (truth_vector)"
+  },
+  "eager_per_call": 0.002484607300721109,
+  "log_likelihood_eager": -84.8719196231034,
+  "log_likelihood_jit": -84.87191962324596,
+  "full_pipeline_lower_s": 0.33864894695580006,
+  "full_pipeline_compile_s": 0.22244742000475526,
+  "full_pipeline_first_call_s": 0.004233506042510271,
+  "full_pipeline_single_jit": 0.00019177019130438565,
+  "full_pipeline_single_jit_median": 0.00018882896983996034,
+  "full_pipeline_single_jit_median_ms": 0.18882896983996034,
+  "full_pipeline_single_jit_p10_ms": 0.17158958362415433,
+  "full_pipeline_single_jit_p90_ms": 0.20836569601669908,
+  "full_pipeline_single_jit_median_protocol": {
+    "n_warm": 5,
+    "n_timed": 200,
+    "statistic": "median of individually timed calls after warm calls",
+    "full_pipeline_single_jit_is": "mean of one 10-call block after one first call (first block after compile)",
+    "issue": "autolens_profiling#371; timing-noise audit P8 (#362)"
+  },
+  "vmap": {
+    "batch_size": 32,
+    "batch_time": 0.0012930223951116205,
+    "per_call": 4.040694984723814e-05,
+    "speedup_vs_single_jit": 4.75
+  },
+  "memory_mb": {
+    "output": 0.000244140625,
+    "temp": 5.620491027832031
+  },
+  "jit_phases": {
+    "full_pipeline": {
+      "lower_s": 0.33864894695580006,
+      "compile_s": 0.22244742000475526,
+      "first_call_s": 0.004233506042510271,
+      "steady_per_call_s": 0.00019177019130438565
+    },
+    "full_pipeline_vmap32": {
+      "first_call_s": 0.5731376439798623,
+      "batch_per_call_s": 0.0012930223951116205,
+      "steady_per_call_s": 4.040694984723814e-05
+    }
+  },
+  "timer": {
+    "dataset_and_model": 0.7523151430068538,
+    "fit_eager": 0.006505661993287504,
+    "eager_log_likelihood_x10": 0.02484607300721109,
+    "full_pipeline_lower": 0.33864894695580006,
+    "full_pipeline_compile": 0.22244742000475526,
+    "full_pipeline_first_call": 0.004233506042510271,
+    "full_pipeline_steady_x10": 0.0019177019130438566,
+    "full_pipeline_vmap32_first_call": 0.5731376439798623,
+    "full_pipeline_vmap32_steady_x10": 0.012930223951116204
+  },
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "hostname": "euclid-ral-compute-10-2",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_cpu_multi_thread_eigen=false --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 236,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2dg/output/jax_cache/p2g_413293_1",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-10-29T20:28:13Z",
+      "host": "euclid-ral-compute-10-2",
+      "slurm": {
+        "job_id": "413293",
+        "array_job_id": "413293",
+        "array_task_id": "1"
+      },
+      "loadavg_at_import": [
+        1.9,
+        4.88,
+        11.09
+      ],
+      "loadavg_at_write": [
+        2.15,
+        4.88,
+        11.06
+      ],
+      "profiling_revision": "ad103340618b24ff2e56f8c8d912a16762396490",
+      "library_revisions": {
+        "autolens_profiling": "ad103340618b24ff2e56f8c8d912a16762396490",
+        "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+        "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+        "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+        "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+        "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.65.1",
+        "nufftax": "0.6.1",
+        "finufft": "2.5.1"
+      }
+    }
+  },
+  "resources": {
+    "resources_schema": 1,
+    "engine": "jax",
+    "device": "cpu",
+    "cpus_per_eval": 8,
+    "cpus_per_eval_basis": "jax cpu: NPROC threads in XLA's CPU intra-op pool",
+    "devices_per_eval": 0,
+    "peak_rss_gb": 0.527794,
+    "peak_rss_basis": "in_process_ru_maxrss",
+    "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
+  }
+}

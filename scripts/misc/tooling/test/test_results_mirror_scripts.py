@@ -36,7 +36,6 @@ NOT_YET_MEASURED = {
     ("cluster", "source_plane"),
     ("imaging", "sersic"),
     ("multi_dataset", "delaunay"),
-    ("weak", "isothermal"),  # likelihood-lifecycle 2g (#476): rows land after the RAL batch
     # likelihood-lifecycle 2d (#473): new cell scripts, no committed row until the RAL campaign.
     ("group", "delaunay"),
     ("group", "mge"),
