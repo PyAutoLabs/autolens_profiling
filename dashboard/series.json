@@ -3299,6 +3299,123 @@
    }
   },
   {
+   "key": "runtime:weak/isothermal:simple:jax_cpu_dense_fp64:hpc_ral_cpu:default",
+   "section": "runtime",
+   "cell": "weak/isothermal/simple",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": false,
+   "identity": {
+    "likelihood": "weak/isothermal",
+    "instrument": "simple",
+    "setup_id": "jax_cpu_dense_fp64",
+    "host_class": "hpc_ral_cpu",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
+   "points": [
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.00018882896983996034,
+     "vmap_per_call_s": 4.040694984723814e-05,
+     "host": "euclid-ral-compute-10-2",
+     "backend": "cpu",
+     "job": "413293",
+     "loadavg": 1.9,
+     "has_provenance": true,
+     "source": "results/weak/isothermal/simple/jax_cpu_dense_fp64/hpc_ral_cpu/runtime.json",
+     "headline_estimator": "steady median",
+     "single_jit_block_mean_s": 0.00019177019130438565,
+     "single_jit_median_s": 0.00018882896983996034,
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-compute-10-2 != euclid-ral-gpu-2)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "runtime:weak/isothermal:simple:jax_cpu_dense_fp64:hpc_a100:default",
+   "section": "runtime",
+   "cell": "weak/isothermal/simple",
+   "config": "hpc_a100_fp64",
+   "sparse": false,
+   "identity": {
+    "likelihood": "weak/isothermal",
+    "instrument": "simple",
+    "setup_id": "jax_cpu_dense_fp64",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
+   "points": [
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.0003150574630126357,
+     "vmap_per_call_s": 5.6621734256623316e-05,
+     "host": "euclid-ral-gpu-2",
+     "backend": "cpu",
+     "job": "413297",
+     "loadavg": 0.66,
+     "has_provenance": true,
+     "source": "results/weak/isothermal/simple/jax_cpu_dense_fp64/hpc_a100/runtime.json",
+     "headline_estimator": "steady median",
+     "single_jit_block_mean_s": 0.00034363929880782963,
+     "single_jit_median_s": 0.0003150574630126357,
+     "qualified": true,
+     "reason": null
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "runtime:weak/isothermal:simple:jax_gpu_dense_fp64:hpc_a100:default",
+   "section": "runtime",
+   "cell": "weak/isothermal/simple",
+   "config": "hpc_a100_fp64",
+   "sparse": false,
+   "identity": {
+    "likelihood": "weak/isothermal",
+    "instrument": "simple",
+    "setup_id": "jax_gpu_dense_fp64",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
+   "points": [
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.0001986434799619019,
+     "vmap_per_call_s": 8.93486248969566e-06,
+     "host": "euclid-ral-gpu-2",
+     "backend": "gpu",
+     "job": "413297",
+     "loadavg": 0.8,
+     "has_provenance": true,
+     "source": "results/weak/isothermal/simple/jax_gpu_dense_fp64/hpc_a100/runtime.json",
+     "headline_estimator": "steady median",
+     "single_jit_block_mean_s": 0.00034571319120004775,
+     "single_jit_median_s": 0.0001986434799619019,
+     "qualified": true,
+     "reason": null
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
    "key": "legacy:breakdown:cluster/image_plane:local_cpu_fp64",
    "section": "breakdown",
    "cell": "cluster/image_plane",
@@ -7926,6 +8043,114 @@
     "ratio": 1.126,
     "from": "2026.8.17.1",
     "to": "2026.10.25.1"
+   }
+  },
+  {
+   "key": "breakdown:weak/isothermal:simple:jax_cpu_dense_fp64:hpc_ral_cpu:default",
+   "section": "breakdown",
+   "cell": "weak/isothermal/simple",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": false,
+   "identity": {
+    "likelihood": "weak/isothermal",
+    "instrument": "simple",
+    "setup_id": "jax_cpu_dense_fp64",
+    "host_class": "hpc_ral_cpu",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.00020452990429475904,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-compute-10-2",
+     "backend": "cpu",
+     "job": "413298",
+     "loadavg": 1.9,
+     "has_provenance": true,
+     "source": "results/weak/isothermal/simple/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-compute-10-2 != euclid-ral-gpu-2)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:weak/isothermal:simple:jax_cpu_dense_fp64:hpc_a100:default",
+   "section": "breakdown",
+   "cell": "weak/isothermal/simple",
+   "config": "hpc_a100_fp64",
+   "sparse": false,
+   "identity": {
+    "likelihood": "weak/isothermal",
+    "instrument": "simple",
+    "setup_id": "jax_cpu_dense_fp64",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.00032871298026293516,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-2",
+     "backend": "cpu",
+     "job": "413297",
+     "loadavg": 0.79,
+     "has_provenance": true,
+     "source": "results/weak/isothermal/simple/jax_cpu_dense_fp64/hpc_a100/breakdown.json",
+     "qualified": true,
+     "reason": null
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "breakdown:weak/isothermal:simple:jax_gpu_dense_fp64:hpc_a100:default",
+   "section": "breakdown",
+   "cell": "weak/isothermal/simple",
+   "config": "hpc_a100_fp64",
+   "sparse": false,
+   "identity": {
+    "likelihood": "weak/isothermal",
+    "instrument": "simple",
+    "setup_id": "jax_gpu_dense_fp64",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.0003794224467128515,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-2",
+     "backend": "gpu",
+     "job": "413297",
+     "loadavg": 0.82,
+     "has_provenance": true,
+     "source": "results/weak/isothermal/simple/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
+     "qualified": true,
+     "reason": null
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
    }
   }
  ],

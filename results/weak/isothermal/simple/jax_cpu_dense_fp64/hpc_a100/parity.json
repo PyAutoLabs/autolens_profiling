@@ -1,0 +1,16 @@
+{
+  "schema": "parity-witness",
+  "version": 1,
+  "status": "match",
+  "log_likelihood": -84.87191962324596,
+  "reference_log_likelihood": -84.8719196230395,
+  "tolerance": 0.00848719196230395,
+  "tolerance_rule": "0.0001 x |reference_log_likelihood| (fp64)",
+  "reference": {
+    "source": "eager NumPy AnalysisWeak(use_jax=False).fit_from(instance).log_likelihood in the same process (adaptive Richardson finite-difference Hessian): simple, 1500 galaxies, same dataset, model and instance",
+    "date": "2026-10-29"
+  },
+  "measured_at": "2026-10-29T20:28:23Z",
+  "autolens_version": "2026.8.17.1",
+  "quantity": "log_likelihood_function (JIT jacfwd Hessian vs eager NumPy finite differences)"
+}

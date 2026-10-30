@@ -1,15 +1,15 @@
 # Likelihood lifecycle phase 2g: weak lensing (new cells)
 
-**Status:** open (every decision decided 2026-10-29; batch 0 has a go but is held, see Next)
+**Status:** rows committed (batch 0, the campaign's rows under D9; this PR); closes on merge
 **Question:** What does one weak-lensing likelihood evaluation cost at the standard catalogue size on the pinned release 2026.10.25.1, on JAX CPU and JAX GPU, on both reference hosts, and does each cell's log-likelihood match an independent eager NumPy evaluation?
 **Pre-registered rule:** every runnable planned weak cell (6 of 8; D5) lands `current`, with runtime and breakdown, provenance, `resources`, `fit.png` and a `parity.json` whose status is `match` against the in-process eager NumPy `FitWeak` (tolerance 1e-4 x |reference| in fp64, 1e-3 mixed precision; D7). Any `diverged` witness blocks that setup until explained. The two `jax_gpu_dense_fp64@hpc_ral_cpu` cells stay `missing` until the human rules on D5. Recorded here with the setup PR, before any RAL run (2026-10-28). Note 2026-10-29: D5 is settled by the planner rule of autolens_profiling#481 (human ruling "fix the planner gap"); those two cells are no longer planned, so the rule's 6 runnable cells are all 6 planned cells. The rule is otherwise unchanged. Note 2026-10-29, still before any run: the human adopted every drafted decision (D1-D4, D6-D10), so the rule stands as written.
-**Verdict:** pending (batch 0, the campaign's rows under D9, run 2026-10-29; not yet committed). Expected, written before the runs: every parity witness is `match`, about 1e-12 relative (the laptop gave |delta log L| = 2.3e-10 at |log L| = 84.87). `jax_cpu_dense_fp64` costs about 1 ms per single JIT call (steady median) and 0.3-0.5 ms per point in a vmap batch of 32 on 4-8 CPU threads (laptop: 1.04 ms and 0.47 ms at NPROC=4). On the A100 host, the GPU single call is launch-bound and no faster than the CPU one, which is the §3.3 reading that auto may decline the GPU; the GPU may still win per point at batch 32. Class designations are phase 3's decision, not this page's.
-**Headline:** none yet.
+**Verdict:** rule met: all 6 runnable cells `current` with runtime and breakdown, provenance, `resources`, `fit.png` and a `match` witness (|delta log L| 1.4e-10 to 2.1e-10 at |log L| ~ 85, ~2e-12 relative). Against the expectation: parity as expected; `jax_cpu_dense_fp64` is 3-5x cheaper per single call than predicted (0.19 ms RAL, 0.32 ms on the A100 host's CPU, against ~1 ms) and ~10x cheaper per point at vmap 32 (0.040 / 0.057 ms against 0.3-0.5 ms); the GPU single call (0.20 ms) is not launch-bound as predicted, since it beats the same host's CPU (0.32 ms), and it wins per point at batch 32 (0.0089 ms). These are per-call figures, not node throughput (README "Comparing CPU and GPU setups"). Expected, written before the runs: every parity witness is `match`, about 1e-12 relative (the laptop gave |delta log L| = 2.3e-10 at |log L| = 84.87). `jax_cpu_dense_fp64` costs about 1 ms per single JIT call (steady median) and 0.3-0.5 ms per point in a vmap batch of 32 on 4-8 CPU threads (laptop: 1.04 ms and 0.47 ms at NPROC=4). On the A100 host, the GPU single call is launch-bound and no faster than the CPU one, which is the §3.3 reading that auto may decline the GPU; the GPU may still win per point at batch 32. Class designations are phase 3's decision, not this page's.
+**Headline:** `weak/isothermal/simple`, steady median per single JIT call / per point at vmap 32: `jax_cpu_dense_fp64@hpc_ral_cpu` 0.189 / 0.040 ms; `jax_cpu_dense_fp64@hpc_a100` 0.315 / 0.057 ms; `jax_gpu_dense_fp64@hpc_a100` 0.199 / 0.0089 ms (RAL 413293, A100 413297, 2026.10.25.1, jax 0.11.2, every row quiet).
 **Library PRs:** none (measurement only, tag 2026.10.25.1; `autolens/weak/` is identical at the tag and on main)
 **Profiling PRs:** the setup PR (draft, stacked on 2b's PR #471), then a walls PR after batch 0, then the rows PR
 **Ledger:** this page; rows will land under `results/weak/isothermal/simple/`; work list [`scripts/misc/campaigns/weak_p2g.py`](../../../scripts/misc/campaigns/weak_p2g.py) and its [README](../../../scripts/misc/campaigns/README.md)
 **Mind contract:** epic `likelihood-lifecycle`, phase 2 sub-issue 2g; issue autolens_profiling#476
-**Next:** the rows PR: copy batch 0's 6 rows (RAL 413293, A100 413297) into `results/`, with catalogue and coverage
+**Next:** merge the rows PR (human /prm), then close autolens_profiling#476; class designations are phase 3's
 **Fit figures:** the laptop `fit.png` (scratch tree, not committed) was opened: data, model, data-vs-model and chi-squared panels look right; the chi-squared colour bar is labelled `e- s^-1`, a library plot-unit quirk (D10)
 
 ## Why this campaign
@@ -129,3 +129,11 @@ The batch-0 go was given with the decisions, but batch 0 was not submitted. The 
 
 Batch 0 ran 2026-10-29 (RAL 413293, A100 job 413297; every leg exit 0, every witness `match`,
 every row quiet). The walls commit records the walls; next, the rows PR.
+
+### 2026-10-30 — the rows PR
+
+Batch 0's 6 rows copied from `output/p2g_batch0/results/` into `results/weak/isothermal/simple/`:
+each is the final write, has `fit.png` and `parity.json` beside it, passes
+`parity_witness.py --check`, and records the five library HEADs of the private 2026.10.25.1
+checkout. No superseded rows (new cells). Catalogue, dashboard (committed stamp), coverage, setup
+wiki, series map and READMEs regenerated: coverage 176 -> 182 current of 272 planned, 0 stale.

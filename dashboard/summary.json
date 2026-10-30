@@ -27,10 +27,10 @@
    "reason": "no declared cell matrix; the results/ scan is the inventory"
   },
   "observed": {
-   "series": 207,
-   "points": 249,
+   "series": 213,
+   "points": 255,
    "releases": 6,
-   "cells": 55
+   "cells": 56
   },
   "excluded": [
    {
@@ -4347,6 +4347,114 @@
    },
    "evidence": {
     "path": "archive/2026/07/hostless_summaries/runtime/point_source_source/source_plane_solved/source_plane_solved_summary_v2026.7.23.1.json",
+    "fragment": null
+   }
+  },
+  {
+   "id": "runtime:weak/isothermal:simple:jax_cpu_dense_fp64:hpc_ral_cpu:default@2026.10.25.1",
+   "axis": "runtime",
+   "unit": "s",
+   "measurement": {
+    "single_jit_s": 0.00018882896983996034,
+    "vmap_per_call_s": 4.040694984723814e-05,
+    "single_jit_block_mean_s": 0.00019177019130438565
+   },
+   "identity": {
+    "section": "runtime",
+    "cell": "weak/isothermal/simple",
+    "config": "hpc_ral_cpu_fp64",
+    "sparse": false,
+    "tier": "hpc",
+    "device": "ral_cpu",
+    "backend": "cpu",
+    "precision": "float64",
+    "library": "PyAutoLens",
+    "library_version": "2026.10.25.1",
+    "release_date": "2026-10-25",
+    "reason": null
+   },
+   "provenance": {
+    "host": "euclid-ral-compute-10-2",
+    "job": "413293",
+    "loadavg": 1.9,
+    "has_provenance": true,
+    "qualified": false,
+    "reason": "off the reference host (euclid-ral-compute-10-2 != euclid-ral-gpu-2)"
+   },
+   "evidence": {
+    "path": "results/weak/isothermal/simple/jax_cpu_dense_fp64/hpc_ral_cpu/runtime.json",
+    "fragment": null
+   }
+  },
+  {
+   "id": "runtime:weak/isothermal:simple:jax_cpu_dense_fp64:hpc_a100:default@2026.10.25.1",
+   "axis": "runtime",
+   "unit": "s",
+   "measurement": {
+    "single_jit_s": 0.0003150574630126357,
+    "vmap_per_call_s": 5.6621734256623316e-05,
+    "single_jit_block_mean_s": 0.00034363929880782963
+   },
+   "identity": {
+    "section": "runtime",
+    "cell": "weak/isothermal/simple",
+    "config": "hpc_a100_fp64",
+    "sparse": false,
+    "tier": "hpc",
+    "device": "a100",
+    "backend": "cpu",
+    "precision": "float64",
+    "library": "PyAutoLens",
+    "library_version": "2026.10.25.1",
+    "release_date": "2026-10-25",
+    "reason": null
+   },
+   "provenance": {
+    "host": "euclid-ral-gpu-2",
+    "job": "413297",
+    "loadavg": 0.66,
+    "has_provenance": true,
+    "qualified": true,
+    "reason": null
+   },
+   "evidence": {
+    "path": "results/weak/isothermal/simple/jax_cpu_dense_fp64/hpc_a100/runtime.json",
+    "fragment": null
+   }
+  },
+  {
+   "id": "runtime:weak/isothermal:simple:jax_gpu_dense_fp64:hpc_a100:default@2026.10.25.1",
+   "axis": "runtime",
+   "unit": "s",
+   "measurement": {
+    "single_jit_s": 0.0001986434799619019,
+    "vmap_per_call_s": 8.93486248969566e-06,
+    "single_jit_block_mean_s": 0.00034571319120004775
+   },
+   "identity": {
+    "section": "runtime",
+    "cell": "weak/isothermal/simple",
+    "config": "hpc_a100_fp64",
+    "sparse": false,
+    "tier": "hpc",
+    "device": "a100",
+    "backend": "gpu",
+    "precision": "float64",
+    "library": "PyAutoLens",
+    "library_version": "2026.10.25.1",
+    "release_date": "2026-10-25",
+    "reason": null
+   },
+   "provenance": {
+    "host": "euclid-ral-gpu-2",
+    "job": "413297",
+    "loadavg": 0.8,
+    "has_provenance": true,
+    "qualified": true,
+    "reason": null
+   },
+   "evidence": {
+    "path": "results/weak/isothermal/simple/jax_gpu_dense_fp64/hpc_a100/runtime.json",
     "fragment": null
    }
   },
@@ -9673,6 +9781,111 @@
     "path": "results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/breakdown.json",
     "fragment": null
    }
+  },
+  {
+   "id": "breakdown:weak/isothermal:simple:jax_cpu_dense_fp64:hpc_ral_cpu:default@2026.10.25.1",
+   "axis": "runtime",
+   "unit": "s",
+   "measurement": {
+    "single_jit_s": 0.00020452990429475904,
+    "vmap_per_call_s": null
+   },
+   "identity": {
+    "section": "breakdown",
+    "cell": "weak/isothermal/simple",
+    "config": "hpc_ral_cpu_fp64",
+    "sparse": false,
+    "tier": "hpc",
+    "device": "ral_cpu",
+    "backend": "cpu",
+    "precision": "float64",
+    "library": "PyAutoLens",
+    "library_version": "2026.10.25.1",
+    "release_date": "2026-10-25",
+    "reason": null
+   },
+   "provenance": {
+    "host": "euclid-ral-compute-10-2",
+    "job": "413298",
+    "loadavg": 1.9,
+    "has_provenance": true,
+    "qualified": false,
+    "reason": "off the reference host (euclid-ral-compute-10-2 != euclid-ral-gpu-2)"
+   },
+   "evidence": {
+    "path": "results/weak/isothermal/simple/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json",
+    "fragment": null
+   }
+  },
+  {
+   "id": "breakdown:weak/isothermal:simple:jax_cpu_dense_fp64:hpc_a100:default@2026.10.25.1",
+   "axis": "runtime",
+   "unit": "s",
+   "measurement": {
+    "single_jit_s": 0.00032871298026293516,
+    "vmap_per_call_s": null
+   },
+   "identity": {
+    "section": "breakdown",
+    "cell": "weak/isothermal/simple",
+    "config": "hpc_a100_fp64",
+    "sparse": false,
+    "tier": "hpc",
+    "device": "a100",
+    "backend": "cpu",
+    "precision": "float64",
+    "library": "PyAutoLens",
+    "library_version": "2026.10.25.1",
+    "release_date": "2026-10-25",
+    "reason": null
+   },
+   "provenance": {
+    "host": "euclid-ral-gpu-2",
+    "job": "413297",
+    "loadavg": 0.79,
+    "has_provenance": true,
+    "qualified": true,
+    "reason": null
+   },
+   "evidence": {
+    "path": "results/weak/isothermal/simple/jax_cpu_dense_fp64/hpc_a100/breakdown.json",
+    "fragment": null
+   }
+  },
+  {
+   "id": "breakdown:weak/isothermal:simple:jax_gpu_dense_fp64:hpc_a100:default@2026.10.25.1",
+   "axis": "runtime",
+   "unit": "s",
+   "measurement": {
+    "single_jit_s": 0.0003794224467128515,
+    "vmap_per_call_s": null
+   },
+   "identity": {
+    "section": "breakdown",
+    "cell": "weak/isothermal/simple",
+    "config": "hpc_a100_fp64",
+    "sparse": false,
+    "tier": "hpc",
+    "device": "a100",
+    "backend": "gpu",
+    "precision": "float64",
+    "library": "PyAutoLens",
+    "library_version": "2026.10.25.1",
+    "release_date": "2026-10-25",
+    "reason": null
+   },
+   "provenance": {
+    "host": "euclid-ral-gpu-2",
+    "job": "413297",
+    "loadavg": 0.82,
+    "has_provenance": true,
+    "qualified": true,
+    "reason": null
+   },
+   "evidence": {
+    "path": "results/weak/isothermal/simple/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
+    "fragment": null
+   }
   }
  ],
  "comparisons": [
@@ -10879,6 +11092,48 @@
   },
   {
    "comparison_key": "legacy:runtime:point_source_source/source_plane_solved:local_cpu_fp64",
+   "policy": "runtime-drift-2x-1ms",
+   "axis": "runtime",
+   "metric": "single_jit_s",
+   "baseline": null,
+   "candidate": null,
+   "ratio": null,
+   "status": "insufficient",
+   "qualified": false,
+   "reasons": [
+    "one release only"
+   ]
+  },
+  {
+   "comparison_key": "runtime:weak/isothermal:simple:jax_cpu_dense_fp64:hpc_ral_cpu:default",
+   "policy": "runtime-drift-2x-1ms",
+   "axis": "runtime",
+   "metric": "single_jit_s",
+   "baseline": null,
+   "candidate": null,
+   "ratio": null,
+   "status": "insufficient",
+   "qualified": false,
+   "reasons": [
+    "one release only"
+   ]
+  },
+  {
+   "comparison_key": "runtime:weak/isothermal:simple:jax_cpu_dense_fp64:hpc_a100:default",
+   "policy": "runtime-drift-2x-1ms",
+   "axis": "runtime",
+   "metric": "single_jit_s",
+   "baseline": null,
+   "candidate": null,
+   "ratio": null,
+   "status": "insufficient",
+   "qualified": false,
+   "reasons": [
+    "one release only"
+   ]
+  },
+  {
+   "comparison_key": "runtime:weak/isothermal:simple:jax_gpu_dense_fp64:hpc_a100:default",
    "policy": "runtime-drift-2x-1ms",
    "axis": "runtime",
    "metric": "single_jit_s",
@@ -12646,6 +12901,48 @@
     "single-sample endpoint(s): within the 2x policy band is not a measured null",
     "baseline row unqualified: no provenance block (pre-#342 row)",
     "candidate row unqualified: off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+   ]
+  },
+  {
+   "comparison_key": "breakdown:weak/isothermal:simple:jax_cpu_dense_fp64:hpc_ral_cpu:default",
+   "policy": "runtime-drift-2x-1ms",
+   "axis": "runtime",
+   "metric": "single_jit_s",
+   "baseline": null,
+   "candidate": null,
+   "ratio": null,
+   "status": "insufficient",
+   "qualified": false,
+   "reasons": [
+    "one release only"
+   ]
+  },
+  {
+   "comparison_key": "breakdown:weak/isothermal:simple:jax_cpu_dense_fp64:hpc_a100:default",
+   "policy": "runtime-drift-2x-1ms",
+   "axis": "runtime",
+   "metric": "single_jit_s",
+   "baseline": null,
+   "candidate": null,
+   "ratio": null,
+   "status": "insufficient",
+   "qualified": false,
+   "reasons": [
+    "one release only"
+   ]
+  },
+  {
+   "comparison_key": "breakdown:weak/isothermal:simple:jax_gpu_dense_fp64:hpc_a100:default",
+   "policy": "runtime-drift-2x-1ms",
+   "axis": "runtime",
+   "metric": "single_jit_s",
+   "baseline": null,
+   "candidate": null,
+   "ratio": null,
+   "status": "insufficient",
+   "qualified": false,
+   "reasons": [
+    "one release only"
    ]
   }
  ],

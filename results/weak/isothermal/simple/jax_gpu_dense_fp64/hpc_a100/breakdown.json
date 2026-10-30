@@ -1,0 +1,196 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "dataset": "simple",
+  "instrument": "simple",
+  "likelihood": "weak/isothermal",
+  "setup_id": "jax_gpu_dense_fp64",
+  "use_mixed_precision": false,
+  "configuration": {
+    "variant": "isothermal",
+    "instrument": "simple",
+    "n_galaxies": 1500,
+    "shear_components": 3000,
+    "standard_n_galaxies": 1500,
+    "standard_size": true,
+    "noise_sigma": 0.25,
+    "annulus_arcsec": [
+      50.0,
+      200.0
+    ],
+    "mass_profile": "Isothermal",
+    "is_reduced": false,
+    "redshifts": false,
+    "free_parameters": 5,
+    "instance": "simulator truth (truth_vector)"
+  },
+  "log_likelihood_eager": -84.8719196230395,
+  "log_likelihood_jit": -84.87191962324573,
+  "steps": {
+    "model_shear": 0.0002862556953914464,
+    "likelihood_from_shear": 0.0001384817995131016
+  },
+  "steps_median": {
+    "model_shear": 0.00024150795070454478,
+    "likelihood_from_shear": 0.00013791449600830674
+  },
+  "total_step_by_step": 0.0003794224467128515,
+  "total_step_by_step_is": "sum of the steps' steady medians",
+  "full_pipeline": {
+    "per_call_s": 0.0002573628909885883,
+    "median_s": 0.00019182352116331458
+  },
+  "reference_steps": {
+    "deflections_yx": 0.0002052584895864129,
+    "note": "one deflection evaluation at the N positions, for scale; the Hessian differentiates it, so it is not a step"
+  },
+  "jit_phases": {
+    "full_pipeline": {
+      "lower_s": 0.40543468995019794,
+      "compile_s": 0.48485154600348324,
+      "first_call_s": 0.005340307950973511,
+      "steady_per_call_s": 0.0002573628909885883,
+      "steady_median": {
+        "n_warm": 5,
+        "n_timed": 100,
+        "median_s": 0.00019182352116331458,
+        "p10_s": 0.0001882900600321591,
+        "p90_s": 0.00021170000545680522,
+        "mean_s": 0.0001976194279268384,
+        "statistic": "median of individually timed calls after warm calls"
+      }
+    },
+    "model_shear": {
+      "lower_s": 0.19651830394286662,
+      "compile_s": 0.4718311410397291,
+      "first_call_s": 0.001623267075046897,
+      "steady_per_call_s": 0.0002862556953914464,
+      "steady_median": {
+        "n_warm": 5,
+        "n_timed": 100,
+        "median_s": 0.00024150795070454478,
+        "p10_s": 0.00023309497628360988,
+        "p90_s": 0.00026697692228481177,
+        "mean_s": 0.0002472299325745553,
+        "statistic": "median of individually timed calls after warm calls"
+      }
+    },
+    "likelihood_from_shear": {
+      "lower_s": 0.003926759003661573,
+      "compile_s": 0.07130809302907437,
+      "first_call_s": 0.0008121230639517307,
+      "steady_per_call_s": 0.0001384817995131016,
+      "steady_median": {
+        "n_warm": 5,
+        "n_timed": 100,
+        "median_s": 0.00013791449600830674,
+        "p10_s": 0.0001289209583774209,
+        "p90_s": 0.00016375901177525522,
+        "mean_s": 0.00014384913258254527,
+        "statistic": "median of individually timed calls after warm calls"
+      }
+    },
+    "deflections_yx": {
+      "lower_s": 0.1436757449992001,
+      "compile_s": 0.31224675092380494,
+      "first_call_s": 0.0014633089303970337,
+      "steady_per_call_s": 0.00023324020439758898,
+      "steady_median": {
+        "n_warm": 5,
+        "n_timed": 100,
+        "median_s": 0.0002052584895864129,
+        "p10_s": 0.00019521487411111593,
+        "p90_s": 0.0002521071117371321,
+        "mean_s": 0.0002160470886155963,
+        "statistic": "median of individually timed calls after warm calls"
+      }
+    }
+  },
+  "timer": {
+    "dataset_and_model": 0.6818743860349059,
+    "fit_eager": 0.008852048893459141,
+    "full_pipeline_lower": 0.40543468995019794,
+    "full_pipeline_compile": 0.48485154600348324,
+    "full_pipeline_first_call": 0.005340307950973511,
+    "full_pipeline_steady_x10": 0.0025736289098858833,
+    "model_shear_lower": 0.19651830394286662,
+    "model_shear_compile": 0.4718311410397291,
+    "model_shear_first_call": 0.001623267075046897,
+    "model_shear_steady_x10": 0.0028625569539144635,
+    "likelihood_from_shear_lower": 0.003926759003661573,
+    "likelihood_from_shear_compile": 0.07130809302907437,
+    "likelihood_from_shear_first_call": 0.0008121230639517307,
+    "likelihood_from_shear_steady_x10": 0.0013848179951310158,
+    "deflections_yx_lower": 0.1436757449992001,
+    "deflections_yx_compile": 0.31224675092380494,
+    "deflections_yx_first_call": 0.0014633089303970337,
+    "deflections_yx_steady_x10": 0.0023324020439758897
+  },
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "hostname": "euclid-ral-gpu-2",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 124,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2dg/output/jax_cache/p2g_413297_3",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-10-29T20:28:37Z",
+      "host": "euclid-ral-gpu-2",
+      "slurm": {
+        "job_id": "413297",
+        "array_job_id": null,
+        "array_task_id": null
+      },
+      "loadavg_at_import": [
+        0.82,
+        0.22,
+        0.08
+      ],
+      "loadavg_at_write": [
+        0.99,
+        0.27,
+        0.09
+      ],
+      "profiling_revision": "ad103340618b24ff2e56f8c8d912a16762396490",
+      "library_revisions": {
+        "autolens_profiling": "ad103340618b24ff2e56f8c8d912a16762396490",
+        "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+        "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+        "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+        "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+        "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.65.1",
+        "nufftax": "0.6.1",
+        "finufft": "2.5.1"
+      }
+    },
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 441 MiB, 81920 MiB"
+  },
+  "resources": {
+    "resources_schema": 1,
+    "engine": "jax",
+    "device": "gpu",
+    "cpus_per_eval": 8,
+    "cpus_per_eval_basis": "jax gpu: one device; cpus_per_eval = NPROC host threads",
+    "devices_per_eval": 1,
+    "peak_rss_gb": 0.647119,
+    "peak_rss_basis": "in_process_ru_maxrss",
+    "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
+  }
+}
