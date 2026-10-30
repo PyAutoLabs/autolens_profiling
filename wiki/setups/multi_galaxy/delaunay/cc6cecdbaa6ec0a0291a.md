@@ -1,0 +1,150 @@
+<!-- generated: build_setup_wiki.py; do not edit -->
+# delaunay · hst
+
+[Model index](index.md)
+
+Exact setup ID: `multi_galaxy/delaunay/hst/3654b73dc21f2e9a8f28`.
+
+Imported support is unreviewed; this page grants no baseline acceptance. Timing axes remain separate; no total fit-time prediction is made.
+
+## Configuration
+
+Identity limitations: Isolated to source row: legacy metadata is insufficient for cross-file joins.
+
+| Setting | Recorded value | Unit | Unknown reason |
+|---|---|---|---|
+| dataset_type | "multi_galaxy" | recorded |  |
+| fast | false | recorded |  |
+| galaxy_group_cell | {"dataset": "autolens_workspace scripts/multi_galaxy/simulator.py (grid 200x200 at 0.05\", galaxies, exposure 900 s, sky 0.1, mask_extra_galaxies 3 x 0.3\") and modeling.py (3.0\" mask, noise scaling, radial-bin over-sampling on both lenses); autolens_visualization true_models/multi_galaxy.py; PSF from instruments/imaging.py hst (21x21, sigma 0.05\")", "dataset_type": "multi_galaxy", "extra_galaxies": 0, "instrument": "hst", "lens_light": "workspace MGE: 20 linear Gaussians per main lens", "main_lenses": 2, "mask_radius_arcsec": 3.0, "noise_scaled_region": {"centre": [2.2, 1.6], "radius": 0.9}, "production_data_record": {"adapt_image": "subtracted S/N (truth tracer, every lens-plane galaxy removed), floored", "adapt_minimum_percent": 0.01, "lens_light_source": "truth", "mesh_adapt_snr_cap": 3.0, "over_sample_size_lp_rule": {"centres": [[0.35, 0.25], [-0.35, -0.25]], "radial_list": [0.3, 0.6], "sub_size_list": [4, 2, 2]}, "over_sample_size_pixelization_rule": {"pixels_above": 3340, "pixels_below": 7964, "source_snr_cut": 3.0, "sub_size_above": 4, "sub_size_below": 2, "threshold_map": "uncapped subtracted S/N (production)"}, "over_sampling_preset": "hst_source_pix_2_standard_multi_galaxy"}, "production_preset": {"adapt_snr_cap": 3.0, "lens_light": "mge_60_linear_2_basis", "memo": "off", "mesh": {"edge_pixels": 30, "hilbert_pixels": 1250, "hilbert_weight_floor": 0.01, "hilbert_weight_power": 3.5, "kind": "delaunay", "vertices": 1280, "zeroed_pixels": 30}, "mesh_kind": "delaunay", "mge_gaussian_per_basis": 2, "mge_total_gaussians": 30, "over_sample_size_lp_rule": {"centre": [0.0, 0.0], "radial_list": [0.3, 0.6], "sub_size_list": [4, 2, 2]}, "over_sample_size_pixelization_rule": {"source_snr_cut": 3.0, "sub_size_above": 4, "sub_size_below": 2}, "positions_penalty": null, "preset": "hst_source_pix_2_standard_multi_galaxy", "production_data": {"enabled": true, "lens_light_source": "truth"}, "production_source": {"adapt_image": "PyAutoGalaxy@7472211 autogalaxy/analysis/adapt_images/adapt_images.py:138 galaxy_name_image_dict_via_result_from: the source's subtracted S/N map (data minus the other galaxies' model images, over the noise map), floored at adapt_minimum_percent (0.01, subhalo_validation config/general.yaml:28) x max", "mesh_and_regularization_adapt_image": "subhalo_validation scripts/pipelines/spec.py:9-36 capped_galaxy_name_image_dict_from (S/N capped at 3.0); used by delaunay_adapt_split.py:123,:165 and rectangular_adapt.py:109", "model_stand_in": "no previous-stage fit exists in a profiling cell: the dataset's truth tracer (tracer.json) stands in for the maximum-likelihood model whose lens light is subtracted", "over_sampling": "subhalo_validation scripts/imaging.py:213-255 apply_adaptive_pixelization_over_sampling: sub-size 4 where the UNCAPPED source S/N > 3.0, else 2; light-profile bins :175-184", "rectangular_mesh": "subhalo_validation scripts/pipelines/rectangular_adapt.py:74-96 (source_pix[2]): af.Model(al.mesh.RectangularBilinearAdaptImage, shape) with al.reg.Adapt; weight priors config/priors/mesh/rectangular.yaml:43-61"}, "provenance": "subhalo_validation/scripts/imaging.py + scripts/pipelines/delaunay_adapt_split.py (source_pix[2], job 342311): mesh :41,:61-63, image mesh :37-38,:125-129, regularization :151, adapt S/N cap pipelines/spec.py:9,:31, over-sampling :213,:216-255, sparse operator :252-253,:807, no positions penalty :384-388, MGE :273-278, threads hpc/batch_cpu/submit_source_pix:5,51-55 \u2014 production data (human ruling 2026-10-24): subtracted S/N adapt image, uncapped over-sampling cut \u2014 likelihood-lifecycle 2d (#473, decision D5): the hst_source_pix_2_standard preset (hst, standard size) on the multi_galaxy dataset at hst; light-profile over-sampling [4, 2, 2] at [0.3, 0.6] on every galaxy centre (workspace modeling.py); lens light = the workspace MGE (not the preset's); no positions penalty", "regularization": {"free": true, "priors": {"inner_coefficient": {"lower": 1e-06, "type": "LogUniform", "upper": 1000000.0}, "outer_coefficient": {"lower": 1e-06, "type": "LogUniform", "upper": 1000000.0}, "signal_scale": {"lower": 0.0, "type": "Uniform", "upper": 1.0}}, "scheme": "adapt_split"}, "sequence": {"kind": "iid", "seed": 235, "unit_high": 0.6, "unit_low": 0.4}, "size_override": "production data (human ruling 2026-10-24): subtracted S/N adapt image, uncapped over-sampling cut; likelihood-lifecycle 2d (#473, decision D5): the hst_source_pix_2_standard preset (hst, standard size) on the multi_galaxy dataset at hst; light-profile over-sampling [4, 2, 2] at [0.3, 0.6] on every galaxy centre (workspace modeling.py); lens light = the workspace MGE (not the preset's); no positions penalty", "variant": "production"}, "ruling": "likelihood-lifecycle 2d draft (#473), decisions D1-D9 on the campaign page"} | recorded |  |
+| image_pixels_masked | 11304 | count |  |
+| image_shape | null | pixel | Not recorded in this legacy evidence; no current default substituted. |
+| instance | "iid draw 0 of the seeded sequence" | recorded |  |
+| instance_unit_vector | [0.499784489007424, 0.41402443684610074, 0.41327450881714656, 0.4200167345680767, 0.5789514047288555, 0.4702516857248635, 0.567334291975647, 0.47173759315010344, 0.5239626288064884, 0.5543072472409505, 0.5399346262699198, 0.5099305691842051, 0.5974626164364525, 0.4381789532715836, 0.5552315204832754, 0.5058238713539893, 0.45735024341537395, 0.5870995335054062, 0.509803788830344] | recorded |  |
+| inversion_class | "InversionImagingSparseNumba" | recorded |  |
+| mask_radius_arcsec | 3.0 | recorded |  |
+| memo_provenance | {"env_AUTOARRAY_NNLS_WARM_START": "0", "env_before": null, "note": "Both gates are set for memo=off: the Settings flag and the AUTOARRAY_NNLS_WARM_START env kill-switch (autoarray/inversion/inversion/nnls_memo.py:63). settings_nnls_warm_start_memo is read back off the constructed Settings, so it records what took effect. The library default is true and both production projects leave it unset.", "requested": "off", "settings_nnls_warm_start_memo": false} | recorded |  |
+| n_instances | 20 | recorded |  |
+| n_vis | null | count | Not recorded in this legacy evidence; no current default substituted. |
+| omp_num_threads | "1" | recorded |  |
+| over_sampled_pixels | 47904 | recorded |  |
+| oversampled_pixels | 47904 | recorded |  |
+| oversampling | null | dimensionless | Not recorded in this legacy evidence; no current default substituted. |
+| pixel_scale_arcsec | 0.05 | recorded |  |
+| preloads | null | name | Not recorded in this legacy evidence; no current default substituted. |
+| psf_shape | null | pixel | Not recorded in this legacy evidence; no current default substituted. |
+| regularization | null | name | Not recorded in this legacy evidence; no current default substituted. |
+| solver | null | name | Not recorded in this legacy evidence; no current default substituted. |
+| source_pixels | 1280 | count |  |
+| source_pixels_requested | 1250 | recorded |  |
+| standard_size | true | recorded |  |
+| thread_env | {"n_threads": 1, "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts.", "overridden": {}, "preexisting": {"MKL_NUM_THREADS": "1", "NUMEXPR_NUM_THREADS": "1", "OMP_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "VECLIB_MAXIMUM_THREADS": "1"}, "set_to": "1", "vars": ["OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "OMP_NUM_THREADS", "VECLIB_MAXIMUM_THREADS", "NUMEXPR_NUM_THREADS"]} | recorded |  |
+| transformer | null | name | Not recorded in this legacy evidence; no current default substituted. |
+| use_jax | false | recorded |  |
+
+## Evidence
+
+[Original setup artifact](../../../../results/multi_galaxy/delaunay/hst/numba_cpu_sparse_fp64/hpc_ral_cpu/runtime.json); JSON pointer: `(document root)`.
+
+### Selected references
+
+No selected reference for this exact setup; archive evidence is available below.
+
+### runtime
+
+<details><summary>1 recorded runtime measurements</summary>
+
+| Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
+|---|---|---|---|---|---|---|
+| `measurement/968f996a38d7a592e693` | single_jit_block | {"single_jit_block": 0.8503313474357128} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/multi_galaxy/delaunay/hst/numba_cpu_sparse_fp64/hpc_ral_cpu/runtime.json) `/full_pipeline_single_jit` |
+
+</details>
+
+<details><summary>Recorded hardware, software, method and limitations</summary>
+
+```json
+{
+  "identity": {
+    "backend": "cpu",
+    "device": "cpu",
+    "hardware_details": {
+      "autotune_cache_entries_at_start": 0,
+      "backend": "cpu",
+      "cache_fresh": true,
+      "cpu_count": 236,
+      "device": "cpu:0",
+      "hostname": "euclid-ral-compute-10-5",
+      "omp_num_threads": "1",
+      "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_cpu_multi_thread_eigen=false --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+    },
+    "library_version": "2026.8.17.1",
+    "precision": "float64",
+    "software": {
+      "PyAutoArray.library_revisions": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+      "PyAutoArray.library_versions": "2026.8.17.1",
+      "PyAutoFit.library_revisions": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+      "PyAutoFit.library_versions": "2026.8.17.1",
+      "PyAutoGalaxy.library_revisions": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+      "PyAutoGalaxy.library_versions": "2026.8.17.1",
+      "PyAutoLens": "2026.8.17.1",
+      "PyAutoLens.library_revisions": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8",
+      "PyAutoLens.library_versions": "2026.8.17.1",
+      "PyAutoNerves.library_revisions": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+      "PyAutoNerves.library_versions": "2026.8.17.1",
+      "autolens_profiling.library_revisions": "830314e9bcafafd469f0985f9d1c9629cca830ff",
+      "finufft.dependency_versions": "2.5.1",
+      "jax.dependency_versions": "0.11.2",
+      "jaxlib.dependency_versions": "0.11.2",
+      "nufftax.dependency_versions": "0.6.1",
+      "numba.dependency_versions": "0.65.1",
+      "numpy.dependency_versions": "2.2.6",
+      "scipy.dependency_versions": "1.17.1"
+    },
+    "unknowns": {}
+  },
+  "method": {
+    "cache_state": null,
+    "repetitions": null,
+    "statistic": null,
+    "synchronization": null,
+    "unknowns": {
+      "cache_state": "Not recorded in this legacy evidence; no current default substituted.",
+      "repetitions": "Not recorded in this legacy evidence; no current default substituted.",
+      "statistic": "Not recorded in this legacy evidence; no current default substituted.",
+      "synchronization": "Not recorded in this legacy evidence; no current default substituted.",
+      "warmup": "Not recorded in this legacy evidence; no current default substituted."
+    },
+    "warmup": null
+  },
+  "provenance": {
+    "has_provenance": true,
+    "host": "euclid-ral-compute-10-5",
+    "measured_at": "2026-10-30T11:44:44Z",
+    "qualified": false,
+    "unknowns": {}
+  },
+  "validation": {
+    "reason": "Legacy evidence transcribed without scientific baseline acceptance.",
+    "status": "unreviewed"
+  }
+}
+```
+
+</details>
+
+## Hazards
+
+No explicitly bound applicable evidence; this does not establish absence of hazards or validate a setting.
+
+## Recommendations
+
+No explicitly bound applicable evidence; this does not establish absence of hazards or validate a setting.
+
+## Scripts
+
+Navigation links identify the model family; they do not reconstruct historical settings or promise an executable replay.
+
+No canonical script explicitly registered for this model.
+
+## Campaigns
+
+No campaign explicitly bound; campaign applicability is unknown.

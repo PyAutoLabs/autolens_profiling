@@ -1,0 +1,506 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "hostname": "euclid-ral-compute-10-5",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_cpu_multi_thread_eigen=false --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 236,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2dg/output/jax_cache/p2d_413497_2",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-10-30T11:47:50Z",
+      "host": "euclid-ral-compute-10-5",
+      "slurm": {
+        "job_id": "413497",
+        "array_job_id": "413446",
+        "array_task_id": "2"
+      },
+      "loadavg_at_import": [
+        97.92,
+        89.25,
+        104.01
+      ],
+      "loadavg_at_write": [
+        97.66,
+        90.27,
+        103.72
+      ],
+      "profiling_revision": "830314e9bcafafd469f0985f9d1c9629cca830ff",
+      "library_revisions": {
+        "autolens_profiling": "830314e9bcafafd469f0985f9d1c9629cca830ff",
+        "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+        "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+        "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+        "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+        "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.65.1",
+        "nufftax": "0.6.1",
+        "finufft": "2.5.1"
+      }
+    }
+  },
+  "resources": {
+    "resources_schema": 1,
+    "engine": "numba",
+    "device": "cpu",
+    "cpus_per_eval": 1,
+    "cpus_per_eval_basis": "numba: one serial evaluation, numba and BLAS threads pinned to 1",
+    "devices_per_eval": 0,
+    "peak_rss_gb": 1.244414,
+    "peak_rss_basis": "in_process_ru_maxrss",
+    "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
+  },
+  "instrument": "euclid",
+  "model": "delaunay",
+  "configuration": {
+    "dataset_type": "group",
+    "pixel_scale_arcsec": 0.1,
+    "mask_radius_arcsec": 7.5,
+    "image_pixels_masked": 17692,
+    "over_sampled_pixels": 71920,
+    "source_pixels": 1280,
+    "source_pixels_requested": 1250,
+    "standard_size": true,
+    "galaxy_group_cell": {
+      "dataset_type": "group",
+      "instrument": "euclid",
+      "dataset": "autolens_workspace scripts/group/simulator.py (grid 250x250 at 0.1\", galaxies, exposure 300 s, sky 0.1) and modeling.py (7.5\" mask, radial-bin over-sampling on every galaxy); autolens_visualization true_models/group.py; PSF from instruments/imaging.py euclid (21x21, sigma 0.1\")",
+      "mask_radius_arcsec": 7.5,
+      "noise_scaled_region": null,
+      "lens_light": "workspace MGE: 20 linear Gaussians per main lens, 10 per extra galaxy (centre fixed)",
+      "main_lenses": 1,
+      "extra_galaxies": 2,
+      "ruling": "likelihood-lifecycle 2d draft (#473), decisions D1-D9 on the campaign page",
+      "production_preset": {
+        "preset": "hst_source_pix_2_standard_group",
+        "variant": "production",
+        "provenance": "subhalo_validation/scripts/imaging.py + scripts/pipelines/delaunay_adapt_split.py (source_pix[2], job 342311): mesh :41,:61-63, image mesh :37-38,:125-129, regularization :151, adapt S/N cap pipelines/spec.py:9,:31, over-sampling :213,:216-255, sparse operator :252-253,:807, no positions penalty :384-388, MGE :273-278, threads hpc/batch_cpu/submit_source_pix:5,51-55 \u2014 production data (human ruling 2026-10-24): subtracted S/N adapt image, uncapped over-sampling cut \u2014 likelihood-lifecycle 2d (#473, decision D5): the hst_source_pix_2_standard preset (hst, standard size) on the group dataset at euclid; light-profile over-sampling [4, 2, 2] at [0.3, 0.6] on every galaxy centre (workspace modeling.py); lens light = the workspace MGE (not the preset's); no positions penalty",
+        "mesh_kind": "delaunay",
+        "adapt_snr_cap": 3.0,
+        "over_sample_size_lp_rule": {
+          "sub_size_list": [
+            4,
+            2,
+            2
+          ],
+          "radial_list": [
+            0.3,
+            0.6
+          ],
+          "centre": [
+            0.0,
+            0.0
+          ]
+        },
+        "over_sample_size_pixelization_rule": {
+          "source_snr_cut": 3.0,
+          "sub_size_above": 4,
+          "sub_size_below": 2
+        },
+        "regularization": {
+          "scheme": "adapt_split",
+          "free": true,
+          "priors": {
+            "inner_coefficient": {
+              "type": "LogUniform",
+              "lower": 1e-06,
+              "upper": 1000000.0
+            },
+            "outer_coefficient": {
+              "type": "LogUniform",
+              "lower": 1e-06,
+              "upper": 1000000.0
+            },
+            "signal_scale": {
+              "type": "Uniform",
+              "lower": 0.0,
+              "upper": 1.0
+            }
+          }
+        },
+        "positions_penalty": null,
+        "lens_light": "mge_60_linear_2_basis",
+        "mge_total_gaussians": 30,
+        "mge_gaussian_per_basis": 2,
+        "sequence": {
+          "kind": "iid",
+          "unit_low": 0.4,
+          "unit_high": 0.6,
+          "seed": 235
+        },
+        "memo": "off",
+        "size_override": "production data (human ruling 2026-10-24): subtracted S/N adapt image, uncapped over-sampling cut; likelihood-lifecycle 2d (#473, decision D5): the hst_source_pix_2_standard preset (hst, standard size) on the group dataset at euclid; light-profile over-sampling [4, 2, 2] at [0.3, 0.6] on every galaxy centre (workspace modeling.py); lens light = the workspace MGE (not the preset's); no positions penalty",
+        "mesh": {
+          "kind": "delaunay",
+          "hilbert_pixels": 1250,
+          "edge_pixels": 30,
+          "zeroed_pixels": 30,
+          "vertices": 1280,
+          "hilbert_weight_power": 3.5,
+          "hilbert_weight_floor": 0.01
+        },
+        "production_data": {
+          "enabled": true,
+          "lens_light_source": "truth"
+        },
+        "production_source": {
+          "adapt_image": "PyAutoGalaxy@7472211 autogalaxy/analysis/adapt_images/adapt_images.py:138 galaxy_name_image_dict_via_result_from: the source's subtracted S/N map (data minus the other galaxies' model images, over the noise map), floored at adapt_minimum_percent (0.01, subhalo_validation config/general.yaml:28) x max",
+          "mesh_and_regularization_adapt_image": "subhalo_validation scripts/pipelines/spec.py:9-36 capped_galaxy_name_image_dict_from (S/N capped at 3.0); used by delaunay_adapt_split.py:123,:165 and rectangular_adapt.py:109",
+          "over_sampling": "subhalo_validation scripts/imaging.py:213-255 apply_adaptive_pixelization_over_sampling: sub-size 4 where the UNCAPPED source S/N > 3.0, else 2; light-profile bins :175-184",
+          "rectangular_mesh": "subhalo_validation scripts/pipelines/rectangular_adapt.py:74-96 (source_pix[2]): af.Model(al.mesh.RectangularBilinearAdaptImage, shape) with al.reg.Adapt; weight priors config/priors/mesh/rectangular.yaml:43-61",
+          "model_stand_in": "no previous-stage fit exists in a profiling cell: the dataset's truth tracer (tracer.json) stands in for the maximum-likelihood model whose lens light is subtracted"
+        }
+      },
+      "production_data_record": {
+        "over_sampling_preset": "hst_source_pix_2_standard_group",
+        "over_sample_size_lp_rule": {
+          "sub_size_list": [
+            4,
+            2,
+            2
+          ],
+          "radial_list": [
+            0.3,
+            0.6
+          ],
+          "centres": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              3.5,
+              2.5
+            ],
+            [
+              -4.4,
+              -5.0
+            ]
+          ]
+        },
+        "over_sample_size_pixelization_rule": {
+          "source_snr_cut": 3.0,
+          "sub_size_above": 4,
+          "sub_size_below": 2,
+          "threshold_map": "uncapped subtracted S/N (production)",
+          "pixels_above": 4515,
+          "pixels_below": 13177
+        },
+        "adapt_image": "subtracted S/N (truth tracer, every lens-plane galaxy removed), floored",
+        "lens_light_source": "truth",
+        "adapt_minimum_percent": 0.01,
+        "mesh_adapt_snr_cap": 3.0
+      }
+    },
+    "memo_provenance": {
+      "requested": "off",
+      "settings_nnls_warm_start_memo": false,
+      "env_AUTOARRAY_NNLS_WARM_START": "0",
+      "env_before": null,
+      "note": "Both gates are set for memo=off: the Settings flag and the AUTOARRAY_NNLS_WARM_START env kill-switch (autoarray/inversion/inversion/nnls_memo.py:63). settings_nnls_warm_start_memo is read back off the constructed Settings, so it records what took effect. The library default is true and both production projects leave it unset."
+    },
+    "instance": "iid draw 0 of the seeded sequence",
+    "instance_unit_vector": [
+      0.499784489007424,
+      0.41402443684610074,
+      0.41327450881714656,
+      0.4200167345680767,
+      0.5789514047288555,
+      0.4702516857248635,
+      0.567334291975647,
+      0.47173759315010344,
+      0.5239626288064884,
+      0.5543072472409505,
+      0.5399346262699198,
+      0.5099305691842051,
+      0.5974626164364525,
+      0.4381789532715836,
+      0.5552315204832754,
+      0.5058238713539893,
+      0.45735024341537395,
+      0.5870995335054062,
+      0.509803788830344,
+      0.41707028300618887
+    ],
+    "inversion_path": "sparse_numba",
+    "inversion_class": "InversionImagingSparseNumba",
+    "use_jax": false,
+    "n_instances": 20,
+    "n_cold": 3,
+    "thread_env": {
+      "n_threads": 1,
+      "vars": [
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+        "NUMEXPR_NUM_THREADS"
+      ],
+      "set_to": "1",
+      "preexisting": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "VECLIB_MAXIMUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1"
+      },
+      "overridden": {},
+      "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+    },
+    "omp_num_threads": "1",
+    "fast": false
+  },
+  "steps": {
+    "FitImaging construct (tracer)": 0.0002971254871226847,
+    "Blurred image (non-linear light)": 0.014744759479071945,
+    "Inversion build (trace + mesh + mappers)": 0.06238048599334434,
+    "Data vector D [numba]": 0.22753244545310736,
+    "Curvature matrix F [numba]": 0.2767818090505898,
+    "Regularization (F + H)": 0.012950968521181494,
+    "Reconstruction (NNLS)": 0.16401110898004845,
+    "Mapped reconstructed image": 0.1183856439893134,
+    "Chi-squared & log evidence": 0.0796378084924072
+  },
+  "total_step_by_step": 0.9567221554461867,
+  "steps_note": "Each row is one stage of AnalysisImaging.fit_from in the library's own lazy order; the rows sum to total_step_by_step. JAX rows are successive differences of jitted prefixes (params -> stage k), so XLA fusion can move work across a boundary and a small negative row is noise; numba rows time each cached property on first access, per instance, and report the median over the warm instances.",
+  "steps_per_instance_s": [
+    [
+      0.00029663799796253443,
+      0.014682063017971814,
+      0.029377253958955407,
+      2.2959348070435226,
+      1.5108132829191163,
+      0.7501208380563185,
+      3.245301947928965,
+      0.2547497380292043,
+      0.08505213097669184
+    ],
+    [
+      0.0002881119726225734,
+      0.014009612030349672,
+      0.0639283109921962,
+      0.24367280292790383,
+      0.27915061404928565,
+      0.013123000040650368,
+      0.24376010592095554,
+      0.11604676791466773,
+      0.07846051291562617
+    ],
+    [
+      0.00028604199178516865,
+      0.01344488502945751,
+      0.05759332294110209,
+      0.23111783701460809,
+      0.2735865489812568,
+      0.013407918042503297,
+      0.6784118229988962,
+      0.12532242492306978,
+      0.08207244600635022
+    ],
+    [
+      0.00031164800748229027,
+      0.015310241957195103,
+      0.060651793028227985,
+      0.22335192607715726,
+      0.2708262769738212,
+      0.011323974933475256,
+      0.1501854140078649,
+      0.1209848040016368,
+      0.08264595700893551
+    ],
+    [
+      0.000330951064825058,
+      0.015166215016506612,
+      0.06210322794504464,
+      0.21894836495630443,
+      0.282912733964622,
+      0.012272960040718317,
+      0.46320098906289786,
+      0.12046827899757773,
+      0.08237034501507878
+    ],
+    [
+      0.0002710090484470129,
+      0.01453762804158032,
+      0.061718948069028556,
+      0.21719715499784797,
+      0.277704184059985,
+      0.011784208007156849,
+      0.19236896303482354,
+      0.11869206605479121,
+      0.08003933099098504
+    ],
+    [
+      0.0003161180065944791,
+      0.01447102299425751,
+      0.05843839794397354,
+      0.22708872496150434,
+      0.2815406459849328,
+      0.012564659002237022,
+      0.134795204969123,
+      0.11961652699392289,
+      0.08173178404103965
+    ],
+    [
+      0.00029394403100013733,
+      0.014793088077567518,
+      0.06265774404164404,
+      0.23129467596299946,
+      0.2807028880342841,
+      0.013264239998534322,
+      0.3470201470190659,
+      0.11724636203143746,
+      0.07864306296687573
+    ],
+    [
+      0.00027627497911453247,
+      0.014268703991547227,
+      0.0585212460719049,
+      0.22153406299185008,
+      0.26371079101227224,
+      0.012337889987975359,
+      0.177925308002159,
+      0.11933530902024359,
+      0.08059852907899767
+    ],
+    [
+      0.0003002260345965624,
+      0.014764922903850675,
+      0.06674891000147909,
+      0.232235467992723,
+      0.2715239319950342,
+      0.013231056975200772,
+      0.11377486295532435,
+      0.11606003204360604,
+      0.07579348399303854
+    ],
+    [
+      0.0003177899634465575,
+      0.01411491702310741,
+      0.06348810100462288,
+      0.2232543119462207,
+      0.2650026109768078,
+      0.01294112706091255,
+      0.3104485870571807,
+      0.11939090408850461,
+      0.07771549606695771
+    ],
+    [
+      0.00031493103597313166,
+      0.014724596054293215,
+      0.05853183998260647,
+      0.22051173797808588,
+      0.2716479200171307,
+      0.012960809981450438,
+      0.11968116206116974,
+      0.11631247401237488,
+      0.07619130495004356
+    ],
+    [
+      0.0002808729186654091,
+      0.014171216986142099,
+      0.05732257594354451,
+      0.221188860014081,
+      0.28157445904798806,
+      0.01257084496319294,
+      0.11345834797248244,
+      0.11842543398961425,
+      0.0821676830528304
+    ],
+    [
+      0.0003029789077118039,
+      0.014834334957413375,
+      0.06045283901039511,
+      0.22835398302413523,
+      0.27205879997927696,
+      0.012618544045835733,
+      0.4360106699168682,
+      0.11926879500970244,
+      0.08047702896874398
+    ],
+    [
+      0.00029728200752288103,
+      0.014583215001039207,
+      0.06824517296627164,
+      0.23558060091454536,
+      0.2758594340411946,
+      0.013319363933987916,
+      0.24023323005530983,
+      0.11930741101969033,
+      0.07892989495303482
+    ],
+    [
+      0.0003222499508410692,
+      0.014901631977409124,
+      0.06784624804276973,
+      0.23349336592946202,
+      0.2789799750316888,
+      0.01341982907615602,
+      0.14934096403885633,
+      0.11775728699285537,
+      0.07450303598307073
+    ],
+    [
+      0.0002879820531234145,
+      0.014010726939886808,
+      0.0587425020057708,
+      0.22718030493706465,
+      0.2714081989834085,
+      0.01245452300645411,
+      0.4014976709149778,
+      0.11682779109105468,
+      0.08206942304968834
+    ],
+    [
+      0.0002931050257757306,
+      0.014893217012286186,
+      0.06561449798755348,
+      0.2355792939197272,
+      0.28335689392406493,
+      0.013747831922955811,
+      0.12555512797553092,
+      0.11798467393964529,
+      0.08164672099519521
+    ],
+    [
+      0.00029249396175146103,
+      0.015009251073934138,
+      0.06948343699332327,
+      0.22788458596915007,
+      0.2704302059719339,
+      0.013710586004890501,
+      0.1500969099579379,
+      0.118125342996791,
+      0.07923628599382937
+    ],
+    [
+      0.0002969689667224884,
+      0.014818580006249249,
+      0.0638636410003528,
+      0.22952159098349512,
+      0.2815461519639939,
+      0.014152860967442393,
+      0.1148413319606334,
+      0.11834585398901254,
+      0.07913113303948194
+    ]
+  ],
+  "protocol": "instance 0 discarded (numba compile), the next n_cold excluded, per-stage median over the remaining warm iid instances"
+}

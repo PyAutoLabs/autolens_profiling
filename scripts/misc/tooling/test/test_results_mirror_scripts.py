@@ -36,13 +36,6 @@ NOT_YET_MEASURED = {
     ("cluster", "source_plane"),
     ("imaging", "sersic"),
     ("multi_dataset", "delaunay"),
-    # likelihood-lifecycle 2d (#473): new cell scripts, no committed row until the RAL campaign.
-    ("group", "delaunay"),
-    ("group", "mge"),
-    ("group", "rectangular"),
-    ("multi_galaxy", "delaunay"),
-    ("multi_galaxy", "mge"),
-    ("multi_galaxy", "rectangular"),
 }
 MISC_WITHOUT_SCRIPTS = {
     "logs": "committed SLURM job logs, one folder per campaign; provenance, never a result",

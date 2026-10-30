@@ -1,16 +1,16 @@
 # Likelihood lifecycle phase 2d: multi_galaxy and group at the standard size
 
-**Status:** open
+**Status:** rows committed (batch 1, this PR B); closes on merge
 **Question:** What does every planned multi_galaxy/{mge, rectangular, delaunay} and group/{mge, rectangular, delaunay} cell cost at the standard size on the pinned release 2026.10.25.1, on the §3.3 "as imaging" setups, and does each cell's log evidence match an eager NumPy dense reference?
 **Pre-registered rule:** every one of the 48 planned cells (20 RAL CPU, 28 A100) lands `current`, with runtime and breakdown rows, provenance, `resources`, `fit.png` and a `parity.json` whose status is `match` against the eager NumPy dense-mapping reference in the same process (tolerance 1e-4 x |reference| in fp64, the imaging rule). Any `diverged` witness blocks that setup until explained. Written 2026-10-28, before any run, and before the human has ruled on decisions D1-D12 below; a ruling that changes the cell set re-bases the count, not the rule. Ruled 2026-10-29, before any run: D1-D11 adopted as drafted and D12 kept, so the 48 cells and the rule stand unchanged.
-**Verdict:** pending (batch 0 run 2026-10-29; batch 1 not yet). Expected, written before the runs: as imaging, `jax_gpu_dense_fp64` is the fastest per call on the A100 and `numba_cpu_sparse_fp64` is the RAL CPU per-worker route for the pixelized cells; group is slower than multi_galaxy for every setup (1.6x the masked pixels, two dPIE extra galaxies); the extra lens galaxies cost little against the inversion (the light is linear, the mass adds deflections only); every parity witness is `match`. Class designations are phase 3's decision, not this page's.
-**Headline:** none yet.
+**Verdict:** rule met: all 48 cells `current` (coverage 182 -> 230 of 272, 0 stale), every runtime row with `fit.png` and a `match` witness (24/24). Against the expectation: `jax_gpu_dense_fp64` is the fastest per call on the A100 (MGE ~7 ms, pixelized 38-56 ms) and `numba_cpu_sparse_fp64` is the RAL CPU route for the pixelized cells (0.80-1.10 s against `jax_cpu_sparse_fp64` 3.7-6.0 s), as expected; group is slower than multi_galaxy for every JAX setup but **not** for numba (group delaunay 0.80 s vs multi_galaxy 0.85 s; rectangular 0.90 vs 1.10 s), so that part of the expectation fails; every witness is `match`. Per-call figures, not node throughput. Expected, written before the runs: as imaging, `jax_gpu_dense_fp64` is the fastest per call on the A100 and `numba_cpu_sparse_fp64` is the RAL CPU per-worker route for the pixelized cells; group is slower than multi_galaxy for every setup (1.6x the masked pixels, two dPIE extra galaxies); the extra lens galaxies cost little against the inversion (the light is linear, the mass adds deflections only); every parity witness is `match`. Class designations are phase 3's decision, not this page's.
+**Headline:** steady median per single JIT call (ms), multi_galaxy/hst | group/euclid: MGE `jax_cpu_dense_fp64@hpc_ral_cpu` 29.0 | 40.6, `jax_gpu_dense_fp64@hpc_a100` 6.97 | 7.15; Delaunay `numba_cpu_sparse_fp64@hpc_ral_cpu` 850 | 804, `jax_gpu_dense_fp64@hpc_a100` 51.0 | 56.3; rectangular `numba_cpu_sparse_fp64@hpc_ral_cpu` 1099 | 900, `jax_gpu_dense_fp64@hpc_a100` 37.5 | 43.6 (batch 1: RAL 413445/413446, A100 413453/413454; 2026.10.25.1, jax 0.11.2, profiling 830314e9).
 **Library PRs:** none (measurement only, tag 2026.10.25.1)
 **Profiling PRs:** the 2d draft PR (new cell scripts, shared driver, cell builder, registry cells, campaign submits, this page), stacked on #471; then a walls commit after batch 0; then PR B (rows, catalogue, coverage, result)
 **Ledger:** this page and the group page [`../group/likelihood_lifecycle_p2d.md`](../group/likelihood_lifecycle_p2d.md); rows will land under `results/{multi_galaxy,group}/{mge,rectangular,delaunay}/`; work list [`scripts/misc/campaigns/multi_galaxy_group_p2d.py`](../../../scripts/misc/campaigns/multi_galaxy_group_p2d.py) and its [README](../../../scripts/misc/campaigns/README.md)
 **Mind contract:** epic `likelihood-lifecycle`, phase 2 sub-issue 2d; issue autolens_profiling#473
-**Next:** batch 1 (human go; RAL CPU legs on shared nodes, no quiet gate, human 2026-10-30), from the walls commit; then PR B
-**Fit figures:** none yet (laptop smoke figures only, not reviewed as campaign rows)
+**Next:** merge PR B (human /prm); class designations are phase 3's
+**Fit figures:** opened 2026-10-30: group delaunay and group MGE (A100) look right (residuals noise-like); multi_galaxy MGE (RAL CPU) shows a structured ring residual of up to ~14 sigma at iid draw 0 (D7: the parametric MGE source cannot absorb the draw's offset from the truth, which the inversions do) and the masked-out noise-scaled extra-galaxy circle (D3). Timing and parity are unaffected; noted, not re-run.
 
 ## Why this campaign
 
@@ -112,6 +112,22 @@ Two findings for batch 1 and PR B:
   inert for GPU executables. That is untested here, and the 2d GPU rows' flags differ from
   the other campaigns'. Fixed for batch 1 (human 2026-10-30, "fix the 2d driver"): the driver now
   skips the flag when `JAX_PLATFORMS` names cuda / gpu, so batch-1 GPU rows carry no eigen flag.
+
+## Batch 1 (2026-10-30)
+
+| Array | Job | Legs | Result |
+|-------|-----|------|--------|
+| RAL CPU multi_galaxy/hst | 413445 | 10 | all exit 0 |
+| RAL CPU group/euclid | 413446 | 10 | all exit 0 |
+| A100 multi_galaxy/hst | 413453 | 14 in turn | exit 0, 22:46 |
+| A100 group/euclid | 413454 | 14 in turn | exit 0, 26:28 |
+
+Submitted from `autolens_profiling_p2dg` at 830314e9 (the walls PR #487's head). All 48 rows are
+the final write, record the five 2026.10.25.1 tag HEADs, and carry `fit.png`/`parity.json`
+beside them; 24/24 witnesses `match`. The 20 GPU rows carry no eigen flag (the driver fix); the 8
+`jax_cpu_sparse_fp64@hpc_a100` rows and the 12 RAL CPU JAX/numba rows carry it. RAL CPU rows ran
+on shared nodes (human 2026-10-30: accepted). Copied into `results/{multi_galaxy,group}/` by PR B;
+no row was superseded (new cells).
 
 ## XLA:CPU deadlock (found in the laptop smokes, avoided by D12)
 
@@ -263,3 +279,10 @@ Human 2026-10-30: "fix the 2d driver then submit batch 1". `galaxy_group_standar
 `--xla_cpu_multi_thread_eigen=false` only when `JAX_PLATFORMS` names no cuda / gpu, and a row's
 `configuration.xla_cpu_workaround` is null when the flag is absent. CPU legs are unchanged; the
 14 batch-0 A100 rows (timing arm only) keep the flag they ran with.
+
+### 2026-10-30 — batch 1 in; PR B
+
+Batch 1 (RAL 413445/413446, A100 413453/413454) all exit 0, 24/24 witnesses `match`. PR B copies
+the 48 rows into `results/` and regenerates catalogue, dashboard (committed stamp), coverage, setup
+wiki, series map and READMEs: coverage 182 -> 230 current of 272, 0 stale. The rule is met; the
+"group slower for every setup" part of the expectation fails for the numba pixelized cells.
