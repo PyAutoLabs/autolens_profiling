@@ -179,6 +179,13 @@ RECT28_PRIVATE_BASE = f"/mnt/ral/jnightin/profiling/PyAuto_{RECT28_PIN}"
 RECT28_ISSUE = "autolens_profiling#468"
 RECT28_SOURCE_PIXELS = 784
 RECT28_INSTRUMENT = "hst"
+#: Phase-3 day-zero JAX re-measure (human 2026-10-30, Q7: day zero is one environment): every
+#: JAX cell of the batch rerun on tag 2026.10.25.1 under the shared venv's jax/jaxlib 0.11.2, with
+#: the shared preamble's --xla_cpu_multi_thread_eigen=false on CPU legs (D12). The 2a rows ran on
+#: 2026.10.23.1 with jax 0.10.2, which the tag's PyAutoNerves excludes; numba rows are carried.
+JAX_RERUN_PIN = "2026.10.25.1"
+JAX_RERUN_PRIVATE_BASE = f"/mnt/ral/jnightin/profiling/PyAuto_{JAX_RERUN_PIN}"
+JAX_RERUN_ISSUE = "likelihood-lifecycle phase 3, Q7"
 RECT28_SETUPS = (
     ("numba_cpu_sparse_fp64", "hpc_ral_cpu"),
     ("jax_cpu_sparse_fp64", "hpc_a100"),
@@ -374,6 +381,12 @@ def rect28_tasks(host_class: str | None = None) -> list[Task]:
     )
 
 
+def jax_rerun_tasks(instrument: str, host_class: str) -> list[Task]:
+    """The JAX cells of ``instrument`` on ``host_class``: the phase-3 re-measure on jax 0.11.2."""
+    tasks = batch1_ral_cpu(instrument) if host_class == "hpc_ral_cpu" else batch1_a100(instrument)
+    return [t for t in tasks if t.setup_id.startswith("jax_")]
+
+
 def _batch0(tasks: list[Task]) -> list[Task]:
     return [t for t in tasks if t.instrument in BATCH0_INSTRUMENTS[t.variant]]
 
@@ -494,14 +507,27 @@ def _campaign(pin: str, private_base: str) -> _common.Campaign:
 
 
 def render(
-    name: str, tasks: list[Task], *, kind: str, batch: int, title: str, rect28: bool = False
+    name: str,
+    tasks: list[Task],
+    *,
+    kind: str,
+    batch: int,
+    title: str,
+    rect28: bool = False,
+    jax_rerun: bool = False,
 ) -> str:
     """One submit script. ``kind``: ``ral_cpu`` (array) / ``a100_job`` / ``a100_array``.
 
     ``rect28``: the 28x28 size-variant batch (:func:`rect28_tasks`), rendered as a measured
-    batch 1 on its own pin, private checkout and scratch tree.
+    batch 1 on its own pin, private checkout and scratch tree. ``jax_rerun``: the phase-3 JAX
+    re-measure (:func:`jax_rerun_tasks`), likewise on its own pin and scratch tree.
     """
-    pin, private_base = (RECT28_PIN, RECT28_PRIVATE_BASE) if rect28 else (PIN, PRIVATE_BASE)
+    if rect28:
+        pin, private_base = RECT28_PIN, RECT28_PRIVATE_BASE
+    elif jax_rerun:
+        pin, private_base = JAX_RERUN_PIN, JAX_RERUN_PRIVATE_BASE
+    else:
+        pin, private_base = PIN, PRIVATE_BASE
     device = "ral_cpu" if kind == "ral_cpu" else "a100"
     guess = BATCH0_WALL_GUESS_S if batch == 0 else None
     sequential = kind == "a100_job"
@@ -513,7 +539,8 @@ def render(
         time = BATCH0_TIME if batch == 0 else BATCH1_PROVISIONAL_TIME[device]
     n = len(tasks)
     # Never in place over committed rows: PR B copies complete rows into results/ (README).
-    results_root = f"$AP_ROOT/output/{'p2a_rect28' if rect28 else f'p2a_batch{batch}'}"
+    tree = "p2a_rect28" if rect28 else "p3_jax_rerun" if jax_rerun else f"p2a_batch{batch}"
+    results_root = f"$AP_ROOT/output/{tree}"
     instruments = sorted({t.instrument for t in tasks})
     floor = BATCH1_MEM_FLOOR_GB if batch == 1 else (16 if kind == "ral_cpu" else 32)
     mem = mem_gb_measured(instruments, floor) if batch == 1 else mem_gb(instruments, floor)
@@ -526,6 +553,9 @@ def render(
             f"# Likelihood-lifecycle phase 2a, 28x28 rectangular size variant ({RECT28_ISSUE}): "
             f"{n} cell(s)."
             if rect28
+            else f"# Likelihood-lifecycle phase-3 JAX re-measure of the 2a cells ({JAX_RERUN_ISSUE}): "
+            f"{n} cell(s)."
+            if jax_rerun
             else f"# Likelihood-lifecycle phase 2a imaging campaign ({ISSUE}), batch {batch}: "
             f"{n} cell(s)."
         ),
@@ -550,6 +580,15 @@ def render(
             "# cells. It writes its row, fit.png and parity.json into the cell's source_pixels_784/",
             "# folder named by --output-path under the gitignored output/p2a_rect28/ scratch tree,",
             "# never in place (complete rows are copied into results/ beside the standard row).",
+            "#",
+        ]
+    elif jax_rerun:
+        header += [
+            "# CELLS. Every JAX leg of the batch-1 submit of this instrument and host, rerun on tag",
+            f"# {JAX_RERUN_PIN} under jax/jaxlib 0.11.2 (the CPU legs get the shared preamble's",
+            "# eigen flag), so day zero is one environment (human 2026-10-30, Q7). It writes its row,",
+            "# fit.png and parity.json into the mirrored cell named by --output-path under the",
+            "# gitignored output/p3_jax_rerun/ scratch tree, never in place over committed rows.",
             "#",
         ]
     else:
@@ -640,7 +679,7 @@ def render(
     )
     job = (
         f"p2a_{name.split('p2a_', 1)[1]}"
-        if rect28
+        if rect28 or jax_rerun
         else f"p2a_{'b0' if batch == 0 else 'b1'}_{name.split('imaging_', 1)[1]}"
     )
     sbatch = _common.sbatch_block(
@@ -699,6 +738,20 @@ def submits() -> dict[str, str]:
         batch=0,
         title="Batch-0 timing arm, A100: the bounding hpc_a100 cells.",
     )
+    for instrument in INSTRUMENTS:
+        for host_class, kind, folder, device in (
+            ("hpc_ral_cpu", "ral_cpu", "batch_cpu", "ral_cpu"),
+            ("hpc_a100", "a100_job", "batch_gpu", "a100"),
+        ):
+            name = f"submit_campaign_p2a_jaxrerun_{device}_{instrument}_fp64"
+            out[f"hpc/{folder}/{name}"] = render(
+                name,
+                jax_rerun_tasks(instrument, host_class),
+                kind=kind,
+                batch=1,
+                jax_rerun=True,
+                title=f"Phase-3 JAX re-measure: the {host_class} JAX imaging cells of {instrument}.",
+            )
     name = "submit_campaign_p2a_rect28_ral_cpu_fp64"
     out[f"hpc/batch_cpu/{name}"] = render(
         name,

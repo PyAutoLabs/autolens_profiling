@@ -48,6 +48,13 @@ BATCH0 = [
 RECT28_RAL = "hpc/batch_cpu/submit_campaign_p2a_rect28_ral_cpu_fp64"
 RECT28_A100 = "hpc/batch_gpu/submit_campaign_p2a_rect28_a100_fp64"
 RECT28 = [RECT28_RAL, RECT28_A100]
+JAXRERUN_RAL = [
+    f"hpc/batch_cpu/submit_campaign_p2a_jaxrerun_ral_cpu_{i}_fp64" for i in p2a.INSTRUMENTS
+]
+JAXRERUN_A100 = [
+    f"hpc/batch_gpu/submit_campaign_p2a_jaxrerun_a100_{i}_fp64" for i in p2a.INSTRUMENTS
+]
+JAXRERUN = JAXRERUN_RAL + JAXRERUN_A100
 
 
 def planned_imaging_cells():
@@ -116,7 +123,7 @@ def test_numba_and_jax_scripts_by_setup():
 
 def test_submits_are_what_the_generator_renders():
     assert p2a.main(["--check"]) == 0
-    assert set(p2a.submits()) == set(BATCH1 + BATCH0 + RECT28)
+    assert set(p2a.submits()) == set(BATCH1 + BATCH0 + RECT28 + JAXRERUN)
 
 
 def legs(path):
@@ -449,3 +456,29 @@ def test_rect28_time_holds_the_standard_walls():
         assert check_submits.parse_slurm_time(sbatch(text, "time")) >= need, path
     assert sbatch((ROOT / RECT28_RAL).read_text(), "time") == "1:00:00"
     assert sbatch((ROOT / RECT28_A100).read_text(), "time") == "1:30:00"
+
+
+def test_jax_rerun_submits_are_every_jax_batch1_leg_on_the_2026_10_25_1_pin():
+    """Phase 3, Q7 (human 2026-10-30): every JAX leg of the batch-1 submits, and only those, rerun
+    on tag 2026.10.25.1 into their own scratch tree; numba rows are carried."""
+    every = []
+    for instrument, ral_path, gpu_path in zip(p2a.INSTRUMENTS, JAXRERUN_RAL, JAXRERUN_A100):
+        for path, host_class, batch1 in (
+            (ral_path, "hpc_ral_cpu", p2a.batch1_ral_cpu(instrument)),
+            (gpu_path, "hpc_a100", p2a.batch1_a100(instrument)),
+        ):
+            text, names = legs(path)
+            tasks = p2a.jax_rerun_tasks(instrument, host_class)
+            assert names == [t.cell for t in tasks]
+            assert names == [t.cell for t in batch1 if t.setup_id.startswith("jax_")]
+            assert bash_array(text, "FLAGS") == [t.flags for t in tasks]
+            assert "export P2A_PIN=2026.10.25.1" in text and "2026.10.23.1" not in text
+            assert 'RESULTS_ROOT="$AP_ROOT/output/p3_jax_rerun"' in text
+            assert check_submits.check_text(text) == []
+            if host_class == "hpc_ral_cpu":
+                assert sbatch(text, "partition") == "ral" and "--gres" not in text
+            else:
+                assert sbatch(text, "partition") == "gpu" and sbatch(text, "gres") == "gpu:1"
+            every += names
+    assert len(every) == len(set(every)) == 88
+    assert all("numba" not in n for n in every)

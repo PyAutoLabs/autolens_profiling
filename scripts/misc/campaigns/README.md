@@ -8,6 +8,7 @@ the same list.
 | Module | Campaign | Submits |
 |--------|----------|---------|
 | [`imaging_p2a.py`](imaging_p2a.py) | Phase 2a, `imaging/{mge, rectangular, delaunay, delaunay_nn}` at the standard size on 2026.10.23.1 (autolens_profiling#456) | `hpc/batch_cpu/submit_campaign_p2a_imaging_*`, `hpc/batch_gpu/submit_campaign_p2a_imaging_*` |
+| [`imaging_p2a.py`](imaging_p2a.py) (`jax_rerun_tasks`) | Phase 3 day-zero JAX re-measure of the 2a cells on 2026.10.25.1 under jax 0.11.2 (human 2026-10-30, Q7) | `hpc/batch_cpu/submit_campaign_p2a_jaxrerun_ral_cpu_*_fp64`, `hpc/batch_gpu/submit_campaign_p2a_jaxrerun_a100_*_fp64` |
 | [`imaging_p2a.py`](imaging_p2a.py) (`rect28_tasks`) | Phase 2a size variant: hst rectangular at 28x28 = 784 source pixels on 2026.10.25.1 (autolens_profiling#468) | `hpc/batch_cpu/submit_campaign_p2a_rect28_ral_cpu_fp64`, `hpc/batch_gpu/submit_campaign_p2a_rect28_a100_fp64` |
 | [`interferometer_p2b.py`](interferometer_p2b.py) | Phase 2b, `interferometer/{mge, rectangular, delaunay}` at the standard size on 2026.10.25.1 (autolens_profiling#469), plus the dense parity references and the matrix-free experiment | `hpc/batch_cpu/submit_campaign_p2b_*`, `hpc/batch_gpu/submit_campaign_p2b_*` |
 | [`point_source_p2c.py`](point_source_p2c.py) | Phase 2c, `point_source_image/image_plane` and `point_source_source/source_plane` (instrument `simple`) on 2026.10.25.1 (autolens_profiling#472), plus the free-centre (plain) runtime experiments | `hpc/batch_cpu/submit_campaign_p2c_point_source_ral_cpu_fp64`, `hpc/batch_gpu/submit_campaign_p2c_point_source_a100_fp64` |
@@ -180,6 +181,20 @@ in-process peak (`_profile_cli.resources_dict`), so later campaigns need no back
   over-sampling cut (so on hst, jwst and ao the cut never fires and every pixel gets sub-size 2),
   and the rectangular presets use `RectangularBilinearAdaptDensity`. Production does neither;
   only the standard-size cells match production.
+
+## Phase 3 day-zero JAX re-measure
+
+**Why.** Day zero is one environment (human 2026-10-30, Q7 of the phase-3 designation
+proposals): the 2a/2b/2c JAX rows ran on jax/jaxlib 0.10.2, which tag 2026.10.25.1's PyAutoNerves
+excludes, while 2d-2g ran on 0.11.2 with the eigen flag (D12). Every 2a/2b/2c JAX row is
+re-measured on 0.11.2; numba rows are carried. The tag stays 2026.10.25.1 (Q8).
+
+**Legs.** 2a: `jax_rerun_tasks(instrument, host_class)` (the JAX legs of each batch-1 submit,
+26 RAL CPU + 62 A100) on its own pin (2026.10.25.1, not 2a's 2026.10.23.1) into the gitignored
+`output/p3_jax_rerun/` tree, under the batch-1 measured walls. 2b and 2c: their existing
+batch-1 A100 submits (every A100 leg is JAX, already on 2026.10.25.1); their RAL CPU JAX legs
+come from the quiet reruns (RAL 413319-413323, already on 0.11.2 with the flag). Rows are copied
+into `results/` by the phase-3 rows PR, superseded rows moved to `history/` first.
 
 ## Rectangular 28x28 size variant
 
