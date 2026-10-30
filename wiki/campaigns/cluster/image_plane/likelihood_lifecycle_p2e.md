@@ -9,7 +9,7 @@
 **Profiling PRs:** the 2e setup draft PR (autolens_profiling#474), then the rows PR after the human's batch go
 **Ledger:** this page; the source-plane half is [likelihood_lifecycle_p2e.md](../source_plane/likelihood_lifecycle_p2e.md); work list [`scripts/misc/campaigns/cluster_p2e.py`](../../../../scripts/misc/campaigns/cluster_p2e.py) and its [README](../../../../scripts/misc/campaigns/README.md)
 **Mind contract:** epic `likelihood-lifecycle`, phase 2 sub-issue 2e; issue autolens_profiling#474; solver settings from epic `cluster-pointsolver-speed` ([cluster PointSolver](cluster_pointsolver.md))
-**Next:** batch 1 (human go; the human decides whether its RAL CPU legs wait for a quiet node), from the walls commit; then the rows PR
+**Next:** batch 1 (human go; RAL CPU legs on shared nodes, no quiet gate, human 2026-10-30), from the walls commit; then the rows PR
 **Fit figures:** laptop smoke `fit.png` of the solved headline opened (2026-10-29, runtime and breakdown): every observed image of both systems has a model image from β* on it, χ² = 0.065 (the plain fit's was 2.6, 2026-10-28); none from RAL yet.
 
 ## Why this campaign
@@ -112,3 +112,7 @@ The batch-0 go was given with the decisions, but batch 0 was not submitted. The 
 Batch 0 ran 2026-10-29 (RAL 413273, A100 413295; every leg exit 0, both witnesses `match`). The
 walls commit fills `BATCH0_WALLS` / `BATCH0_PEAK_RSS_KIB` and flips `WALL_BASIS_STATUS` to
 `measured`: batch 1 runs 0:30:00 (RAL) / 1:00:00 (A100) at 32 GB.
+
+### 2026-10-30 — loaded RAL nodes accepted
+
+Human ruling 2026-10-30 (chat): "ignore loaded node stuff for now I dont think that massive impacts run times and we cant ever expect to be unloaded nodes for everything". Batch 1 runs on shared `ral` nodes as rendered, with no quiet gate; a loaded row keeps its `loadavg_at_import`.

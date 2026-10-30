@@ -9,7 +9,7 @@
 **Profiling PRs:** setup PR (draft, shared with the datacube half), then a walls PR after batch 0, then PR B
 **Ledger:** this page; rows will land under `results/multi_dataset/delaunay/hst/`; work list [`scripts/misc/campaigns/multi_dataset_datacube_p2f.py`](../../../scripts/misc/campaigns/multi_dataset_datacube_p2f.py); the decision table D1-D9 is on the [datacube page](../datacube/likelihood_lifecycle_p2f.md)
 **Mind contract:** epic `likelihood-lifecycle`, phase 2 sub-issue 2f; issue autolens_profiling#475
-**Next:** batch 1 (human go; the human decides whether its RAL CPU legs wait for a quiet node), from the walls commit; then PR B
+**Next:** batch 1 (human go; RAL CPU legs on shared nodes, no quiet gate, human 2026-10-30), from the walls commit; then PR B
 **Fit figures:** none from RAL yet. Laptop smoke (hst, dataset 0, `numba_cpu_sparse_fp64`) opened: ring reconstructed, residuals confined to the lens core as in 2a's iid draw 0, nothing wrong.
 
 ## Why this campaign
@@ -75,3 +75,7 @@ D6-D9 adopted as drafted (the datacube page's journal has the details and why ba
 ### 2026-10-30 — batch 0 in; the walls commit
 
 All 10 legs exit 0, every witness `match`; batch 1's walls and memory are measured (see Batch 0).
+
+### 2026-10-30 — loaded RAL nodes accepted
+
+Human ruling 2026-10-30 (chat): "ignore loaded node stuff for now I dont think that massive impacts run times and we cant ever expect to be unloaded nodes for everything". Batch 1 runs on shared `ral` nodes as rendered, with no quiet gate; a loaded row keeps its `loadavg_at_import`.

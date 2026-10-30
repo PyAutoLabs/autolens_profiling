@@ -9,7 +9,7 @@
 **Profiling PRs:** setup PR (draft; datacube and multi_dataset standard-size drivers, the 2f submits, this page), then a walls PR after batch 0, then PR B (rows, catalogue, coverage, this page's result)
 **Ledger:** this page; rows will land under `results/datacube/delaunay/`; work list [`scripts/misc/campaigns/multi_dataset_datacube_p2f.py`](../../../scripts/misc/campaigns/multi_dataset_datacube_p2f.py) and its [README](../../../scripts/misc/campaigns/README.md); the multi_dataset half is [its own page](../multi_dataset/likelihood_lifecycle_p2f.md)
 **Mind contract:** epic `likelihood-lifecycle`, phase 2 sub-issue 2f; issue autolens_profiling#475
-**Next:** batch 1 (human go; the human decides whether its RAL CPU legs wait for a quiet node), from the walls commit; then PR B
+**Next:** batch 1 (human go; RAL CPU legs on shared nodes, no quiet gate, human 2026-10-30), from the walls commit; then PR B
 **Fit figures:** none from RAL yet. Laptop smoke (sma, lead channel, `jax_cpu_sparse_fp64_wtilde`) opened: noise-dominated sma dirty maps as in 2b, the source reconstructed inside the caustic, nothing wrong.
 
 ## Why this campaign
@@ -146,3 +146,7 @@ The batch-0 go was given with the decisions, but batch 0 was not submitted. The 
 Batch 0 ran 2026-10-29 (RAL 413274, references 413292, A100 413296; every leg exit 0, every
 witness `match`). The walls commit fills `BATCH0_WALLS` / `BATCH0_PEAK_RSS_KIB` and flips
 `WALL_BASIS_STATUS` to `measured` (batch 1 at 0:30:00-1:30:00 instead of 12:00:00 / 2-00:00:00).
+
+### 2026-10-30 — loaded RAL nodes accepted
+
+Human ruling 2026-10-30 (chat): "ignore loaded node stuff for now I dont think that massive impacts run times and we cant ever expect to be unloaded nodes for everything". Batch 1 runs on shared `ral` nodes as rendered, with no quiet gate; a loaded row keeps its `loadavg_at_import`.

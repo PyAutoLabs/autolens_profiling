@@ -9,7 +9,7 @@
 **Profiling PRs:** the 2d draft PR (new cell scripts, shared driver, cell builder, registry cells, campaign submits, this page), stacked on #471; then a walls commit after batch 0; then PR B (rows, catalogue, coverage, result)
 **Ledger:** this page and the group page [`../group/likelihood_lifecycle_p2d.md`](../group/likelihood_lifecycle_p2d.md); rows will land under `results/{multi_galaxy,group}/{mge,rectangular,delaunay}/`; work list [`scripts/misc/campaigns/multi_galaxy_group_p2d.py`](../../../scripts/misc/campaigns/multi_galaxy_group_p2d.py) and its [README](../../../scripts/misc/campaigns/README.md)
 **Mind contract:** epic `likelihood-lifecycle`, phase 2 sub-issue 2d; issue autolens_profiling#473
-**Next:** batch 1 (human go; the human decides whether its RAL CPU legs wait for a quiet node, as the 2b/2c quiet reruns do), from the walls commit; then PR B
+**Next:** batch 1 (human go; RAL CPU legs on shared nodes, no quiet gate, human 2026-10-30), from the walls commit; then PR B
 **Fit figures:** none yet (laptop smoke figures only, not reviewed as campaign rows)
 
 ## Why this campaign
@@ -251,3 +251,7 @@ witness `match`). The walls commit fills `BATCH0_WALLS` / `BATCH0_PEAK_RSS_KIB`,
 >= 1.5x the device's peak). The batch-1 submits now run 0:30:00 / 1:00:00 at 16 GB instead of
 the provisional 4:00:00 / 2-00:00:00. Findings: the loaded RAL node and the flag on the GPU legs
 (see Batch 0).
+
+### 2026-10-30 — loaded RAL nodes accepted
+
+Human ruling 2026-10-30 (chat): "ignore loaded node stuff for now I dont think that massive impacts run times and we cant ever expect to be unloaded nodes for everything". Batch 1 runs on shared `ral` nodes as rendered, with no quiet gate; a loaded row keeps its `loadavg_at_import`.
