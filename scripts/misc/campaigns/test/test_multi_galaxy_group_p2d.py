@@ -204,20 +204,51 @@ def test_batch0_is_every_group_leg():
         assert basis.cell in batch0 and basis.script.split("/", 1)[1] == t.script.split("/", 1)[1]
 
 
-def test_batch1_is_provisional_and_refuses_to_run():
-    assert p2d.WALL_BASIS_STATUS == "provisional" and p2d.BATCH0_WALLS == {}
+def test_batch1_walls_are_measured_by_batch0_and_batch0_never_guards():
+    """Every batch-1 row cites batch 0 (RAL 413272, A100 413294) on the bounding group leg of the
+    same script, setup and host class; --time holds 1.25x the slowest leg of a RAL array or the
+    sum of an A100 job's legs, plus the slack."""
+    assert p2d.WALL_BASIS_STATUS == "measured"
+    assert set(p2d.BATCH0_WALLS) == {t.cell for t in p2d.batch0_ral_cpu() + p2d.batch0_a100()}
+    assert set(p2d.BATCH0_LIMITATIONS) <= set(p2d.BATCH0_WALLS)
     for path in BATCH1:
-        text = (ROOT / path).read_text()
-        assert "WALL_BASIS_STATUS=provisional" in text
-        assert "REFUSING: WALL_BASIS_STATUS" in text and "P2D_ALLOW_PROVISIONAL_WALL" in text
-        assert text.index("WALL_BASIS_STATUS=provisional") < text.index(
+        text, names = legs(path)
+        assert "WALL_BASIS_STATUS=measured" in text
+        assert text.index("WALL_BASIS_STATUS=measured") < text.index(
             'source "$AP_ROOT/activate.sh"'
         )
+        tasks = [t for t in p2d.planned_tasks() if t.cell in set(names)]
+        assert len(tasks) == len(names), path
+        walls = []
+        for t in tasks:
+            basis = p2d.basis_leg(t)
+            assert basis.cell in p2d.BATCH0_WALLS
+            # D9: the group leg of the same variant, setup, host class and measurement.
+            assert basis.dataset_type == p2d.BATCH0_DATASET_TYPE
+            assert (basis.variant, basis.setup_id, basis.host_class, basis.measurement) == (
+                t.variant,
+                t.setup_id,
+                t.host_class,
+                t.measurement,
+            )
+            wall, elapsed, _ = p2d.BATCH0_WALLS[basis.cell]
+            assert p2d.measured_wall(t)[0] == max(wall, elapsed)
+            walls.append(max(wall, elapsed))
+        need = 1.25 * (sum(walls) if path in A1001 else max(walls)) + p2d.WALL_MIN_SLACK_S
+        assert check_submits.parse_slurm_time(sbatch(text, "time")) >= need, path
         for row in check_submits.parse_basis_rows(text):
-            assert row["source"] == "unmeasured" and row["probe-first"] == "yes"
-    times = {p: sbatch((ROOT / p).read_text(), "time") for p in BATCH1}
-    assert {times[p] for p in RAL1} == {"4:00:00"}
-    assert {times[p] for p in A1001} == {"2-00:00:00"}
+            assert row["source"] == "measured-wall", path
+    # --mem: the next step >= 1.5x batch 0's peak MaxRSS on the device, at least 16 GB.
+    for path in BATCH1:
+        device = "ral_cpu" if path in RAL1 else "a100"
+        peak_gib = p2d.BATCH0_PEAK_RSS_KIB[device][0] / 2**20
+        mem = int(sbatch((ROOT / path).read_text(), "mem").removesuffix("gb"))
+        assert mem >= max(16, 1.5 * peak_gib) and mem == p2d.mem_gb_measured(device), path
+    for path in BATCH0:
+        text = (ROOT / path).read_text()
+        assert "WALL_BASIS_STATUS" not in text and "ALLOW_PROVISIONAL" not in text, path
+        for row in check_submits.parse_basis_rows(text):
+            assert row["source"] == "unmeasured" and float(row["headroom"]) >= 3.0
 
 
 def test_every_run_writes_to_a_scratch_tree_and_marks_each_leg_start():
@@ -228,7 +259,7 @@ def test_every_run_writes_to_a_scratch_tree_and_marks_each_leg_start():
         assert "output/p2d_logs/walls.tsv" in text and "printf 'START" in text
         for out in bash_array(text, "OUTS"):
             assert out.split("/")[1] in ("multi_galaxy", "group")
-        assert "DRAFT FOR REVIEW" in text
+        assert "Decisions D1-D12 adopted" in text
 
 
 def test_no_cpu_only_job_on_the_gpu_partition():

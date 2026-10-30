@@ -3,13 +3,13 @@
 **Status:** open
 **Question:** What does every planned multi_galaxy/{mge, rectangular, delaunay} and group/{mge, rectangular, delaunay} cell cost at the standard size on the pinned release 2026.10.25.1, on the §3.3 "as imaging" setups, and does each cell's log evidence match an eager NumPy dense reference?
 **Pre-registered rule:** every one of the 48 planned cells (20 RAL CPU, 28 A100) lands `current`, with runtime and breakdown rows, provenance, `resources`, `fit.png` and a `parity.json` whose status is `match` against the eager NumPy dense-mapping reference in the same process (tolerance 1e-4 x |reference| in fp64, the imaging rule). Any `diverged` witness blocks that setup until explained. Written 2026-10-28, before any run, and before the human has ruled on decisions D1-D12 below; a ruling that changes the cell set re-bases the count, not the rule. Ruled 2026-10-29, before any run: D1-D11 adopted as drafted and D12 kept, so the 48 cells and the rule stand unchanged.
-**Verdict:** pending (nothing run). Expected, written before the runs: as imaging, `jax_gpu_dense_fp64` is the fastest per call on the A100 and `numba_cpu_sparse_fp64` is the RAL CPU per-worker route for the pixelized cells; group is slower than multi_galaxy for every setup (1.6x the masked pixels, two dPIE extra galaxies); the extra lens galaxies cost little against the inversion (the light is linear, the mass adds deflections only); every parity witness is `match`. Class designations are phase 3's decision, not this page's.
+**Verdict:** pending (batch 0 run 2026-10-29; batch 1 not yet). Expected, written before the runs: as imaging, `jax_gpu_dense_fp64` is the fastest per call on the A100 and `numba_cpu_sparse_fp64` is the RAL CPU per-worker route for the pixelized cells; group is slower than multi_galaxy for every setup (1.6x the masked pixels, two dPIE extra galaxies); the extra lens galaxies cost little against the inversion (the light is linear, the mass adds deflections only); every parity witness is `match`. Class designations are phase 3's decision, not this page's.
 **Headline:** none yet.
 **Library PRs:** none (measurement only, tag 2026.10.25.1)
 **Profiling PRs:** the 2d draft PR (new cell scripts, shared driver, cell builder, registry cells, campaign submits, this page), stacked on #471; then a walls commit after batch 0; then PR B (rows, catalogue, coverage, result)
 **Ledger:** this page and the group page [`../group/likelihood_lifecycle_p2d.md`](../group/likelihood_lifecycle_p2d.md); rows will land under `results/{multi_galaxy,group}/{mge,rectangular,delaunay}/`; work list [`scripts/misc/campaigns/multi_galaxy_group_p2d.py`](../../../scripts/misc/campaigns/multi_galaxy_group_p2d.py) and its [README](../../../scripts/misc/campaigns/README.md)
 **Mind contract:** epic `likelihood-lifecycle`, phase 2 sub-issue 2d; issue autolens_profiling#473
-**Next:** batch 0, every group leg (go given 2026-10-29; held: the RAL venv carries jax/jaxlib 0.10.2, which the pin's PyAutoNerves excludes; the human decides the environment); then the walls commit, batch 1 (human go), PR B
+**Next:** batch 1 (human go; the human decides whether its RAL CPU legs wait for a quiet node, as the 2b/2c quiet reruns do), from the walls commit; then PR B
 **Fit figures:** none yet (laptop smoke figures only, not reviewed as campaign rows)
 
 ## Why this campaign
@@ -82,6 +82,35 @@ Batch 0 writes into the gitignored `output/p2d_batch0/`, batch 1 into `output/p2
 complete rows are copied into `results/` by PR B. Every submit imports the libraries only from the
 private checkout `/mnt/ral/jnightin/profiling/PyAuto_2026.10.25.1` at tag 2026.10.25.1 and
 checks each row's library revisions against it.
+
+## Batch 0 (2026-10-29)
+
+Submitted from the detached checkout `/mnt/ral/jnightin/profiling/autolens_profiling_p2dg` at
+main `ad103340`, on the private 2026.10.25.1 libraries and the shared venv after its upgrade to
+jax/jaxlib 0.11.2.
+
+| Array | Job | Legs | Result |
+|-------|-----|------|--------|
+| RAL CPU timing arm | 413272 | 10 | all exit 0; slowest leg the delaunay `jax_cpu_sparse_fp64` breakdown, 462 s |
+| A100 timing arm | 413294 | 14 | all exit 0; slowest leg the delaunay `jax_cpu_sparse_fp64@hpc_a100` breakdown, 237 s |
+
+Every parity witness is `match` (12 of 12). Peak `.batch` MaxRSS is 3.0 GiB on both host classes
+(413272_1, 413294_1). Every leg ran 8-16x under the 3600 s guess. The walls set batch 1's
+`--time` (RAL arrays 0:30:00, A100 jobs 1:00:00) and the MaxRSS its `--mem` (16 GB); the
+generator's `BATCH0_WALLS` and `BATCH0_PEAK_RSS_KIB` hold the numbers. These are timing-arm rows
+only; the campaign's rows come from batch 1.
+
+Two findings for batch 1 and PR B:
+
+- **Loaded RAL node.** All 10 RAL CPU rows have `loadavg_at_import` between 95 and 107:
+  euclid-ral-compute-10-5 was shared with eight running `euclid_detailed_slam_pipeline` tasks.
+  The walls are an upper bound, but such rows are refused as trend points. The A100 rows are
+  quiet (load at most 6.4).
+- **The eigen flag on GPU legs.** The 2d driver appends `--xla_cpu_multi_thread_eigen=false`
+  whatever the platform, so all 14 A100 rows, the GPU legs included, record it in
+  `device.xla_flags`; the shared preamble keeps it off the 2e-2g GPU legs. D12 calls the flag
+  inert for GPU executables. That is untested here, and the 2d GPU rows' flags differ from
+  the other campaigns'.
 
 ## XLA:CPU deadlock (found in the laptop smokes, avoided by D12)
 
@@ -213,3 +242,12 @@ inert flag), and never on a GPU leg (`cuda` / `cuda,cpu`). Each row records it i
 once and keeps `configuration.xla_cpu_workaround`. D12's scope widens from 2d to every campaign;
 the 2a-2c rows already landed were measured on jax 0.10.2 without the flag (phase-3 Q7 covers
 that comparison).
+
+### 2026-10-30 — batch 0 in; the walls commit
+
+Batch 0 ran on the evening of 2026-10-29 (RAL 413272, A100 413294; every leg exit 0, every
+witness `match`). The walls commit fills `BATCH0_WALLS` / `BATCH0_PEAK_RSS_KIB`, flips
+`WALL_BASIS_STATUS` to `measured` and adds the measured `--mem` rule (next 16/32/64/128 GB step
+>= 1.5x the device's peak). The batch-1 submits now run 0:30:00 / 1:00:00 at 16 GB instead of
+the provisional 4:00:00 / 2-00:00:00. Findings: the loaded RAL node and the flag on the GPU legs
+(see Batch 0).

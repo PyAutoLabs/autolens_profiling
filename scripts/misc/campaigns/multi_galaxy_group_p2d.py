@@ -90,7 +90,7 @@ BATCH0_WALL_GUESS_S = 3600
 BATCH0_TIME = "4:00:00"
 #: Provisional: batch 1 renders unmeasured rows, the placeholder ``--time`` below and a submit
 #: that refuses to run until batch 0's walls replace them (README "Setting batch 1's --time").
-WALL_BASIS_STATUS = "provisional"
+WALL_BASIS_STATUS = "measured"
 BATCH1_PROVISIONAL_TIME = {"ral_cpu": "4:00:00", "a100": "2-00:00:00"}
 #: ``--mem`` until batch 0's sacct MaxRSS is in: the imaging hst legs peaked at 10.2 GiB
 #: (``imaging_p2a.BATCH0_PEAK_RSS_KIB``) on a larger image; 32 GB is ~3x that.
@@ -101,8 +101,39 @@ WALL_HEADROOM = 1.25
 WALL_ROUND_S = 1800
 WALL_MIN_SLACK_S = 900
 MEM_HEADROOM = 1.5
-#: Batch 0's measured legs, cell -> (walls.tsv WALL, sacct Elapsed, task). Empty until batch 0.
-BATCH0_WALLS: dict = {}
+MEM_STEPS_GB = (16, 32, 64, 128)
+BATCH1_MEM_FLOOR_GB = 16
+#: Batch 0's measured legs, cell -> (walls.tsv WALL, sacct Elapsed, array task): RAL 413272, A100
+#: 413294, jax/jaxlib 0.11.2 with the eigen flag on every leg (2026-10-29); every leg exit 0 and
+#: every parity witness match. Elapsed exceeds WALL by the dataset preflight (~13 s on RAL).
+BATCH0_WALLS = {
+    "group/delaunay/euclid jax_cpu_sparse_fp64@hpc_a100 [breakdown]": (227, 237, "413294_0"),
+    "group/delaunay/euclid jax_cpu_sparse_fp64@hpc_a100 [runtime]": (221, 232, "413294_1"),
+    "group/delaunay/euclid jax_cpu_sparse_fp64@hpc_ral_cpu [breakdown]": (449, 462, "413272_0"),
+    "group/delaunay/euclid jax_cpu_sparse_fp64@hpc_ral_cpu [runtime]": (293, 306, "413272_1"),
+    "group/delaunay/euclid jax_gpu_dense_fp64@hpc_a100 [breakdown]": (85, 88, "413294_2"),
+    "group/delaunay/euclid jax_gpu_dense_fp64@hpc_a100 [runtime]": (73, 77, "413294_3"),
+    "group/delaunay/euclid jax_gpu_sparse_fp64@hpc_a100 [breakdown]": (90, 94, "413294_4"),
+    "group/delaunay/euclid jax_gpu_sparse_fp64@hpc_a100 [runtime]": (86, 88, "413294_5"),
+    "group/delaunay/euclid numba_cpu_sparse_fp64@hpc_ral_cpu [breakdown]": (43, 56, "413272_2"),
+    "group/delaunay/euclid numba_cpu_sparse_fp64@hpc_ral_cpu [runtime]": (53, 66, "413272_3"),
+    "group/mge/euclid jax_cpu_dense_fp64@hpc_ral_cpu [breakdown]": (63, 76, "413272_4"),
+    "group/mge/euclid jax_cpu_dense_fp64@hpc_ral_cpu [runtime]": (54, 67, "413272_5"),
+    "group/mge/euclid jax_gpu_dense_fp64@hpc_a100 [breakdown]": (89, 92, "413294_6"),
+    "group/mge/euclid jax_gpu_dense_fp64@hpc_a100 [runtime]": (55, 57, "413294_7"),
+    "group/rectangular/euclid jax_cpu_sparse_fp64@hpc_a100 [breakdown]": (199, 201, "413294_8"),
+    "group/rectangular/euclid jax_cpu_sparse_fp64@hpc_a100 [runtime]": (188, 191, "413294_9"),
+    "group/rectangular/euclid jax_cpu_sparse_fp64@hpc_ral_cpu [breakdown]": (284, 297, "413272_6"),
+    "group/rectangular/euclid jax_cpu_sparse_fp64@hpc_ral_cpu [runtime]": (286, 300, "413272_7"),
+    "group/rectangular/euclid jax_gpu_dense_fp64@hpc_a100 [breakdown]": (77, 80, "413294_10"),
+    "group/rectangular/euclid jax_gpu_dense_fp64@hpc_a100 [runtime]": (62, 65, "413294_11"),
+    "group/rectangular/euclid jax_gpu_sparse_fp64@hpc_a100 [breakdown]": (82, 85, "413294_12"),
+    "group/rectangular/euclid jax_gpu_sparse_fp64@hpc_a100 [runtime]": (76, 79, "413294_13"),
+    "group/rectangular/euclid numba_cpu_sparse_fp64@hpc_ral_cpu [breakdown]": (46, 48, "413272_8"),
+    "group/rectangular/euclid numba_cpu_sparse_fp64@hpc_ral_cpu [runtime]": (50, 53, "413272_9"),
+}
+#: Batch 0's peak .batch MaxRSS (KiB) per device and the task that reached it.
+BATCH0_PEAK_RSS_KIB = {"ral_cpu": (3147424, "413272_1"), "a100": (3145052, "413294_1")}
 BATCH0_LIMITATIONS: dict = {}
 
 
@@ -241,6 +272,31 @@ def slurm_time(seconds: float) -> str:
     )
 
 
+def mem_gb_measured(device: str) -> int:
+    """Batch 1's --mem: the next step at or above MEM_HEADROOM x batch 0's peak MaxRSS on the
+    bounding group legs of device."""
+    peak_gib = BATCH0_PEAK_RSS_KIB[device][0] / 2**20
+    return next(
+        step for step in MEM_STEPS_GB if step >= max(BATCH1_MEM_FLOOR_GB, MEM_HEADROOM * peak_gib)
+    )
+
+
+def _mem(device: str, measured: bool, sizes: str) -> tuple[int, list[str]]:
+    """(--mem GB, the header lines saying where it came from)."""
+    if measured:
+        mem = mem_gb_measured(device)
+        kib, ref = BATCH0_PEAK_RSS_KIB[device]
+        return mem, [
+            f"# MEMORY. --mem={mem}gb from batch 0's sacct MaxRSS on the bounding group legs",
+            f"# ({kib / 2**20:.1f} GiB in {ref}) x {MEM_HEADROOM}, at least {BATCH1_MEM_FLOOR_GB} GB.",
+        ]
+    return PROVISIONAL_MEM_GB, [
+        f"# MEMORY. --mem={PROVISIONAL_MEM_GB}gb, PROVISIONAL ({sizes}): the imaging hst legs",
+        "# (15k masked pixels) peaked at 10.2 GiB MaxRSS; batch 0's sacct MaxRSS replaces this",
+        f"# (next 16/32/64 GB step >= {MEM_HEADROOM}x the peak) before batch 1.",
+    ]
+
+
 # --------------------------------------------------------------------------- dataset preflight
 
 
@@ -288,15 +344,15 @@ def render(name: str, tasks: list[Task], *, kind: str, batch: int, title: str) -
     sizes = ", ".join(
         f"{dt}/{INSTRUMENTS[dt]} {gg.SPECS[dt].masked_pixels} masked pixels" for dt in dataset_types
     )
+    mem, mem_lines = _mem(device, measured, sizes)
     header = [
         "#!/bin/bash -l",
         "#",
         f"# {title}",
         f"# Likelihood-lifecycle phase 2d multi_galaxy + group campaign ({ISSUE}), batch {batch}: "
         f"{n} cell(s).",
-        "# DRAFT FOR REVIEW: the cell design (decisions D1-D11 open, D12 decided; wiki/campaigns/",
-        "# multi_galaxy/likelihood_lifecycle_p2d.md) awaits the human; do not submit without a",
-        "# batch go.",
+        "# Decisions D1-D12 adopted by the human 2026-10-29 (wiki/campaigns/multi_galaxy/",
+        "# likelihood_lifecycle_p2d.md); batch 1 needs the human's batch go.",
         "# GENERATED by scripts/misc/campaigns/multi_galaxy_group_p2d.py --write; edit the generator,",
         "# not this file (the campaign test fails on a hand edit). The batch procedure is in",
         "# scripts/misc/campaigns/README.md.",
@@ -313,10 +369,8 @@ def render(name: str, tasks: list[Task], *, kind: str, batch: int, title: str) -
         "# (runtime legs also parity.json and fit.png) into the mirrored cell named by --output-path",
         f"# under the gitignored output/p2d_batch{batch}/ scratch tree, never in place over results/.",
         "#",
-        f"# MEMORY. --mem={PROVISIONAL_MEM_GB}gb, PROVISIONAL ({sizes}): the imaging hst legs",
-        "# (15k masked pixels) peaked at 10.2 GiB MaxRSS; batch 0's sacct MaxRSS replaces this",
-        f"# (next 16/32/64 GB step >= {MEM_HEADROOM}x the peak) before batch 1.",
     ]
+    header += mem_lines
     if kind == "ral_cpu":
         header += [
             "# One cell per array task on `ral` (CPU work never goes on `gpu`). numba cells pin their",
@@ -370,7 +424,7 @@ def render(name: str, tasks: list[Task], *, kind: str, batch: int, title: str) -
         job,
         kind,
         n,
-        mem=PROVISIONAL_MEM_GB,
+        mem=mem,
         time=time,
         throttle=("%8" if batch == 0 else "%16") if kind == "ral_cpu" else None,
     )

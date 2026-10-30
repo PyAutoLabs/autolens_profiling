@@ -787,8 +787,9 @@ iteration counts, budgets in iterations, geometry or formatting, not a measured 
   `scripts/misc/campaigns/test/test_interferometer_p2b.py::test_batch1_walls_are_measured_by_batch0_and_batch0_never_guards`
   checks it, as the 2a test does.
 - `scripts/misc/campaigns/weak_p2g.py::WALL_HEADROOM` (autolens_profiling#476): the 2g
-  generator's copy of the same `--time` multiplier (1.25x batch 0's measured walls once they
-  exist). S1 is still the gate.
+  generator's copy of the same `--time` multiplier (1.25x batch 0's measured walls, in since
+  batch 0 ran 2026-10-29). `scripts/misc/campaigns/test/test_weak_p2g.py::test_batch1_walls_are_measured_by_batch0_and_batch0_never_guards`
+  checks it. S1 is still the gate.
 - `scripts/weak/isothermal/likelihood_breakdown.py::MEDIAN_N_WARM` and
   `scripts/weak/isothermal/likelihood_breakdown.py::MEDIAN_N_TIMED`
   (autolens_profiling#476): the warm and timed call counts of each breakdown step's steady
@@ -802,21 +803,23 @@ iteration counts, budgets in iterations, geometry or formatting, not a measured 
   checks that the fixed 1:00:00 holds it plus the slack. S1 is still the gate.
 - `scripts/misc/campaigns/multi_dataset_datacube_p2f.py::WALL_HEADROOM` and
   `scripts/misc/campaigns/multi_dataset_datacube_p2f.py::MEM_HEADROOM` (autolens_profiling#475):
-  the 2f generator's copies of the same two multipliers, unused until batch 0 has run (its batch
-  1 is provisional and refuses to run; `test_multi_dataset_datacube_p2f.py::
-  test_batch1_is_provisional_until_batch0_has_run` pins that). S1 is still the gate.
+  the 2f generator's copies of the same two multipliers, applied to batch 0's walls and MaxRSS
+  since it ran 2026-10-29;
+  `scripts/misc/campaigns/test/test_multi_dataset_datacube_p2f.py::test_batch1_walls_are_measured_by_batch0_and_batch0_never_guards`
+  checks it. S1 is still the gate.
 - `scripts/misc/campaigns/multi_galaxy_group_p2d.py::WALL_HEADROOM` and
   `scripts/misc/campaigns/multi_galaxy_group_p2d.py::MEM_HEADROOM` (autolens_profiling#473): the
   2d generator's copies of the same two multipliers, with the same meaning (batch 1's `--time` at
-  1.25x batch 0's measured walls once they exist; `--mem` at 1.5x measured MaxRSS). S1 is the
-  gate. `scripts/misc/campaigns/test/test_multi_galaxy_group_p2d.py::test_the_jax_runtime_cells_take_the_headline_median_in_the_wall_gate`
+  1.25x batch 0's measured walls, in since 2026-10-29; `--mem` at 1.5x measured MaxRSS),
+  checked by `scripts/misc/campaigns/test/test_multi_galaxy_group_p2d.py::test_batch1_walls_are_measured_by_batch0_and_batch0_never_guards`.
+  S1 is the gate. `scripts/misc/campaigns/test/test_multi_galaxy_group_p2d.py::test_the_jax_runtime_cells_take_the_headline_median_in_the_wall_gate`
   is a count of scripts (the six 2d JAX runtime scripts are in `HEADLINE_MEDIAN_SCRIPTS`), not a
   timing comparison.
 - `scripts/misc/campaigns/cluster_p2e.py::WALL_HEADROOM` and
   `scripts/misc/campaigns/cluster_p2e.py::MEM_HEADROOM` (autolens_profiling#474): the 2e
-  generator's copies of the same two multipliers, unused until batch 0 lands (its walls are
-  provisional). `scripts/misc/campaigns/test/test_cluster_p2e.py::test_walls_are_provisional_and_batch1_refuses_until_batch0_lands`
-  checks the provisional state and batch 0's 3x floor on its declared guess. S1 is still the gate.
+  generator's copies of the same two multipliers, applied to batch 0's walls and MaxRSS since it
+  ran 2026-10-29. `scripts/misc/campaigns/test/test_cluster_p2e.py::test_batch1_walls_are_measured_by_batch0_and_batch0_never_guards`
+  checks them and batch 0's 3x floor on its declared guess. S1 is still the gate.
 - `scripts/misc/tooling/build_readme.py::_format_time` and
   `scripts/misc/tooling/build_readme.py::_render_runtime_table`: unit formatting.
 

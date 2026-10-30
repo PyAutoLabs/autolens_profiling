@@ -9,7 +9,7 @@
 **Profiling PRs:** the 2e setup draft PR (autolens_profiling#474), then the rows PR after the human's batch go
 **Ledger:** this page and the [image-plane page](../image_plane/likelihood_lifecycle_p2e.md), which holds the shared decisions and the batch plan; work list [`scripts/misc/campaigns/cluster_p2e.py`](../../../../scripts/misc/campaigns/cluster_p2e.py)
 **Mind contract:** epic `likelihood-lifecycle`, phase 2 sub-issue 2e; issue autolens_profiling#474
-**Next:** image-plane batch 0 (held, see the image-plane page) sets the walls; then batch 1 (human go), which runs these 6 legs
+**Next:** batch 1 (human go), which runs these 6 legs under the image-plane batch 0's walls (in since 2026-10-30, see the image-plane page)
 **Fit figures:** laptop smoke `fit.png` of the solved headline opened (2026-10-29): both systems' images, critical curves per source redshift and mass centres drawn, χ² = 0.033 (the plain fit's was 0.064, 2026-10-28); none from RAL yet.
 
 ## Why this campaign

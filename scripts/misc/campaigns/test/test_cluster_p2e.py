@@ -237,33 +237,44 @@ def test_every_submit_passes_the_wall_gate():
         assert {tuple(r["cell"].split("/")[:2]) for r in rows} == cells, path
 
 
-def test_walls_are_provisional_and_batch1_refuses_until_batch0_lands():
-    """DRAFT: nothing has run. Batch 1 renders `unmeasured` rows and refuses to run while
-    WALL_BASIS_STATUS is provisional; batch 0 never guards."""
-    assert p2e.WALL_BASIS_STATUS == "provisional"
-    assert p2e.BATCH0_WALLS == {} and p2e.BATCH0_PEAK_RSS_KIB == {}
+def test_batch1_walls_are_measured_by_batch0_and_batch0_never_guards():
+    """Every batch-1 row cites batch 0 (RAL 413273, A100 413295) on the image-plane leg of the same
+    setup and measurement; --time holds 1.25x the slowest RAL leg or the A100 job's sum, plus slack.
+    """
+    assert p2e.WALL_BASIS_STATUS == "measured"
+    assert set(p2e.BATCH0_WALLS) == {t.cell for t in p2e.batch0_ral_cpu() + p2e.batch0_a100()}
+    assert set(p2e.BATCH0_LIMITATIONS) <= set(p2e.BATCH0_WALLS)
     for path in BATCH1:
-        text = (ROOT / path).read_text()
-        assert "WALL_BASIS_STATUS=provisional" in text and "P2E_ALLOW_PROVISIONAL_WALL" in text
-        assert text.index("WALL_BASIS_STATUS=provisional") < text.index(
+        text, names = legs(path)
+        assert "WALL_BASIS_STATUS=measured" in text
+        assert text.index("WALL_BASIS_STATUS=measured") < text.index(
             'source "$AP_ROOT/activate.sh"'
         )
+        tasks = [t for t in p2e.planned_tasks() if t.cell in set(names)]
+        assert len(tasks) == len(names), path
+        walls = []
+        for t in tasks:
+            basis = p2e.basis_leg(t)
+            assert basis.cell in p2e.BATCH0_WALLS
+            # The image-plane leg of the same setup and measurement bounds every variant.
+            assert basis.variant == p2e.BOUNDING_VARIANT and basis.measurement == t.measurement
+            wall, elapsed, _ = p2e.BATCH0_WALLS[basis.cell]
+            assert p2e.measured_wall(t)[0] == max(wall, elapsed)
+            walls.append(max(wall, elapsed))
+        need = 1.25 * (sum(walls) if path in (A1001,) else max(walls)) + p2e.WALL_MIN_SLACK_S
+        assert check_submits.parse_slurm_time(sbatch(text, "time")) >= need, path
         for row in check_submits.parse_basis_rows(text):
-            assert row["source"] == "unmeasured" and row["probe-first"] == "yes"
-    times = {p: sbatch((ROOT / p).read_text(), "time") for p in ALL}
-    assert times == {
-        RAL1: p2e.BATCH1_PROVISIONAL_TIME["ral_cpu"],
-        A1001: p2e.BATCH1_PROVISIONAL_TIME["a100"],
-        BATCH0_RAL: p2e.BATCH0_TIME["ral_cpu"],
-        BATCH0_A100: p2e.BATCH0_TIME["a100"],
-    }
+            assert row["source"] == "measured-wall", path
+    for path in BATCH1:
+        device = "ral_cpu" if path == RAL1 else "a100"
+        peak_gib = p2e.BATCH0_PEAK_RSS_KIB[device][0] / 2**20
+        mem = int(sbatch((ROOT / path).read_text(), "mem").removesuffix("gb"))
+        assert mem >= max(32, 1.5 * peak_gib) and mem == p2e.mem_gb_measured(device), path
     for path in BATCH0:
         text = (ROOT / path).read_text()
         assert "WALL_BASIS_STATUS" not in text and "ALLOW_PROVISIONAL" not in text, path
         for row in check_submits.parse_basis_rows(text):
             assert row["source"] == "unmeasured" and float(row["headroom"]) >= 3.0
-    for path in ALL:
-        assert sbatch((ROOT / path).read_text(), "mem") == "32gb", path
 
 
 def test_every_submit_pins_the_private_checkout():

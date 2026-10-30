@@ -3,13 +3,13 @@
 **Status:** open (every decision decided 2026-10-29; batch 0 has a go but is held, see Next)
 **Question:** What does one weak-lensing likelihood evaluation cost at the standard catalogue size on the pinned release 2026.10.25.1, on JAX CPU and JAX GPU, on both reference hosts, and does each cell's log-likelihood match an independent eager NumPy evaluation?
 **Pre-registered rule:** every runnable planned weak cell (6 of 8; D5) lands `current`, with runtime and breakdown, provenance, `resources`, `fit.png` and a `parity.json` whose status is `match` against the in-process eager NumPy `FitWeak` (tolerance 1e-4 x |reference| in fp64, 1e-3 mixed precision; D7). Any `diverged` witness blocks that setup until explained. The two `jax_gpu_dense_fp64@hpc_ral_cpu` cells stay `missing` until the human rules on D5. Recorded here with the setup PR, before any RAL run (2026-10-28). Note 2026-10-29: D5 is settled by the planner rule of autolens_profiling#481 (human ruling "fix the planner gap"); those two cells are no longer planned, so the rule's 6 runnable cells are all 6 planned cells. The rule is otherwise unchanged. Note 2026-10-29, still before any run: the human adopted every drafted decision (D1-D4, D6-D10), so the rule stands as written.
-**Verdict:** pending (no batch run). Expected, written before the runs: every parity witness is `match`, about 1e-12 relative (the laptop gave |delta log L| = 2.3e-10 at |log L| = 84.87). `jax_cpu_dense_fp64` costs about 1 ms per single JIT call (steady median) and 0.3-0.5 ms per point in a vmap batch of 32 on 4-8 CPU threads (laptop: 1.04 ms and 0.47 ms at NPROC=4). On the A100 host, the GPU single call is launch-bound and no faster than the CPU one, which is the §3.3 reading that auto may decline the GPU; the GPU may still win per point at batch 32. Class designations are phase 3's decision, not this page's.
+**Verdict:** pending (batch 0, the campaign's rows under D9, run 2026-10-29; not yet committed). Expected, written before the runs: every parity witness is `match`, about 1e-12 relative (the laptop gave |delta log L| = 2.3e-10 at |log L| = 84.87). `jax_cpu_dense_fp64` costs about 1 ms per single JIT call (steady median) and 0.3-0.5 ms per point in a vmap batch of 32 on 4-8 CPU threads (laptop: 1.04 ms and 0.47 ms at NPROC=4). On the A100 host, the GPU single call is launch-bound and no faster than the CPU one, which is the §3.3 reading that auto may decline the GPU; the GPU may still win per point at batch 32. Class designations are phase 3's decision, not this page's.
 **Headline:** none yet.
 **Library PRs:** none (measurement only, tag 2026.10.25.1; `autolens/weak/` is identical at the tag and on main)
 **Profiling PRs:** the setup PR (draft, stacked on 2b's PR #471), then a walls PR after batch 0, then the rows PR
 **Ledger:** this page; rows will land under `results/weak/isothermal/simple/`; work list [`scripts/misc/campaigns/weak_p2g.py`](../../../scripts/misc/campaigns/weak_p2g.py) and its [README](../../../scripts/misc/campaigns/README.md)
 **Mind contract:** epic `likelihood-lifecycle`, phase 2 sub-issue 2g; issue autolens_profiling#476
-**Next:** batch 0, all 6 legs (go given 2026-10-29; held: the RAL venv carries jax/jaxlib 0.10.2, which the pin's PyAutoNerves excludes; the human decides the environment); under D9 its rows are the campaign's rows (no batch 1), then the rows PR
+**Next:** the rows PR: copy batch 0's 6 rows (RAL 413293, A100 413297) into `results/`, with catalogue and coverage
 **Fit figures:** the laptop `fit.png` (scratch tree, not committed) was opened: data, model, data-vs-model and chi-squared panels look right; the chi-squared colour bar is labelled `e- s^-1`, a library plot-unit quirk (D10)
 
 ## Why this campaign
@@ -80,6 +80,17 @@ per point 0.47 ms at batch 32, eager NumPy 44 ms per call. The breakdown steps' 
 materialised (N, 2) array and a second dispatch. These numbers only size the walls; the rows
 come from RAL.
 
+## Batch 0 (2026-10-29)
+
+| Array | Job | Legs | Result |
+|-------|-----|------|--------|
+| RAL CPU | 413293 | 2 | both exit 0; 8 s WALL each (17 s Elapsed) |
+| A100 job | 413297 | 4 | all exit 0, legs in turn; 42 s in all |
+
+Every parity witness is `match` (3 of 3). Every row is quiet (`loadavg_at_import` at most 1.9),
+so under D9 these are the campaign's rows. The walls commit records them as the basis of any
+rerun (0:30:00 on both host classes); the declared `--mem` stands (peak 0.65 GiB).
+
 ## Caveats
 
 - §3.3 is provisional; which setup is optimal on which host is phase 3's call.
@@ -113,3 +124,8 @@ nodes, so a row whose `loadavg_at_import` exceeds 8 is refused as a dashboard tr
 still counts as `current`.
 
 The batch-0 go was given with the decisions, but batch 0 was not submitted. The shared RAL venv (`/mnt/ral/jnightin/PyAuto/PyAuto`, which every submit activates) carries jax/jaxlib 0.10.2 (`site-packages/jax-0.10.2.dist-info`, `jaxlib-0.10.2.dist-info`), while the pin's PyAutoNerves excludes 0.10.* ("CPU batched LAPACK can deadlock in 0.10.x / 0.11.0", Heart#274). Rows from that environment would not match the pin's dependency floor, so the environment is the human's call. Later the same evening the human also said not to start anything new on RAL. A detached checkout of main 32c0becd was being prepared at `/mnt/ral/jnightin/profiling/autolens_profiling_p2dg`, but nothing has been submitted from it.
+
+### 2026-10-30 — batch 0 in; the walls commit
+
+Batch 0 ran 2026-10-29 (RAL 413293, A100 job 413297; every leg exit 0, every witness `match`,
+every row quiet). The walls commit records the walls; next, the rows PR.

@@ -3,13 +3,13 @@
 **Status:** open
 **Question:** What does every planned datacube/delaunay cell cost at the standard source size (Delaunay 1250 + 30 edge points) on the pinned release 2026.10.25.1, for the production datacube likelihood (one channel per `AnalysisInterferometer`, `shared_preloads=True`, summed in a `FactorGraphModel`), on the W~ and dense routes, and does each cell's cube log likelihood match an independent reference?
 **Pre-registered rule:** every planned datacube cell (22 under D1) lands `current`, with runtime and breakdown, provenance, `resources`, `fit.png` and a `parity.json` whose status is `match` against the cube reference derived from 2b's visibility-chunked eager NumPy dense reference (D3; tolerance 1e-8 x |reference| in fp64, 2b's R7). Any `diverged` witness blocks that setup until explained. Recorded here with the setup PR, before any run (2026-10-28).
-**Verdict:** pending (decisions D1-D9 adopted 2026-10-29; batch 0 not yet submitted). Expected, written before the runs: every witness is `match` (the sma smokes match to 7e-8 nats against a 1.2e-4 tolerance); W~ is the cheaper route on both hosts at every instrument; the cube costs much less than 34 single channels, because the lead channel's curvature matrix is shared and only the per-channel solve, log determinants and data vector repeat; on RAL CPU the packaged cost model picks the NumPy FFT route over numba `direct_conv` at alma_high as it did for the interferometer. Class designations are phase 3's decision, not this page's.
+**Verdict:** pending (batch 0 run 2026-10-29; batch 1 not yet). Expected, written before the runs: every witness is `match` (the sma smokes match to 7e-8 nats against a 1.2e-4 tolerance); W~ is the cheaper route on both hosts at every instrument; the cube costs much less than 34 single channels, because the lead channel's curvature matrix is shared and only the per-channel solve, log determinants and data vector repeat; on RAL CPU the packaged cost model picks the NumPy FFT route over numba `direct_conv` at alma_high as it did for the interferometer. Class designations are phase 3's decision, not this page's.
 **Headline:** none yet.
 **Library PRs:** none (measurement only, tag 2026.10.25.1)
 **Profiling PRs:** setup PR (draft; datacube and multi_dataset standard-size drivers, the 2f submits, this page), then a walls PR after batch 0, then PR B (rows, catalogue, coverage, this page's result)
 **Ledger:** this page; rows will land under `results/datacube/delaunay/`; work list [`scripts/misc/campaigns/multi_dataset_datacube_p2f.py`](../../../scripts/misc/campaigns/multi_dataset_datacube_p2f.py) and its [README](../../../scripts/misc/campaigns/README.md); the multi_dataset half is [its own page](../multi_dataset/likelihood_lifecycle_p2f.md)
 **Mind contract:** epic `likelihood-lifecycle`, phase 2 sub-issue 2f; issue autolens_profiling#475
-**Next:** batch 0 with the alma_high reference (go given 2026-10-29; held: the RAL venv carries jax/jaxlib 0.10.2, which the pin's PyAutoNerves excludes; the human decides the environment); then the walls commit, batch 1 (human go), PR B
+**Next:** batch 1 (human go; the human decides whether its RAL CPU legs wait for a quiet node), from the walls commit; then PR B
 **Fit figures:** none from RAL yet. Laptop smoke (sma, lead channel, `jax_cpu_sparse_fp64_wtilde`) opened: noise-dominated sma dirty maps as in 2b, the source reconstructed inside the caustic, nothing wrong.
 
 ## Why this campaign
@@ -87,6 +87,22 @@ The alma and alma_high witnesses need 2b's delaunay references at those instrume
 they are reused; otherwise the 2f reference tasks compute them (2b's jvla reference took
 10,727 s for 2.5e7 visibilities; alma_high has 5e6).
 
+## Batch 0 (2026-10-29)
+
+| Array | Job | Legs | Result |
+|-------|-----|------|--------|
+| RAL CPU timing arm | 413274 (tasks 0-5 datacube) | 6 | all exit 0; slowest leg the alma_high numba W~ breakdown, 882 s |
+| alma_high dense reference | 413292 | 1 | exit 0; 2501 s |
+| A100 timing arm | 413296 (tasks 0-3 datacube) | 4 | all exit 0; slowest leg the sma GPU dense breakdown, 916 s |
+
+Every datacube parity witness is `match`; the alma_high reference finalised its witnesses.
+Peak `.batch` MaxRSS: sma 30.9 GiB (413274_5, the `jax_cpu_dense_fp64_nufft` runtime), alma_high
+14.6 GiB (413274_1), reference 16.1 GiB. The walls set batch 1's `--time` (RAL 1:00:00, A100
+alma/alma_high 0:30:00 and sma 1:00:00, references 1:30:00) and `--mem` (sma and alma 64 GB,
+alma_high 32 GB, references 64 GB). The multi_dataset legs of the same arrays are on that page.
+Some RAL CPU rows were measured on a loaded node (`loadavg_at_import` up to 109; 3 of array 413274's 10
+rows exceed 8), so those would be refused as trend points.
+
 ## Caveats
 
 - XLA may merge per-channel work that is identical across channels (H and the two log
@@ -124,3 +140,9 @@ alma_high reference (`submit_campaign_p2f_batch0_references_ral_cpu_fp64`). A ne
 reference submit needs its wall.
 
 The batch-0 go was given with the decisions, but batch 0 was not submitted. The shared RAL venv (`/mnt/ral/jnightin/PyAuto/PyAuto`, which every submit activates) carries jax/jaxlib 0.10.2 (`site-packages/jax-0.10.2.dist-info`, `jaxlib-0.10.2.dist-info`), while the pin's PyAutoNerves excludes 0.10.* ("CPU batched LAPACK can deadlock in 0.10.x / 0.11.0", Heart#274). Rows from that environment would not match the pin's dependency floor, so the environment is the human's call. Later the same evening the human also said not to start anything new on RAL. A detached checkout of main 32c0becd was being prepared at `/mnt/ral/jnightin/profiling/autolens_profiling_p2dg`, but nothing has been submitted from it.
+
+### 2026-10-30 — batch 0 in; the walls commit
+
+Batch 0 ran 2026-10-29 (RAL 413274, references 413292, A100 413296; every leg exit 0, every
+witness `match`). The walls commit fills `BATCH0_WALLS` / `BATCH0_PEAK_RSS_KIB` and flips
+`WALL_BASIS_STATUS` to `measured` (batch 1 at 0:30:00-1:30:00 instead of 12:00:00 / 2-00:00:00).
