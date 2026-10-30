@@ -426,10 +426,10 @@
    "likelihood": "group/delaunay",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/d49b3d9ea46c5534f20e",
    "setup_id": "jax_cpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "group/delaunay/euclid jax_cpu_sparse_fp64@hpc_a100 [runtime]",
@@ -439,10 +439,10 @@
    "likelihood": "group/delaunay",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/80934222de6174ccb881",
    "setup_id": "jax_cpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "group/delaunay/euclid jax_cpu_sparse_fp64@hpc_ral_cpu [breakdown]",
@@ -452,10 +452,10 @@
    "likelihood": "group/delaunay",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/b5769f1f488ae7372c12",
    "setup_id": "jax_cpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "group/delaunay/euclid jax_cpu_sparse_fp64@hpc_ral_cpu [runtime]",
@@ -465,10 +465,10 @@
    "likelihood": "group/delaunay",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/f4474b23fc3ee5d4b43f",
    "setup_id": "jax_cpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "group/delaunay/euclid jax_gpu_dense_fp64@hpc_a100 [breakdown]",
@@ -478,10 +478,10 @@
    "likelihood": "group/delaunay",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/aff85997135a5ed3224a",
    "setup_id": "jax_gpu_dense_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "group/delaunay/euclid jax_gpu_dense_fp64@hpc_a100 [runtime]",
@@ -491,10 +491,10 @@
    "likelihood": "group/delaunay",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/826e517e5786c2398767",
    "setup_id": "jax_gpu_dense_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "group/delaunay/euclid jax_gpu_sparse_fp64@hpc_a100 [breakdown]",
@@ -504,10 +504,10 @@
    "likelihood": "group/delaunay",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/b93d800e34a169ae1524",
    "setup_id": "jax_gpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "group/delaunay/euclid jax_gpu_sparse_fp64@hpc_a100 [runtime]",
@@ -517,10 +517,10 @@
    "likelihood": "group/delaunay",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/af408d3bf87b7b904f2d",
    "setup_id": "jax_gpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "group/delaunay/euclid numba_cpu_sparse_fp64@hpc_ral_cpu [breakdown]",
@@ -530,10 +530,10 @@
    "likelihood": "group/delaunay",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/bf9090a811e8b72a0577",
    "setup_id": "numba_cpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "group/delaunay/euclid numba_cpu_sparse_fp64@hpc_ral_cpu [runtime]",
@@ -543,10 +543,10 @@
    "likelihood": "group/delaunay",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/22696238c7226a6971dd",
    "setup_id": "numba_cpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "group/mge/euclid jax_cpu_dense_fp64@hpc_ral_cpu [breakdown]",
@@ -556,10 +556,10 @@
    "likelihood": "group/mge",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/8c95a9c2b221426f19f1",
    "setup_id": "jax_cpu_dense_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "group/mge/euclid jax_cpu_dense_fp64@hpc_ral_cpu [runtime]",
@@ -569,10 +569,10 @@
    "likelihood": "group/mge",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/eb438402eb57e940aa63",
    "setup_id": "jax_cpu_dense_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "group/mge/euclid jax_gpu_dense_fp64@hpc_a100 [breakdown]",
@@ -582,10 +582,10 @@
    "likelihood": "group/mge",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/89c07a5ea84c2d737180",
    "setup_id": "jax_gpu_dense_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "group/mge/euclid jax_gpu_dense_fp64@hpc_a100 [runtime]",
@@ -595,10 +595,10 @@
    "likelihood": "group/mge",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/c631285eca889fc2c2c4",
    "setup_id": "jax_gpu_dense_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "group/rectangular/euclid jax_cpu_sparse_fp64@hpc_a100 [breakdown]",
@@ -608,10 +608,10 @@
    "likelihood": "group/rectangular",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/50064de0f362f2d59fa2",
    "setup_id": "jax_cpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "group/rectangular/euclid jax_cpu_sparse_fp64@hpc_a100 [runtime]",
@@ -621,10 +621,10 @@
    "likelihood": "group/rectangular",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/03069016cfefd3707cea",
    "setup_id": "jax_cpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "group/rectangular/euclid jax_cpu_sparse_fp64@hpc_ral_cpu [breakdown]",
@@ -634,10 +634,10 @@
    "likelihood": "group/rectangular",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/cd4f85adc9ef8ed74b97",
    "setup_id": "jax_cpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "group/rectangular/euclid jax_cpu_sparse_fp64@hpc_ral_cpu [runtime]",
@@ -647,10 +647,10 @@
    "likelihood": "group/rectangular",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/acba8d20547d37e8f89c",
    "setup_id": "jax_cpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "group/rectangular/euclid jax_gpu_dense_fp64@hpc_a100 [breakdown]",
@@ -660,10 +660,10 @@
    "likelihood": "group/rectangular",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/02a351eba5bcd45fca70",
    "setup_id": "jax_gpu_dense_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "group/rectangular/euclid jax_gpu_dense_fp64@hpc_a100 [runtime]",
@@ -673,10 +673,10 @@
    "likelihood": "group/rectangular",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/506bcbce87ad6c020945",
    "setup_id": "jax_gpu_dense_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "group/rectangular/euclid jax_gpu_sparse_fp64@hpc_a100 [breakdown]",
@@ -686,10 +686,10 @@
    "likelihood": "group/rectangular",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/85b8272f6425b3e226fb",
    "setup_id": "jax_gpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "group/rectangular/euclid jax_gpu_sparse_fp64@hpc_a100 [runtime]",
@@ -699,10 +699,10 @@
    "likelihood": "group/rectangular",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/34335ddd284ac5077dc2",
    "setup_id": "jax_gpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "group/rectangular/euclid numba_cpu_sparse_fp64@hpc_ral_cpu [breakdown]",
@@ -712,10 +712,10 @@
    "likelihood": "group/rectangular",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/9bf45e8af04c02a74419",
    "setup_id": "numba_cpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "group/rectangular/euclid numba_cpu_sparse_fp64@hpc_ral_cpu [runtime]",
@@ -725,10 +725,10 @@
    "likelihood": "group/rectangular",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/a393fa2e139fd0560564",
    "setup_id": "numba_cpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "imaging/delaunay/ao jax_cpu_sparse_fp64@hpc_a100 [breakdown]",
@@ -3026,10 +3026,10 @@
    "likelihood": "multi_galaxy/delaunay",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/f2ba43f663bf3aebe064",
    "setup_id": "jax_cpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_galaxy/delaunay/hst jax_cpu_sparse_fp64@hpc_a100 [runtime]",
@@ -3039,10 +3039,10 @@
    "likelihood": "multi_galaxy/delaunay",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/3ba2b009257a8b8c7f0e",
    "setup_id": "jax_cpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_galaxy/delaunay/hst jax_cpu_sparse_fp64@hpc_ral_cpu [breakdown]",
@@ -3052,10 +3052,10 @@
    "likelihood": "multi_galaxy/delaunay",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/ea891fbd1cb059a168e0",
    "setup_id": "jax_cpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_galaxy/delaunay/hst jax_cpu_sparse_fp64@hpc_ral_cpu [runtime]",
@@ -3065,10 +3065,10 @@
    "likelihood": "multi_galaxy/delaunay",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/d3102456687aef830651",
    "setup_id": "jax_cpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_galaxy/delaunay/hst jax_gpu_dense_fp64@hpc_a100 [breakdown]",
@@ -3078,10 +3078,10 @@
    "likelihood": "multi_galaxy/delaunay",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/7a736021c49c821fec35",
    "setup_id": "jax_gpu_dense_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_galaxy/delaunay/hst jax_gpu_dense_fp64@hpc_a100 [runtime]",
@@ -3091,10 +3091,10 @@
    "likelihood": "multi_galaxy/delaunay",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/5a510cca4fff0c0d5b58",
    "setup_id": "jax_gpu_dense_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_galaxy/delaunay/hst jax_gpu_sparse_fp64@hpc_a100 [breakdown]",
@@ -3104,10 +3104,10 @@
    "likelihood": "multi_galaxy/delaunay",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/6800e37a11ef946aea8d",
    "setup_id": "jax_gpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_galaxy/delaunay/hst jax_gpu_sparse_fp64@hpc_a100 [runtime]",
@@ -3117,10 +3117,10 @@
    "likelihood": "multi_galaxy/delaunay",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/ec0a8fbc9c4e2d8b587e",
    "setup_id": "jax_gpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_galaxy/delaunay/hst numba_cpu_sparse_fp64@hpc_ral_cpu [breakdown]",
@@ -3130,10 +3130,10 @@
    "likelihood": "multi_galaxy/delaunay",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/a08ac491d36b7f87eac3",
    "setup_id": "numba_cpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_galaxy/delaunay/hst numba_cpu_sparse_fp64@hpc_ral_cpu [runtime]",
@@ -3143,10 +3143,10 @@
    "likelihood": "multi_galaxy/delaunay",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/fc2096cb1c848e64b674",
    "setup_id": "numba_cpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_galaxy/mge/hst jax_cpu_dense_fp64@hpc_ral_cpu [breakdown]",
@@ -3156,10 +3156,10 @@
    "likelihood": "multi_galaxy/mge",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/1c212c76bc15a13875bd",
    "setup_id": "jax_cpu_dense_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_galaxy/mge/hst jax_cpu_dense_fp64@hpc_ral_cpu [runtime]",
@@ -3169,10 +3169,10 @@
    "likelihood": "multi_galaxy/mge",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/2ee75bc51ab781c2df4e",
    "setup_id": "jax_cpu_dense_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_galaxy/mge/hst jax_gpu_dense_fp64@hpc_a100 [breakdown]",
@@ -3182,10 +3182,10 @@
    "likelihood": "multi_galaxy/mge",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/75609d914d28566b7e60",
    "setup_id": "jax_gpu_dense_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_galaxy/mge/hst jax_gpu_dense_fp64@hpc_a100 [runtime]",
@@ -3195,10 +3195,10 @@
    "likelihood": "multi_galaxy/mge",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/ad7e6ff9cd88a460649a",
    "setup_id": "jax_gpu_dense_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_galaxy/rectangular/hst jax_cpu_sparse_fp64@hpc_a100 [breakdown]",
@@ -3208,10 +3208,10 @@
    "likelihood": "multi_galaxy/rectangular",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/b9d38cbc51bbfb2e9940",
    "setup_id": "jax_cpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_galaxy/rectangular/hst jax_cpu_sparse_fp64@hpc_a100 [runtime]",
@@ -3221,10 +3221,10 @@
    "likelihood": "multi_galaxy/rectangular",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/4cbaa1a32013c65a1422",
    "setup_id": "jax_cpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_galaxy/rectangular/hst jax_cpu_sparse_fp64@hpc_ral_cpu [breakdown]",
@@ -3234,10 +3234,10 @@
    "likelihood": "multi_galaxy/rectangular",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/fcfa55dea2112c6eb2a4",
    "setup_id": "jax_cpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_galaxy/rectangular/hst jax_cpu_sparse_fp64@hpc_ral_cpu [runtime]",
@@ -3247,10 +3247,10 @@
    "likelihood": "multi_galaxy/rectangular",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/51f5d0ecf49223f09154",
    "setup_id": "jax_cpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_galaxy/rectangular/hst jax_gpu_dense_fp64@hpc_a100 [breakdown]",
@@ -3260,10 +3260,10 @@
    "likelihood": "multi_galaxy/rectangular",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/f80a4307e5c3d2a14af8",
    "setup_id": "jax_gpu_dense_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_galaxy/rectangular/hst jax_gpu_dense_fp64@hpc_a100 [runtime]",
@@ -3273,10 +3273,10 @@
    "likelihood": "multi_galaxy/rectangular",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/6d59cdcd3eb1e4abf967",
    "setup_id": "jax_gpu_dense_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_galaxy/rectangular/hst jax_gpu_sparse_fp64@hpc_a100 [breakdown]",
@@ -3286,10 +3286,10 @@
    "likelihood": "multi_galaxy/rectangular",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/13ca9c1a3c5466bb1e65",
    "setup_id": "jax_gpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_galaxy/rectangular/hst jax_gpu_sparse_fp64@hpc_a100 [runtime]",
@@ -3299,10 +3299,10 @@
    "likelihood": "multi_galaxy/rectangular",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/f6d5339ad2b2bd8b790b",
    "setup_id": "jax_gpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_galaxy/rectangular/hst numba_cpu_sparse_fp64@hpc_ral_cpu [breakdown]",
@@ -3312,10 +3312,10 @@
    "likelihood": "multi_galaxy/rectangular",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/c832453a839eeb1253fc",
    "setup_id": "numba_cpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_galaxy/rectangular/hst numba_cpu_sparse_fp64@hpc_ral_cpu [runtime]",
@@ -3325,10 +3325,10 @@
    "likelihood": "multi_galaxy/rectangular",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/a3ef052bb150d3365992",
    "setup_id": "numba_cpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "point_source_image/image_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [breakdown]",
@@ -3633,91 +3633,91 @@
   },
   {
    "class": "optimal",
-   "current": 0,
+   "current": 2,
    "likelihood": "group/delaunay",
    "measurement": "breakdown",
-   "missing": 2,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
   {
    "class": "optimal",
-   "current": 0,
+   "current": 2,
    "likelihood": "group/delaunay",
    "measurement": "runtime",
-   "missing": 2,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
   {
    "class": "secondary",
-   "current": 0,
+   "current": 3,
    "likelihood": "group/delaunay",
    "measurement": "breakdown",
-   "missing": 3,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
   {
    "class": "secondary",
-   "current": 0,
+   "current": 3,
    "likelihood": "group/delaunay",
    "measurement": "runtime",
-   "missing": 3,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
   {
    "class": "optimal",
-   "current": 0,
+   "current": 2,
    "likelihood": "group/mge",
    "measurement": "breakdown",
-   "missing": 2,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
   {
    "class": "optimal",
-   "current": 0,
+   "current": 2,
    "likelihood": "group/mge",
    "measurement": "runtime",
-   "missing": 2,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
   {
    "class": "optimal",
-   "current": 0,
+   "current": 2,
    "likelihood": "group/rectangular",
    "measurement": "breakdown",
-   "missing": 2,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
   {
    "class": "optimal",
-   "current": 0,
+   "current": 2,
    "likelihood": "group/rectangular",
    "measurement": "runtime",
-   "missing": 2,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
   {
    "class": "secondary",
-   "current": 0,
+   "current": 3,
    "likelihood": "group/rectangular",
    "measurement": "breakdown",
-   "missing": 3,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
   {
    "class": "secondary",
-   "current": 0,
+   "current": 3,
    "likelihood": "group/rectangular",
    "measurement": "runtime",
-   "missing": 3,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
@@ -3975,91 +3975,91 @@
   },
   {
    "class": "optimal",
-   "current": 0,
+   "current": 2,
    "likelihood": "multi_galaxy/delaunay",
    "measurement": "breakdown",
-   "missing": 2,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
   {
    "class": "optimal",
-   "current": 0,
+   "current": 2,
    "likelihood": "multi_galaxy/delaunay",
    "measurement": "runtime",
-   "missing": 2,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
   {
    "class": "secondary",
-   "current": 0,
+   "current": 3,
    "likelihood": "multi_galaxy/delaunay",
    "measurement": "breakdown",
-   "missing": 3,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
   {
    "class": "secondary",
-   "current": 0,
+   "current": 3,
    "likelihood": "multi_galaxy/delaunay",
    "measurement": "runtime",
-   "missing": 3,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
   {
    "class": "optimal",
-   "current": 0,
+   "current": 2,
    "likelihood": "multi_galaxy/mge",
    "measurement": "breakdown",
-   "missing": 2,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
   {
    "class": "optimal",
-   "current": 0,
+   "current": 2,
    "likelihood": "multi_galaxy/mge",
    "measurement": "runtime",
-   "missing": 2,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
   {
    "class": "optimal",
-   "current": 0,
+   "current": 2,
    "likelihood": "multi_galaxy/rectangular",
    "measurement": "breakdown",
-   "missing": 2,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
   {
    "class": "optimal",
-   "current": 0,
+   "current": 2,
    "likelihood": "multi_galaxy/rectangular",
    "measurement": "runtime",
-   "missing": 2,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
   {
    "class": "secondary",
-   "current": 0,
+   "current": 3,
    "likelihood": "multi_galaxy/rectangular",
    "measurement": "breakdown",
-   "missing": 3,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
   {
    "class": "secondary",
-   "current": 0,
+   "current": 3,
    "likelihood": "multi_galaxy/rectangular",
    "measurement": "runtime",
-   "missing": 3,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
@@ -4255,74 +4255,74 @@
    {
     "cell": "group/delaunay/euclid jax_cpu_sparse_fp64@hpc_a100 [parity]",
     "class": "secondary",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/93f25f455dab0bd8f611",
+    "state": "match"
    },
    {
     "cell": "group/delaunay/euclid jax_cpu_sparse_fp64@hpc_ral_cpu [parity]",
     "class": "secondary",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/3312f41b04546c2ef2b6",
+    "state": "match"
    },
    {
     "cell": "group/delaunay/euclid jax_gpu_dense_fp64@hpc_a100 [parity]",
     "class": "optimal",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/4d43ba6e6f51755c0a00",
+    "state": "match"
    },
    {
     "cell": "group/delaunay/euclid jax_gpu_sparse_fp64@hpc_a100 [parity]",
     "class": "secondary",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/a99fbbd0cb8f8eaedcc4",
+    "state": "match"
    },
    {
     "cell": "group/delaunay/euclid numba_cpu_sparse_fp64@hpc_ral_cpu [parity]",
     "class": "optimal",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/15ff2e809477e969c467",
+    "state": "match"
    },
    {
     "cell": "group/mge/euclid jax_cpu_dense_fp64@hpc_ral_cpu [parity]",
     "class": "optimal",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/5637649f49871e13e428",
+    "state": "match"
    },
    {
     "cell": "group/mge/euclid jax_gpu_dense_fp64@hpc_a100 [parity]",
     "class": "optimal",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/883d959ca124d30992b1",
+    "state": "match"
    },
    {
     "cell": "group/rectangular/euclid jax_cpu_sparse_fp64@hpc_a100 [parity]",
     "class": "secondary",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/c353682039acea4b886d",
+    "state": "match"
    },
    {
     "cell": "group/rectangular/euclid jax_cpu_sparse_fp64@hpc_ral_cpu [parity]",
     "class": "secondary",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/6e8c2db0c3afbfa0112f",
+    "state": "match"
    },
    {
     "cell": "group/rectangular/euclid jax_gpu_dense_fp64@hpc_a100 [parity]",
     "class": "optimal",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/e69558ac3425ca0f7c32",
+    "state": "match"
    },
    {
     "cell": "group/rectangular/euclid jax_gpu_sparse_fp64@hpc_a100 [parity]",
     "class": "secondary",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/1fd3b971b77882c2ec7f",
+    "state": "match"
    },
    {
     "cell": "group/rectangular/euclid numba_cpu_sparse_fp64@hpc_ral_cpu [parity]",
     "class": "optimal",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/d1eb8e9cc712b7a123b0",
+    "state": "match"
    },
    {
     "cell": "imaging/delaunay/ao jax_cpu_sparse_fp64@hpc_a100 [parity]",
@@ -4855,74 +4855,74 @@
    {
     "cell": "multi_galaxy/delaunay/hst jax_cpu_sparse_fp64@hpc_a100 [parity]",
     "class": "secondary",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/c644851d8b40c926e241",
+    "state": "match"
    },
    {
     "cell": "multi_galaxy/delaunay/hst jax_cpu_sparse_fp64@hpc_ral_cpu [parity]",
     "class": "secondary",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/844f80aec856dd9e86ff",
+    "state": "match"
    },
    {
     "cell": "multi_galaxy/delaunay/hst jax_gpu_dense_fp64@hpc_a100 [parity]",
     "class": "optimal",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/dfd272620e2836754417",
+    "state": "match"
    },
    {
     "cell": "multi_galaxy/delaunay/hst jax_gpu_sparse_fp64@hpc_a100 [parity]",
     "class": "secondary",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/633b3471528047682453",
+    "state": "match"
    },
    {
     "cell": "multi_galaxy/delaunay/hst numba_cpu_sparse_fp64@hpc_ral_cpu [parity]",
     "class": "optimal",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/ba7ba9f1625678852fd7",
+    "state": "match"
    },
    {
     "cell": "multi_galaxy/mge/hst jax_cpu_dense_fp64@hpc_ral_cpu [parity]",
     "class": "optimal",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/9edfaee55c6a1193e6f4",
+    "state": "match"
    },
    {
     "cell": "multi_galaxy/mge/hst jax_gpu_dense_fp64@hpc_a100 [parity]",
     "class": "optimal",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/9068d8507411cfbcf803",
+    "state": "match"
    },
    {
     "cell": "multi_galaxy/rectangular/hst jax_cpu_sparse_fp64@hpc_a100 [parity]",
     "class": "secondary",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/4303793bea7403d50fd2",
+    "state": "match"
    },
    {
     "cell": "multi_galaxy/rectangular/hst jax_cpu_sparse_fp64@hpc_ral_cpu [parity]",
     "class": "secondary",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/d7185e051ab18a8d35e1",
+    "state": "match"
    },
    {
     "cell": "multi_galaxy/rectangular/hst jax_gpu_dense_fp64@hpc_a100 [parity]",
     "class": "optimal",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/e291f6a166388b23e52f",
+    "state": "match"
    },
    {
     "cell": "multi_galaxy/rectangular/hst jax_gpu_sparse_fp64@hpc_a100 [parity]",
     "class": "secondary",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/dd733151c3847dd9349f",
+    "state": "match"
    },
    {
     "cell": "multi_galaxy/rectangular/hst numba_cpu_sparse_fp64@hpc_ral_cpu [parity]",
     "class": "optimal",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/b7ba7f751e33237bf6a3",
+    "state": "match"
    },
    {
     "cell": "point_source_image/image_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [parity]",
@@ -5018,40 +5018,40 @@
     "class": "optimal",
     "diverged": 0,
     "likelihood": "group/delaunay",
-    "match": 0,
-    "missing": 2,
+    "match": 2,
+    "missing": 0,
     "not_assessed": 0
    },
    {
     "class": "secondary",
     "diverged": 0,
     "likelihood": "group/delaunay",
-    "match": 0,
-    "missing": 3,
+    "match": 3,
+    "missing": 0,
     "not_assessed": 0
    },
    {
     "class": "optimal",
     "diverged": 0,
     "likelihood": "group/mge",
-    "match": 0,
-    "missing": 2,
+    "match": 2,
+    "missing": 0,
     "not_assessed": 0
    },
    {
     "class": "optimal",
     "diverged": 0,
     "likelihood": "group/rectangular",
-    "match": 0,
-    "missing": 2,
+    "match": 2,
+    "missing": 0,
     "not_assessed": 0
    },
    {
     "class": "secondary",
     "diverged": 0,
     "likelihood": "group/rectangular",
-    "match": 0,
-    "missing": 3,
+    "match": 3,
+    "missing": 0,
     "not_assessed": 0
    },
    {
@@ -5170,40 +5170,40 @@
     "class": "optimal",
     "diverged": 0,
     "likelihood": "multi_galaxy/delaunay",
-    "match": 0,
-    "missing": 2,
+    "match": 2,
+    "missing": 0,
     "not_assessed": 0
    },
    {
     "class": "secondary",
     "diverged": 0,
     "likelihood": "multi_galaxy/delaunay",
-    "match": 0,
-    "missing": 3,
+    "match": 3,
+    "missing": 0,
     "not_assessed": 0
    },
    {
     "class": "optimal",
     "diverged": 0,
     "likelihood": "multi_galaxy/mge",
-    "match": 0,
-    "missing": 2,
+    "match": 2,
+    "missing": 0,
     "not_assessed": 0
    },
    {
     "class": "optimal",
     "diverged": 0,
     "likelihood": "multi_galaxy/rectangular",
-    "match": 0,
-    "missing": 2,
+    "match": 2,
+    "missing": 0,
     "not_assessed": 0
    },
    {
     "class": "secondary",
     "diverged": 0,
     "likelihood": "multi_galaxy/rectangular",
-    "match": 0,
-    "missing": 3,
+    "match": 3,
+    "missing": 0,
     "not_assessed": 0
    },
    {
@@ -5249,8 +5249,8 @@
   ],
   "totals": {
    "diverged": 0,
-   "match": 91,
-   "missing": 45,
+   "match": 115,
+   "missing": 21,
    "not_assessed": 0,
    "setup_cells": 136
   }
@@ -5269,24 +5269,26 @@
   "designations": "catalogue/provisional_designations.json"
  },
  "totals": {
-  "current": 182,
-  "current_records_unplanned": 138,
-  "missing": 90,
+  "current": 230,
+  "current_records_unplanned": 158,
+  "missing": 42,
   "missing_size_fallback": 0,
   "planned_cells": 272,
-  "records_superseded": 498,
+  "records_superseded": 518,
   "stale": 0,
   "superseded": 0
  },
  "unplanned_current_records": [
   "lifecycle/0123a0897b81eeacf937",
   "lifecycle/02470330dc1944ce5105",
+  "lifecycle/034e6f55fb64137e2c3a",
   "lifecycle/04add9a30a520a293acf",
   "lifecycle/0511dfaa34cdcf7e5f88",
   "lifecycle/0645e8075d804d452f5c",
   "lifecycle/08f595a548287180e30f",
   "lifecycle/09602f2eb9d94f92def4",
   "lifecycle/0d77d1377c7ffa548adc",
+  "lifecycle/0e4eed8ae034e2d40659",
   "lifecycle/106177d28e1e8b535256",
   "lifecycle/113be371339f7ba3799a",
   "lifecycle/13789af4a800483afae1",
@@ -5297,9 +5299,12 @@
   "lifecycle/1a5d4536a8f9669e9def",
   "lifecycle/1b0832e72dc85ae51baf",
   "lifecycle/1ed4f8b68f193aae444b",
+  "lifecycle/1ff4f937c6f29e68b213",
   "lifecycle/2790c5800540e06ba221",
   "lifecycle/2a53807c1b85c80c4198",
   "lifecycle/2b67848ae18e606cd9b0",
+  "lifecycle/2c6114c7be44886756e5",
+  "lifecycle/3257d761fa5ed8bfc7a0",
   "lifecycle/340c91f9524b196bdbed",
   "lifecycle/345b903cfcd5d079c143",
   "lifecycle/35132a47b09428b3d2a5",
@@ -5316,11 +5321,15 @@
   "lifecycle/43aa0cad356ad4531e8d",
   "lifecycle/4515cc21430d49bdd7bb",
   "lifecycle/46e1408838d0045f5cfb",
+  "lifecycle/482274e1c29bac41a49c",
+  "lifecycle/4b0c8b2edaa4b5a24b63",
   "lifecycle/4ca130ae912a1d0cb669",
   "lifecycle/552e143742d21b03df07",
+  "lifecycle/55641ee3fdfa922635c3",
   "lifecycle/5731d3d1fab00cc16bf0",
   "lifecycle/586b2d1ab81994866e51",
   "lifecycle/58c3973dd145af30599f",
+  "lifecycle/5985aa1f7a1f305a5cca",
   "lifecycle/5c366a3050ff073f7047",
   "lifecycle/5e3fdc9e94b3396f8f17",
   "lifecycle/60b310553366c21a0b76",
@@ -5328,6 +5337,7 @@
   "lifecycle/62df8f844c942ffd9d67",
   "lifecycle/64bfaad3ca8009082a55",
   "lifecycle/6536036ef1b447a6ec57",
+  "lifecycle/66443bc95778ae99c344",
   "lifecycle/6e7f6f4d600d1d9e8afa",
   "lifecycle/70c2c401e592ce344f07",
   "lifecycle/75a27609e90cfbbaba03",
@@ -5370,6 +5380,7 @@
   "lifecycle/b317e2f4906d04c7d20f",
   "lifecycle/b56a7e7f544b23f03a71",
   "lifecycle/baad8ee674afc7784af8",
+  "lifecycle/bb3c117d46619765cfda",
   "lifecycle/bc7df8b4412157fe75b0",
   "lifecycle/bcc70464fa3ed6aa0eb6",
   "lifecycle/bdce7b421114b209b393",
@@ -5378,6 +5389,7 @@
   "lifecycle/c358b66c9a4580cdd9cf",
   "lifecycle/c4229ffc28288958a0cb",
   "lifecycle/c4907860cec0c24b92ae",
+  "lifecycle/c6346cf0066e17c15f39",
   "lifecycle/c6485a8300ff953e28e8",
   "lifecycle/c666363cfbdfbba6a816",
   "lifecycle/c7e10237fca59b096387",
@@ -5396,16 +5408,22 @@
   "lifecycle/d8225629fe96234ab320",
   "lifecycle/d9665200a938db05f2d0",
   "lifecycle/dc712945a544e1964d19",
+  "lifecycle/dcddae87a122ea588e91",
   "lifecycle/dd3071d1a421cb825e61",
   "lifecycle/ddc97016237dc9b022ab",
   "lifecycle/de2dc536a797eaf27ad5",
   "lifecycle/de6c4a5ffa9ca0caa803",
+  "lifecycle/df666d1343af6c5bbc03",
   "lifecycle/e0f949952de95a3269c1",
+  "lifecycle/e132618e17a8e7e98c83",
   "lifecycle/e1c30e7d590fc5426994",
   "lifecycle/e3fbaa69910cdaf37674",
   "lifecycle/e4bbdcea07590b40e1bc",
   "lifecycle/e5e7ba9a7cd6308a8230",
+  "lifecycle/ea33e28df6fac7b8db50",
+  "lifecycle/ed0a74fc9b547a4df82d",
   "lifecycle/eeddba2b103c0e31af3b",
+  "lifecycle/f04b65e0236da45e7aa8",
   "lifecycle/f18b9ad5b0ac13cbf5a9",
   "lifecycle/f2d8c60fa7436997e676",
   "lifecycle/f39b7653da7a75bf1763",
@@ -5413,6 +5431,8 @@
   "lifecycle/f5cb0d1c73f5eff98d58",
   "lifecycle/f744f5cdd312bfcb3075",
   "lifecycle/f8183573b4156066c112",
+  "lifecycle/f8c40a3fef4c40ab11d4",
+  "lifecycle/f8d69749b09c284c09c4",
   "lifecycle/fa769c6cdc1bd22e3b29",
   "lifecycle/fb1a4685b954dc122761",
   "lifecycle/fbcb5b2dfb6bff9192e7",

@@ -1,0 +1,196 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "hostname": "euclid-ral-gpu-1",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 124,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2dg/output/jax_cache/p2d_413454_7",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-10-30T11:03:21Z",
+      "host": "euclid-ral-gpu-1",
+      "slurm": {
+        "job_id": "413454",
+        "array_job_id": null,
+        "array_task_id": null
+      },
+      "loadavg_at_import": [
+        4.07,
+        4.93,
+        3.5
+      ],
+      "loadavg_at_write": [
+        3.08,
+        4.55,
+        3.44
+      ],
+      "profiling_revision": "830314e9bcafafd469f0985f9d1c9629cca830ff",
+      "library_revisions": {
+        "autolens_profiling": "830314e9bcafafd469f0985f9d1c9629cca830ff",
+        "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+        "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+        "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+        "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+        "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.65.1",
+        "nufftax": "0.6.1",
+        "finufft": "2.5.1"
+      }
+    },
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 4687 MiB, 81920 MiB"
+  },
+  "resources": {
+    "resources_schema": 1,
+    "engine": "jax",
+    "device": "gpu",
+    "cpus_per_eval": 8,
+    "cpus_per_eval_basis": "jax gpu: one device; cpus_per_eval = NPROC host threads",
+    "devices_per_eval": 1,
+    "peak_rss_gb": 1.712415,
+    "peak_rss_basis": "in_process_ru_maxrss",
+    "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
+  },
+  "instrument": "euclid",
+  "model": "mge",
+  "use_mixed_precision": false,
+  "configuration": {
+    "dataset_type": "group",
+    "pixel_scale_arcsec": 0.1,
+    "mask_radius_arcsec": 7.5,
+    "image_pixels_masked": 17692,
+    "over_sampled_pixels": 71920,
+    "source_pixels": null,
+    "source_pixels_requested": null,
+    "standard_size": true,
+    "galaxy_group_cell": {
+      "dataset_type": "group",
+      "instrument": "euclid",
+      "dataset": "autolens_workspace scripts/group/simulator.py (grid 250x250 at 0.1\", galaxies, exposure 300 s, sky 0.1) and modeling.py (7.5\" mask, radial-bin over-sampling on every galaxy); autolens_visualization true_models/group.py; PSF from instruments/imaging.py euclid (21x21, sigma 0.1\")",
+      "mask_radius_arcsec": 7.5,
+      "noise_scaled_region": null,
+      "lens_light": "workspace MGE: 20 linear Gaussians per main lens, 10 per extra galaxy (centre fixed)",
+      "main_lenses": 1,
+      "extra_galaxies": 2,
+      "ruling": "likelihood-lifecycle 2d draft (#473), decisions D1-D9 on the campaign page",
+      "source": "MGE, 20 linear Gaussians (one basis)",
+      "sequence": {
+        "kind": "iid",
+        "unit_low": 0.4,
+        "unit_high": 0.6,
+        "seed": 235
+      }
+    },
+    "memo_provenance": {
+      "requested": "off",
+      "settings_nnls_warm_start_memo": false,
+      "env_AUTOARRAY_NNLS_WARM_START": "0",
+      "env_before": null,
+      "note": "Both gates are set for memo=off: the Settings flag and the AUTOARRAY_NNLS_WARM_START env kill-switch (autoarray/inversion/inversion/nnls_memo.py:63). settings_nnls_warm_start_memo is read back off the constructed Settings, so it records what took effect. The library default is true and both production projects leave it unset."
+    },
+    "instance": "iid draw 0 of the seeded sequence",
+    "instance_unit_vector": [
+      0.499784489007424,
+      0.41402443684610074,
+      0.41327450881714656,
+      0.4200167345680767,
+      0.5789514047288555,
+      0.4702516857248635,
+      0.567334291975647,
+      0.47173759315010344,
+      0.5239626288064884,
+      0.5543072472409505,
+      0.5399346262699198,
+      0.5099305691842051,
+      0.5974626164364525,
+      0.4381789532715836,
+      0.5552315204832754,
+      0.5058238713539893,
+      0.45735024341537395,
+      0.5870995335054062,
+      0.509803788830344,
+      0.41707028300618887,
+      0.5825033050631517
+    ],
+    "inversion_path": "dense",
+    "inversion_class": "InversionImagingMapping",
+    "sparse_batch_size": null,
+    "free_parameters": 21,
+    "n_repeats": 10,
+    "fast": false,
+    "host_load_avg_start": [
+      3.9,
+      4.88,
+      3.5
+    ],
+    "host_load_avg_end": [
+      3.08,
+      4.55,
+      3.44
+    ],
+    "xla_cpu_workaround": null
+  },
+  "log_evidence_jit": 33363.82904369074,
+  "full_pipeline_single_jit": 0.007339802302885801,
+  "full_pipeline_single_jit_median": 0.007151914527639747,
+  "full_pipeline_single_jit_median_ms": 7.151914527639747,
+  "full_pipeline_single_jit_p10_ms": 7.125601032748818,
+  "full_pipeline_single_jit_p90_ms": 7.1863711113110185,
+  "full_pipeline_single_jit_median_protocol": {
+    "n_warm": 5,
+    "n_timed": 200,
+    "statistic": "median of individually timed calls after warm calls",
+    "full_pipeline_single_jit_is": "mean of one 10-call block after one first call (first block after compile)",
+    "issue": "autolens_profiling#371; timing-noise audit P8 (#362)"
+  },
+  "vmap": {
+    "batch_size": 64,
+    "batch_size_requested": 64,
+    "batch_size_source": "galaxy_group_standard.VMAP_BATCH_GPU (provisional, D8)",
+    "batch_time": 0.05293796779587865,
+    "per_call": 0.0008271557468106039,
+    "speedup_vs_single_jit": 8.87,
+    "instances": "draw 0 broadcast to the batch (the runtime cells' convention)",
+    "attempts": []
+  },
+  "jit_phases": {
+    "full_pipeline": {
+      "lower_s": 2.571833519032225,
+      "compile_s": 11.409925892949104,
+      "first_call_s": 0.3002652390860021,
+      "steady_per_call_s": 0.007339802302885801
+    },
+    "full_pipeline_vmap64": {
+      "first_call_s": 18.29014086292591,
+      "batch_per_call_s": 0.05293796779587865,
+      "steady_per_call_s": 0.0008271557468106039
+    }
+  },
+  "timer": {
+    "cell_build": 0.9168910540174693,
+    "full_pipeline_lower": 2.571833519032225,
+    "full_pipeline_compile": 11.409925892949104,
+    "full_pipeline_first_call": 0.3002652390860021,
+    "full_pipeline_steady_x10": 0.073398023028858,
+    "full_pipeline_vmap64_first_call": 18.29014086292591,
+    "full_pipeline_vmap64_steady_x10": 0.5293796779587865
+  },
+  "parity_reference_log_evidence": 33363.829043690785
+}

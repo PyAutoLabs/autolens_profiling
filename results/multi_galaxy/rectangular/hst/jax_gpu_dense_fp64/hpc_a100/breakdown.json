@@ -1,0 +1,314 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "hostname": "euclid-ral-gpu-1",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 124,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2dg/output/jax_cache/p2d_413453_10",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-10-30T11:07:47Z",
+      "host": "euclid-ral-gpu-1",
+      "slurm": {
+        "job_id": "413453",
+        "array_job_id": null,
+        "array_task_id": null
+      },
+      "loadavg_at_import": [
+        3.0,
+        3.85,
+        3.37
+      ],
+      "loadavg_at_write": [
+        2.95,
+        3.67,
+        3.35
+      ],
+      "profiling_revision": "830314e9bcafafd469f0985f9d1c9629cca830ff",
+      "library_revisions": {
+        "autolens_profiling": "830314e9bcafafd469f0985f9d1c9629cca830ff",
+        "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+        "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+        "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+        "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+        "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.65.1",
+        "nufftax": "0.6.1",
+        "finufft": "2.5.1"
+      }
+    },
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 2559 MiB, 81920 MiB"
+  },
+  "resources": {
+    "resources_schema": 1,
+    "engine": "jax",
+    "device": "gpu",
+    "cpus_per_eval": 8,
+    "cpus_per_eval_basis": "jax gpu: one device; cpus_per_eval = NPROC host threads",
+    "devices_per_eval": 1,
+    "peak_rss_gb": 1.32803,
+    "peak_rss_basis": "in_process_ru_maxrss",
+    "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
+  },
+  "instrument": "hst",
+  "model": "rectangular",
+  "use_mixed_precision": false,
+  "configuration": {
+    "dataset_type": "multi_galaxy",
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.0,
+    "image_pixels_masked": 11304,
+    "over_sampled_pixels": 47904,
+    "source_pixels": 1225,
+    "source_pixels_requested": 1225,
+    "standard_size": true,
+    "galaxy_group_cell": {
+      "dataset_type": "multi_galaxy",
+      "instrument": "hst",
+      "dataset": "autolens_workspace scripts/multi_galaxy/simulator.py (grid 200x200 at 0.05\", galaxies, exposure 900 s, sky 0.1, mask_extra_galaxies 3 x 0.3\") and modeling.py (3.0\" mask, noise scaling, radial-bin over-sampling on both lenses); autolens_visualization true_models/multi_galaxy.py; PSF from instruments/imaging.py hst (21x21, sigma 0.05\")",
+      "mask_radius_arcsec": 3.0,
+      "noise_scaled_region": {
+        "centre": [
+          2.2,
+          1.6
+        ],
+        "radius": 0.9
+      },
+      "lens_light": "workspace MGE: 20 linear Gaussians per main lens",
+      "main_lenses": 2,
+      "extra_galaxies": 0,
+      "ruling": "likelihood-lifecycle 2d draft (#473), decisions D1-D9 on the campaign page",
+      "production_preset": {
+        "preset": "hst_rect_adapt_standard_multi_galaxy",
+        "variant": "production",
+        "provenance": "subhalo_validation/scripts/pipelines/rectangular_adapt.py (rect_adapt source_pix[2], job 342311): RectangularBilinearAdaptImage shape (32, 32) (MESH_PIXELS_YX :38), regularization Adapt; the rest of the stage (adapt S/N cap, over-sampling, MGE, threads) as hst_source_pix_2 \u2014 production data (human ruling 2026-10-24): subtracted S/N adapt image, uncapped over-sampling cut; RectangularBilinearAdaptImage mesh; standard size (human ruling 2026-10-23): rectangular 32x32 -> 35x35 \u2014 likelihood-lifecycle 2d (#473, decision D5): the hst_rect_adapt_standard preset (hst, standard size) on the multi_galaxy dataset at hst; light-profile over-sampling [4, 2, 2] at [0.3, 0.6] on every galaxy centre (workspace modeling.py); lens light = the workspace MGE (not the preset's); no positions penalty",
+        "mesh_kind": "rectangular",
+        "adapt_snr_cap": 3.0,
+        "over_sample_size_lp_rule": {
+          "sub_size_list": [
+            4,
+            2,
+            2
+          ],
+          "radial_list": [
+            0.3,
+            0.6
+          ],
+          "centre": [
+            0.0,
+            0.0
+          ]
+        },
+        "over_sample_size_pixelization_rule": {
+          "source_snr_cut": 3.0,
+          "sub_size_above": 4,
+          "sub_size_below": 2
+        },
+        "regularization": {
+          "scheme": "adapt",
+          "free": false,
+          "coefficient": 1.0
+        },
+        "positions_penalty": null,
+        "lens_light": "mge_60_linear_2_basis",
+        "mge_total_gaussians": 30,
+        "mge_gaussian_per_basis": 2,
+        "sequence": {
+          "kind": "iid",
+          "unit_low": 0.4,
+          "unit_high": 0.6,
+          "seed": 235
+        },
+        "memo": "off",
+        "size_override": "production data (human ruling 2026-10-24): subtracted S/N adapt image, uncapped over-sampling cut; RectangularBilinearAdaptImage mesh; standard size (human ruling 2026-10-23): rectangular 32x32 -> 35x35; likelihood-lifecycle 2d (#473, decision D5): the hst_rect_adapt_standard preset (hst, standard size) on the multi_galaxy dataset at hst; light-profile over-sampling [4, 2, 2] at [0.3, 0.6] on every galaxy centre (workspace modeling.py); lens light = the workspace MGE (not the preset's); no positions penalty",
+        "mesh": {
+          "kind": "rectangular",
+          "shape": [
+            35,
+            35
+          ],
+          "source_pixels": 1225,
+          "class": "RectangularBilinearAdaptImage",
+          "free_weights": {
+            "weight_power": {
+              "type": "Uniform",
+              "lower": 0.0,
+              "upper": 10.0
+            },
+            "weight_floor": {
+              "type": "LogUniform",
+              "lower": 1e-05,
+              "upper": 1.0
+            }
+          }
+        },
+        "production_data": {
+          "enabled": true,
+          "lens_light_source": "truth"
+        },
+        "production_source": {
+          "adapt_image": "PyAutoGalaxy@7472211 autogalaxy/analysis/adapt_images/adapt_images.py:138 galaxy_name_image_dict_via_result_from: the source's subtracted S/N map (data minus the other galaxies' model images, over the noise map), floored at adapt_minimum_percent (0.01, subhalo_validation config/general.yaml:28) x max",
+          "mesh_and_regularization_adapt_image": "subhalo_validation scripts/pipelines/spec.py:9-36 capped_galaxy_name_image_dict_from (S/N capped at 3.0); used by delaunay_adapt_split.py:123,:165 and rectangular_adapt.py:109",
+          "over_sampling": "subhalo_validation scripts/imaging.py:213-255 apply_adaptive_pixelization_over_sampling: sub-size 4 where the UNCAPPED source S/N > 3.0, else 2; light-profile bins :175-184",
+          "rectangular_mesh": "subhalo_validation scripts/pipelines/rectangular_adapt.py:74-96 (source_pix[2]): af.Model(al.mesh.RectangularBilinearAdaptImage, shape) with al.reg.Adapt; weight priors config/priors/mesh/rectangular.yaml:43-61",
+          "model_stand_in": "no previous-stage fit exists in a profiling cell: the dataset's truth tracer (tracer.json) stands in for the maximum-likelihood model whose lens light is subtracted"
+        }
+      },
+      "production_data_record": {
+        "over_sampling_preset": "hst_rect_adapt_standard_multi_galaxy",
+        "over_sample_size_lp_rule": {
+          "sub_size_list": [
+            4,
+            2,
+            2
+          ],
+          "radial_list": [
+            0.3,
+            0.6
+          ],
+          "centres": [
+            [
+              0.35,
+              0.25
+            ],
+            [
+              -0.35,
+              -0.25
+            ]
+          ]
+        },
+        "over_sample_size_pixelization_rule": {
+          "source_snr_cut": 3.0,
+          "sub_size_above": 4,
+          "sub_size_below": 2,
+          "threshold_map": "uncapped subtracted S/N (production)",
+          "pixels_above": 3340,
+          "pixels_below": 7964
+        },
+        "adapt_image": "subtracted S/N (truth tracer, every lens-plane galaxy removed), floored",
+        "lens_light_source": "truth",
+        "adapt_minimum_percent": 0.01,
+        "mesh_adapt_snr_cap": 3.0
+      }
+    },
+    "memo_provenance": {
+      "requested": "off",
+      "settings_nnls_warm_start_memo": false,
+      "env_AUTOARRAY_NNLS_WARM_START": "0",
+      "env_before": null,
+      "note": "Both gates are set for memo=off: the Settings flag and the AUTOARRAY_NNLS_WARM_START env kill-switch (autoarray/inversion/inversion/nnls_memo.py:63). settings_nnls_warm_start_memo is read back off the constructed Settings, so it records what took effect. The library default is true and both production projects leave it unset."
+    },
+    "instance": "iid draw 0 of the seeded sequence",
+    "instance_unit_vector": [
+      0.499784489007424,
+      0.41402443684610074,
+      0.41327450881714656,
+      0.4200167345680767,
+      0.5789514047288555,
+      0.4702516857248635,
+      0.567334291975647,
+      0.47173759315010344,
+      0.5239626288064884,
+      0.5543072472409505,
+      0.5399346262699198,
+      0.5099305691842051,
+      0.5974626164364525,
+      0.4381789532715836,
+      0.5552315204832754,
+      0.5058238713539893,
+      0.45735024341537395,
+      0.5870995335054062,
+      0.509803788830344,
+      0.41707028300618887,
+      0.5825033050631517
+    ],
+    "inversion_path": "dense",
+    "inversion_class": "InversionImagingMapping",
+    "sparse_batch_size": null,
+    "n_repeats": 10,
+    "fast": false,
+    "xla_cpu_workaround": null
+  },
+  "steps": {
+    "Ray-trace grids (tracer)": 0.00032333420822396877,
+    "Blurred image (non-linear light)": 9.93346911855042e-05,
+    "Data vector D (mapping + PSF)": 0.009404842706862837,
+    "Curvature matrix F": 0.002324778097681701,
+    "Regularization (F + H)": 0.00018841070123016765,
+    "Reconstruction (NNLS)": 0.023793430393561722,
+    "Mapped reconstruction, chi-squared & log evidence": 0.0022491410956718
+  },
+  "total_step_by_step": 0.0383832718944177,
+  "prefix_per_call_s": {
+    "Ray-trace grids (tracer)": 0.00032333420822396877,
+    "Blurred image (non-linear light)": 0.00042266889940947296,
+    "Data vector D (mapping + PSF)": 0.00982751160627231,
+    "Curvature matrix F": 0.012152289703954012,
+    "Regularization (F + H)": 0.01234070040518418,
+    "Reconstruction (NNLS)": 0.0361341307987459,
+    "Mapped reconstruction, chi-squared & log evidence": 0.0383832718944177
+  },
+  "steps_note": "Each row is one stage of AnalysisImaging.fit_from in the library's own lazy order; the rows sum to total_step_by_step. JAX rows are successive differences of jitted prefixes (params -> stage k), so XLA fusion can move work across a boundary and a small negative row is noise; numba rows time each cached property on first access, per instance, and report the median over the warm instances.",
+  "jit_phases": {
+    "prefix_1": {
+      "lower_s": 0.5944458210142329,
+      "compile_s": 0.4724748689914122,
+      "first_call_s": 0.002396930940449238,
+      "steady_per_call_s": 0.00032333420822396877
+    },
+    "prefix_2": {
+      "lower_s": 1.734420876018703,
+      "compile_s": 0.5684085009852424,
+      "first_call_s": 0.07094069104641676,
+      "steady_per_call_s": 0.00042266889940947296
+    },
+    "prefix_3": {
+      "lower_s": 3.1479622490005568,
+      "compile_s": 8.944559599971399,
+      "first_call_s": 0.2848378529306501,
+      "steady_per_call_s": 0.00982751160627231
+    },
+    "prefix_4": {
+      "lower_s": 3.2764521340141073,
+      "compile_s": 8.431472016032785,
+      "first_call_s": 0.30150810396298766,
+      "steady_per_call_s": 0.012152289703954012
+    },
+    "prefix_5": {
+      "lower_s": 3.4238071910804138,
+      "compile_s": 8.785951265948825,
+      "first_call_s": 0.7140342000639066,
+      "steady_per_call_s": 0.01234070040518418
+    },
+    "prefix_6": {
+      "lower_s": 3.3652872799430043,
+      "compile_s": 10.383935334975831,
+      "first_call_s": 0.41867089201696217,
+      "steady_per_call_s": 0.0361341307987459
+    },
+    "prefix_7": {
+      "lower_s": 3.5077205249108374,
+      "compile_s": 10.139379371074028,
+      "first_call_s": 0.21871010400354862,
+      "steady_per_call_s": 0.0383832718944177
+    }
+  }
+}
