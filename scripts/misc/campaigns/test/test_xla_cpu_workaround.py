@@ -12,6 +12,7 @@ leak into a later GPU leg). No cell script is run.
 from __future__ import annotations
 
 import importlib.util
+import os
 import re
 import subprocess
 import sys
@@ -112,3 +113,16 @@ def test_an_a100_job_switches_the_flag_per_leg():
     )
     seen = [(p, FLAG in f.split()) for p, f in _legs(text)]
     assert all(has == (p == "cpu") for p, has in seen)
+
+
+def test_the_2d_driver_skips_the_flag_on_a_gpu_leg(monkeypatch):
+    """A 2d GPU leg gets no eigen flag and records no workaround note; a CPU leg gets both."""
+    sys.path.insert(0, str(ROOT / "scripts/misc/likelihood_breakdown"))
+    import galaxy_group_standard as gg
+
+    for platforms, expect in (("cuda,cpu", False), ("cuda", False), ("cpu", True), ("", True)):
+        monkeypatch.setenv("JAX_PLATFORMS", platforms)
+        monkeypatch.setenv("XLA_FLAGS", BASE)
+        gg._avoid_xla_cpu_deadlock()
+        assert (FLAG in os.environ["XLA_FLAGS"]) is expect, platforms
+        assert (gg._xla_cpu_workaround_note() is not None) is expect, platforms

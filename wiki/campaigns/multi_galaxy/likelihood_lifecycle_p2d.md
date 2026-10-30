@@ -110,7 +110,8 @@ Two findings for batch 1 and PR B:
   whatever the platform, so all 14 A100 rows, the GPU legs included, record it in
   `device.xla_flags`; the shared preamble keeps it off the 2e-2g GPU legs. D12 calls the flag
   inert for GPU executables. That is untested here, and the 2d GPU rows' flags differ from
-  the other campaigns'.
+  the other campaigns'. Fixed for batch 1 (human 2026-10-30, "fix the 2d driver"): the driver now
+  skips the flag when `JAX_PLATFORMS` names cuda / gpu, so batch-1 GPU rows carry no eigen flag.
 
 ## XLA:CPU deadlock (found in the laptop smokes, avoided by D12)
 
@@ -255,3 +256,10 @@ the provisional 4:00:00 / 2-00:00:00. Findings: the loaded RAL node and the flag
 ### 2026-10-30 — loaded RAL nodes accepted
 
 Human ruling 2026-10-30 (chat): "ignore loaded node stuff for now I dont think that massive impacts run times and we cant ever expect to be unloaded nodes for everything". Batch 1 runs on shared `ral` nodes as rendered, with no quiet gate; a loaded row keeps its `loadavg_at_import`.
+
+### 2026-10-30 — the 2d driver keeps the eigen flag off GPU legs
+
+Human 2026-10-30: "fix the 2d driver then submit batch 1". `galaxy_group_standard.py` appends
+`--xla_cpu_multi_thread_eigen=false` only when `JAX_PLATFORMS` names no cuda / gpu, and a row's
+`configuration.xla_cpu_workaround` is null when the flag is absent. CPU legs are unchanged; the
+14 batch-0 A100 rows (timing arm only) keep the flag they ran with.

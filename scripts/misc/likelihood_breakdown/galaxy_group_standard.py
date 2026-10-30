@@ -83,10 +83,12 @@ STAGE_NOTE = (
 #: (no PyAuto library, no numba), and goes away with either ``--xla_cpu_multi_thread_eigen=false``
 #: or ``--xla_cpu_enable_concurrency_optimized_scheduler=false``. The first is the cheaper one
 #: (laptop, per call: the second is about 2x slower than it on the MGE cells and within ~15 % on
-#: the pixelized cells), so every JAX leg appends it to ``XLA_FLAGS`` (one flag for every cell,
+#: the pixelized cells), so every JAX CPU leg appends it to ``XLA_FLAGS`` (one flag for every cell,
 #: human 2026-10-29); the row records it in ``device.xla_flags`` and
-#: ``configuration.xla_cpu_workaround``. It only changes XLA:CPU code (no effect on a GPU
-#: executable), and it is a library-free change to how the cell is compiled, not to what it computes.
+#: ``configuration.xla_cpu_workaround``. A GPU leg (``JAX_PLATFORMS`` naming cuda / gpu) never
+#: gets it, as the shared campaign preamble does for 2e-2g (human 2026-10-30), so the GPU rows'
+#: flags match across campaigns. It is a library-free change to how the cell is compiled, not to
+#: what it computes.
 XLA_CPU_WORKAROUND_FLAG = "--xla_cpu_multi_thread_eigen=false"
 XLA_CPU_WORKAROUND_NOTE = (
     f"{XLA_CPU_WORKAROUND_FLAG} appended to XLA_FLAGS: jaxlib 0.11.2 XLA:CPU deadlocks on these "
@@ -97,11 +99,28 @@ PARITY_QUANTITY = (
 )
 
 
+def _is_gpu_leg() -> bool:
+    platforms = os.environ.get("JAX_PLATFORMS", "").lower()
+    return "cuda" in platforms or "gpu" in platforms
+
+
 def _avoid_xla_cpu_deadlock() -> None:
-    """Append :data:`XLA_CPU_WORKAROUND_FLAG` to ``XLA_FLAGS`` before the JAX backend starts."""
+    """Append :data:`XLA_CPU_WORKAROUND_FLAG` to ``XLA_FLAGS`` before the JAX backend starts, on
+    a CPU leg only."""
+    if _is_gpu_leg():
+        return
     flags = os.environ.get("XLA_FLAGS", "")
     if "xla_cpu_multi_thread_eigen" not in flags:
         os.environ["XLA_FLAGS"] = f"{flags} {XLA_CPU_WORKAROUND_FLAG}".strip()
+
+
+def _xla_cpu_workaround_note() -> str | None:
+    """The row's ``configuration.xla_cpu_workaround``: the note when the flag is set, else None."""
+    return (
+        XLA_CPU_WORKAROUND_NOTE
+        if XLA_CPU_WORKAROUND_FLAG in os.environ.get("XLA_FLAGS", "")
+        else None
+    )
 
 
 def _driver_parser() -> argparse.ArgumentParser:
@@ -403,7 +422,7 @@ def run_jax_runtime(dataset_type, variant, cli, args, *, script_file, root) -> P
             fast=bool(args.fast),
             host_load_avg_start=load_start,
             host_load_avg_end=list(os.getloadavg()),
-            xla_cpu_workaround=XLA_CPU_WORKAROUND_NOTE,
+            xla_cpu_workaround=_xla_cpu_workaround_note(),
         ),
         "log_evidence_jit": value,
         "full_pipeline_single_jit": full_per_call,
@@ -523,7 +542,7 @@ def run_jax_breakdown(dataset_type, variant, cli, args, *, script_file, root) ->
             sparse_batch_size=int(cli.sparse_batch_size) if sparse else None,
             n_repeats=n_repeats,
             fast=bool(args.fast),
-            xla_cpu_workaround=XLA_CPU_WORKAROUND_NOTE,
+            xla_cpu_workaround=_xla_cpu_workaround_note(),
         ),
         "steps": steps,
         "total_step_by_step": float(sum(steps.values())),
