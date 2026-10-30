@@ -1,0 +1,16 @@
+{
+  "schema": "parity-witness",
+  "version": 1,
+  "status": "match",
+  "log_likelihood": 26.06315893648174,
+  "reference_log_likelihood": 26.063158936253405,
+  "tolerance": 0.0026063158936253405,
+  "tolerance_rule": "0.0001 x |reference_log_likelihood| (fp64)",
+  "reference": {
+    "source": "eager NumPy AnalysisPoint(use_jax=False, FitPositionsSourceSolved) summed over 2 systems in the same process: same dataset, model, instance and solver",
+    "date": "2026-10-30"
+  },
+  "measured_at": "2026-10-30T11:50:37Z",
+  "autolens_version": "2026.8.17.1",
+  "quantity": "log_likelihood_function summed over both systems (JIT AnalysisPoint, the headline solved fit class) at the prior-median instance, vs the eager NumPy AnalysisPoint in the same process"
+}

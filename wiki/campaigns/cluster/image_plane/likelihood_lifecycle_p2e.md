@@ -1,16 +1,16 @@
 # Likelihood lifecycle phase 2e: cluster image plane
 
-**Status:** open
+**Status:** rows committed (batch 1, the rows PR); closes on merge
 **Question:** What does each planned cluster/image_plane cell cost, for the solved image-plane likelihood (`FitPositionsImagePairRepeatSolved`, D3), on the pinned release 2026.10.25.1 with the decided workspace PointSolver (100x100 @ 1.0", precision 0.001, `residual_threshold` 10), and does each cell's JIT log-likelihood match the eager NumPy one?
 **Pre-registered rule:** all 4 planned cluster/image_plane cells (`jax_cpu_na_fp64@hpc_ral_cpu`, `jax_gpu_na_fp64@hpc_a100`, each runtime and breakdown) land `current` with provenance, `resources`, `fit.png` and a `parity.json` whose status is `match` (JIT `AnalysisPoint` vs the eager NumPy `AnalysisPoint` of the same model, instance and solver, tolerance 1e-4 x |reference| in fp64). A `diverged` witness blocks that setup until explained. The prior rows on these keys become `superseded`. Recorded here before any RAL run (2026-10-28). Amended 2026-10-29, still before any run: the witness and `fit.png` evaluate the solved headline class (D3).
-**Verdict:** pending (batch 0 run 2026-10-29; batch 1 not yet). Expected, written before the runs: the forward solve dominates every image-plane call, as in the historic breakdown (job 350580: the per-system eager fit is ~2 s, the fused JIT call 0.13 s on RAL CPU for the plain class and 0.135 s for the solved one); the solved headline costs the same order per call as the plain sub-row (laptop smokes disagree on which is faster: runtime 10.7 vs 18.1 ms, breakdown fused 39.8 vs 16.5 ms, both on a loaded single CPU); both parity witnesses are `match`, since the solver finds every image of the `simple` truth at 1.0" (306/306 prior roots, cluster PointSolver campaign); per-call latency favours the A100, but CPU and GPU are compared by projected node throughput, not per call. Class designations are phase 3's decision.
-**Headline:** none yet (laptop smokes only, below).
+**Verdict:** rule met: all 4 cells `current` with runtime and breakdown, provenance, `resources`, `fit.png` and a `match` witness (|delta log L| 7e-15). Against the expectation: both witnesses `match`; the solved headline costs the same order as the plain sub-row (RAL CPU 5.41 vs 6.43 ms, A100 3.89 vs 3.64 ms per call, runtime rows); per-call latency favours the A100 (2.32 vs 5.71 ms steady median); the per-system forward solves (5.1 + 4.2 ms on RAL CPU) exceed the fused solved call (7.7 ms), so the solve dominates; the fused JIT call is far below the historic 0.13 s (job 350580). Compile is the cost: ~105 s lower + compile per pipeline on both hosts. Expected, written before the runs: the forward solve dominates every image-plane call, as in the historic breakdown (job 350580: the per-system eager fit is ~2 s, the fused JIT call 0.13 s on RAL CPU for the plain class and 0.135 s for the solved one); the solved headline costs the same order per call as the plain sub-row (laptop smokes disagree on which is faster: runtime 10.7 vs 18.1 ms, breakdown fused 39.8 vs 16.5 ms, both on a loaded single CPU); both parity witnesses are `match`, since the solver finds every image of the `simple` truth at 1.0" (306/306 prior roots, cluster PointSolver campaign); per-call latency favours the A100, but CPU and GPU are compared by projected node throughput, not per call. Class designations are phase 3's decision.
+**Headline:** cluster/image_plane/simple, solved headline, steady median per single JIT call / per point at vmap: `jax_cpu_na_fp64@hpc_ral_cpu` 5.71 / 6.15 ms (batch 3); `jax_gpu_na_fp64@hpc_a100` 2.32 / 0.201 ms (batch 16) (RAL 413447, A100 413455; 2026.10.25.1, jax 0.11.2).
 **Library PRs:** none (measurement only, tag 2026.10.25.1, which carries PyAutoLens#800 `residual_threshold` and bdb44a87c)
 **Profiling PRs:** the 2e setup draft PR (autolens_profiling#474), then the rows PR after the human's batch go
 **Ledger:** this page; the source-plane half is [likelihood_lifecycle_p2e.md](../source_plane/likelihood_lifecycle_p2e.md); work list [`scripts/misc/campaigns/cluster_p2e.py`](../../../../scripts/misc/campaigns/cluster_p2e.py) and its [README](../../../../scripts/misc/campaigns/README.md)
 **Mind contract:** epic `likelihood-lifecycle`, phase 2 sub-issue 2e; issue autolens_profiling#474; solver settings from epic `cluster-pointsolver-speed` ([cluster PointSolver](cluster_pointsolver.md))
-**Next:** batch 1 (human go; RAL CPU legs on shared nodes, no quiet gate, human 2026-10-30), from the walls commit; then the rows PR
-**Fit figures:** laptop smoke `fit.png` of the solved headline opened (2026-10-29, runtime and breakdown): every observed image of both systems has a model image from β* on it, χ² = 0.065 (the plain fit's was 2.6, 2026-10-28); none from RAL yet.
+**Next:** merge the rows PR (human /prm); class designations are phase 3's
+**Fit figures:** batch-1 A100 `fit.png` opened 2026-10-30: every observed image of both systems matched by a solved model image, chi-squared 0.065. Earlier: laptop smoke `fit.png` of the solved headline opened (2026-10-29, runtime and breakdown): every observed image of both systems has a model image from β* on it, χ² = 0.065 (the plain fit's was 2.6, 2026-10-28); none from RAL yet.
 
 ## Why this campaign
 
@@ -116,3 +116,10 @@ walls commit fills `BATCH0_WALLS` / `BATCH0_PEAK_RSS_KIB` and flips `WALL_BASIS_
 ### 2026-10-30 — loaded RAL nodes accepted
 
 Human ruling 2026-10-30 (chat): "ignore loaded node stuff for now I dont think that massive impacts run times and we cant ever expect to be unloaded nodes for everything". Batch 1 runs on shared `ral` nodes as rendered, with no quiet gate; a loaded row keeps its `loadavg_at_import`.
+
+### 2026-10-30 — batch 1 in; the rows PR
+
+Batch 1 (RAL 413447, A100 job 413455, 2026-10-30, from autolens_profiling_p2dg at 830314e9) all
+exit 0; 5/5 witnesses `match`. The rows PR copies the 10 cluster rows (4 image plane, 6 source
+plane) into `results/cluster/` and regenerates catalogue, dashboard (committed stamp), coverage,
+setup wiki, series map and READMEs: coverage 230 -> 240 current of 272, 0 stale.

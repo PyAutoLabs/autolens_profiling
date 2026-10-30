@@ -1,0 +1,248 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "package_versions": {
+    "jax": "0.11.2",
+    "jaxlib": "0.11.2"
+  },
+  "source_revisions": {
+    "autolens_profiling": "830314e9bcafafd469f0985f9d1c9629cca830ff",
+    "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+    "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+    "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+    "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+    "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
+  },
+  "config_name": "hpc_a100_fp64",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "hostname": "euclid-ral-gpu-1",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 124,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2dg/output/jax_cache/p2e_413455_0",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-10-30T10:52:19Z",
+      "host": "euclid-ral-gpu-1",
+      "slurm": {
+        "job_id": "413455",
+        "array_job_id": null,
+        "array_task_id": null
+      },
+      "loadavg_at_import": [
+        0.89,
+        0.2,
+        0.08
+      ],
+      "loadavg_at_write": [
+        6.77,
+        3.82,
+        1.6
+      ],
+      "profiling_revision": "830314e9bcafafd469f0985f9d1c9629cca830ff",
+      "library_revisions": {
+        "autolens_profiling": "830314e9bcafafd469f0985f9d1c9629cca830ff",
+        "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+        "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+        "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+        "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+        "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.65.1",
+        "nufftax": "0.6.1",
+        "finufft": "2.5.1"
+      }
+    },
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 453 MiB, 81920 MiB"
+  },
+  "resources": {
+    "resources_schema": 1,
+    "engine": "jax",
+    "device": "gpu",
+    "cpus_per_eval": 8,
+    "cpus_per_eval_basis": "jax gpu: one device; cpus_per_eval = NPROC host threads",
+    "devices_per_eval": 1,
+    "peak_rss_gb": 2.49403,
+    "peak_rss_basis": "in_process_ru_maxrss",
+    "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
+  },
+  "thread_environment": {
+    "NPROC": "8",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "n_repeats": 3,
+  "configuration": {
+    "n_systems": 2,
+    "n_images_total": 6,
+    "n_planes": 3,
+    "n_mass_profiles": 13,
+    "likelihood": "image_plane (FitPositionsImagePairRepeatSolved)",
+    "headline_arm": "solved",
+    "sub_row_arm": "plain",
+    "solver_grid": "100x100 @ 1.0 arcsec",
+    "solver_pixel_scale_precision": 0.001,
+    "solver": {
+      "grid_shape_native": [
+        100,
+        100
+      ],
+      "grid_pixel_scales": 1.0,
+      "pixel_scale_precision": 0.001,
+      "magnification_threshold": 0.1,
+      "residual_threshold": 10.0,
+      "residual_threshold_source": "explicit"
+    },
+    "standard_size": true,
+    "jax_enable_x64": true,
+    "n_repeats": 3,
+    "fused_model_free_parameters": {
+      "solved": 13,
+      "plain": 17
+    }
+  },
+  "steps": {
+    "1.point_0 solved source centre beta* (back-trace + Jacobian)": 0.028511066921055317,
+    "1.point_1 solved source centre beta* (back-trace + Jacobian)": 0.02537137595936656,
+    "2.point_0 PointSolver solve at beta* (z=1.0)": 0.0016077006778990228,
+    "2.point_1 PointSolver solve at beta* (z=2.0)": 0.0016534866687531273,
+    "3.point_0 FitPositionsImagePairRepeatSolved (fit total, analytic \u03b2*)": 0.9445738448994234,
+    "3.point_1 FitPositionsImagePairRepeatSolved (fit total, analytic \u03b2*)": 0.9302583859534934,
+    "P1 plain: Point centres (back-traced centroid)": 0.0035459479549899697,
+    "4.point_0 FitPositionsImagePairRepeat (fit total)": 0.825990958022885,
+    "4.point_1 FitPositionsImagePairRepeat (fit total)": 0.8236432550475001
+  },
+  "total_step_by_step": 1.9319758610799909,
+  "total_step_extra": 1.6531801610253751,
+  "headline_arm": "solved",
+  "fused_full_solved_s": 0.0030086470069363713,
+  "fused_full_plain_s": 0.0026181386783719063,
+  "fused_likelihoods": {
+    "solved_eager": 26.243720916726833,
+    "solved_jit": 26.243720916726826,
+    "plain_eager": 24.97724142453904,
+    "plain_jit": 24.97724142453955
+  },
+  "fused_solved_positions": {
+    "point_0": {
+      "observed_images": 3,
+      "paired_model_positions": [
+        [
+          -0.9326171875,
+          10.714245278721151
+        ],
+        [
+          -3.080078125,
+          -7.8573763197525635
+        ],
+        [
+          -0.021484375,
+          -0.2379314585918184
+        ]
+      ],
+      "finite_rows": 3,
+      "all_finite": true
+    },
+    "point_1": {
+      "observed_images": 3,
+      "paired_model_positions": [
+        [
+          0.681640625,
+          -0.5130749462524995
+        ],
+        [
+          13.6923828125,
+          -14.309152814222179
+        ],
+        [
+          -15.9677734375,
+          19.004634300365932
+        ]
+      ],
+      "finite_rows": 3,
+      "all_finite": true
+    }
+  },
+  "jit_phases": {
+    "step2_solve_point_0": {
+      "lower_s": 3.563488163985312,
+      "compile_s": 11.76394696207717,
+      "first_call_s": 0.019545783987268806,
+      "steady_per_call_s": 0.0016077006778990228,
+      "n_repeats": 3
+    },
+    "step2_solve_point_1": {
+      "lower_s": 3.159975028014742,
+      "compile_s": 12.874676433042623,
+      "first_call_s": 0.017107785097323358,
+      "steady_per_call_s": 0.0016534866687531273,
+      "n_repeats": 3
+    },
+    "fused_full_solved": {
+      "lower_s": 48.49598500900902,
+      "compile_s": 55.16922974400222,
+      "first_call_s": 0.0399728009942919,
+      "steady_per_call_s": 0.0030086470069363713,
+      "n_repeats": 3
+    },
+    "fused_full_plain": {
+      "lower_s": 36.18950868595857,
+      "compile_s": 51.20937908696942,
+      "first_call_s": 0.033078562933951616,
+      "steady_per_call_s": 0.0026181386783719063,
+      "n_repeats": 3
+    }
+  },
+  "log_likelihood": 26.243720916726833,
+  "solved": {
+    "fit_positions_cls": "FitPositionsImagePairRepeatSolved",
+    "log_likelihood": 26.243720916726833,
+    "solved_source_centres": {
+      "point_0": [
+        0.29996638175783463,
+        0.4999650707624289
+      ],
+      "point_1": [
+        -0.7999404110613716,
+        1.199972152235472
+      ]
+    },
+    "free_centre_params_removed_per_point_source": 2,
+    "free_centre_params_removed_total": 4
+  },
+  "plain": {
+    "fit_positions_cls": "FitPositionsImagePairRepeat",
+    "log_likelihood": 24.97724142453904,
+    "point_centres": {
+      "point_0": [
+        0.29971517491849603,
+        0.500021839489711
+      ],
+      "point_1": [
+        -0.799789538327058,
+        1.2002221710802583
+      ]
+    },
+    "delta_solved_minus_plain_per_system_s": {
+      "point_0": 0.1185828868765384,
+      "point_1": 0.10661513090599328
+    },
+    "delta_solved_minus_plain_total_s": 0.22519801778253168
+  }
+}

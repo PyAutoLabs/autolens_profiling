@@ -33,7 +33,6 @@ SHARED_SCRIPT_VARIANTS = {
 }
 MODEL_VARIANT_SCRIPTS = {("imaging", "mge_mass"): ("rectangular", "mge_mass")}
 NOT_YET_MEASURED = {
-    ("cluster", "source_plane"),
     ("imaging", "sersic"),
     ("multi_dataset", "delaunay"),
 }

@@ -10,10 +10,10 @@
    "likelihood": "cluster/image_plane",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/3e40f16956193e0fd997",
    "setup_id": "jax_cpu_na_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "cluster/image_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [runtime]",
@@ -23,10 +23,10 @@
    "likelihood": "cluster/image_plane",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/86d6277f36e3c8ec1d2f",
    "setup_id": "jax_cpu_na_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "cluster/image_plane/simple jax_gpu_na_fp64@hpc_a100 [breakdown]",
@@ -36,10 +36,10 @@
    "likelihood": "cluster/image_plane",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/59b6b80251e208f0a191",
    "setup_id": "jax_gpu_na_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "cluster/image_plane/simple jax_gpu_na_fp64@hpc_a100 [runtime]",
@@ -49,10 +49,10 @@
    "likelihood": "cluster/image_plane",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/d92190013ae10eaa21f6",
    "setup_id": "jax_gpu_na_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "cluster/source_plane/simple jax_cpu_na_fp64@hpc_a100 [breakdown]",
@@ -62,10 +62,10 @@
    "likelihood": "cluster/source_plane",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/9a28b8cf0786696e64a7",
    "setup_id": "jax_cpu_na_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "cluster/source_plane/simple jax_cpu_na_fp64@hpc_a100 [runtime]",
@@ -75,10 +75,10 @@
    "likelihood": "cluster/source_plane",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/bf18cb8f64de25466e5e",
    "setup_id": "jax_cpu_na_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "cluster/source_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [breakdown]",
@@ -88,10 +88,10 @@
    "likelihood": "cluster/source_plane",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/2c23b984924f824c73ed",
    "setup_id": "jax_cpu_na_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "cluster/source_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [runtime]",
@@ -101,10 +101,10 @@
    "likelihood": "cluster/source_plane",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/004001caf29a727421e0",
    "setup_id": "jax_cpu_na_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "cluster/source_plane/simple jax_gpu_na_fp64@hpc_a100 [breakdown]",
@@ -114,10 +114,10 @@
    "likelihood": "cluster/source_plane",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/88dd1ed12dbfe6276fa1",
    "setup_id": "jax_gpu_na_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "cluster/source_plane/simple jax_gpu_na_fp64@hpc_a100 [runtime]",
@@ -127,10 +127,10 @@
    "likelihood": "cluster/source_plane",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/02df871c3e8378b505ca",
    "setup_id": "jax_gpu_na_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "datacube/delaunay/alma jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [breakdown]",
@@ -3543,55 +3543,55 @@
  "matrix": [
   {
    "class": "optimal",
-   "current": 0,
+   "current": 2,
    "likelihood": "cluster/image_plane",
    "measurement": "breakdown",
-   "missing": 2,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
   {
    "class": "optimal",
-   "current": 0,
+   "current": 2,
    "likelihood": "cluster/image_plane",
    "measurement": "runtime",
-   "missing": 2,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
   {
    "class": "optimal",
-   "current": 0,
+   "current": 2,
    "likelihood": "cluster/source_plane",
    "measurement": "breakdown",
-   "missing": 2,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
   {
    "class": "optimal",
-   "current": 0,
+   "current": 2,
    "likelihood": "cluster/source_plane",
    "measurement": "runtime",
-   "missing": 2,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
   {
    "class": "secondary",
-   "current": 0,
+   "current": 1,
    "likelihood": "cluster/source_plane",
    "measurement": "breakdown",
-   "missing": 1,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
   {
    "class": "secondary",
-   "current": 0,
+   "current": 1,
    "likelihood": "cluster/source_plane",
    "measurement": "runtime",
-   "missing": 1,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
@@ -4159,32 +4159,32 @@
    {
     "cell": "cluster/image_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [parity]",
     "class": "optimal",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/0533eec58c25ebd8637b",
+    "state": "match"
    },
    {
     "cell": "cluster/image_plane/simple jax_gpu_na_fp64@hpc_a100 [parity]",
     "class": "optimal",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/7e5edbcfcccee90b11b5",
+    "state": "match"
    },
    {
     "cell": "cluster/source_plane/simple jax_cpu_na_fp64@hpc_a100 [parity]",
     "class": "optimal",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/33903eb14ffbf19c6632",
+    "state": "match"
    },
    {
     "cell": "cluster/source_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [parity]",
     "class": "optimal",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/8909566077ecf0ba922a",
+    "state": "match"
    },
    {
     "cell": "cluster/source_plane/simple jax_gpu_na_fp64@hpc_a100 [parity]",
     "class": "secondary",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/34d551d02bba3ac253a1",
+    "state": "match"
    },
    {
     "cell": "datacube/delaunay/alma jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [parity]",
@@ -4978,24 +4978,24 @@
     "class": "optimal",
     "diverged": 0,
     "likelihood": "cluster/image_plane",
-    "match": 0,
-    "missing": 2,
+    "match": 2,
+    "missing": 0,
     "not_assessed": 0
    },
    {
     "class": "optimal",
     "diverged": 0,
     "likelihood": "cluster/source_plane",
-    "match": 0,
-    "missing": 2,
+    "match": 2,
+    "missing": 0,
     "not_assessed": 0
    },
    {
     "class": "secondary",
     "diverged": 0,
     "likelihood": "cluster/source_plane",
-    "match": 0,
-    "missing": 1,
+    "match": 1,
+    "missing": 0,
     "not_assessed": 0
    },
    {
@@ -5249,8 +5249,8 @@
   ],
   "totals": {
    "diverged": 0,
-   "match": 115,
-   "missing": 21,
+   "match": 120,
+   "missing": 16,
    "not_assessed": 0,
    "setup_cells": 136
   }
@@ -5269,12 +5269,12 @@
   "designations": "catalogue/provisional_designations.json"
  },
  "totals": {
-  "current": 230,
-  "current_records_unplanned": 158,
-  "missing": 42,
+  "current": 240,
+  "current_records_unplanned": 163,
+  "missing": 32,
   "missing_size_fallback": 0,
   "planned_cells": 272,
-  "records_superseded": 518,
+  "records_superseded": 520,
   "stale": 0,
   "superseded": 0
  },
@@ -5338,6 +5338,7 @@
   "lifecycle/64bfaad3ca8009082a55",
   "lifecycle/6536036ef1b447a6ec57",
   "lifecycle/66443bc95778ae99c344",
+  "lifecycle/6c8e7b3e76f2c9faaac9",
   "lifecycle/6e7f6f4d600d1d9e8afa",
   "lifecycle/70c2c401e592ce344f07",
   "lifecycle/75a27609e90cfbbaba03",
@@ -5349,7 +5350,9 @@
   "lifecycle/7f8e9edbe2f8e40e0cb4",
   "lifecycle/80a172b83beee2c9a6f9",
   "lifecycle/84717f072291c7bd3883",
+  "lifecycle/84a1a86dfdd1ee6c1c82",
   "lifecycle/85c760621cf4de77b93a",
+  "lifecycle/86dc8ba07787d464aee1",
   "lifecycle/896a8d2b7825d7302e0c",
   "lifecycle/8abc3e9f6f2dddc8b50b",
   "lifecycle/8d94ff19805e0482dff0",
@@ -5397,6 +5400,7 @@
   "lifecycle/c9453fbf1cacd3460b68",
   "lifecycle/c9fb7e990dd04c645516",
   "lifecycle/cc5fff1cc5aad475f69b",
+  "lifecycle/ccf6774f9d486d6e4c9c",
   "lifecycle/cd14a3aae4282553a20e",
   "lifecycle/cd3b9a5952e82e3a194e",
   "lifecycle/cd9d34f8b0ff57e2c3d3",
@@ -5417,6 +5421,7 @@
   "lifecycle/e0f949952de95a3269c1",
   "lifecycle/e132618e17a8e7e98c83",
   "lifecycle/e1c30e7d590fc5426994",
+  "lifecycle/e38549f71ce5a05cbd66",
   "lifecycle/e3fbaa69910cdaf37674",
   "lifecycle/e4bbdcea07590b40e1bc",
   "lifecycle/e5e7ba9a7cd6308a8230",
