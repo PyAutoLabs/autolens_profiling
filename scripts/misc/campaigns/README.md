@@ -11,10 +11,10 @@ the same list.
 | [`imaging_p2a.py`](imaging_p2a.py) (`rect28_tasks`) | Phase 2a size variant: hst rectangular at 28x28 = 784 source pixels on 2026.10.25.1 (autolens_profiling#468) | `hpc/batch_cpu/submit_campaign_p2a_rect28_ral_cpu_fp64`, `hpc/batch_gpu/submit_campaign_p2a_rect28_a100_fp64` |
 | [`interferometer_p2b.py`](interferometer_p2b.py) | Phase 2b, `interferometer/{mge, rectangular, delaunay}` at the standard size on 2026.10.25.1 (autolens_profiling#469), plus the dense parity references and the matrix-free experiment | `hpc/batch_cpu/submit_campaign_p2b_*`, `hpc/batch_gpu/submit_campaign_p2b_*` |
 | [`point_source_p2c.py`](point_source_p2c.py) | Phase 2c, `point_source_image/image_plane` and `point_source_source/source_plane` (instrument `simple`) on 2026.10.25.1 (autolens_profiling#472), plus the free-centre (plain) runtime experiments | `hpc/batch_cpu/submit_campaign_p2c_point_source_ral_cpu_fp64`, `hpc/batch_gpu/submit_campaign_p2c_point_source_a100_fp64` |
-| [`multi_dataset_datacube_p2f.py`](multi_dataset_datacube_p2f.py) | Phase 2f, `multi_dataset/delaunay` and `datacube/delaunay` at the standard size on 2026.10.25.1 (autolens_profiling#475); DRAFT, nothing submitted | `hpc/batch_cpu/submit_campaign_p2f_*`, `hpc/batch_gpu/submit_campaign_p2f_*` |
-| [`weak_p2g.py`](weak_p2g.py) | Phase 2g DRAFT, `weak/isothermal/simple` (new weak cells) on 2026.10.25.1 (autolens_profiling#476); awaiting the human's review of decisions D1-D10 | `hpc/batch_cpu/submit_campaign_p2g_*`, `hpc/batch_gpu/submit_campaign_p2g_*` |
-| [`multi_galaxy_group_p2d.py`](multi_galaxy_group_p2d.py) | Phase 2d DRAFT, `{multi_galaxy,group}/{mge, rectangular, delaunay}` at the standard size on 2026.10.25.1 (autolens_profiling#473); decisions D1-D11 await the human (D12 decided 2026-10-29) | `hpc/batch_cpu/submit_campaign_p2d_*`, `hpc/batch_gpu/submit_campaign_p2d_*` |
-| [`cluster_p2e.py`](cluster_p2e.py) | Phase 2e, `cluster/{image_plane, source_plane}` on 2026.10.25.1 (autolens_profiling#474). DRAFT for review: nothing has run | `hpc/batch_cpu/submit_campaign_p2e_*`, `hpc/batch_gpu/submit_campaign_p2e_*` |
+| [`multi_dataset_datacube_p2f.py`](multi_dataset_datacube_p2f.py) | Phase 2f, `multi_dataset/delaunay` and `datacube/delaunay` at the standard size on 2026.10.25.1 (autolens_profiling#475); batch 0 run 2026-10-29, batch 1 walls measured | `hpc/batch_cpu/submit_campaign_p2f_*`, `hpc/batch_gpu/submit_campaign_p2f_*` |
+| [`weak_p2g.py`](weak_p2g.py) | Phase 2g, `weak/isothermal/simple` (new weak cells) on 2026.10.25.1 (autolens_profiling#476); batch 0 run 2026-10-29 (the campaign's rows, D9) | `hpc/batch_cpu/submit_campaign_p2g_*`, `hpc/batch_gpu/submit_campaign_p2g_*` |
+| [`multi_galaxy_group_p2d.py`](multi_galaxy_group_p2d.py) | Phase 2d, `{multi_galaxy,group}/{mge, rectangular, delaunay}` at the standard size on 2026.10.25.1 (autolens_profiling#473); batch 0 run 2026-10-29, batch 1 walls measured | `hpc/batch_cpu/submit_campaign_p2d_*`, `hpc/batch_gpu/submit_campaign_p2d_*` |
+| [`cluster_p2e.py`](cluster_p2e.py) | Phase 2e, `cluster/{image_plane, source_plane}` on 2026.10.25.1 (autolens_profiling#474); batch 0 run 2026-10-29, batch 1 walls measured | `hpc/batch_cpu/submit_campaign_p2e_*`, `hpc/batch_gpu/submit_campaign_p2e_*` |
 | [`_common.py`](_common.py) | The submit machinery the generators share (preamble, guards, WALL-BASIS rows, `#SBATCH` block) | none of its own |
 | [`peak_rss_backfill.py`](peak_rss_backfill.py) | Phase 2x backfill of 2a's peak memory and cores per call from sacct (autolens_profiling#462) | writes `catalogue/peak_rss_backfill.json`, no submits |
 
@@ -34,7 +34,7 @@ python scripts/misc/campaigns/multi_dataset_datacube_p2f.py --check
 python scripts/misc/campaigns/weak_p2g.py --list    # the 6 planned weak cells, all runnable
 python scripts/misc/campaigns/weak_p2g.py --write
 python scripts/misc/campaigns/weak_p2g.py --check
-python scripts/misc/campaigns/multi_galaxy_group_p2d.py --list   # the 48 draft 2d cells
+python scripts/misc/campaigns/multi_galaxy_group_p2d.py --list   # the 48 planned 2d cells
 python scripts/misc/campaigns/multi_galaxy_group_p2d.py --write  # re-render the 2d submits
 python scripts/misc/campaigns/multi_galaxy_group_p2d.py --check
 python scripts/misc/campaigns/cluster_p2e.py --list    # the 10 planned cluster cells, all runnable
@@ -360,12 +360,13 @@ regenerates the catalogue and coverage. Done for batch 1: all 60 cells (30 witne
 of the 7 matrix-free legs; the 21 superseded rows are in `history/`. The campaign page is
 [`likelihood_lifecycle_p2b.md`](../../../wiki/campaigns/interferometer/likelihood_lifecycle_p2b.md).
 
-## Phase 2d multi_galaxy + group (DRAFT, not submitted)
+## Phase 2d multi_galaxy + group
 
-**Status.** A draft for the human's review (autolens_profiling#473). The cell design is
+**Status.** Batch 0 ran 2026-10-29 (RAL 413272, A100 413294); batch 1 awaits the human's go
+(autolens_profiling#473). The cell design is
 decisions D1-D12 on the campaign page (D12, decided by the human 2026-10-29: the JAX legs append `--xla_cpu_multi_thread_eigen=false`, an XLA:CPU deadlock workaround),
 [`wiki/campaigns/multi_galaxy/likelihood_lifecycle_p2d.md`](../../../wiki/campaigns/multi_galaxy/likelihood_lifecycle_p2d.md).
-No submit has run; each batch needs the human's go.
+Each batch needs the human's go.
 
 **Cells.** 48 planned cells (`catalogue/registry.json`, §3.3 "as imaging"): `multi_galaxy` at
 hst and `group` at euclid, each `mge` (`jax_cpu_dense_fp64`@`hpc_ral_cpu`,
@@ -384,8 +385,8 @@ sparse setups; nothing else but `--config-name`.
 |--------|-----------|-------|----------|---------|
 | `batch_cpu/submit_campaign_p2d_batch0_ral_cpu_fp64` | `ral`, array `%8` | 10 (batch 0, every group RAL leg) | 4:00:00 | 32 GB |
 | `batch_gpu/submit_campaign_p2d_batch0_a100_fp64` | `gpu`, `--gres=gpu:1`, array `%2` | 14 (batch 0, every group A100 leg) | 4:00:00 | 32 GB |
-| `batch_cpu/submit_campaign_p2d_<dataset_type>_ral_cpu_<instrument>_fp64` | `ral`, array `%16` | 10 each | 4:00:00 (provisional) | 32 GB (provisional) |
-| `batch_gpu/submit_campaign_p2d_<dataset_type>_a100_<instrument>_fp64` | `gpu`, `--gres=gpu:1` | one job each, 14 legs in turn | 2-00:00:00 (provisional) | 32 GB (provisional) |
+| `batch_cpu/submit_campaign_p2d_<dataset_type>_ral_cpu_<instrument>_fp64` | `ral`, array `%16` | 10 each | 0:30:00 | 16 GB |
+| `batch_gpu/submit_campaign_p2d_<dataset_type>_a100_<instrument>_fp64` | `gpu`, `--gres=gpu:1` | one job each, 14 legs in turn | 1:00:00 | 16 GB |
 
 The `jax_cpu_sparse_fp64@hpc_a100` legs run on the GPU node's CPU inside the GPU job, as in 2a.
 Batch 0 is the timing arm (D9): group bounds multi_galaxy (1.6x the masked pixels, two dPIE
@@ -398,11 +399,14 @@ or above 1.5x batch 0's MaxRSS, as 2a and 2b. Pin, private checkout and guards a
 (`P2D_PIN=2026.10.25.1`); logs and `walls.tsv` go to `output/p2d_logs/`. A missing dataset is
 simulated under a lock (`prepare_dataset`, by instrument: hst -> multi_galaxy, euclid -> group).
 
+Done 2026-10-30: `BATCH0_WALLS` and `BATCH0_PEAK_RSS_KIB` hold every batch-0 leg (all exit 0,
+every witness `match`; peak 3.0 GiB) and `WALL_BASIS_STATUS = "measured"`.
+
 **Local check.** Every cell script takes `--fast` (2 repeats, a 5-call median, vmap batch 2, a
 4-instance stream) and, without `--output-path`, writes into the gitignored
 `output/p2d_local/results/...`, never `results/`.
 
-## Phase 2g weak lensing (DRAFT, awaiting review)
+## Phase 2g weak lensing
 
 **Cells.** Weak lensing had no profiling script and no planned cell. 2g adds the registry cell
 `weak/isothermal/simple`; the §3.3 weak row then plans 6 cells, runtime and breakdown:
@@ -424,8 +428,8 @@ behind this design are on the campaign page
 |--------|-----------|-------|----------|---------|
 | `batch_cpu/submit_campaign_p2g_batch0_ral_cpu_fp64` | `ral`, array `%8` | 2 (batch 0) | 1:30:00 | 16 GB |
 | `batch_gpu/submit_campaign_p2g_batch0_a100_fp64` | `gpu`, `--gres=gpu:1` | 4 legs in turn (batch 0) | 1:30:00 | 32 GB |
-| `batch_cpu/submit_campaign_p2g_weak_ral_cpu_simple_fp64` | `ral`, array `%8` | 2 (batch 1) | 1:30:00 (provisional) | 16 GB |
-| `batch_gpu/submit_campaign_p2g_weak_a100_simple_fp64` | `gpu`, `--gres=gpu:1` | 4 legs in turn (batch 1) | 1:30:00 (provisional) | 32 GB |
+| `batch_cpu/submit_campaign_p2g_weak_ral_cpu_simple_fp64` | `ral`, array `%8` | 2 (batch 1) | 0:30:00 | 16 GB |
+| `batch_gpu/submit_campaign_p2g_weak_a100_simple_fp64` | `gpu`, `--gres=gpu:1` | 4 legs in turn (batch 1) | 0:30:00 | 32 GB |
 
 The pin, private checkout, import and revision guards, `walls.tsv` lines and dataset lock are
 2b's (`_common.py`); the catalogue is simulated under `output/p2g_dataset_<instrument>.lock`.
@@ -437,9 +441,11 @@ same six legs and refuses to run while `WALL_BASIS_STATUS = "provisional"`
 (`P2G_ALLOW_PROVISIONAL_WALL=1` overrides). After batch 0, fill `BATCH0_WALLS`, set
 `WALL_BASIS_STATUS = "measured"` and `--write`, as in 2b. Batch 0's rows are at the pinned tag
 from the private checkout at the standard size, so decision D9 proposes accepting them as the
-campaign's rows and skipping batch 1. Nothing is submitted before the human's go.
+campaign's rows and skipping batch 1 (adopted 2026-10-29). Batch 0 ran 2026-10-29 (RAL 413293,
+A100 job 413297; every leg exit 0, every witness `match`); its walls are in `BATCH0_WALLS` as the
+basis of any rerun.
 
-## Phase 2f multi_dataset + datacube (draft, not submitted)
+## Phase 2f multi_dataset + datacube
 
 **Status.** Set up for the human's review (2026-10-28); no batch has a go. The decisions D1-D9
 are on [the datacube campaign page](../../../wiki/campaigns/datacube/likelihood_lifecycle_p2f.md);
@@ -471,11 +477,11 @@ interferometer standard cell and the multi-dataset fit from 2a's hst imaging cel
 | `batch_cpu/submit_campaign_p2f_batch0_ral_cpu_fp64` | `ral`, array `%8` | 10 (batch 0) | 12:00:00 | 128 GB |
 | `batch_gpu/submit_campaign_p2f_batch0_a100_fp64` | `gpu`, `--gres=gpu:1`, array `%2` | 10 (batch 0) | 6:00:00 | 64 GB |
 | `batch_cpu/submit_campaign_p2f_batch0_references_ral_cpu_fp64` | `ral`, array | 1 (optional, batch 0) | 12:00:00 | 64 GB |
-| `batch_cpu/submit_campaign_p2f_multi_dataset_ral_cpu_hst_fp64` | `ral`, array `%16` | 4 | provisional | provisional |
-| `batch_gpu/submit_campaign_p2f_multi_dataset_a100_hst_fp64` | `gpu`, `--gres=gpu:1` | 6 legs in turn | provisional | provisional |
-| `batch_cpu/submit_campaign_p2f_datacube_ral_cpu_<instrument>_fp64` | `ral`, array `%16` | sma 6, alma 4, alma_high 4 | provisional | provisional |
-| `batch_gpu/submit_campaign_p2f_datacube_a100_<instrument>_fp64` | `gpu`, `--gres=gpu:1` | sma 4, alma 2, alma_high 2 legs in turn | provisional | provisional |
-| `batch_cpu/submit_campaign_p2f_references_ral_cpu_fp64` | `ral`, array | 2 (alma, alma_high) | provisional | 64 GB |
+| `batch_cpu/submit_campaign_p2f_multi_dataset_ral_cpu_hst_fp64` | `ral`, array `%16` | 4 | 0:30:00 | 32 GB |
+| `batch_gpu/submit_campaign_p2f_multi_dataset_a100_hst_fp64` | `gpu`, `--gres=gpu:1` | 6 legs in turn | 1:00:00 | 32 GB |
+| `batch_cpu/submit_campaign_p2f_datacube_ral_cpu_<instrument>_fp64` | `ral`, array `%16` | sma 6, alma 4, alma_high 4 | 1:00:00 | sma 64, alma 64, alma_high 32 GB |
+| `batch_gpu/submit_campaign_p2f_datacube_a100_<instrument>_fp64` | `gpu`, `--gres=gpu:1` | sma 4, alma 2, alma_high 2 legs in turn | sma 1:00:00, alma/alma_high 0:30:00 | sma 64, alma 64, alma_high 32 GB |
+| `batch_cpu/submit_campaign_p2f_references_ral_cpu_fp64` | `ral`, array | 2 (alma, alma_high) | 1:30:00 | 64 GB |
 
 **Pin and guards.** 2b's: tag 2026.10.25.1 from `PYAUTO_PRIVATE_BASE` (default
 `/mnt/ral/jnightin/profiling/PyAuto_2026.10.25.1`), the import-origin and tag guard, the
@@ -493,8 +499,8 @@ values estimates from the dataset sizes.
 `multi_dataset_datacube_p2f.py`, set `WALL_BASIS_STATUS = "measured"`, run `--write` and
 `python scripts/misc/wall/check_submits.py --check`. Each batch-1 leg then takes the wall of its
 batch-0 leg on the bounding instrument (`basis_leg`): 1.25x, plus 15 min, rounded up to the next
-half hour. Until then the batch-1 submits refuse to run (`P2F_ALLOW_PROVISIONAL_WALL=1`
-overrides); the campaign test pins the provisional state.
+half hour. Done 2026-10-30 from batch 0 (RAL 413274, A100 413296, references 413292; every leg
+exit 0, every witness `match`): batch 1 runs 0:30:00-1:00:00 (references 1:30:00) at 32-64 GB.
 
 **Parity references (D3, D8).** A datacube cell's reference is derived from 2b's chunked dense
 reference of (delaunay, instrument) at the same instance: in-process at sma, from
@@ -557,7 +563,7 @@ plus 15 min. The laptop smokes peaked at about 1.1 GB resident.
 `output/p2c_logs/`. PR B copies complete cells into `results/` as in 2a and 2b, moving the six
 stale rows to `history/` first.
 
-## Phase 2e cluster (DRAFT, autolens_profiling#474)
+## Phase 2e cluster (autolens_profiling#474)
 
 Nothing here has run on RAL. The human reviews the decisions on the campaign pages
 ([image plane](../../../wiki/campaigns/cluster/image_plane/likelihood_lifecycle_p2e.md),
@@ -585,13 +591,13 @@ eager NumPy `AnalysisPoint`, 1e-4 x |reference|) and `fit.png`. The breakdowns w
 |--------|-----------|-------|----------|---------|
 | `batch_cpu/submit_campaign_p2e_batch0_ral_cpu_fp64` | `ral`, array `%8` | 2 (image plane, batch 0) | 2:30:00 | 32 GB |
 | `batch_gpu/submit_campaign_p2e_batch0_a100_fp64` | `gpu`, `--gres=gpu:1`, array `%2` | 2 (image plane, batch 0) | 2:30:00 | 32 GB |
-| `batch_cpu/submit_campaign_p2e_cluster_ral_cpu_fp64` | `ral`, array `%8` | 4 | 2:30:00 (provisional) | 32 GB |
-| `batch_gpu/submit_campaign_p2e_cluster_a100_fp64` | `gpu`, `--gres=gpu:1`, one job | 6 in turn (2 `jax_cpu` legs on the node's CPU) | 5:00:00 (provisional) | 32 GB |
+| `batch_cpu/submit_campaign_p2e_cluster_ral_cpu_fp64` | `ral`, array `%8` | 4 | 0:30:00 | 32 GB |
+| `batch_gpu/submit_campaign_p2e_cluster_a100_fp64` | `gpu`, `--gres=gpu:1`, one job | 6 in turn (2 `jax_cpu` legs on the node's CPU) | 1:00:00 | 32 GB |
 
 **Proposed batch plan.** Batch 0 runs the four image-plane legs, which bound every cluster leg of
 the same measurement and device (the source plane is the same model without the forward solve).
 Then fill `BATCH0_WALLS` and `BATCH0_PEAK_RSS_KIB`, set `WALL_BASIS_STATUS = "measured"`, run
 `--write` and the wall gate, and submit batch 1. Until then batch 1 refuses to run
 (`P2E_ALLOW_PROVISIONAL_WALL=1` overrides it). The campaign is small, so an alternative is to skip
-batch 0 and run batch 1 with the override under its conservative provisional walls; that is the
-human's call (D5).
+batch 0 and run batch 1 with the override under its conservative provisional walls; the human
+chose batch 0 (D5). Done 2026-10-30 from batch 0 (RAL 413273, A100 413295; both witnesses `match`).

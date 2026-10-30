@@ -255,24 +255,53 @@ def test_every_submit_passes_the_wall_gate():
         assert {tuple(r["cell"].split("/")[:2]) for r in rows} == cells, path
 
 
-def test_batch1_is_provisional_until_batch0_has_run():
-    """Nothing is measured yet: batch 1 refuses to run, every row is unmeasured, batch 0 never
-    guards. Once BATCH0_WALLS is filled and WALL_BASIS_STATUS is measured this test is replaced
-    by the measured-wall test of 2b's pattern."""
-    assert p2f.WALL_BASIS_STATUS == "provisional"
-    assert p2f.BATCH0_WALLS == {} and p2f.BATCH0_PEAK_RSS_KIB == {}
+def test_batch1_walls_are_measured_by_batch0_and_batch0_never_guards():
+    """Every batch-1 row cites batch 0 (RAL 413274, A100 413296, references 413292) on the bounding
+    instrument; --time holds 1.25x the slowest leg of a RAL array or the sum of an A100 job's legs,
+    plus the slack; --mem holds 1.5x the bounding instrument's peak MaxRSS."""
+    assert p2f.WALL_BASIS_STATUS == "measured"
+    assert set(p2f.BATCH0_WALLS) == {
+        t.cell for t in p2f.batch0_ral_cpu() + p2f.batch0_a100() + p2f.batch0_references()
+    }
+    assert set(p2f.BATCH0_LIMITATIONS) <= set(p2f.BATCH0_WALLS)
     for path in BATCH1:
-        text = (ROOT / path).read_text()
-        assert "WALL_BASIS_STATUS=provisional" in text
-        assert "P2F_ALLOW_PROVISIONAL_WALL" in text and "exit 2" in text
-        assert text.index("WALL_BASIS_STATUS=provisional") < text.index(
+        text, names = legs(path)
+        assert "WALL_BASIS_STATUS=measured" in text
+        assert text.index("WALL_BASIS_STATUS=measured") < text.index(
             'source "$AP_ROOT/activate.sh"'
         )
+        tasks = [t for t in p2f.planned_tasks() + p2f.reference_tasks() if t.cell in set(names)]
+        assert len(tasks) == len(names), path
+        walls = []
+        for t in tasks:
+            basis = p2f.basis_leg(t)
+            assert basis.cell in p2f.BATCH0_WALLS
+            assert basis.script == t.script and basis.setup_id == t.setup_id
+            wall, elapsed, _ = p2f.BATCH0_WALLS[basis.cell]
+            assert p2f.measured_wall(t)[0] == max(wall, elapsed)
+            walls.append(max(wall, elapsed))
+        need = 1.25 * (sum(walls) if path in A1001 else max(walls)) + p2f.WALL_MIN_SLACK_S
+        assert check_submits.parse_slurm_time(sbatch(text, "time")) >= need, path
         for row in check_submits.parse_basis_rows(text):
-            assert row["source"] == "unmeasured" and row["probe-first"] == "yes"
+            assert row["source"] == "measured-wall", path
+    for path in RAL1 + A1001:
+        text, names = legs(path)
+        instruments = {t.instrument for t in p2f.planned_tasks() if t.cell in set(names)}
+        peak_gib = (
+            max(
+                p2f.BATCH0_PEAK_RSS_KIB.get(i, max(p2f.BATCH0_PEAK_RSS_KIB.values()))[0]
+                for i in instruments
+            )
+            / 2**20
+        )
+        mem = int(sbatch(text, "mem").removesuffix("gb"))
+        assert mem >= max(32, 1.5 * peak_gib), path
+    assert sbatch((ROOT / REFS1).read_text(), "mem") == f"{p2f.REFERENCE_MEM_GB}gb"
     for path in BATCH0:
         text = (ROOT / path).read_text()
         assert "WALL_BASIS_STATUS" not in text and "ALLOW_PROVISIONAL" not in text, path
+        for row in check_submits.parse_basis_rows(text):
+            assert row["source"] == "unmeasured" and float(row["headroom"]) >= 3.0
 
 
 def test_basis_legs_are_batch0_legs_on_the_bounding_instrument():
@@ -286,7 +315,7 @@ def test_basis_legs_are_batch0_legs_on_the_bounding_instrument():
             assert order.index(basis.instrument) >= order.index(task.instrument)
 
 
-def test_every_submit_pins_the_private_checkout_and_is_marked_draft():
+def test_every_submit_pins_the_private_checkout():
     for path in ALL:
         text = (ROOT / path).read_text()
         assert "export P2F_PIN=2026.10.25.1" in text and p2f.PIN == "2026.10.25.1"
@@ -297,7 +326,7 @@ def test_every_submit_pins_the_private_checkout_and_is_marked_draft():
         assert "HPCPullPyAuto" not in text
         assert "from multi_dataset_datacube_p2f import prepare_dataset" in text
         assert "output/numba_cache/p2f_" in text and "output/jax_cache/p2f_" in text
-        assert "DRAFT FOR REVIEW" in text
+        assert "Decisions D1-D9 adopted" in text
 
 
 def test_prepare_dataset_dispatches_by_dataset_type(monkeypatch):

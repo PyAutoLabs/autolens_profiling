@@ -194,24 +194,40 @@ def test_every_submit_passes_the_wall_gate():
         assert instruments == {"simple"}
 
 
-def test_batch0_declares_guesses_and_batch1_waits_for_its_walls():
-    assert p2g.WALL_BASIS_STATUS == "provisional" and p2g.BATCH0_WALLS == {}
-    for path in BATCH0:
-        text = (ROOT / path).read_text()
-        assert "WALL_BASIS_STATUS" not in text and "ALLOW_PROVISIONAL" not in text
-        rows = check_submits.parse_basis_rows(text)
-        assert rows and all(r["source"] == "unmeasured" and r["probe-first"] == "yes" for r in rows)
-        assert sbatch(text, "time") == "1:30:00"
+def test_batch1_walls_are_measured_by_batch0_and_batch0_never_guards():
+    """Every rerun row cites batch 0 (RAL 413293, A100 job 413297): one instrument, so every leg
+    bounds itself; --time holds 1.25x the slowest RAL leg or the A100 job's sum, plus slack."""
+    assert p2g.WALL_BASIS_STATUS == "measured"
+    assert set(p2g.BATCH0_WALLS) == {t.cell for t in p2g.planned_tasks(0)}
+    assert set(p2g.BATCH0_LIMITATIONS) <= set(p2g.BATCH0_WALLS)
     for path in BATCH1:
-        text = (ROOT / path).read_text()
-        assert "WALL_BASIS_STATUS=provisional" in text
-        assert "P2G_ALLOW_PROVISIONAL_WALL" in text
-        assert text.index("WALL_BASIS_STATUS=provisional") < text.index(
+        text, names = legs(path)
+        assert "WALL_BASIS_STATUS=measured" in text
+        assert text.index("WALL_BASIS_STATUS=measured") < text.index(
             'source "$AP_ROOT/activate.sh"'
         )
-        assert all(r["source"] == "unmeasured" for r in check_submits.parse_basis_rows(text))
+        tasks = [t for t in p2g.planned_tasks() if t.cell in set(names)]
+        assert len(tasks) == len(names), path
+        walls = []
+        for t in tasks:
+            basis = p2g.basis_leg(t)
+            assert basis.cell in p2g.BATCH0_WALLS
+            assert basis.script == t.script and basis.setup_id == t.setup_id
+            wall, elapsed, _ = p2g.BATCH0_WALLS[basis.cell]
+            assert p2g.measured_wall(t)[0] == max(wall, elapsed)
+            walls.append(max(wall, elapsed))
+        need = 1.25 * (sum(walls) if path in (A1001,) else max(walls)) + p2g.WALL_MIN_SLACK_S
+        assert check_submits.parse_slurm_time(sbatch(text, "time")) >= need, path
+        for row in check_submits.parse_basis_rows(text):
+            assert row["source"] == "measured-wall", path
+    # Peak MaxRSS 0.65 GiB: the declared --mem stands.
     mems = {p: sbatch((ROOT / p).read_text(), "mem") for p in ALL}
     assert mems == {BATCH0_RAL: "16gb", RAL1: "16gb", BATCH0_A100: "32gb", A1001: "32gb"}
+    for path in BATCH0:
+        text = (ROOT / path).read_text()
+        assert "WALL_BASIS_STATUS" not in text and "ALLOW_PROVISIONAL" not in text, path
+        for row in check_submits.parse_basis_rows(text):
+            assert row["source"] == "unmeasured" and float(row["headroom"]) >= 3.0
 
 
 def test_every_submit_pins_the_private_checkout():
@@ -224,7 +240,7 @@ def test_every_submit_pins_the_private_checkout():
         assert "/mnt/ral/jnightin/PyAuto/PyAuto" not in text and "HPCPullPyAuto" not in text
         assert "from weak_p2g import prepare_dataset" in text
         assert "output/numba_cache/p2g_" in text and "output/jax_cache/p2g_" in text
-        assert "DRAFT" in text
+        assert "Decisions adopted by the human" in text
 
 
 def test_prepare_dataset_returns_early_when_the_catalogue_exists(tmp_path):

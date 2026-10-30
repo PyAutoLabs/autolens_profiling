@@ -3,13 +3,13 @@
 **Status:** open
 **Question:** What does every planned multi_dataset/delaunay cell cost at the standard source size (Delaunay 1250 + 30 edge points) on the pinned release 2026.10.25.1, for the production multi-dataset likelihood (one `AnalysisImaging` per dataset summed in a `FactorGraphModel`), and does each cell's summed log likelihood match an independent reference?
 **Pre-registered rule:** every one of the 10 planned multi_dataset cells lands `current`, with runtime and breakdown, provenance, `resources`, `fit.png` and a `parity.json` whose status is `match` against the sum of 2a's eager NumPy dense-mapping reference per dataset (D8; tolerance 1e-4 x |reference| in fp64, the imaging rule). Any `diverged` witness blocks that setup until explained. Recorded here with the setup PR, before any run (2026-10-28).
-**Verdict:** pending (D6-D9 adopted 2026-10-29; batch 0, all 10 multi_dataset legs, not yet submitted). Expected, written before the runs: every witness is `match`; each setup costs about twice 2a's hst Delaunay cell of the same setup (nothing is shared between the datasets, D6), so the setup ranking is 2a's: `jax_gpu_dense_fp64@hpc_a100` fastest per call, numba the fastest CPU setup per core. Class designations are phase 3's decision, not this page's.
+**Verdict:** pending (batch 0, all 10 multi_dataset legs, run 2026-10-29; batch 1 not yet). Expected, written before the runs: every witness is `match`; each setup costs about twice 2a's hst Delaunay cell of the same setup (nothing is shared between the datasets, D6), so the setup ranking is 2a's: `jax_gpu_dense_fp64@hpc_a100` fastest per call, numba the fastest CPU setup per core. Class designations are phase 3's decision, not this page's.
 **Headline:** none yet.
 **Library PRs:** none (measurement only, tag 2026.10.25.1)
 **Profiling PRs:** setup PR (draft, shared with the datacube half), then a walls PR after batch 0, then PR B
 **Ledger:** this page; rows will land under `results/multi_dataset/delaunay/hst/`; work list [`scripts/misc/campaigns/multi_dataset_datacube_p2f.py`](../../../scripts/misc/campaigns/multi_dataset_datacube_p2f.py); the decision table D1-D9 is on the [datacube page](../datacube/likelihood_lifecycle_p2f.md)
 **Mind contract:** epic `likelihood-lifecycle`, phase 2 sub-issue 2f; issue autolens_profiling#475
-**Next:** batch 0 (go given 2026-10-29; held: the RAL venv carries jax/jaxlib 0.10.2, which the pin's PyAutoNerves excludes; the human decides the environment); then the walls commit, batch 1 (human go), PR B
+**Next:** batch 1 (human go; RAL CPU legs on shared nodes, no quiet gate, human 2026-10-30), from the walls commit; then PR B
 **Fit figures:** none from RAL yet. Laptop smoke (hst, dataset 0, `numba_cpu_sparse_fp64`) opened: ring reconstructed, residuals confined to the lens core as in 2a's iid draw 0, nothing wrong.
 
 ## Why this campaign
@@ -42,6 +42,17 @@ walls), all 10 also in batch 0. The drivers are in
 `scripts/misc/likelihood_breakdown/multi_dataset_standard.py`; the cell scripts are
 `scripts/multi_dataset/delaunay/likelihood_{runtime,breakdown}{,_numba}.py` (new).
 
+## Batch 0 (2026-10-29)
+
+| Array | Job | Legs | Result |
+|-------|-----|------|--------|
+| RAL CPU timing arm | 413274 (tasks 6-9) | 4 | all exit 0; slowest leg the `jax_cpu_sparse_fp64` runtime, 336 s |
+| A100 timing arm | 413296 (tasks 4-9) | 6 | all exit 0; slowest leg the `jax_cpu_sparse_fp64@hpc_a100` runtime, 284 s |
+
+Every parity witness is `match`; peak `.batch` MaxRSS 3.0 GiB (413274_7). The walls set batch
+1's `--time` (RAL 0:30:00, A100 job 1:00:00) and `--mem` (32 GB, the floor). The datacube page
+has the rest of the arrays and the loaded-node caveat on the RAL CPU rows.
+
 ## Caveats
 
 - The two datasets share every input but the flux calibration. A real multi-band fit has
@@ -60,3 +71,11 @@ setup PR for the list and any failures. Nothing submitted to RAL.
 ### 2026-10-29 — D6-D9 adopted; batch 0 held
 
 D6-D9 adopted as drafted (the datacube page's journal has the details and why batch 0 was held).
+
+### 2026-10-30 — batch 0 in; the walls commit
+
+All 10 legs exit 0, every witness `match`; batch 1's walls and memory are measured (see Batch 0).
+
+### 2026-10-30 — loaded RAL nodes accepted
+
+Human ruling 2026-10-30 (chat): "ignore loaded node stuff for now I dont think that massive impacts run times and we cant ever expect to be unloaded nodes for everything". Batch 1 runs on shared `ral` nodes as rendered, with no quiet gate; a loaded row keeps its `loadavg_at_import`.

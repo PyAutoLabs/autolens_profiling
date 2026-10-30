@@ -3,13 +3,13 @@
 **Status:** open
 **Question:** What does each planned cluster/image_plane cell cost, for the solved image-plane likelihood (`FitPositionsImagePairRepeatSolved`, D3), on the pinned release 2026.10.25.1 with the decided workspace PointSolver (100x100 @ 1.0", precision 0.001, `residual_threshold` 10), and does each cell's JIT log-likelihood match the eager NumPy one?
 **Pre-registered rule:** all 4 planned cluster/image_plane cells (`jax_cpu_na_fp64@hpc_ral_cpu`, `jax_gpu_na_fp64@hpc_a100`, each runtime and breakdown) land `current` with provenance, `resources`, `fit.png` and a `parity.json` whose status is `match` (JIT `AnalysisPoint` vs the eager NumPy `AnalysisPoint` of the same model, instance and solver, tolerance 1e-4 x |reference| in fp64). A `diverged` witness blocks that setup until explained. The prior rows on these keys become `superseded`. Recorded here before any RAL run (2026-10-28). Amended 2026-10-29, still before any run: the witness and `fit.png` evaluate the solved headline class (D3).
-**Verdict:** pending (no RAL batch has run). Expected, written before the runs: the forward solve dominates every image-plane call, as in the historic breakdown (job 350580: the per-system eager fit is ~2 s, the fused JIT call 0.13 s on RAL CPU for the plain class and 0.135 s for the solved one); the solved headline costs the same order per call as the plain sub-row (laptop smokes disagree on which is faster: runtime 10.7 vs 18.1 ms, breakdown fused 39.8 vs 16.5 ms, both on a loaded single CPU); both parity witnesses are `match`, since the solver finds every image of the `simple` truth at 1.0" (306/306 prior roots, cluster PointSolver campaign); per-call latency favours the A100, but CPU and GPU are compared by projected node throughput, not per call. Class designations are phase 3's decision.
+**Verdict:** pending (batch 0 run 2026-10-29; batch 1 not yet). Expected, written before the runs: the forward solve dominates every image-plane call, as in the historic breakdown (job 350580: the per-system eager fit is ~2 s, the fused JIT call 0.13 s on RAL CPU for the plain class and 0.135 s for the solved one); the solved headline costs the same order per call as the plain sub-row (laptop smokes disagree on which is faster: runtime 10.7 vs 18.1 ms, breakdown fused 39.8 vs 16.5 ms, both on a loaded single CPU); both parity witnesses are `match`, since the solver finds every image of the `simple` truth at 1.0" (306/306 prior roots, cluster PointSolver campaign); per-call latency favours the A100, but CPU and GPU are compared by projected node throughput, not per call. Class designations are phase 3's decision.
 **Headline:** none yet (laptop smokes only, below).
 **Library PRs:** none (measurement only, tag 2026.10.25.1, which carries PyAutoLens#800 `residual_threshold` and bdb44a87c)
 **Profiling PRs:** the 2e setup draft PR (autolens_profiling#474), then the rows PR after the human's batch go
 **Ledger:** this page; the source-plane half is [likelihood_lifecycle_p2e.md](../source_plane/likelihood_lifecycle_p2e.md); work list [`scripts/misc/campaigns/cluster_p2e.py`](../../../../scripts/misc/campaigns/cluster_p2e.py) and its [README](../../../../scripts/misc/campaigns/README.md)
 **Mind contract:** epic `likelihood-lifecycle`, phase 2 sub-issue 2e; issue autolens_profiling#474; solver settings from epic `cluster-pointsolver-speed` ([cluster PointSolver](cluster_pointsolver.md))
-**Next:** batch 0, the 4 image-plane legs (every decision D1-D6 decided; go given 2026-10-29; held: the RAL venv carries jax/jaxlib 0.10.2, which the pin's PyAutoNerves excludes; the human decides the environment); then the walls commit, batch 1 (human go), the rows PR
+**Next:** batch 1 (human go; RAL CPU legs on shared nodes, no quiet gate, human 2026-10-30), from the walls commit; then the rows PR
 **Fit figures:** laptop smoke `fit.png` of the solved headline opened (2026-10-29, runtime and breakdown): every observed image of both systems has a model image from β* on it, χ² = 0.065 (the plain fit's was 2.6, 2026-10-28); none from RAL yet.
 
 ## Why this campaign
@@ -75,6 +75,19 @@ Both legs' `fit.png` show every observed image of both systems with a model imag
 (χ² = 2.6). The compile, not the call, sets the wall: batch 0's declared guess is 2400 s per
 leg (`cluster_p2e.BATCH0_WALL_GUESS_S`), `--time` 2:30:00.
 
+## Batch 0 (2026-10-29)
+
+| Array | Job | Legs | Result |
+|-------|-----|------|--------|
+| RAL CPU timing arm | 413273 | 2 | both exit 0; runtime 360 s, breakdown 281 s (sacct Elapsed) |
+| A100 timing arm | 413295 | 2 | both exit 0; runtime 403 s, breakdown 309 s |
+
+Both parity witnesses are `match`. Peak `.batch` MaxRSS: 2.3 GiB (RAL), 2.6 GiB (A100). Every
+leg took about 60 s more than its WALL for the cluster dataset preflight. The walls set batch 1's
+`--time` (RAL 0:30:00, A100 job 1:00:00) and `--mem` (32 GB, the floor); the generator holds the
+numbers. The RAL CPU rows were measured on a loaded node (`loadavg_at_import` 106, shared with
+euclid SLAM tasks), so they would be refused as trend points; the A100 rows are quiet.
+
 ## Caveats
 
 - The 1.0" start loses close high-|μ| image pairs on some stress draws of `simple` and the
@@ -93,3 +106,13 @@ batch 1) and D6 (runtime writes `parity.json`, default tolerance, declared vmap 
 we do all that now then". D3 and D4 were already decided. No code, plan or submit changed.
 
 The batch-0 go was given with the decisions, but batch 0 was not submitted. The shared RAL venv (`/mnt/ral/jnightin/PyAuto/PyAuto`, which every submit activates) carries jax/jaxlib 0.10.2 (`site-packages/jax-0.10.2.dist-info`, `jaxlib-0.10.2.dist-info`), while the pin's PyAutoNerves excludes 0.10.* ("CPU batched LAPACK can deadlock in 0.10.x / 0.11.0", Heart#274). Rows from that environment would not match the pin's dependency floor, so the environment is the human's call. Later the same evening the human also said not to start anything new on RAL. A detached checkout of main 32c0becd was being prepared at `/mnt/ral/jnightin/profiling/autolens_profiling_p2dg`, but nothing has been submitted from it.
+
+### 2026-10-30 — batch 0 in; the walls commit
+
+Batch 0 ran 2026-10-29 (RAL 413273, A100 413295; every leg exit 0, both witnesses `match`). The
+walls commit fills `BATCH0_WALLS` / `BATCH0_PEAK_RSS_KIB` and flips `WALL_BASIS_STATUS` to
+`measured`: batch 1 runs 0:30:00 (RAL) / 1:00:00 (A100) at 32 GB.
+
+### 2026-10-30 — loaded RAL nodes accepted
+
+Human ruling 2026-10-30 (chat): "ignore loaded node stuff for now I dont think that massive impacts run times and we cant ever expect to be unloaded nodes for everything". Batch 1 runs on shared `ral` nodes as rendered, with no quiet gate; a loaded row keeps its `loadavg_at_import`.
