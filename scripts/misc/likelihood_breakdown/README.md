@@ -15,7 +15,12 @@ For *how long the likelihood actually takes* on production hardware — i.e. a s
 |------|------------|-------|------|----------------|----------------|--------------------|
 | `cluster/image_plane` | — | _not recorded_ | local_cpu_fp64 | dense (mapping) | 4.81 s | v2026.8.17.1 |
 | `cluster/image_plane` | — | _not recorded_ | hpc_ral_cpu_fp64 | dense (mapping) | 4.53 s | v2026.8.17.1 |
+| `cluster/image_plane` | simple | `jax_cpu_na_fp64` | hpc_ral_cpu | dense (mapping) | 1.59 s | v2026.8.17.1 |
+| `cluster/image_plane` | simple | `jax_gpu_na_fp64` | hpc_a100 | dense (mapping) | 1.93 s | v2026.8.17.1 |
 | `cluster/source_plane` | — | _not recorded_ | local_cpu_fp64 | dense (mapping) | 4.5 ms | v2026.7.23.1 (archived) |
+| `cluster/source_plane` | simple | `jax_cpu_na_fp64` | hpc_ral_cpu | dense (mapping) | 1.0 ms | v2026.8.17.1 |
+| `cluster/source_plane` | simple | `jax_cpu_na_fp64` | hpc_a100 | dense (mapping) | 1.7 ms | v2026.8.17.1 |
+| `cluster/source_plane` | simple | `jax_gpu_na_fp64` | hpc_a100 | dense (mapping) | 2.2 ms | v2026.8.17.1 |
 | `datacube/delaunay` | alma_high | _not recorded_ | hpc_a100_fp64 | dense (mapping) | — | v2026.7.6.649 |
 | `datacube/delaunay` | alma_high | _not recorded_ | hpc_a100_mp | dense (mapping) | — | v2026.7.6.649 |
 | `datacube/inversion` | alma_high | _not recorded_ | hpc_a100_fp64 | dense (mapping) | — | v2026.7.6.649 |

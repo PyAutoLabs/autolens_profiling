@@ -1,0 +1,199 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "hostname": "euclid-ral-compute-10-5",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_cpu_multi_thread_eigen=false --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 236,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2dg/output/jax_cache/p2e_413506_1",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-10-30T11:55:51Z",
+      "host": "euclid-ral-compute-10-5",
+      "slurm": {
+        "job_id": "413506",
+        "array_job_id": "413447",
+        "array_task_id": "1"
+      },
+      "loadavg_at_import": [
+        83.61,
+        88.49,
+        101.17
+      ],
+      "loadavg_at_write": [
+        97.44,
+        94.44,
+        99.9
+      ],
+      "profiling_revision": "830314e9bcafafd469f0985f9d1c9629cca830ff",
+      "library_revisions": {
+        "autolens_profiling": "830314e9bcafafd469f0985f9d1c9629cca830ff",
+        "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+        "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+        "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+        "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+        "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.65.1",
+        "nufftax": "0.6.1",
+        "finufft": "2.5.1"
+      }
+    }
+  },
+  "resources": {
+    "resources_schema": 1,
+    "engine": "jax",
+    "device": "cpu",
+    "cpus_per_eval": 8,
+    "cpus_per_eval_basis": "jax cpu: NPROC threads in XLA's CPU intra-op pool",
+    "devices_per_eval": 0,
+    "peak_rss_gb": 2.506043,
+    "peak_rss_basis": "in_process_ru_maxrss",
+    "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
+  },
+  "thread_environment": {
+    "NPROC": "8",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "instrument": "simple",
+  "model": "image_plane",
+  "fit_positions_cls": "FitPositionsImagePairRepeatSolved",
+  "use_mixed_precision": false,
+  "configuration": {
+    "likelihood": "image_plane (FitPositionsImagePairRepeatSolved)",
+    "headline_arm": "solved",
+    "sub_row_arm": "plain",
+    "n_systems": 2,
+    "n_images_total": 6,
+    "n_planes": 3,
+    "n_mass_profiles": 13,
+    "free_parameters": 13,
+    "solved_source_centres": [
+      [
+        0.29996638175782137,
+        0.49996507076235147
+      ],
+      [
+        -0.7999404110613377,
+        1.1999721522354347
+      ]
+    ],
+    "solved_source_centres_source": "the headline fit's analytic beta* (source_plane_coordinate) per system, eager",
+    "point_centres": [
+      [
+        0.2997151749185453,
+        0.5000218394898371
+      ],
+      [
+        -0.7997895383270142,
+        1.2002221710802061
+      ]
+    ],
+    "point_centres_source": "plain sub-row only: back-traced centroid of each system's observed images",
+    "instance": "prior medians of tight Gaussians on the truth (cluster_standard.model)",
+    "solver": {
+      "grid_shape_native": [
+        100,
+        100
+      ],
+      "grid_pixel_scales": 1.0,
+      "pixel_scale_precision": 0.001,
+      "magnification_threshold": 0.1,
+      "residual_threshold": 10.0,
+      "residual_threshold_source": "explicit"
+    },
+    "standard_size": true,
+    "n_repeats": 3,
+    "jax_enable_x64": true
+  },
+  "eager_log_likelihood": 26.243720916726833,
+  "log_likelihood_jit": 26.243720916726826,
+  "full_pipeline_single_jit": 0.0054068813333287835,
+  "full_pipeline_single_jit_median": 0.005707957490812987,
+  "full_pipeline_single_jit_median_ms": 5.707957490812987,
+  "full_pipeline_single_jit_p10_ms": 5.069121730048209,
+  "full_pipeline_single_jit_p90_ms": 6.848354137036949,
+  "full_pipeline_single_jit_median_protocol": {
+    "n_warm": 5,
+    "n_timed": 200,
+    "statistic": "median of individually timed calls after warm calls",
+    "full_pipeline_single_jit_is": "mean of one 10-call block after one first call (first block after compile)",
+    "issue": "autolens_profiling#371; timing-noise audit P8 (#362)"
+  },
+  "vmap": {
+    "batch_size": 3,
+    "batch_size_resolved": 3,
+    "batch_size_source": "declared (cluster_standard.VMAP_BATCH)",
+    "batch_time": 0.01843508565798402,
+    "per_call": 0.00614502855266134,
+    "speedup_vs_single_jit": 0.88,
+    "instances": "the prior-median instance broadcast to the batch",
+    "attempts": []
+  },
+  "jit_phases": {
+    "full_pipeline_solved": {
+      "lower_s": 47.590914890985005,
+      "compile_s": 58.66541486699134,
+      "first_call_s": 0.011759945889934897,
+      "steady_per_call_s": 0.0054068813333287835
+    },
+    "full_pipeline_plain": {
+      "lower_s": 36.66298132704105,
+      "compile_s": 55.418979356996715,
+      "first_call_s": 0.010943474015221,
+      "steady_per_call_s": 0.006426766669998567
+    },
+    "full_pipeline_vmap3": {
+      "first_call_s": 124.3646932359552,
+      "batch_per_call_s": 0.01843508565798402,
+      "steady_per_call_s": 0.00614502855266134
+    }
+  },
+  "headline_arm": "solved",
+  "solved": {
+    "fit_positions_cls": "FitPositionsImagePairRepeatSolved",
+    "free_parameters": 13,
+    "eager_log_likelihood": 26.243720916726833,
+    "eager_single_call_s": 1.3395434819394723,
+    "log_likelihood_jit": 26.243720916726826,
+    "single_jit_block_s": 0.0054068813333287835,
+    "jit_phases": {
+      "lower_s": 47.590914890985005,
+      "compile_s": 58.66541486699134,
+      "first_call_s": 0.011759945889934897,
+      "steady_per_call_s": 0.0054068813333287835
+    }
+  },
+  "plain": {
+    "fit_positions_cls": "FitPositionsImagePairRepeat",
+    "free_parameters": 17,
+    "eager_log_likelihood": 24.97724142453904,
+    "eager_single_call_s": 0.9989661669824272,
+    "log_likelihood_jit": 24.97724142453943,
+    "single_jit_block_s": 0.006426766669998567,
+    "jit_phases": {
+      "lower_s": 36.66298132704105,
+      "compile_s": 55.418979356996715,
+      "first_call_s": 0.010943474015221,
+      "steady_per_call_s": 0.006426766669998567
+    }
+  }
+}

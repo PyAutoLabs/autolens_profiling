@@ -15,18 +15,18 @@ Catalogue generated 2026-10-29T09:46:25Z; catalogue pin `2026.10.25.1` (newest r
 
 | Planned cells | Current | Stale | Superseded | Missing (of which size_fallback) | Superseded records |
 |---|---|---|---|---|---|
-| 272 | 230 | 0 | 0 | 42 (0) | 518 |
+| 272 | 240 | 0 | 0 | 32 (0) | 520 |
 
 ## Likelihood x class x measurement
 
 | Likelihood | Class | Measurement | Current | Stale | Superseded | Missing |
 |---|---|---|---|---|---|---|
-| cluster/image_plane | optimal | breakdown | 0 | 0 | 0 | 2 |
-| cluster/image_plane | optimal | runtime | 0 | 0 | 0 | 2 |
-| cluster/source_plane | optimal | breakdown | 0 | 0 | 0 | 2 |
-| cluster/source_plane | optimal | runtime | 0 | 0 | 0 | 2 |
-| cluster/source_plane | secondary | breakdown | 0 | 0 | 0 | 1 |
-| cluster/source_plane | secondary | runtime | 0 | 0 | 0 | 1 |
+| cluster/image_plane | optimal | breakdown | 2 | 0 | 0 | 0 |
+| cluster/image_plane | optimal | runtime | 2 | 0 | 0 | 0 |
+| cluster/source_plane | optimal | breakdown | 2 | 0 | 0 | 0 |
+| cluster/source_plane | optimal | runtime | 2 | 0 | 0 | 0 |
+| cluster/source_plane | secondary | breakdown | 1 | 0 | 0 | 0 |
+| cluster/source_plane | secondary | runtime | 1 | 0 | 0 | 0 |
 | datacube/delaunay | optimal | breakdown | 0 | 0 | 0 | 6 |
 | datacube/delaunay | optimal | runtime | 0 | 0 | 0 | 6 |
 | datacube/delaunay | secondary | breakdown | 0 | 0 | 0 | 5 |
@@ -96,13 +96,13 @@ Per planned setup cell: match/diverged from its current parity record, not_asses
 
 | Setup cells | Match | Diverged | Not assessed | Missing |
 |---|---|---|---|---|
-| 136 | 115 | 0 | 0 | 21 |
+| 136 | 120 | 0 | 0 | 16 |
 
 | Likelihood | Class | Match | Diverged | Not assessed | Missing |
 |---|---|---|---|---|---|
-| cluster/image_plane | optimal | 0 | 0 | 0 | 2 |
-| cluster/source_plane | optimal | 0 | 0 | 0 | 2 |
-| cluster/source_plane | secondary | 0 | 0 | 0 | 1 |
+| cluster/image_plane | optimal | 2 | 0 | 0 | 0 |
+| cluster/source_plane | optimal | 2 | 0 | 0 | 0 |
+| cluster/source_plane | secondary | 1 | 0 | 0 | 0 |
 | datacube/delaunay | optimal | 0 | 0 | 0 | 6 |
 | datacube/delaunay | secondary | 0 | 0 | 0 | 5 |
 | group/delaunay | optimal | 2 | 0 | 0 | 0 |

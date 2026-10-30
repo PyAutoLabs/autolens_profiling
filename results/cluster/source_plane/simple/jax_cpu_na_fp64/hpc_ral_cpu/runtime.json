@@ -1,0 +1,189 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "hostname": "euclid-ral-compute-10-5",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_cpu_multi_thread_eigen=false --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 236,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2dg/output/jax_cache/p2e_413447_3",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-10-30T11:50:37Z",
+      "host": "euclid-ral-compute-10-5",
+      "slurm": {
+        "job_id": "413447",
+        "array_job_id": "413447",
+        "array_task_id": "3"
+      },
+      "loadavg_at_import": [
+        83.61,
+        88.49,
+        101.17
+      ],
+      "loadavg_at_write": [
+        88.63,
+        89.32,
+        101.18
+      ],
+      "profiling_revision": "830314e9bcafafd469f0985f9d1c9629cca830ff",
+      "library_revisions": {
+        "autolens_profiling": "830314e9bcafafd469f0985f9d1c9629cca830ff",
+        "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+        "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+        "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+        "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+        "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.65.1",
+        "nufftax": "0.6.1",
+        "finufft": "2.5.1"
+      }
+    }
+  },
+  "resources": {
+    "resources_schema": 1,
+    "engine": "jax",
+    "device": "cpu",
+    "cpus_per_eval": 8,
+    "cpus_per_eval_basis": "jax cpu: NPROC threads in XLA's CPU intra-op pool",
+    "devices_per_eval": 0,
+    "peak_rss_gb": 0.719516,
+    "peak_rss_basis": "in_process_ru_maxrss",
+    "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
+  },
+  "thread_environment": {
+    "NPROC": "8",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "instrument": "simple",
+  "model": "source_plane",
+  "fit_positions_cls": "FitPositionsSourceSolved",
+  "use_mixed_precision": false,
+  "configuration": {
+    "likelihood": "source_plane (FitPositionsSourceSolved)",
+    "headline_arm": "solved",
+    "sub_row_arm": "plain",
+    "n_systems": 2,
+    "n_images_total": 6,
+    "n_planes": 3,
+    "n_mass_profiles": 13,
+    "free_parameters": 13,
+    "solved_source_centres": [
+      [
+        0.29996638175782137,
+        0.49996507076235147
+      ],
+      [
+        -0.7999404110613377,
+        1.1999721522354347
+      ]
+    ],
+    "solved_source_centres_source": "the headline fit's analytic beta* (source_plane_coordinate) per system, eager",
+    "point_centres": [
+      [
+        0.3,
+        0.5
+      ],
+      [
+        -0.8,
+        1.2
+      ]
+    ],
+    "point_centres_source": "plain sub-row only: the simulator's true source centres",
+    "instance": "prior medians of tight Gaussians on the truth (cluster_standard.model)",
+    "solver": null,
+    "standard_size": true,
+    "n_repeats": 10,
+    "jax_enable_x64": true
+  },
+  "eager_log_likelihood": 26.063158936253405,
+  "log_likelihood_jit": 26.06315893648174,
+  "full_pipeline_single_jit": 0.0006822812021709979,
+  "full_pipeline_single_jit_median": 0.0005058675305917859,
+  "full_pipeline_single_jit_median_ms": 0.5058675305917859,
+  "full_pipeline_single_jit_p10_ms": 0.47536379424855113,
+  "full_pipeline_single_jit_p90_ms": 0.557006907183677,
+  "full_pipeline_single_jit_median_protocol": {
+    "n_warm": 5,
+    "n_timed": 200,
+    "statistic": "median of individually timed calls after warm calls",
+    "full_pipeline_single_jit_is": "mean of one 10-call block after one first call (first block after compile)",
+    "issue": "autolens_profiling#371; timing-noise audit P8 (#362)"
+  },
+  "vmap": {
+    "batch_size": 3,
+    "batch_size_resolved": 3,
+    "batch_size_source": "declared (cluster_standard.VMAP_BATCH)",
+    "batch_time": 0.0007409651065245269,
+    "per_call": 0.000246988368841509,
+    "speedup_vs_single_jit": 2.76,
+    "instances": "the prior-median instance broadcast to the batch",
+    "attempts": []
+  },
+  "jit_phases": {
+    "full_pipeline_solved": {
+      "lower_s": 4.991187284933403,
+      "compile_s": 3.4199024609988555,
+      "first_call_s": 0.007985130068846047,
+      "steady_per_call_s": 0.0006822812021709979
+    },
+    "full_pipeline_plain": {
+      "lower_s": 1.729507887037471,
+      "compile_s": 1.724634887999855,
+      "first_call_s": 0.0030596490250900388,
+      "steady_per_call_s": 0.0006336354999803007
+    },
+    "full_pipeline_vmap3": {
+      "first_call_s": 10.104487920063548,
+      "batch_per_call_s": 0.000740965106524527,
+      "steady_per_call_s": 0.000246988368841509
+    }
+  },
+  "headline_arm": "solved",
+  "solved": {
+    "fit_positions_cls": "FitPositionsSourceSolved",
+    "free_parameters": 13,
+    "eager_log_likelihood": 26.063158936253405,
+    "eager_single_call_s": 0.06453432294074446,
+    "log_likelihood_jit": 26.06315893648174,
+    "single_jit_block_s": 0.0006822812021709979,
+    "jit_phases": {
+      "lower_s": 4.991187284933403,
+      "compile_s": 3.4199024609988555,
+      "first_call_s": 0.007985130068846047,
+      "steady_per_call_s": 0.0006822812021709979
+    }
+  },
+  "plain": {
+    "fit_positions_cls": "FitPositionsSource",
+    "free_parameters": 17,
+    "eager_log_likelihood": 52.52032422403222,
+    "eager_single_call_s": 0.016013307962566614,
+    "log_likelihood_jit": 52.5203242242887,
+    "single_jit_block_s": 0.0006336354999803007,
+    "jit_phases": {
+      "lower_s": 1.729507887037471,
+      "compile_s": 1.724634887999855,
+      "first_call_s": 0.0030596490250900388,
+      "steady_per_call_s": 0.0006336354999803007
+    }
+  }
+}

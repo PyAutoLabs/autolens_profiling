@@ -1,0 +1,157 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "source_revisions": {
+    "autolens_profiling": "830314e9bcafafd469f0985f9d1c9629cca830ff",
+    "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+    "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+    "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+    "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+    "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
+  },
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "hostname": "euclid-ral-gpu-1",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_cpu_multi_thread_eigen=false --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 124,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2dg/output/jax_cache/p2e_413455_2",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-10-30T10:58:15Z",
+      "host": "euclid-ral-gpu-1",
+      "slurm": {
+        "job_id": "413455",
+        "array_job_id": null,
+        "array_task_id": null
+      },
+      "loadavg_at_import": [
+        6.09,
+        5.43,
+        3.06
+      ],
+      "loadavg_at_write": [
+        5.92,
+        5.4,
+        3.07
+      ],
+      "profiling_revision": "830314e9bcafafd469f0985f9d1c9629cca830ff",
+      "library_revisions": {
+        "autolens_profiling": "830314e9bcafafd469f0985f9d1c9629cca830ff",
+        "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+        "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+        "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+        "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+        "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.65.1",
+        "nufftax": "0.6.1",
+        "finufft": "2.5.1"
+      }
+    }
+  },
+  "resources": {
+    "resources_schema": 1,
+    "engine": "jax",
+    "device": "cpu",
+    "cpus_per_eval": 8,
+    "cpus_per_eval_basis": "jax cpu: NPROC threads in XLA's CPU intra-op pool",
+    "devices_per_eval": 0,
+    "peak_rss_gb": 0.570896,
+    "peak_rss_basis": "in_process_ru_maxrss",
+    "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
+  },
+  "thread_environment": {
+    "NPROC": "8",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "n_repeats": 10,
+  "configuration": {
+    "n_systems": 2,
+    "n_images_total": 6,
+    "n_planes": 3,
+    "n_mass_profiles": 13,
+    "likelihood": "source_plane (FitPositionsSourceSolved)",
+    "headline_arm": "solved",
+    "sub_row_arm": "plain",
+    "jax_enable_x64": true,
+    "standard_size": true,
+    "solver": null
+  },
+  "steps": {
+    "1.0 ray-trace point_0 (3 img)": 0.00035385770024731755,
+    "1.1 ray-trace point_1 (3 img)": 0.0003594005946069956,
+    "2.0 lensing jacobian (hessian) point_0": 0.00036477959947660564,
+    "2.1 lensing jacobian (hessian) point_1": 0.00048230619868263604,
+    "3.0 solved source centre beta* point_0": 2.7210800908505917e-05,
+    "3.1 solved source centre beta* point_1": 3.0416599474847317e-05,
+    "4.0 weighted chi2 about beta* point_0": 1.9609695300459862e-05,
+    "4.1 weighted chi2 about beta* point_1": 1.4537794049829244e-05,
+    "5 log-likelihood assembly (+ marginalisation)": 1.5279802028089762e-05,
+    "P3.0 plain: weighted chi2 about Point centre point_0": 2.122779842466116e-05,
+    "P3.1 plain: weighted chi2 about Point centre point_1": 2.6701693423092364e-05,
+    "P4 plain: log-likelihood assembly": 1.4441902749240398e-05,
+    "6.point_0 FitPositionsSourceSolved (fit total, analytic \u03b2*)": 0.04946443694643676,
+    "6.point_1 FitPositionsSourceSolved (fit total, analytic \u03b2*)": 0.044589965022169054,
+    "7.point_0 FitPositionsSource (fit total)": 0.01211272506043315,
+    "7.point_1 FitPositionsSource (fit total)": 0.009735703002661467
+  },
+  "total_step_by_step": 0.0016673987847752867,
+  "total_step_extra": 0.11596520142629743,
+  "log_likelihood": 26.06315893603627,
+  "reference_log_likelihood": 26.0631589358414,
+  "headline_arm": "solved",
+  "solved": {
+    "fit_positions_cls": "FitPositionsSourceSolved",
+    "log_likelihood": 26.06315893603627,
+    "reference_log_likelihood": 26.0631589358414,
+    "solved_source_centres": {
+      "point_0": [
+        0.29996638175787343,
+        0.49996507076269864
+      ],
+      "point_1": [
+        -0.7999404110607186,
+        1.1999721522347384
+      ]
+    },
+    "free_centre_params_removed_per_point_source": 2,
+    "free_centre_params_removed_total": 4
+  },
+  "plain": {
+    "fit_positions_cls": "FitPositionsSource",
+    "log_likelihood": 52.52032422393827,
+    "reference_log_likelihood": 52.52032422399745,
+    "point_centres": [
+      [
+        0.3,
+        0.5
+      ],
+      [
+        -0.8,
+        1.2
+      ]
+    ],
+    "delta_solved_minus_plain_per_system_s": {
+      "point_0": 0.037351711886003613,
+      "point_1": 0.03485426201950759
+    },
+    "delta_solved_minus_plain_total_s": 0.0722059739055112
+  }
+}

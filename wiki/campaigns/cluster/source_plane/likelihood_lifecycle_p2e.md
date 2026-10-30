@@ -1,15 +1,15 @@
 # Likelihood lifecycle phase 2e: cluster source plane
 
-**Status:** open
+**Status:** rows committed (batch 1, the rows PR); closes on merge
 **Question:** What does the cluster source-plane likelihood (the solved, Jacobian-weighted `FitPositionsSourceSolved` the workspace cluster search fits, D3; PyAutoLens bdb44a87c) cost on the pinned release 2026.10.25.1, on the drafted planned cells, and does each cell's JIT log-likelihood match the eager NumPy one?
 **Pre-registered rule:** if the human keeps D2 (kept 2026-10-29), the 6 runnable planned cluster/source_plane cells (`jax_cpu_na_fp64` on `hpc_ral_cpu` and `hpc_a100`, `jax_gpu_na_fp64` on `hpc_a100`, each runtime and breakdown) land `current` with provenance, `resources`, `fit.png` and a `parity.json` whose status is `match` (JIT vs eager NumPy `AnalysisPoint`, 1e-4 x |reference| in fp64). A `diverged` witness blocks that setup until explained. Recorded here before any RAL run (2026-10-28). Amended 2026-10-29, still before any run: the witness and `fit.png` evaluate the solved headline class (D3), and the 2 `jax_gpu_na_fp64@hpc_ral_cpu` cells the draft left to D4 are no longer planned (autolens_profiling#481).
-**Verdict:** pending (no RAL batch has run; the source plane is in batch 1, not batch 0). Expected, written before the runs: the solved headline call costs milliseconds (laptop smoke 2026-10-29: 1.41 ms JIT block, 0.46 ms per call at vmap 3; the plain sub-row 1.57 ms), one to two orders below the image plane; on the A100 node the `jax_cpu` setup beats `jax_gpu` per call because launch latency dominates (the §3.3 point_source_source reasoning); every parity witness `match` (laptop, solved headline: |Δ log L| = 2e-10). Class designations are phase 3's decision.
-**Headline:** none yet (laptop smokes only).
+**Verdict:** rule met: all 6 cells `current` with `fit.png` and a `match` witness (|delta log L| 2e-10 to 6e-10). Against the expectation: the solved headline costs under a millisecond (0.51-0.82 ms), about an order below the image plane (2.3-5.7 ms; one order, not two); on the A100 node `jax_cpu` beats `jax_gpu` per single call (0.73 vs 0.82 ms), as predicted, though the GPU wins per point at vmap 16 (0.053 ms against 0.29 ms at CPU batch 3); every witness `match`. Expected, written before the runs: the solved headline call costs milliseconds (laptop smoke 2026-10-29: 1.41 ms JIT block, 0.46 ms per call at vmap 3; the plain sub-row 1.57 ms), one to two orders below the image plane; on the A100 node the `jax_cpu` setup beats `jax_gpu` per call because launch latency dominates (the §3.3 point_source_source reasoning); every parity witness `match` (laptop, solved headline: |Δ log L| = 2e-10). Class designations are phase 3's decision.
+**Headline:** cluster/source_plane/simple, steady median per single JIT call / per point at vmap: `jax_cpu_na_fp64@hpc_ral_cpu` 0.506 / 0.247 ms; `jax_cpu_na_fp64@hpc_a100` 0.734 / 0.290 ms; `jax_gpu_na_fp64@hpc_a100` 0.815 / 0.053 ms (RAL 413447, A100 413455).
 **Library PRs:** none (measurement only, tag 2026.10.25.1)
 **Profiling PRs:** the 2e setup draft PR (autolens_profiling#474), then the rows PR after the human's batch go
 **Ledger:** this page and the [image-plane page](../image_plane/likelihood_lifecycle_p2e.md), which holds the shared decisions and the batch plan; work list [`scripts/misc/campaigns/cluster_p2e.py`](../../../../scripts/misc/campaigns/cluster_p2e.py)
 **Mind contract:** epic `likelihood-lifecycle`, phase 2 sub-issue 2e; issue autolens_profiling#474
-**Next:** batch 1 (human go), which runs these 6 legs under the image-plane batch 0's walls (in since 2026-10-30, see the image-plane page)
+**Next:** merge the rows PR (human /prm); class designations are phase 3's
 **Fit figures:** laptop smoke `fit.png` of the solved headline opened (2026-10-29): both systems' images, critical curves per source redshift and mass centres drawn, χ² = 0.033 (the plain fit's was 0.064, 2026-10-28); none from RAL yet.
 
 ## Why this campaign
@@ -49,3 +49,10 @@ D1, D5 and D6 are on the image-plane page.
 ## Caveats
 
 - Per-call times are per device. Compare CPU and GPU setups as projected node throughput.
+
+### 2026-10-30 — batch 1 in; the rows PR
+
+Batch 1 (RAL 413447, A100 job 413455, 2026-10-30, from autolens_profiling_p2dg at 830314e9) all
+exit 0; 5/5 witnesses `match`. The rows PR copies the 10 cluster rows (4 image plane, 6 source
+plane) into `results/cluster/` and regenerates catalogue, dashboard (committed stamp), coverage,
+setup wiki, series map and READMEs: coverage 230 -> 240 current of 272, 0 stale.
