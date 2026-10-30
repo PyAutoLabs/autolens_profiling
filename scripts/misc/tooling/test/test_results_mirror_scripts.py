@@ -34,7 +34,6 @@ SHARED_SCRIPT_VARIANTS = {
 MODEL_VARIANT_SCRIPTS = {("imaging", "mge_mass"): ("rectangular", "mge_mass")}
 NOT_YET_MEASURED = {
     ("imaging", "sersic"),
-    ("multi_dataset", "delaunay"),
 }
 MISC_WITHOUT_SCRIPTS = {
     "logs": "committed SLURM job logs, one folder per campaign; provenance, never a result",

@@ -140,10 +140,10 @@
    "likelihood": "datacube/delaunay",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/b436d91d74ef8bb0fc26",
    "setup_id": "jax_cpu_sparse_fp64_wtilde",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "datacube/delaunay/alma jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [runtime]",
@@ -153,10 +153,10 @@
    "likelihood": "datacube/delaunay",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/8e374ab509e7626573da",
    "setup_id": "jax_cpu_sparse_fp64_wtilde",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "datacube/delaunay/alma jax_gpu_sparse_fp64_wtilde@hpc_a100 [breakdown]",
@@ -166,10 +166,10 @@
    "likelihood": "datacube/delaunay",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/48c605d3dc2b71925433",
    "setup_id": "jax_gpu_sparse_fp64_wtilde",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "datacube/delaunay/alma jax_gpu_sparse_fp64_wtilde@hpc_a100 [runtime]",
@@ -179,10 +179,10 @@
    "likelihood": "datacube/delaunay",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/c3ed1c5a8847d28eb792",
    "setup_id": "jax_gpu_sparse_fp64_wtilde",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "datacube/delaunay/alma numba_cpu_sparse_fp64_wtilde@hpc_ral_cpu [breakdown]",
@@ -192,10 +192,10 @@
    "likelihood": "datacube/delaunay",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/7be9429b06c0e282c83c",
    "setup_id": "numba_cpu_sparse_fp64_wtilde",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "datacube/delaunay/alma numba_cpu_sparse_fp64_wtilde@hpc_ral_cpu [runtime]",
@@ -205,10 +205,10 @@
    "likelihood": "datacube/delaunay",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/5800a501664b981824d4",
    "setup_id": "numba_cpu_sparse_fp64_wtilde",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "datacube/delaunay/alma_high jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [breakdown]",
@@ -218,10 +218,10 @@
    "likelihood": "datacube/delaunay",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/9470ef276a85ce5b20c2",
    "setup_id": "jax_cpu_sparse_fp64_wtilde",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "datacube/delaunay/alma_high jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [runtime]",
@@ -231,10 +231,10 @@
    "likelihood": "datacube/delaunay",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/6669e2835516e93361f1",
    "setup_id": "jax_cpu_sparse_fp64_wtilde",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "datacube/delaunay/alma_high jax_gpu_sparse_fp64_wtilde@hpc_a100 [breakdown]",
@@ -244,10 +244,10 @@
    "likelihood": "datacube/delaunay",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/503bdb0c8a93cba65f7c",
    "setup_id": "jax_gpu_sparse_fp64_wtilde",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "datacube/delaunay/alma_high jax_gpu_sparse_fp64_wtilde@hpc_a100 [runtime]",
@@ -257,10 +257,10 @@
    "likelihood": "datacube/delaunay",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/5ddc372d7a91e6f979a8",
    "setup_id": "jax_gpu_sparse_fp64_wtilde",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "datacube/delaunay/alma_high numba_cpu_sparse_fp64_wtilde@hpc_ral_cpu [breakdown]",
@@ -270,10 +270,10 @@
    "likelihood": "datacube/delaunay",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/22ca20308e01da6060cd",
    "setup_id": "numba_cpu_sparse_fp64_wtilde",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "datacube/delaunay/alma_high numba_cpu_sparse_fp64_wtilde@hpc_ral_cpu [runtime]",
@@ -283,10 +283,10 @@
    "likelihood": "datacube/delaunay",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/3ea56488a996d6f0ffd1",
    "setup_id": "numba_cpu_sparse_fp64_wtilde",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "datacube/delaunay/sma jax_cpu_dense_fp64_nufft@hpc_ral_cpu [breakdown]",
@@ -296,10 +296,10 @@
    "likelihood": "datacube/delaunay",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/ee206b1cdd5f82655d36",
    "setup_id": "jax_cpu_dense_fp64_nufft",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "datacube/delaunay/sma jax_cpu_dense_fp64_nufft@hpc_ral_cpu [runtime]",
@@ -309,10 +309,10 @@
    "likelihood": "datacube/delaunay",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/84cc85952546c05eabe2",
    "setup_id": "jax_cpu_dense_fp64_nufft",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "datacube/delaunay/sma jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [breakdown]",
@@ -322,10 +322,10 @@
    "likelihood": "datacube/delaunay",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/c29766164f00322e870c",
    "setup_id": "jax_cpu_sparse_fp64_wtilde",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "datacube/delaunay/sma jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [runtime]",
@@ -335,10 +335,10 @@
    "likelihood": "datacube/delaunay",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/649dfad640b1afce5631",
    "setup_id": "jax_cpu_sparse_fp64_wtilde",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "datacube/delaunay/sma jax_gpu_dense_fp64_nufft@hpc_a100 [breakdown]",
@@ -348,10 +348,10 @@
    "likelihood": "datacube/delaunay",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/b5be89a2663e32c81385",
    "setup_id": "jax_gpu_dense_fp64_nufft",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "datacube/delaunay/sma jax_gpu_dense_fp64_nufft@hpc_a100 [runtime]",
@@ -361,10 +361,10 @@
    "likelihood": "datacube/delaunay",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/b62555fd25c854bfdf3d",
    "setup_id": "jax_gpu_dense_fp64_nufft",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "datacube/delaunay/sma jax_gpu_sparse_fp64_wtilde@hpc_a100 [breakdown]",
@@ -374,10 +374,10 @@
    "likelihood": "datacube/delaunay",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/d233c1be45cc16ade1ae",
    "setup_id": "jax_gpu_sparse_fp64_wtilde",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "datacube/delaunay/sma jax_gpu_sparse_fp64_wtilde@hpc_a100 [runtime]",
@@ -387,10 +387,10 @@
    "likelihood": "datacube/delaunay",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/5a76ad3529beab044b72",
    "setup_id": "jax_gpu_sparse_fp64_wtilde",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "datacube/delaunay/sma numba_cpu_sparse_fp64_wtilde@hpc_ral_cpu [breakdown]",
@@ -400,10 +400,10 @@
    "likelihood": "datacube/delaunay",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/fd802eb02968462290ab",
    "setup_id": "numba_cpu_sparse_fp64_wtilde",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "datacube/delaunay/sma numba_cpu_sparse_fp64_wtilde@hpc_ral_cpu [runtime]",
@@ -413,10 +413,10 @@
    "likelihood": "datacube/delaunay",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/5b411896dcf5b1cc5853",
    "setup_id": "numba_cpu_sparse_fp64_wtilde",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "group/delaunay/euclid jax_cpu_sparse_fp64@hpc_a100 [breakdown]",
@@ -2896,10 +2896,10 @@
    "likelihood": "multi_dataset/delaunay",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/31b4b98e13bb28bdef3a",
    "setup_id": "jax_cpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_dataset/delaunay/hst jax_cpu_sparse_fp64@hpc_a100 [runtime]",
@@ -2909,10 +2909,10 @@
    "likelihood": "multi_dataset/delaunay",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/6aec4c792b0b8a7fb243",
    "setup_id": "jax_cpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_dataset/delaunay/hst jax_cpu_sparse_fp64@hpc_ral_cpu [breakdown]",
@@ -2922,10 +2922,10 @@
    "likelihood": "multi_dataset/delaunay",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/90e36b6494af44ead165",
    "setup_id": "jax_cpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_dataset/delaunay/hst jax_cpu_sparse_fp64@hpc_ral_cpu [runtime]",
@@ -2935,10 +2935,10 @@
    "likelihood": "multi_dataset/delaunay",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/f1dc379c56f5c2c7f32d",
    "setup_id": "jax_cpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_dataset/delaunay/hst jax_gpu_dense_fp64@hpc_a100 [breakdown]",
@@ -2948,10 +2948,10 @@
    "likelihood": "multi_dataset/delaunay",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/3d5b44b73f8782e7b8db",
    "setup_id": "jax_gpu_dense_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_dataset/delaunay/hst jax_gpu_dense_fp64@hpc_a100 [runtime]",
@@ -2961,10 +2961,10 @@
    "likelihood": "multi_dataset/delaunay",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/b5dea27fcaf8b14ec9bb",
    "setup_id": "jax_gpu_dense_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_dataset/delaunay/hst jax_gpu_sparse_fp64@hpc_a100 [breakdown]",
@@ -2974,10 +2974,10 @@
    "likelihood": "multi_dataset/delaunay",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/c8eefc4530f6e649bbc9",
    "setup_id": "jax_gpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_dataset/delaunay/hst jax_gpu_sparse_fp64@hpc_a100 [runtime]",
@@ -2987,10 +2987,10 @@
    "likelihood": "multi_dataset/delaunay",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/b14372bc431d168fa7ff",
    "setup_id": "jax_gpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_dataset/delaunay/hst numba_cpu_sparse_fp64@hpc_ral_cpu [breakdown]",
@@ -3000,10 +3000,10 @@
    "likelihood": "multi_dataset/delaunay",
    "measurement": "breakdown",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/50b9e4414ef6f936d3af",
    "setup_id": "numba_cpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_dataset/delaunay/hst numba_cpu_sparse_fp64@hpc_ral_cpu [runtime]",
@@ -3013,10 +3013,10 @@
    "likelihood": "multi_dataset/delaunay",
    "measurement": "runtime",
    "model_variant": "default",
-   "reason": "no record",
-   "record": null,
+   "reason": null,
+   "record": "lifecycle/f57f23fc63823bcdf1bc",
    "setup_id": "numba_cpu_sparse_fp64",
-   "state": "missing"
+   "state": "current"
   },
   {
    "cell": "multi_galaxy/delaunay/hst jax_cpu_sparse_fp64@hpc_a100 [breakdown]",
@@ -3597,37 +3597,37 @@
   },
   {
    "class": "optimal",
-   "current": 0,
+   "current": 6,
    "likelihood": "datacube/delaunay",
    "measurement": "breakdown",
-   "missing": 6,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
   {
    "class": "optimal",
-   "current": 0,
+   "current": 6,
    "likelihood": "datacube/delaunay",
    "measurement": "runtime",
-   "missing": 6,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
   {
    "class": "secondary",
-   "current": 0,
+   "current": 5,
    "likelihood": "datacube/delaunay",
    "measurement": "breakdown",
-   "missing": 5,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
   {
    "class": "secondary",
-   "current": 0,
+   "current": 5,
    "likelihood": "datacube/delaunay",
    "measurement": "runtime",
-   "missing": 5,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
@@ -3939,37 +3939,37 @@
   },
   {
    "class": "optimal",
-   "current": 0,
+   "current": 2,
    "likelihood": "multi_dataset/delaunay",
    "measurement": "breakdown",
-   "missing": 2,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
   {
    "class": "optimal",
-   "current": 0,
+   "current": 2,
    "likelihood": "multi_dataset/delaunay",
    "measurement": "runtime",
-   "missing": 2,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
   {
    "class": "secondary",
-   "current": 0,
+   "current": 3,
    "likelihood": "multi_dataset/delaunay",
    "measurement": "breakdown",
-   "missing": 3,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
   {
    "class": "secondary",
-   "current": 0,
+   "current": 3,
    "likelihood": "multi_dataset/delaunay",
    "measurement": "runtime",
-   "missing": 3,
+   "missing": 0,
    "stale": 0,
    "superseded": 0
   },
@@ -4189,68 +4189,68 @@
    {
     "cell": "datacube/delaunay/alma jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [parity]",
     "class": "secondary",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/b767269193c94e381a30",
+    "state": "match"
    },
    {
     "cell": "datacube/delaunay/alma jax_gpu_sparse_fp64_wtilde@hpc_a100 [parity]",
     "class": "optimal",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/7c22bd05b2e6a332c05f",
+    "state": "match"
    },
    {
     "cell": "datacube/delaunay/alma numba_cpu_sparse_fp64_wtilde@hpc_ral_cpu [parity]",
     "class": "optimal",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/821bc78b048e1ae58e0a",
+    "state": "match"
    },
    {
     "cell": "datacube/delaunay/alma_high jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [parity]",
     "class": "secondary",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/3339ddf063b8cf824048",
+    "state": "match"
    },
    {
     "cell": "datacube/delaunay/alma_high jax_gpu_sparse_fp64_wtilde@hpc_a100 [parity]",
     "class": "optimal",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/9779431a4492758cb70b",
+    "state": "match"
    },
    {
     "cell": "datacube/delaunay/alma_high numba_cpu_sparse_fp64_wtilde@hpc_ral_cpu [parity]",
     "class": "optimal",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/ffa08d2b2e0136acbb7d",
+    "state": "match"
    },
    {
     "cell": "datacube/delaunay/sma jax_cpu_dense_fp64_nufft@hpc_ral_cpu [parity]",
     "class": "secondary",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/803151df21c7de55861a",
+    "state": "match"
    },
    {
     "cell": "datacube/delaunay/sma jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [parity]",
     "class": "secondary",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/8f9413a9807f794ae36e",
+    "state": "match"
    },
    {
     "cell": "datacube/delaunay/sma jax_gpu_dense_fp64_nufft@hpc_a100 [parity]",
     "class": "secondary",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/bb703db94dff9a1c1ff7",
+    "state": "match"
    },
    {
     "cell": "datacube/delaunay/sma jax_gpu_sparse_fp64_wtilde@hpc_a100 [parity]",
     "class": "optimal",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/2dd892f07fead03714bf",
+    "state": "match"
    },
    {
     "cell": "datacube/delaunay/sma numba_cpu_sparse_fp64_wtilde@hpc_ral_cpu [parity]",
     "class": "optimal",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/cdcbd9feaefdff4aba33",
+    "state": "match"
    },
    {
     "cell": "group/delaunay/euclid jax_cpu_sparse_fp64@hpc_a100 [parity]",
@@ -4825,32 +4825,32 @@
    {
     "cell": "multi_dataset/delaunay/hst jax_cpu_sparse_fp64@hpc_a100 [parity]",
     "class": "secondary",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/cb0b7f79451adada3a21",
+    "state": "match"
    },
    {
     "cell": "multi_dataset/delaunay/hst jax_cpu_sparse_fp64@hpc_ral_cpu [parity]",
     "class": "secondary",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/41ebc7e42114bbb5173a",
+    "state": "match"
    },
    {
     "cell": "multi_dataset/delaunay/hst jax_gpu_dense_fp64@hpc_a100 [parity]",
     "class": "optimal",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/0a0078bdc1dee2e7f555",
+    "state": "match"
    },
    {
     "cell": "multi_dataset/delaunay/hst jax_gpu_sparse_fp64@hpc_a100 [parity]",
     "class": "secondary",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/74d94bd622ecce0679fe",
+    "state": "match"
    },
    {
     "cell": "multi_dataset/delaunay/hst numba_cpu_sparse_fp64@hpc_ral_cpu [parity]",
     "class": "optimal",
-    "record": null,
-    "state": "missing"
+    "record": "lifecycle/d0be4a7b3506be7b53e9",
+    "state": "match"
    },
    {
     "cell": "multi_galaxy/delaunay/hst jax_cpu_sparse_fp64@hpc_a100 [parity]",
@@ -5002,16 +5002,16 @@
     "class": "optimal",
     "diverged": 0,
     "likelihood": "datacube/delaunay",
-    "match": 0,
-    "missing": 6,
+    "match": 6,
+    "missing": 0,
     "not_assessed": 0
    },
    {
     "class": "secondary",
     "diverged": 0,
     "likelihood": "datacube/delaunay",
-    "match": 0,
-    "missing": 5,
+    "match": 5,
+    "missing": 0,
     "not_assessed": 0
    },
    {
@@ -5154,16 +5154,16 @@
     "class": "optimal",
     "diverged": 0,
     "likelihood": "multi_dataset/delaunay",
-    "match": 0,
-    "missing": 2,
+    "match": 2,
+    "missing": 0,
     "not_assessed": 0
    },
    {
     "class": "secondary",
     "diverged": 0,
     "likelihood": "multi_dataset/delaunay",
-    "match": 0,
-    "missing": 3,
+    "match": 3,
+    "missing": 0,
     "not_assessed": 0
    },
    {
@@ -5249,8 +5249,8 @@
   ],
   "totals": {
    "diverged": 0,
-   "match": 120,
-   "missing": 16,
+   "match": 136,
+   "missing": 0,
    "not_assessed": 0,
    "setup_cells": 136
   }
@@ -5269,12 +5269,12 @@
   "designations": "catalogue/provisional_designations.json"
  },
  "totals": {
-  "current": 240,
-  "current_records_unplanned": 163,
-  "missing": 32,
+  "current": 272,
+  "current_records_unplanned": 189,
+  "missing": 0,
   "missing_size_fallback": 0,
   "planned_cells": 272,
-  "records_superseded": 520,
+  "records_superseded": 532,
   "stale": 0,
   "superseded": 0
  },
@@ -5290,8 +5290,10 @@
   "lifecycle/0d77d1377c7ffa548adc",
   "lifecycle/0e4eed8ae034e2d40659",
   "lifecycle/106177d28e1e8b535256",
+  "lifecycle/10f21c9eef8dd133b548",
   "lifecycle/113be371339f7ba3799a",
   "lifecycle/13789af4a800483afae1",
+  "lifecycle/143a597adf2947f8c065",
   "lifecycle/16145e8e080dc76bb25d",
   "lifecycle/181870036f1b165162aa",
   "lifecycle/18a37fc9e09e150ad2e2",
@@ -5300,20 +5302,24 @@
   "lifecycle/1b0832e72dc85ae51baf",
   "lifecycle/1ed4f8b68f193aae444b",
   "lifecycle/1ff4f937c6f29e68b213",
+  "lifecycle/24cb5455a840f767432d",
   "lifecycle/2790c5800540e06ba221",
   "lifecycle/2a53807c1b85c80c4198",
+  "lifecycle/2a9cf67963bd7228bfcd",
   "lifecycle/2b67848ae18e606cd9b0",
   "lifecycle/2c6114c7be44886756e5",
   "lifecycle/3257d761fa5ed8bfc7a0",
   "lifecycle/340c91f9524b196bdbed",
   "lifecycle/345b903cfcd5d079c143",
   "lifecycle/35132a47b09428b3d2a5",
+  "lifecycle/35214c6fdb7dfc2f568e",
   "lifecycle/35270561ac7db6553c22",
   "lifecycle/37e9df544efcc48cc78e",
   "lifecycle/37fcbd80b848cfb12204",
   "lifecycle/3814b05e371119dfd7cd",
   "lifecycle/39dd12f09aa8fbd82104",
   "lifecycle/3a5c97b36b50e7f15bc1",
+  "lifecycle/3c52f95bebd47b59b371",
   "lifecycle/3dc16de0664023dbec5e",
   "lifecycle/41bf1c7e0af200129f57",
   "lifecycle/43403b74fdb9e3ea2e13",
@@ -5321,8 +5327,10 @@
   "lifecycle/43aa0cad356ad4531e8d",
   "lifecycle/4515cc21430d49bdd7bb",
   "lifecycle/46e1408838d0045f5cfb",
+  "lifecycle/46fb686254a8f3366107",
   "lifecycle/482274e1c29bac41a49c",
   "lifecycle/4b0c8b2edaa4b5a24b63",
+  "lifecycle/4c6e007df6f34c521a82",
   "lifecycle/4ca130ae912a1d0cb669",
   "lifecycle/552e143742d21b03df07",
   "lifecycle/55641ee3fdfa922635c3",
@@ -5330,8 +5338,10 @@
   "lifecycle/586b2d1ab81994866e51",
   "lifecycle/58c3973dd145af30599f",
   "lifecycle/5985aa1f7a1f305a5cca",
+  "lifecycle/5a24f78d1a669477578b",
   "lifecycle/5c366a3050ff073f7047",
   "lifecycle/5e3fdc9e94b3396f8f17",
+  "lifecycle/60441325b10aa7e4bad9",
   "lifecycle/60b310553366c21a0b76",
   "lifecycle/61706b745aa54a34a83c",
   "lifecycle/62df8f844c942ffd9d67",
@@ -5340,7 +5350,9 @@
   "lifecycle/66443bc95778ae99c344",
   "lifecycle/6c8e7b3e76f2c9faaac9",
   "lifecycle/6e7f6f4d600d1d9e8afa",
+  "lifecycle/6e8bc9caec91f6c4bde8",
   "lifecycle/70c2c401e592ce344f07",
+  "lifecycle/718dc6226fa3ba959aa1",
   "lifecycle/75a27609e90cfbbaba03",
   "lifecycle/77694762c2b9b9be47f6",
   "lifecycle/7b265a01e433b6761dbb",
@@ -5366,6 +5378,9 @@
   "lifecycle/97158eb5dfede5c98506",
   "lifecycle/97b03dbb5d8de763ba23",
   "lifecycle/99811cb0b413614d19ef",
+  "lifecycle/99fa611619412f541e16",
+  "lifecycle/9a0e8848999c25625de1",
+  "lifecycle/9b872e87a82ea4113a6c",
   "lifecycle/9c5ae26e8bbd7a64ce3d",
   "lifecycle/9c720e3945692daaa6a4",
   "lifecycle/9d2500d631b658e10a00",
@@ -5378,16 +5393,21 @@
   "lifecycle/a3526c61b99594c64407",
   "lifecycle/a9e621c0f7324983d187",
   "lifecycle/aac8a32c5bfcabe4b008",
+  "lifecycle/ab3efcae2f56329b2532",
+  "lifecycle/ab8c9d0f57ec5fbcd53b",
   "lifecycle/abcd6baa55a705a394e2",
   "lifecycle/b1e93aafb78b109ea0da",
   "lifecycle/b317e2f4906d04c7d20f",
   "lifecycle/b56a7e7f544b23f03a71",
+  "lifecycle/b8202d0f1fb16afd29ff",
   "lifecycle/baad8ee674afc7784af8",
   "lifecycle/bb3c117d46619765cfda",
   "lifecycle/bc7df8b4412157fe75b0",
   "lifecycle/bcc70464fa3ed6aa0eb6",
   "lifecycle/bdce7b421114b209b393",
   "lifecycle/be3a0e45761b787dfbd5",
+  "lifecycle/bf00d1dbd912d11558ea",
+  "lifecycle/bf77434c32fb11084067",
   "lifecycle/c31a9e5611ccea781666",
   "lifecycle/c358b66c9a4580cdd9cf",
   "lifecycle/c4229ffc28288958a0cb",
@@ -5411,10 +5431,12 @@
   "lifecycle/d79f22b6c99ecc42fe11",
   "lifecycle/d8225629fe96234ab320",
   "lifecycle/d9665200a938db05f2d0",
+  "lifecycle/dbfdef023ac7d3a211a1",
   "lifecycle/dc712945a544e1964d19",
   "lifecycle/dcddae87a122ea588e91",
   "lifecycle/dd3071d1a421cb825e61",
   "lifecycle/ddc97016237dc9b022ab",
+  "lifecycle/dde9382c04fbd2ff2274",
   "lifecycle/de2dc536a797eaf27ad5",
   "lifecycle/de6c4a5ffa9ca0caa803",
   "lifecycle/df666d1343af6c5bbc03",
@@ -5422,10 +5444,13 @@
   "lifecycle/e132618e17a8e7e98c83",
   "lifecycle/e1c30e7d590fc5426994",
   "lifecycle/e38549f71ce5a05cbd66",
+  "lifecycle/e3a1ef69945740eeb837",
   "lifecycle/e3fbaa69910cdaf37674",
   "lifecycle/e4bbdcea07590b40e1bc",
+  "lifecycle/e4c513a140feff44983e",
   "lifecycle/e5e7ba9a7cd6308a8230",
   "lifecycle/ea33e28df6fac7b8db50",
+  "lifecycle/ecf2c7091b2bf6b34d74",
   "lifecycle/ed0a74fc9b547a4df82d",
   "lifecycle/eeddba2b103c0e31af3b",
   "lifecycle/f04b65e0236da45e7aa8",
@@ -5438,6 +5463,7 @@
   "lifecycle/f8183573b4156066c112",
   "lifecycle/f8c40a3fef4c40ab11d4",
   "lifecycle/f8d69749b09c284c09c4",
+  "lifecycle/f9c133513f64e3664d46",
   "lifecycle/fa769c6cdc1bd22e3b29",
   "lifecycle/fb1a4685b954dc122761",
   "lifecycle/fbcb5b2dfb6bff9192e7",

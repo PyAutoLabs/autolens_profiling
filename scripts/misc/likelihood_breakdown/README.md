@@ -21,8 +21,19 @@ For *how long the likelihood actually takes* on production hardware — i.e. a s
 | `cluster/source_plane` | simple | `jax_cpu_na_fp64` | hpc_ral_cpu | dense (mapping) | 1.0 ms | v2026.8.17.1 |
 | `cluster/source_plane` | simple | `jax_cpu_na_fp64` | hpc_a100 | dense (mapping) | 1.7 ms | v2026.8.17.1 |
 | `cluster/source_plane` | simple | `jax_gpu_na_fp64` | hpc_a100 | dense (mapping) | 2.2 ms | v2026.8.17.1 |
+| `datacube/delaunay` | alma | `jax_cpu_sparse_fp64_wtilde` | hpc_ral_cpu | sparse (w-tilde) | — | v2026.8.17.1 |
+| `datacube/delaunay` | alma | `numba_cpu_sparse_fp64_wtilde` | hpc_ral_cpu | sparse (numba) | — | v2026.8.17.1 |
+| `datacube/delaunay` | alma | `jax_gpu_sparse_fp64_wtilde` | hpc_a100 | sparse (w-tilde) | — | v2026.8.17.1 |
+| `datacube/delaunay` | alma_high | `jax_cpu_sparse_fp64_wtilde` | hpc_ral_cpu | sparse (w-tilde) | — | v2026.8.17.1 |
+| `datacube/delaunay` | alma_high | `numba_cpu_sparse_fp64_wtilde` | hpc_ral_cpu | sparse (w-tilde) | — | v2026.8.17.1 |
+| `datacube/delaunay` | alma_high | `jax_gpu_sparse_fp64_wtilde` | hpc_a100 | sparse (w-tilde) | — | v2026.8.17.1 |
 | `datacube/delaunay` | alma_high | _not recorded_ | hpc_a100_fp64 | dense (mapping) | — | v2026.7.6.649 |
 | `datacube/delaunay` | alma_high | _not recorded_ | hpc_a100_mp | dense (mapping) | — | v2026.7.6.649 |
+| `datacube/delaunay` | sma | `jax_cpu_dense_fp64_nufft` | hpc_ral_cpu | dense (mapping) | — | v2026.8.17.1 |
+| `datacube/delaunay` | sma | `jax_cpu_sparse_fp64_wtilde` | hpc_ral_cpu | sparse (w-tilde) | — | v2026.8.17.1 |
+| `datacube/delaunay` | sma | `numba_cpu_sparse_fp64_wtilde` | hpc_ral_cpu | sparse (numba) | — | v2026.8.17.1 |
+| `datacube/delaunay` | sma | `jax_gpu_dense_fp64_nufft` | hpc_a100 | dense (mapping) | — | v2026.8.17.1 |
+| `datacube/delaunay` | sma | `jax_gpu_sparse_fp64_wtilde` | hpc_a100 | sparse (w-tilde) | — | v2026.8.17.1 |
 | `datacube/inversion` | alma_high | _not recorded_ | hpc_a100_fp64 | dense (mapping) | — | v2026.7.6.649 |
 | `datacube/inversion` | alma_high | _not recorded_ | hpc_a100_mp | dense (mapping) | — | v2026.7.6.649 |
 | `group/delaunay` | euclid | `jax_cpu_sparse_fp64` | hpc_ral_cpu | sparse (w-tilde) | 5.09 s | v2026.8.17.1 |
@@ -193,6 +204,11 @@ For *how long the likelihood actually takes* on production hardware — i.e. a s
 | `interferometer/rectangular` | sma | `jax_gpu_dense_fp64_nufft` | hpc_a100 | dense (mapping) | 50.8 ms | v2026.8.17.1 |
 | `interferometer/rectangular` | sma | `jax_gpu_sparse_fp64_wtilde` | hpc_a100 | sparse (w-tilde) | 24.5 ms | v2026.8.17.1 |
 | `interferometer/rectangular` | sma | `jax_gpu_sparse_mixed_wtilde` | hpc_a100 | sparse (w-tilde) | 29.4 ms | v2026.8.17.1 |
+| `multi_dataset/delaunay` | hst | `jax_cpu_sparse_fp64` | hpc_ral_cpu | sparse (w-tilde) | 7.31 s | v2026.8.17.1 |
+| `multi_dataset/delaunay` | hst | `numba_cpu_sparse_fp64` | hpc_ral_cpu | sparse (numba) | 2.67 s | v2026.8.17.1 |
+| `multi_dataset/delaunay` | hst | `jax_cpu_sparse_fp64` | hpc_a100 | sparse (w-tilde) | 5.21 s | v2026.8.17.1 |
+| `multi_dataset/delaunay` | hst | `jax_gpu_dense_fp64` | hpc_a100 | dense (mapping) | 125.7 ms | v2026.8.17.1 |
+| `multi_dataset/delaunay` | hst | `jax_gpu_sparse_fp64` | hpc_a100 | sparse (w-tilde) | 156.0 ms | v2026.8.17.1 |
 | `multi_galaxy/delaunay` | hst | `jax_cpu_sparse_fp64` | hpc_ral_cpu | sparse (w-tilde) | 4.28 s | v2026.8.17.1 |
 | `multi_galaxy/delaunay` | hst | `numba_cpu_sparse_fp64` | hpc_ral_cpu | sparse (numba) | 1.02 s | v2026.8.17.1 |
 | `multi_galaxy/delaunay` | hst | `jax_cpu_sparse_fp64` | hpc_a100 | sparse (w-tilde) | 3.03 s | v2026.8.17.1 |

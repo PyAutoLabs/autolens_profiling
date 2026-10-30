@@ -6,12 +6,12 @@
  "source": "catalogue/migration_day_zero.json",
  "note": "Pre-move dashboard series ids (legacy file grammar) -> the v3 ids they publish under, with the releases each held; sources attaches pre-move points outside the mirrored tree. Generated; do not edit.",
  "counts": {
-  "series": 159,
-  "remapped_to_v3": 113,
-  "kept_legacy": 46,
-  "published_series": 148,
-  "points": 162,
-  "sources": 67
+  "series": 163,
+  "remapped_to_v3": 116,
+  "kept_legacy": 47,
+  "published_series": 150,
+  "points": 164,
+  "sources": 68
  },
  "series": {
   "breakdown:cluster/image_plane:hpc_ral_cpu_fp64": {
@@ -619,6 +619,26 @@
     "2026.8.17.1"
    ]
   },
+  "runtime:datacube/delaunay/sma:hpc_a100_fp64": {
+   "id": "runtime:datacube/delaunay:sma:jax_gpu_dense_fp64_nufft:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "runtime:datacube/delaunay/sma:hpc_a100_fp64_sparse": {
+   "id": "runtime:datacube/delaunay:sma:jax_gpu_sparse_fp64_wtilde:hpc_a100:default",
+   "releases": [
+    "2026.8.17.1"
+   ]
+  },
+  "runtime:datacube/delaunay/sma:hpc_ral_cpu_fp64": {
+   "id": "runtime:datacube/delaunay:sma:jax_cpu_dense_fp64_nufft:hpc_ral_cpu:default",
+   "releases": []
+  },
+  "runtime:datacube/delaunay/sma:hpc_ral_cpu_fp64_sparse": {
+   "id": "legacy:runtime:datacube/delaunay/sma:hpc_ral_cpu_fp64_sparse",
+   "releases": []
+  },
   "runtime:imaging/delaunay/hst:hpc_a100_fp64": {
    "id": "runtime:imaging/delaunay:hst:jax_gpu_dense_fp64:hpc_a100:default",
    "releases": [
@@ -1165,6 +1185,10 @@
   "results/breakdown/datacube/delaunay_hpc_a100_mp.json": {
    "id": "legacy:breakdown:datacube/delaunay/alma_high:hpc_a100_mp",
    "version": "2026.7.6.649"
+  },
+  "results/datacube/delaunay/sma/comparison.json#hpc_ral_cpu_fp64_sparse": {
+   "id": "legacy:runtime:datacube/delaunay/sma:hpc_ral_cpu_fp64_sparse",
+   "version": "2026.8.17.1"
   },
   "results/interferometer/delaunay/alma/comparison.json#local_cpu_mp": {
    "id": "legacy:runtime:interferometer/delaunay/alma:local_cpu_mp",

@@ -1,16 +1,16 @@
 # Likelihood lifecycle phase 2f: datacube at the standard size
 
-**Status:** open
+**Status:** rows committed (batch 1, PR B); closes on merge
 **Question:** What does every planned datacube/delaunay cell cost at the standard source size (Delaunay 1250 + 30 edge points) on the pinned release 2026.10.25.1, for the production datacube likelihood (one channel per `AnalysisInterferometer`, `shared_preloads=True`, summed in a `FactorGraphModel`), on the W~ and dense routes, and does each cell's cube log likelihood match an independent reference?
 **Pre-registered rule:** every planned datacube cell (22 under D1) lands `current`, with runtime and breakdown, provenance, `resources`, `fit.png` and a `parity.json` whose status is `match` against the cube reference derived from 2b's visibility-chunked eager NumPy dense reference (D3; tolerance 1e-8 x |reference| in fp64, 2b's R7). Any `diverged` witness blocks that setup until explained. Recorded here with the setup PR, before any run (2026-10-28).
-**Verdict:** pending (batch 0 run 2026-10-29; batch 1 not yet). Expected, written before the runs: every witness is `match` (the sma smokes match to 7e-8 nats against a 1.2e-4 tolerance); W~ is the cheaper route on both hosts at every instrument; the cube costs much less than 34 single channels, because the lead channel's curvature matrix is shared and only the per-channel solve, log determinants and data vector repeat; on RAL CPU the packaged cost model picks the NumPy FFT route over numba `direct_conv` at alma_high as it did for the interferometer. Class designations are phase 3's decision, not this page's.
-**Headline:** none yet.
+**Verdict:** rule met: all 22 datacube cells `current` with runtime and breakdown, provenance, `resources`, `fit.png` and a `match` witness against the derived cube reference (11/11; worst 2.3e-11 relative at sma, 1e-15 above it, tolerance 1e-8). Against the expectation: every witness `match`; W~ is cheaper than dense at sma on both hosts (RAL CPU 12.1 vs 18.0 s per cube, A100 0.573 vs 0.608 s; marginal on the GPU); the cube costs less than 34 single channels (34 x 2b's cell) everywhere, from 0.74x (sma numba) and 0.61x (sma GPU W~) to 0.05x (alma_high numba), not uniformly "much less"; the packaged cost model picks the NumPy FFT route at alma_high (10/10 instances) and numba `direct_conv` at sma and alma, as predicted. Per-call figures, not node throughput. Expected, written before the runs: every witness is `match` (the sma smokes match to 7e-8 nats against a 1.2e-4 tolerance); W~ is the cheaper route on both hosts at every instrument; the cube costs much less than 34 single channels, because the lead channel's curvature matrix is shared and only the per-channel solve, log determinants and data vector repeat; on RAL CPU the packaged cost model picks the NumPy FFT route over numba `direct_conv` at alma_high as it did for the interferometer. Class designations are phase 3's decision, not this page's.
+**Headline:** datacube/delaunay, 34 channels, steady median per cube call (s), sma | alma | alma_high: `numba_cpu_sparse_fp64_wtilde@hpc_ral_cpu` 8.44 | 9.36 | 17.6; `jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu` 12.1 | 14.1 | 22.5; `jax_gpu_sparse_fp64_wtilde@hpc_a100` 0.573 | 0.623 | 0.738; sma dense `jax_cpu_dense_fp64_nufft@hpc_ral_cpu` 18.0, `jax_gpu_dense_fp64_nufft@hpc_a100` 0.608 (RAL 413449-413452, A100 413457-413459; 2026.10.25.1, jax 0.11.2).
 **Library PRs:** none (measurement only, tag 2026.10.25.1)
 **Profiling PRs:** setup PR (draft; datacube and multi_dataset standard-size drivers, the 2f submits, this page), then a walls PR after batch 0, then PR B (rows, catalogue, coverage, this page's result)
 **Ledger:** this page; rows will land under `results/datacube/delaunay/`; work list [`scripts/misc/campaigns/multi_dataset_datacube_p2f.py`](../../../scripts/misc/campaigns/multi_dataset_datacube_p2f.py) and its [README](../../../scripts/misc/campaigns/README.md); the multi_dataset half is [its own page](../multi_dataset/likelihood_lifecycle_p2f.md)
 **Mind contract:** epic `likelihood-lifecycle`, phase 2 sub-issue 2f; issue autolens_profiling#475
-**Next:** batch 1 (human go; RAL CPU legs on shared nodes, no quiet gate, human 2026-10-30), from the walls commit; then PR B
-**Fit figures:** none from RAL yet. Laptop smoke (sma, lead channel, `jax_cpu_sparse_fp64_wtilde`) opened: noise-dominated sma dirty maps as in 2b, the source reconstructed inside the caustic, nothing wrong.
+**Next:** merge PR B (human /prm); class designations are phase 3's
+**Fit figures:** batch-1 alma_high `jax_gpu_sparse_fp64_wtilde@hpc_a100` opened 2026-10-30: visibility residuals within +-4 sigma, dirty maps as in 2b, nothing wrong. Earlier: Laptop smoke (sma, lead channel, `jax_cpu_sparse_fp64_wtilde`) opened: noise-dominated sma dirty maps as in 2b, the source reconstructed inside the caustic, nothing wrong.
 
 ## Why this campaign
 
@@ -150,3 +150,13 @@ witness `match`). The walls commit fills `BATCH0_WALLS` / `BATCH0_PEAK_RSS_KIB` 
 ### 2026-10-30 — loaded RAL nodes accepted
 
 Human ruling 2026-10-30 (chat): "ignore loaded node stuff for now I dont think that massive impacts run times and we cant ever expect to be unloaded nodes for everything". Batch 1 runs on shared `ral` nodes as rendered, with no quiet gate; a loaded row keeps its `loadavg_at_import`.
+
+### 2026-10-30 — batch 1 in; PR B
+
+Batch 1 (RAL 413448-413452, A100 413456-413459, 2026-10-30, from autolens_profiling_p2dg at
+830314e9) all exit 0; the alma and alma_high references (413452_0/_1) finalised the datacube
+witnesses, so every witness is `match` (16/16). PR B copies the 32 rows (22 datacube, 10
+multi_dataset) into `results/`, re-renders `results/datacube/delaunay/sma/comparison.{json,png}`
+(the legacy sweep aggregator reads the placed hpc rows, as 2b), and regenerates catalogue,
+dashboard (committed stamp), coverage, setup wiki, series map and READMEs: coverage 240 -> 272
+current of 272, 0 stale, 0 missing; no planned parity witness missing.

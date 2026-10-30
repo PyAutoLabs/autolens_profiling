@@ -15,7 +15,7 @@ Catalogue generated 2026-10-29T09:46:25Z; catalogue pin `2026.10.25.1` (newest r
 
 | Planned cells | Current | Stale | Superseded | Missing (of which size_fallback) | Superseded records |
 |---|---|---|---|---|---|
-| 272 | 240 | 0 | 0 | 32 (0) | 520 |
+| 272 | 272 | 0 | 0 | 0 (0) | 532 |
 
 ## Likelihood x class x measurement
 
@@ -27,10 +27,10 @@ Catalogue generated 2026-10-29T09:46:25Z; catalogue pin `2026.10.25.1` (newest r
 | cluster/source_plane | optimal | runtime | 2 | 0 | 0 | 0 |
 | cluster/source_plane | secondary | breakdown | 1 | 0 | 0 | 0 |
 | cluster/source_plane | secondary | runtime | 1 | 0 | 0 | 0 |
-| datacube/delaunay | optimal | breakdown | 0 | 0 | 0 | 6 |
-| datacube/delaunay | optimal | runtime | 0 | 0 | 0 | 6 |
-| datacube/delaunay | secondary | breakdown | 0 | 0 | 0 | 5 |
-| datacube/delaunay | secondary | runtime | 0 | 0 | 0 | 5 |
+| datacube/delaunay | optimal | breakdown | 6 | 0 | 0 | 0 |
+| datacube/delaunay | optimal | runtime | 6 | 0 | 0 | 0 |
+| datacube/delaunay | secondary | breakdown | 5 | 0 | 0 | 0 |
+| datacube/delaunay | secondary | runtime | 5 | 0 | 0 | 0 |
 | group/delaunay | optimal | breakdown | 2 | 0 | 0 | 0 |
 | group/delaunay | optimal | runtime | 2 | 0 | 0 | 0 |
 | group/delaunay | secondary | breakdown | 3 | 0 | 0 | 0 |
@@ -65,10 +65,10 @@ Catalogue generated 2026-10-29T09:46:25Z; catalogue pin `2026.10.25.1` (newest r
 | interferometer/rectangular | optimal | runtime | 8 | 0 | 0 | 0 |
 | interferometer/rectangular | secondary | breakdown | 6 | 0 | 0 | 0 |
 | interferometer/rectangular | secondary | runtime | 6 | 0 | 0 | 0 |
-| multi_dataset/delaunay | optimal | breakdown | 0 | 0 | 0 | 2 |
-| multi_dataset/delaunay | optimal | runtime | 0 | 0 | 0 | 2 |
-| multi_dataset/delaunay | secondary | breakdown | 0 | 0 | 0 | 3 |
-| multi_dataset/delaunay | secondary | runtime | 0 | 0 | 0 | 3 |
+| multi_dataset/delaunay | optimal | breakdown | 2 | 0 | 0 | 0 |
+| multi_dataset/delaunay | optimal | runtime | 2 | 0 | 0 | 0 |
+| multi_dataset/delaunay | secondary | breakdown | 3 | 0 | 0 | 0 |
+| multi_dataset/delaunay | secondary | runtime | 3 | 0 | 0 | 0 |
 | multi_galaxy/delaunay | optimal | breakdown | 2 | 0 | 0 | 0 |
 | multi_galaxy/delaunay | optimal | runtime | 2 | 0 | 0 | 0 |
 | multi_galaxy/delaunay | secondary | breakdown | 3 | 0 | 0 | 0 |
@@ -96,15 +96,15 @@ Per planned setup cell: match/diverged from its current parity record, not_asses
 
 | Setup cells | Match | Diverged | Not assessed | Missing |
 |---|---|---|---|---|
-| 136 | 120 | 0 | 0 | 16 |
+| 136 | 136 | 0 | 0 | 0 |
 
 | Likelihood | Class | Match | Diverged | Not assessed | Missing |
 |---|---|---|---|---|---|
 | cluster/image_plane | optimal | 2 | 0 | 0 | 0 |
 | cluster/source_plane | optimal | 2 | 0 | 0 | 0 |
 | cluster/source_plane | secondary | 1 | 0 | 0 | 0 |
-| datacube/delaunay | optimal | 0 | 0 | 0 | 6 |
-| datacube/delaunay | secondary | 0 | 0 | 0 | 5 |
+| datacube/delaunay | optimal | 6 | 0 | 0 | 0 |
+| datacube/delaunay | secondary | 5 | 0 | 0 | 0 |
 | group/delaunay | optimal | 2 | 0 | 0 | 0 |
 | group/delaunay | secondary | 3 | 0 | 0 | 0 |
 | group/mge | optimal | 2 | 0 | 0 | 0 |
@@ -122,8 +122,8 @@ Per planned setup cell: match/diverged from its current parity record, not_asses
 | interferometer/mge | optimal | 2 | 0 | 0 | 0 |
 | interferometer/rectangular | optimal | 8 | 0 | 0 | 0 |
 | interferometer/rectangular | secondary | 6 | 0 | 0 | 0 |
-| multi_dataset/delaunay | optimal | 0 | 0 | 0 | 2 |
-| multi_dataset/delaunay | secondary | 0 | 0 | 0 | 3 |
+| multi_dataset/delaunay | optimal | 2 | 0 | 0 | 0 |
+| multi_dataset/delaunay | secondary | 3 | 0 | 0 | 0 |
 | multi_galaxy/delaunay | optimal | 2 | 0 | 0 | 0 |
 | multi_galaxy/delaunay | secondary | 3 | 0 | 0 | 0 |
 | multi_galaxy/mge | optimal | 2 | 0 | 0 | 0 |

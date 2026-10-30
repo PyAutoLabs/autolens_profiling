@@ -1,0 +1,18 @@
+{
+  "schema": "parity-witness",
+  "version": 1,
+  "status": "match",
+  "log_likelihood": 67622.97697159884,
+  "reference_log_likelihood": 67622.97697159904,
+  "tolerance": 6.762297697159904,
+  "tolerance_rule": "0.0001 x |reference_log_likelihood| (fp64)",
+  "reference": {
+    "source": "sum over datasets of the eager NumPy dense-mapping AnalysisImaging(use_jax=False) without a sparse operator (2a's reference, decision D8)",
+    "date": "2026-10-30"
+  },
+  "measured_at": "2026-10-30T11:52:12Z",
+  "autolens_version": "2026.8.17.1",
+  "quantity": "the summed log likelihood (sum over datasets of log_likelihood_function, the figure of merit, FactorGraphModel) at the standard cell's iid draw 0, vs the sum of 2a's eager NumPy dense-mapping reference per dataset (decision D8)",
+  "source_pixels": 1280,
+  "source_pixels_requested": 1250
+}
