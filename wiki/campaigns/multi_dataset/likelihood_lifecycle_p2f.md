@@ -1,16 +1,16 @@
 # Likelihood lifecycle phase 2f: multi_dataset at the standard size
 
-**Status:** open
+**Status:** rows committed (batch 1, PR B); closes on merge
 **Question:** What does every planned multi_dataset/delaunay cell cost at the standard source size (Delaunay 1250 + 30 edge points) on the pinned release 2026.10.25.1, for the production multi-dataset likelihood (one `AnalysisImaging` per dataset summed in a `FactorGraphModel`), and does each cell's summed log likelihood match an independent reference?
 **Pre-registered rule:** every one of the 10 planned multi_dataset cells lands `current`, with runtime and breakdown, provenance, `resources`, `fit.png` and a `parity.json` whose status is `match` against the sum of 2a's eager NumPy dense-mapping reference per dataset (D8; tolerance 1e-4 x |reference| in fp64, the imaging rule). Any `diverged` witness blocks that setup until explained. Recorded here with the setup PR, before any run (2026-10-28).
-**Verdict:** pending (batch 0, all 10 multi_dataset legs, run 2026-10-29; batch 1 not yet). Expected, written before the runs: every witness is `match`; each setup costs about twice 2a's hst Delaunay cell of the same setup (nothing is shared between the datasets, D6), so the setup ranking is 2a's: `jax_gpu_dense_fp64@hpc_a100` fastest per call, numba the fastest CPU setup per core. Class designations are phase 3's decision, not this page's.
-**Headline:** none yet.
+**Verdict:** rule met: all 10 cells `current` with `fit.png` and a `match` witness (5/5, worst 1.9e-12 relative). Against the expectation: the setup ranking is 2a's (`jax_gpu_dense_fp64@hpc_a100` fastest per call, 110 ms; numba the fastest CPU setup, 2.85 s against JAX CPU 6.34 s), as predicted; "about twice 2a's hst Delaunay cell" holds only roughly: numba 3.0x (2.85 s vs 0.95 s), JAX CPU 2.9x RAL / 1.9x A100, the GPU setups 1.8x (110 vs 59.6 ms dense, 137 vs 76.2 ms sparse); every witness `match`. Per-call figures, not node throughput. Expected, written before the runs: every witness is `match`; each setup costs about twice 2a's hst Delaunay cell of the same setup (nothing is shared between the datasets, D6), so the setup ranking is 2a's: `jax_gpu_dense_fp64@hpc_a100` fastest per call, numba the fastest CPU setup per core. Class designations are phase 3's decision, not this page's.
+**Headline:** multi_dataset/delaunay/hst, two datasets, steady median per call: `numba_cpu_sparse_fp64@hpc_ral_cpu` 2.85 s; `jax_cpu_sparse_fp64@hpc_ral_cpu` 6.34 s; `jax_cpu_sparse_fp64@hpc_a100` 4.92 s; `jax_gpu_dense_fp64@hpc_a100` 110 ms; `jax_gpu_sparse_fp64@hpc_a100` 137 ms (RAL 413448, A100 413456).
 **Library PRs:** none (measurement only, tag 2026.10.25.1)
 **Profiling PRs:** setup PR (draft, shared with the datacube half), then a walls PR after batch 0, then PR B
 **Ledger:** this page; rows will land under `results/multi_dataset/delaunay/hst/`; work list [`scripts/misc/campaigns/multi_dataset_datacube_p2f.py`](../../../scripts/misc/campaigns/multi_dataset_datacube_p2f.py); the decision table D1-D9 is on the [datacube page](../datacube/likelihood_lifecycle_p2f.md)
 **Mind contract:** epic `likelihood-lifecycle`, phase 2 sub-issue 2f; issue autolens_profiling#475
-**Next:** batch 1 (human go; RAL CPU legs on shared nodes, no quiet gate, human 2026-10-30), from the walls commit; then PR B
-**Fit figures:** none from RAL yet. Laptop smoke (hst, dataset 0, `numba_cpu_sparse_fp64`) opened: ring reconstructed, residuals confined to the lens core as in 2a's iid draw 0, nothing wrong.
+**Next:** merge PR B (human /prm); class designations are phase 3's
+**Fit figures:** batch-1 `numba_cpu_sparse_fp64@hpc_ral_cpu` opened 2026-10-30: ring reconstructed, residuals confined to the lens core, as 2a's draw 0. Earlier: Laptop smoke (hst, dataset 0, `numba_cpu_sparse_fp64`) opened: ring reconstructed, residuals confined to the lens core as in 2a's iid draw 0, nothing wrong.
 
 ## Why this campaign
 
@@ -79,3 +79,13 @@ All 10 legs exit 0, every witness `match`; batch 1's walls and memory are measur
 ### 2026-10-30 — loaded RAL nodes accepted
 
 Human ruling 2026-10-30 (chat): "ignore loaded node stuff for now I dont think that massive impacts run times and we cant ever expect to be unloaded nodes for everything". Batch 1 runs on shared `ral` nodes as rendered, with no quiet gate; a loaded row keeps its `loadavg_at_import`.
+
+### 2026-10-30 — batch 1 in; PR B
+
+Batch 1 (RAL 413448-413452, A100 413456-413459, 2026-10-30, from autolens_profiling_p2dg at
+830314e9) all exit 0; the alma and alma_high references (413452_0/_1) finalised the datacube
+witnesses, so every witness is `match` (16/16). PR B copies the 32 rows (22 datacube, 10
+multi_dataset) into `results/`, re-renders `results/datacube/delaunay/sma/comparison.{json,png}`
+(the legacy sweep aggregator reads the placed hpc rows, as 2b), and regenerates catalogue,
+dashboard (committed stamp), coverage, setup wiki, series map and READMEs: coverage 240 -> 272
+current of 272, 0 stale, 0 missing; no planned parity witness missing.

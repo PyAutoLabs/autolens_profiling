@@ -15,7 +15,7 @@ The empirical findings from previous sweeps — per-cell timings, mp verdicts, t
 <!-- BEGIN auto-table:runtime -->
 | Cell | local_cpu_fp64 | local_cpu_mp | hpc_ral_cpu_fp64 | hpc_a100_fp64 | hpc_a100_fp64_sparse | hpc_ral_cpu_fp64_sparse | local_cpu_fp64_sparse | local_cpu_mp_sparse | PreOptimizationTimes |
 |---|---|---|---|---|---|---|---|---|---|
-| `datacube/delaunay/sma` | — | — | — | — | — | — | — | — | — |
+| `datacube/delaunay/sma` | — | — | 18.01 s | 608.1 ms _(median)_ | 573.2 ms _(median)_ | 12.15 s | — | — | — |
 | `imaging/delaunay/hst` | 16.73 s | 17.84 s | — | — | — | — | 4.14 s | 4.49 s | 4.49 s |
 | `imaging/delaunay/jwst` | 48.81 s | 22.43 s | — | — | — | — | 10.42 s | 14.05 s | 14.05 s |
 | `imaging/mge/ao` | 3.11 s | 5.71 s | — | — | — | — | — | — | 5.71 s |

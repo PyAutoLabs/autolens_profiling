@@ -3,7 +3,7 @@
   "organ": "autolens_profiling",
   "repo": "autolens_profiling",
   "status": "yellow",
-  "headline": "1 of 247 series drifted >= 2x at the last release",
+  "headline": "1 of 261 series drifted >= 2x at the last release",
   "updated": "2026-10-29T09:46:25Z",
   "pages_url": "https://pyautolabs.github.io/autolens_profiling/",
   "items": [

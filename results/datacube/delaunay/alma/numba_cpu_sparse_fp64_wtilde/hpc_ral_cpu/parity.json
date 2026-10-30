@@ -1,0 +1,18 @@
+{
+  "schema": "parity-witness",
+  "version": 1,
+  "status": "match",
+  "log_likelihood": -391192012.3463313,
+  "reference_log_likelihood": -391192012.34633136,
+  "tolerance": 3.9119201234633136,
+  "tolerance_rule": "1e-08 x |reference_log_likelihood| (fp64)",
+  "reference": {
+    "source": "cube reference (D3) from the cached reference task interferometer_delaunay_alma.json (visibility-chunked eager NumPy dense (R6))",
+    "date": "2026-10-30"
+  },
+  "measured_at": "2026-10-30T12:08:57Z",
+  "autolens_version": "2026.8.17.1",
+  "quantity": "the cube log likelihood (sum over channels of log_likelihood_function, the log evidence, FactorGraphModel with shared_preloads) at the standard cell's iid draw 0, vs the cube reference from the visibility-chunked eager NumPy dense reference (decision D3)",
+  "source_pixels": 1280,
+  "source_pixels_requested": 1250
+}
