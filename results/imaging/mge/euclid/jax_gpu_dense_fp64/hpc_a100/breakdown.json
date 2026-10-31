@@ -7,36 +7,36 @@
     "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
     "omp_num_threads": "1",
     "cpu_count": 124,
-    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2a/output/jax_cache/p2a_412943_6",
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2dg/output/jax_cache/p2a_413619_6",
     "autotune_cache_entries_at_start": 0,
     "cache_fresh": true,
     "provenance": {
       "provenance_schema": 1,
-      "captured_at": "2026-10-25T14:18:57Z",
+      "captured_at": "2026-10-30T16:36:12Z",
       "host": "euclid-ral-gpu-1",
       "slurm": {
-        "job_id": "412943",
+        "job_id": "413619",
         "array_job_id": null,
         "array_task_id": null
       },
       "loadavg_at_import": [
-        8.93,
-        7.28,
-        3.62
+        8.49,
+        7.23,
+        3.39
       ],
       "loadavg_at_write": [
-        8.85,
-        7.36,
-        3.72
+        7.49,
+        7.07,
+        3.41
       ],
-      "profiling_revision": "86c287d1fc90f7595b2106dbb6b55102c4d7c800",
+      "profiling_revision": "8860c50c0dc924ee591bfd0157cde7946a80a25e",
       "library_revisions": {
-        "autolens_profiling": "86c287d1fc90f7595b2106dbb6b55102c4d7c800",
-        "PyAutoNerves": "f116f70077e442db19a2a152f5ee78d57294c504",
-        "PyAutoFit": "d3a7721294652f81ec726b92931ab610ed27e3ac",
-        "PyAutoArray": "d99ec2b30224ac021e39628b9904d01c44f33b29",
-        "PyAutoGalaxy": "e00b5e7d554d6958a6c8821edef6afdf01188e6d",
-        "PyAutoLens": "f791ac77d136d664346fff21cc36079f8f9b1196"
+        "autolens_profiling": "8860c50c0dc924ee591bfd0157cde7946a80a25e",
+        "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+        "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+        "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+        "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+        "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
       },
       "library_versions": {
         "PyAutoNerves": "2026.8.17.1",
@@ -46,15 +46,27 @@
         "PyAutoLens": "2026.8.17.1"
       },
       "dependency_versions": {
-        "jax": "0.10.2",
-        "jaxlib": "0.10.2",
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
         "numpy": "2.2.6",
         "scipy": "1.17.1",
         "numba": "0.65.1",
-        "nufftax": "0.6.1"
+        "nufftax": "0.6.1",
+        "finufft": "2.5.1"
       }
     },
     "nvidia_smi": "NVIDIA A100 80GB PCIe, 507 MiB, 81920 MiB"
+  },
+  "resources": {
+    "resources_schema": 1,
+    "engine": "jax",
+    "device": "gpu",
+    "cpus_per_eval": 8,
+    "cpus_per_eval_basis": "jax gpu: one device; cpus_per_eval = NPROC host threads",
+    "devices_per_eval": 1,
+    "peak_rss_gb": 1.015898,
+    "peak_rss_basis": "in_process_ru_maxrss",
+    "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
   },
   "instrument": "euclid",
   "configuration": {
@@ -66,16 +78,16 @@
     "inversion_path": "dense"
   },
   "steps": {
-    "Ray-trace grids": 0.00017924999992828815,
-    "Mapping matrix": 0.001325190399074927,
-    "Blurred mapping matrix": 0.003416380099952221,
-    "Data vector (D)": 0.00015735630004201084,
-    "Curvature matrix (F)": 0.00025254220236092806,
-    "Reconstruction (NNLS)": 0.003004952598712407,
-    "Mapped reconstructed image": 0.0001586722006322816,
-    "Chi-squared & log likelihood": 0.000152710298425518
+    "Ray-trace grids": 0.0001965416013263166,
+    "Mapping matrix": 0.0011975997011177241,
+    "Blurred mapping matrix": 0.0031719261081889273,
+    "Data vector (D)": 0.00013545240508392454,
+    "Curvature matrix (F)": 0.0002452160930261016,
+    "Reconstruction (NNLS)": 0.003148952394258231,
+    "Mapped reconstructed image": 0.0001625540084205568,
+    "Chi-squared & log likelihood": 0.00013145249104127288
   },
-  "total_step_by_step": 0.008647054099128582,
+  "total_step_by_step": 0.008389694802463054,
   "pinned_expected": null,
   "pinned_drift": []
 }

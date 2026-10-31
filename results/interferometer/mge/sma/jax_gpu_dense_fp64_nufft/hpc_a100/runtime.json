@@ -3,35 +3,35 @@
   "device": {
     "backend": "gpu",
     "device": "cuda:0",
-    "hostname": "euclid-ral-gpu-1",
+    "hostname": "euclid-ral-gpu-2",
     "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
     "omp_num_threads": "1",
     "cpu_count": 124,
-    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2a/output/jax_cache/p2b_413162_5",
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2dg/output/jax_cache/p2b_413622_5",
     "autotune_cache_entries_at_start": 0,
     "cache_fresh": true,
     "provenance": {
       "provenance_schema": 1,
-      "captured_at": "2026-10-28T13:55:36Z",
-      "host": "euclid-ral-gpu-1",
+      "captured_at": "2026-10-30T16:35:21Z",
+      "host": "euclid-ral-gpu-2",
       "slurm": {
-        "job_id": "413162",
+        "job_id": "413622",
         "array_job_id": null,
         "array_task_id": null
       },
       "loadavg_at_import": [
-        4.89,
-        4.04,
-        1.9
+        6.22,
+        3.74,
+        1.68
       ],
       "loadavg_at_write": [
-        4.6,
-        4.0,
-        1.91
+        6.64,
+        3.92,
+        1.76
       ],
-      "profiling_revision": "80bbb028284ad8eb36d34692a414319f881b1d1e",
+      "profiling_revision": "8860c50c0dc924ee591bfd0157cde7946a80a25e",
       "library_revisions": {
-        "autolens_profiling": "80bbb028284ad8eb36d34692a414319f881b1d1e",
+        "autolens_profiling": "8860c50c0dc924ee591bfd0157cde7946a80a25e",
         "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
         "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
         "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
@@ -46,8 +46,8 @@
         "PyAutoLens": "2026.8.17.1"
       },
       "dependency_versions": {
-        "jax": "0.10.2",
-        "jaxlib": "0.10.2",
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
         "numpy": "2.2.6",
         "scipy": "1.17.1",
         "numba": "0.65.1",
@@ -64,7 +64,7 @@
     "cpus_per_eval": 8,
     "cpus_per_eval_basis": "jax gpu: one device; cpus_per_eval = NPROC host threads",
     "devices_per_eval": 1,
-    "peak_rss_gb": 1.574212,
+    "peak_rss_gb": 1.535308,
     "peak_rss_basis": "in_process_ru_maxrss",
     "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
   },
@@ -84,11 +84,11 @@
   },
   "log_likelihood_eager": -3153.9423845092465,
   "log_likelihood_jit": -3153.9482303841137,
-  "full_pipeline_single_jit": 0.0038483629003167154,
-  "full_pipeline_single_jit_median": 0.0037179604987613857,
-  "full_pipeline_single_jit_median_ms": 3.7179604987613857,
-  "full_pipeline_single_jit_p10_ms": 3.67048098705709,
-  "full_pipeline_single_jit_p90_ms": 3.796773898648098,
+  "full_pipeline_single_jit": 0.0038823761977255346,
+  "full_pipeline_single_jit_median": 0.003677482483908534,
+  "full_pipeline_single_jit_median_ms": 3.677482483908534,
+  "full_pipeline_single_jit_p10_ms": 3.6220950190909207,
+  "full_pipeline_single_jit_p90_ms": 4.043585958424956,
   "full_pipeline_single_jit_median_protocol": {
     "n_warm": 5,
     "n_timed": 200,
@@ -98,9 +98,9 @@
   },
   "vmap": {
     "batch_size": 64,
-    "batch_time": 0.03666504159918986,
-    "per_call": 0.0005728912749873416,
-    "speedup_vs_single_jit": 6.7
+    "batch_time": 0.038354640803299846,
+    "per_call": 0.0005992912625515601,
+    "speedup_vs_single_jit": 6.5
   },
   "memory_mb": {
     "output": 0.00048828125,

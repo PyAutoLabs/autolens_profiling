@@ -7,36 +7,36 @@
     "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
     "omp_num_threads": "1",
     "cpu_count": 124,
-    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2a/output/jax_cache/p2a_412945_5",
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2dg/output/jax_cache/p2a_413621_5",
     "autotune_cache_entries_at_start": 0,
     "cache_fresh": true,
     "provenance": {
       "provenance_schema": 1,
-      "captured_at": "2026-10-25T14:24:00Z",
+      "captured_at": "2026-10-30T16:41:20Z",
       "host": "euclid-ral-gpu-1",
       "slurm": {
-        "job_id": "412945",
+        "job_id": "413621",
         "array_job_id": null,
         "array_task_id": null
       },
       "loadavg_at_import": [
         5.77,
-        6.57,
-        4.19
+        6.4,
+        3.95
       ],
       "loadavg_at_write": [
-        5.82,
-        6.35,
-        4.29
+        6.06,
+        6.29,
+        4.11
       ],
-      "profiling_revision": "86c287d1fc90f7595b2106dbb6b55102c4d7c800",
+      "profiling_revision": "8860c50c0dc924ee591bfd0157cde7946a80a25e",
       "library_revisions": {
-        "autolens_profiling": "86c287d1fc90f7595b2106dbb6b55102c4d7c800",
-        "PyAutoNerves": "f116f70077e442db19a2a152f5ee78d57294c504",
-        "PyAutoFit": "d3a7721294652f81ec726b92931ab610ed27e3ac",
-        "PyAutoArray": "d99ec2b30224ac021e39628b9904d01c44f33b29",
-        "PyAutoGalaxy": "e00b5e7d554d6958a6c8821edef6afdf01188e6d",
-        "PyAutoLens": "f791ac77d136d664346fff21cc36079f8f9b1196"
+        "autolens_profiling": "8860c50c0dc924ee591bfd0157cde7946a80a25e",
+        "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+        "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+        "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+        "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+        "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
       },
       "library_versions": {
         "PyAutoNerves": "2026.8.17.1",
@@ -46,15 +46,27 @@
         "PyAutoLens": "2026.8.17.1"
       },
       "dependency_versions": {
-        "jax": "0.10.2",
-        "jaxlib": "0.10.2",
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
         "numpy": "2.2.6",
         "scipy": "1.17.1",
         "numba": "0.65.1",
-        "nufftax": "0.6.1"
+        "nufftax": "0.6.1",
+        "finufft": "2.5.1"
       }
     },
     "nvidia_smi": "NVIDIA A100 80GB PCIe, 4717 MiB, 81920 MiB"
+  },
+  "resources": {
+    "resources_schema": 1,
+    "engine": "jax",
+    "device": "gpu",
+    "cpus_per_eval": 8,
+    "cpus_per_eval_basis": "jax gpu: one device; cpus_per_eval = NPROC host threads",
+    "devices_per_eval": 1,
+    "peak_rss_gb": 2.210226,
+    "peak_rss_basis": "in_process_ru_maxrss",
+    "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
   },
   "instrument": "jwst",
   "configuration": {
@@ -248,11 +260,11 @@
       }
     }
   },
-  "full_pipeline_single_jit": 0.12476323300215882,
-  "full_pipeline_single_jit_median": 0.1242144370044116,
-  "full_pipeline_single_jit_median_ms": 124.2144370044116,
-  "full_pipeline_single_jit_p10_ms": 124.01084190059919,
-  "full_pipeline_single_jit_p90_ms": 124.599658002262,
+  "full_pipeline_single_jit": 0.1241596339037642,
+  "full_pipeline_single_jit_median": 0.12339978001546115,
+  "full_pipeline_single_jit_median_ms": 123.39978001546115,
+  "full_pipeline_single_jit_p10_ms": 123.17502308869734,
+  "full_pipeline_single_jit_p90_ms": 124.31286193896085,
   "full_pipeline_single_jit_median_protocol": {
     "n_warm": 5,
     "n_timed": 200,
@@ -260,13 +272,13 @@
     "full_pipeline_single_jit_is": "mean of one 10-call block after one first call (first block after compile)",
     "issue": "autolens_profiling#371; timing-noise audit P8 (#362)"
   },
-  "full_pipeline_lower_s": 4.130523264990188,
-  "full_pipeline_compile_s": 10.677397266990738,
-  "full_pipeline_first_call_s": 0.4462383790232707,
+  "full_pipeline_lower_s": 4.127990928012878,
+  "full_pipeline_compile_s": 11.924339359044097,
+  "full_pipeline_first_call_s": 0.41775455698370934,
   "vmap": {
     "batch_size": 8,
-    "batch_time": 0.8648593836987857,
-    "per_call": 0.10810742296234821,
+    "batch_time": 0.8607914460939355,
+    "per_call": 0.10759893076174194,
     "speedup_vs_single_jit": 1.2
   },
   "pinned_expected": null,

@@ -1,0 +1,18 @@
+{
+  "schema": "parity-witness",
+  "version": 1,
+  "status": "match",
+  "log_likelihood": 664005.2573984853,
+  "reference_log_likelihood": 664005.2573985022,
+  "tolerance": 66.40052573985022,
+  "tolerance_rule": "0.0001 x |reference_log_likelihood| (fp64)",
+  "reference": {
+    "source": "eager NumPy dense-mapping al.AnalysisImaging(use_jax=False, no sparse operator) in the same process: ao, 1280 source pixels, same dataset, model and instance",
+    "date": "2026-10-25"
+  },
+  "measured_at": "2026-10-25T15:01:15Z",
+  "autolens_version": "2026.8.17.1",
+  "quantity": "log_likelihood_function (JIT cell vs eager NumPy dense reference)",
+  "source_pixels": 1280,
+  "source_pixels_requested": 1250
+}

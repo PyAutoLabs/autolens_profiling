@@ -2,15 +2,15 @@
   "schema": "parity-witness",
   "version": 1,
   "status": "match",
-  "log_likelihood": 27373.152394099707,
+  "log_likelihood": 27373.15239409971,
   "reference_log_likelihood": 27373.152646517723,
   "tolerance": 2.737315264651772,
   "tolerance_rule": "0.0001 x |reference_log_likelihood| (fp64)",
   "reference": {
     "source": "eager NumPy al.FitImaging(xp=np).figure_of_merit in the same process: hst, same dataset, model and instance",
-    "date": "2026-10-25"
+    "date": "2026-10-30"
   },
-  "measured_at": "2026-10-25T14:15:17Z",
+  "measured_at": "2026-10-30T16:31:45Z",
   "autolens_version": "2026.8.17.1",
   "quantity": "figure_of_merit (the JIT log_likelihood_function value; log evidence)"
 }

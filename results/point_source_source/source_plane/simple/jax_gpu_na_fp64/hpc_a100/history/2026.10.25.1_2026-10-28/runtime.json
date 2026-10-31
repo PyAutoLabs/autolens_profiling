@@ -1,0 +1,105 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "hostname": "euclid-ral-gpu-1",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 124,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2c/output/jax_cache/p2c_413193_8",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-10-28T21:57:08Z",
+      "host": "euclid-ral-gpu-1",
+      "slurm": {
+        "job_id": "413193",
+        "array_job_id": null,
+        "array_task_id": null
+      },
+      "loadavg_at_import": [
+        1.86,
+        1.74,
+        0.94
+      ],
+      "loadavg_at_write": [
+        1.79,
+        1.73,
+        0.94
+      ],
+      "profiling_revision": "2f98e01a150d2f59aebb5735c4c12ae286a7b1d3",
+      "library_revisions": {
+        "autolens_profiling": "2f98e01a150d2f59aebb5735c4c12ae286a7b1d3",
+        "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+        "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+        "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+        "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+        "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.10.2",
+        "jaxlib": "0.10.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.65.1",
+        "nufftax": "0.6.1",
+        "finufft": "2.5.1"
+      }
+    },
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 441 MiB, 81920 MiB"
+  },
+  "resources": {
+    "resources_schema": 1,
+    "engine": "jax",
+    "device": "gpu",
+    "cpus_per_eval": 8,
+    "cpus_per_eval_basis": "jax gpu: one device; cpus_per_eval = NPROC host threads",
+    "devices_per_eval": 1,
+    "peak_rss_gb": 0.688759,
+    "peak_rss_basis": "in_process_ru_maxrss",
+    "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
+  },
+  "dataset": "simple",
+  "fit_positions_cls": "FitPositionsSourceSolved",
+  "configuration": {
+    "observed_image_positions": 4,
+    "positions_noise_sigma": 0.05,
+    "free_parameters": 5,
+    "free_parameters_source_plane_plain": 8,
+    "free_parameters_delta": -3,
+    "point_source_profile": "PointSolved"
+  },
+  "eager_per_call": 0.006629967999760993,
+  "eager_log_likelihood": 0.598650453950647,
+  "full_pipeline_jits": true,
+  "full_pipeline_single_jit": 0.00031455529970116915,
+  "full_pipeline_single_jit_median": 0.00026165152667090297,
+  "full_pipeline_single_jit_median_ms": 0.26165152667090297,
+  "full_pipeline_single_jit_p10_ms": 0.2531489066313952,
+  "full_pipeline_single_jit_p90_ms": 0.2827169024385512,
+  "full_pipeline_single_jit_median_protocol": {
+    "n_warm": 5,
+    "n_timed": 200,
+    "statistic": "median of individually timed calls after warm calls",
+    "full_pipeline_single_jit_is": "mean of one 10-call block after one first call (first block after compile)",
+    "issue": "autolens_profiling#371; timing-noise audit P8 (#362)"
+  },
+  "full_pipeline_log_likelihood": 0.5986504555536865,
+  "vmap": {
+    "batch_size": 3,
+    "batch_time": 0.0003261951031163335,
+    "per_call": 0.00010873170103877784,
+    "speedup_vs_single_jit": 2.9
+  },
+  "pinned_expected": 0.5986504555530896,
+  "pinned_drift": []
+}

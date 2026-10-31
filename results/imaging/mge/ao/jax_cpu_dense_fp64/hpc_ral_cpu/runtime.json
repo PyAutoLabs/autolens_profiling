@@ -3,40 +3,40 @@
   "device": {
     "backend": "cpu",
     "device": "cpu:0",
-    "hostname": "euclid-ral-compute-1",
-    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "hostname": "euclid-ral-compute-10-5",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_cpu_multi_thread_eigen=false --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
     "omp_num_threads": "1",
-    "cpu_count": 252,
-    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2a/output/jax_cache/p2a_412933_5",
+    "cpu_count": 236,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2dg/output/jax_cache/p2a_413630_3",
     "autotune_cache_entries_at_start": 0,
     "cache_fresh": true,
     "provenance": {
       "provenance_schema": 1,
-      "captured_at": "2026-10-25T14:13:56Z",
-      "host": "euclid-ral-compute-1",
+      "captured_at": "2026-10-30T16:31:53Z",
+      "host": "euclid-ral-compute-10-5",
       "slurm": {
-        "job_id": "412933",
-        "array_job_id": "412923",
-        "array_task_id": "5"
+        "job_id": "413630",
+        "array_job_id": "413614",
+        "array_task_id": "3"
       },
       "loadavg_at_import": [
-        8.61,
-        7.06,
-        6.68
+        75.94,
+        67.56,
+        69.62
       ],
       "loadavg_at_write": [
-        25.05,
-        12.44,
-        8.59
+        88.33,
+        73.81,
+        71.62
       ],
-      "profiling_revision": "86c287d1fc90f7595b2106dbb6b55102c4d7c800",
+      "profiling_revision": "8860c50c0dc924ee591bfd0157cde7946a80a25e",
       "library_revisions": {
-        "autolens_profiling": "86c287d1fc90f7595b2106dbb6b55102c4d7c800",
-        "PyAutoNerves": "f116f70077e442db19a2a152f5ee78d57294c504",
-        "PyAutoFit": "d3a7721294652f81ec726b92931ab610ed27e3ac",
-        "PyAutoArray": "d99ec2b30224ac021e39628b9904d01c44f33b29",
-        "PyAutoGalaxy": "e00b5e7d554d6958a6c8821edef6afdf01188e6d",
-        "PyAutoLens": "f791ac77d136d664346fff21cc36079f8f9b1196"
+        "autolens_profiling": "8860c50c0dc924ee591bfd0157cde7946a80a25e",
+        "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+        "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+        "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+        "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+        "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
       },
       "library_versions": {
         "PyAutoNerves": "2026.8.17.1",
@@ -46,14 +46,26 @@
         "PyAutoLens": "2026.8.17.1"
       },
       "dependency_versions": {
-        "jax": "0.10.2",
-        "jaxlib": "0.10.2",
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
         "numpy": "2.2.6",
         "scipy": "1.17.1",
         "numba": "0.65.1",
-        "nufftax": "0.6.1"
+        "nufftax": "0.6.1",
+        "finufft": "2.5.1"
       }
     }
+  },
+  "resources": {
+    "resources_schema": 1,
+    "engine": "jax",
+    "device": "cpu",
+    "cpus_per_eval": 8,
+    "cpus_per_eval_basis": "jax cpu: NPROC threads in XLA's CPU intra-op pool",
+    "devices_per_eval": 0,
+    "peak_rss_gb": 5.201371,
+    "peak_rss_basis": "in_process_ru_maxrss",
+    "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
   },
   "instrument": "ao",
   "configuration": {
@@ -64,23 +76,23 @@
     "linear_gaussians": 0,
     "inversion_path": "dense"
   },
-  "full_pipeline_single_jit": 0.3802280405012425,
-  "full_pipeline_single_jit_median": 0.38889611199556384,
-  "full_pipeline_single_jit_median_ms": 388.89611199556384,
-  "full_pipeline_single_jit_p10_ms": 347.68949470017105,
-  "full_pipeline_single_jit_p90_ms": 444.23578170535615,
+  "full_pipeline_single_jit": 0.49369508218951524,
+  "full_pipeline_single_jit_median": 0.5563743285601959,
+  "full_pipeline_single_jit_median_ms": 556.3743285601959,
+  "full_pipeline_single_jit_p10_ms": 484.8418192588724,
+  "full_pipeline_single_jit_p90_ms": 850.4396862350404,
   "full_pipeline_single_jit_median_protocol": {
     "n_warm": 5,
-    "n_timed": 78,
+    "n_timed": 60,
     "statistic": "median of individually timed calls after warm calls",
     "full_pipeline_single_jit_is": "mean of one 10-call block after one first call (first block after compile)",
     "issue": "autolens_profiling#371; timing-noise audit P8 (#362)"
   },
   "vmap": {
     "batch_size": 3,
-    "batch_time": 0.9889581176976208,
-    "per_call": 0.3296527058992069,
-    "speedup_vs_single_jit": 1.2
+    "batch_time": 1.535402803402394,
+    "per_call": 0.5118009344674647,
+    "speedup_vs_single_jit": 1.0
   },
   "memory_mb": {
     "output": 2.288818359375e-05,

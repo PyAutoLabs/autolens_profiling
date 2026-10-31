@@ -8,9 +8,9 @@
   "tolerance_rule": "0.0001 x |reference_log_likelihood| (fp64)",
   "reference": {
     "source": "eager NumPy al.FitImaging(xp=np).figure_of_merit in the same process: ao, same dataset, model and instance",
-    "date": "2026-10-25"
+    "date": "2026-10-30"
   },
-  "measured_at": "2026-10-25T15:12:29Z",
+  "measured_at": "2026-10-30T17:30:58Z",
   "autolens_version": "2026.8.17.1",
   "quantity": "figure_of_merit (the JIT log_likelihood_function value; log evidence)"
 }
