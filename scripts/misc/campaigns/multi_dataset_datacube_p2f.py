@@ -62,7 +62,7 @@ VARIANT = "delaunay"
 #: on the three interferometer presets it was planned on, ordered by visibilities (sma 190, alma
 #: 1e6, alma_high 5e6).
 INSTRUMENTS = {"multi_dataset": ("hst",), "datacube": ("sma", "alma", "alma_high")}
-#: The section 3.3 setups per host class (``catalogue/provisional_designations.json``):
+#: The section 3.3 setups per host class (the §3.3 copy (retired by #497)):
 #: multi_dataset reads the imaging pixelized table, datacube the interferometer pixelized one.
 SETUPS = {
     "multi_dataset": {
@@ -80,7 +80,7 @@ SETUPS = {
 }
 #: Decision D1: the dense datacube NUFFT route is planned at sma only, as 2b's R1(a) for the
 #: interferometer (each channel's dense transform is the interferometer's: 20.5 GB at alma,
-#: 102 GB at alma_high). ``catalogue/provisional_designations.json`` scopes it the same way.
+#: 102 GB at alma_high). the §3.3 copy (retired by #497) scopes it the same way.
 DENSE_ONLY_AT = ("sma",)
 MEASUREMENTS = ("runtime", "breakdown")
 #: ``--config-name`` per (host class, device): the host tier a row's witness judges against.

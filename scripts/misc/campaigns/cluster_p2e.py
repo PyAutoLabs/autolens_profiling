@@ -63,7 +63,7 @@ ISSUE = "autolens_profiling#474"
 INSTRUMENT = "simple"
 VARIANTS = ("image_plane", "source_plane")
 #: The planned (setup_id, host_class) cells per variant: ``dashboard/coverage.json`` (the §3.3
-#: table through ``catalogue/provisional_designations.json``). image_plane reads the
+#: table through the §3.3 copy (retired by #497)). image_plane reads the
 #: point_source_image table; source_plane the point_source_source table (decision D2).
 SETUPS = {
     "image_plane": (

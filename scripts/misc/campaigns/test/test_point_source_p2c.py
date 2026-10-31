@@ -40,6 +40,18 @@ from wall import check_submits  # noqa: E402
 sys.path.insert(0, str(ROOT / "scripts" / "misc" / "tooling"))
 import catalogue_lifecycle as lc  # noqa: E402
 
+
+def assert_measured_every_designated_cell(manifest, planned):
+    """A finished phase-2 manifest measured every cell the day-zero designations plan
+    (autolens_profiling#497); each extra cell is a setup its designation did not name."""
+    manifest, planned = set(manifest), set(planned)
+    assert planned <= manifest, sorted(planned - manifest)
+    for cell in sorted(manifest - planned):
+        dataset_type, variant, _instrument = cell.split(" ")[0].split("/")
+        setup_id, host_class = cell.split(" ")[1].split("@")
+        assert lc.designation(dataset_type, variant, host_class, setup_id) is None, cell
+
+
 sys.path.insert(0, str(ROOT))
 import _profile_cli as pc  # noqa: E402
 
@@ -80,7 +92,7 @@ def test_manifest_is_the_planned_cells():
     tasks = p2c.planned_tasks()
     cells = {t.cell for t in tasks}
     assert len(tasks) == len(cells) == 10
-    assert cells == planned_point_source_cells()
+    assert_measured_every_designated_cell(cells, planned_point_source_cells())
     # #481: no GPU setup is planned on the GPU-less RAL CPU host class.
     assert not any("jax_gpu" in c and "hpc_ral_cpu" in c for c in planned_point_source_cells())
     assert Counter(t.host_class for t in tasks) == {"hpc_ral_cpu": 4, "hpc_a100": 6}

@@ -76,7 +76,7 @@ LIKELIHOODS = (
     ("point_source_image", "image_plane"),
     ("point_source_source", "source_plane"),
 )
-#: The measurable planned setups per host class (``catalogue/provisional_designations.json``).
+#: The measurable planned setups per host class (the §3.3 copy (retired by #497)).
 SETUPS = {
     "point_source_image": {
         "hpc_ral_cpu": ("jax_cpu_na_fp64",),

@@ -28,12 +28,21 @@ The rules live in [`catalogue_lifecycle.py`](../scripts/misc/tooling/catalogue_l
   reference-host row of the same setup. Rows whose key has no current row are counted in
   `coverage.excluded` and stay in the companion catalogue. `archive/` rows are only counted in
   `archive_record_count`.
-- **Class**: the provisional §3.3 designations. A provisional Optimal row is `class: secondary`
-  with `provisional_optimal: true` in `limitations` until a Pulse designation decision exists
-  (R3); mixed precision is `experimental`. `planned_cells` carry the provisional class.
-  [provisional_designations.json](provisional_designations.json) transcribes the §3.3 table
-  row by row with its machine reading; `catalogue_lifecycle.py` and `coverage_matrix.py` both read
-  it, so it is the only copy of the table.
+- **Class**: the PyAutoPulse designation records (`decisions.yaml` `kind: designation`;
+  autolens_profiling#497). [pulse_designations.json](pulse_designations.json) mirrors them
+  (`build_catalogue.py --sync-designations ../PyAutoPulse` writes it; CI's
+  `--check --validate-with ../PyAutoPulse` fails when it drifts and resolves every `decision_id`).
+  The designated optimal setup on its likelihood x standard regime x hardware class
+  (`hpc_ral_cpu` = `cpu_many_core`, `hpc_a100` = `gpu_a100`) is `class: optimal` with the
+  designation's `decision_id`; a named secondary is `secondary` with it; any other setup on a
+  designated key is `experimental`. `local_*` hosts and non-standard regimes (`source_pixels_<n>`)
+  inherit the role as `secondary` with an `undesignated_regime_or_host` limitation and no
+  `decision_id`. [designation_holds.json](designation_holds.json) holds the groups the human kept
+  provisional (datacube/delaunay `hpc_a100`: `secondary` + `provisional_optimal: true`) and the
+  planning metadata kept from the retired `provisional_designations.json` (GPU hosts,
+  regime-only routes, the instrument-scoped dense NUFFT rule). `planned_cells` are the designated
+  optimal and secondary setups (a held group's provisional ones); mixed precision is
+  `experimental`.
 - **Parity**: a cell's `parity.json` witness becomes a `measurement: parity` record; see
   [results/README.md](../results/README.md#parity-witness).
 - **Coverage**: `coverage_matrix.py` renders [`dashboard/coverage.md`](../dashboard/coverage.md)

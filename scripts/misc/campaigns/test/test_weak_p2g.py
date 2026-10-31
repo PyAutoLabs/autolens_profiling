@@ -38,6 +38,18 @@ from wall import check_submits, rates  # noqa: E402
 sys.path.insert(0, str(ROOT / "scripts" / "misc" / "tooling"))
 import catalogue_lifecycle as lc  # noqa: E402
 
+
+def assert_measured_every_designated_cell(manifest, planned):
+    """A finished phase-2 manifest measured every cell the day-zero designations plan
+    (autolens_profiling#497); each extra cell is a setup its designation did not name."""
+    manifest, planned = set(manifest), set(planned)
+    assert planned <= manifest, sorted(planned - manifest)
+    for cell in sorted(manifest - planned):
+        dataset_type, variant, _instrument = cell.split(" ")[0].split("/")
+        setup_id, host_class = cell.split(" ")[1].split("@")
+        assert lc.designation(dataset_type, variant, host_class, setup_id) is None, cell
+
+
 sys.path.insert(0, str(ROOT))
 import _profile_cli as pc  # noqa: E402
 
@@ -82,14 +94,20 @@ def legs(path):
 def test_manifest_is_exactly_the_planned_weak_cells():
     planned = planned_weak_cells()
     cells = p2g.planned_cells()
-    assert {t.cell for t in cells} == set(planned)
+    assert_measured_every_designated_cell({t.cell for t in cells}, planned)
     assert len(cells) == 6
     assert not any(
         t.setup_id == "jax_gpu_dense_fp64" and t.host_class == "hpc_ral_cpu" for t in cells
     )
+    # Day zero: the CPU node's optimal is jax_cpu, the A100 node's is jax_gpu; no secondary.
     for t in cells:
-        expected = "optimal" if t.setup_id == "jax_cpu_dense_fp64" else "secondary"
+        if t.cell not in planned:
+            continue
+        expected = "optimal"
         assert planned[t.cell] == expected
+        assert t.setup_id == (
+            "jax_gpu_dense_fp64" if t.host_class == "hpc_a100" else "jax_cpu_dense_fp64"
+        )
         assert lc.planned_setups("weak", t.variant, t.host_class, t.instrument)[t.setup_id] == (
             expected
         )

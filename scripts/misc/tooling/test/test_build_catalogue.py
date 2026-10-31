@@ -546,21 +546,41 @@ def test_local_rows_are_never_current_r7(tree):
     )
 
 
-def test_provisional_optimal_is_secondary_without_a_decision_r3(tree):
-    write(tree, f"{A100}/runtime.json", row())
-    write(tree, f"{A100.replace('fp64', 'mixed')}/runtime.json", row())
+def test_class_and_decision_id_come_from_the_pulse_designations(tree):
+    """autolens_profiling#497: the designated optimal setup at the standard size on its reference
+    host is class optimal with the decision_id; off the standard size or on a local host it
+    inherits the role as secondary without one (ruling 2026-10-31); mixed is experimental."""
+    decision = "imaging-delaunay-standard-gpu-a100"
+    standard = row(configuration={"delaunay_vertices": 1250})
+    write(tree, f"{A100}/runtime.json", standard)
+    write(tree, f"{A100.replace('fp64', 'mixed')}/runtime.json", standard)
+    write(tree, f"{LAPTOP}/runtime.json", standard)
     doc = lifecycle(tree)
     records = by_path(doc)
     optimal = records[f"{A100}/runtime.json"]
-    assert optimal["class"] == "secondary" and optimal["decision_id"] is None
-    assert "provisional_optimal: true" in optimal["limitations"]
+    assert (optimal["class"], optimal["decision_id"], optimal["regime"]) == (
+        "optimal",
+        decision,
+        "standard",
+    )
+    assert not any(n.startswith("provisional_") for n in optimal["limitations"])
+    local = records[f"{LAPTOP}/runtime.json"]
+    assert (local["class"], local["decision_id"]) == ("secondary", None)
+    assert any(n.startswith("undesignated_regime_or_host") for n in local["limitations"])
     assert records[f"{A100.replace('fp64', 'mixed')}/runtime.json"]["class"] == "experimental"
-    assert not any(r["class"] == "optimal" for r in doc["records"])
     planned = {(c["setup_id"], c["host_class"]): c["class"] for c in doc["planned_cells"]}
     assert planned[("jax_gpu_dense_fp64", "hpc_a100")] == "optimal"
     assert planned[("numba_cpu_sparse_fp64", "hpc_ral_cpu")] == "optimal"
     assert planned[("jax_gpu_sparse_fp64", "hpc_a100")] == "secondary"
     assert not any("mixed" in sid for sid, _host in planned)
+    # Off the standard size the role is inherited, never optimal.
+    write(tree, f"{A100}/runtime.json", row(configuration={"delaunay_vertices": 1500}))
+    fallback = by_path(lifecycle(tree))[f"{A100}/runtime.json"]
+    assert (fallback["class"], fallback["decision_id"]) == ("secondary", None)
+    assert any(
+        n.startswith("undesignated_regime_or_host") and decision in n
+        for n in fallback["limitations"]
+    )
 
 
 def test_standard_size_wins_and_fallback_is_labelled(tree):
@@ -1028,7 +1048,8 @@ def test_declared_size_variant_is_current_in_its_own_regime_beside_the_standard_
     cm = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(cm)
     designations = json.loads((TOOLING.parents[2] / cm.DESIGNATIONS).read_text())
-    cov = cm.build(json.loads(json.dumps(doc)), designations)
+    holds = json.loads((TOOLING.parents[2] / cm.HOLDS).read_text())
+    cov = cm.build(json.loads(json.dumps(doc)), designations, holds)
     [cell] = [
         c
         for c in cov["cells"]

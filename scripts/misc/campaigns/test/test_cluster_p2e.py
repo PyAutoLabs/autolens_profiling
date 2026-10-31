@@ -39,6 +39,18 @@ from wall import check_submits  # noqa: E402
 sys.path.insert(0, str(ROOT / "scripts" / "misc" / "tooling"))
 import catalogue_lifecycle as lc  # noqa: E402
 
+
+def assert_measured_every_designated_cell(manifest, planned):
+    """A finished phase-2 manifest measured every cell the day-zero designations plan
+    (autolens_profiling#497); each extra cell is a setup its designation did not name."""
+    manifest, planned = set(manifest), set(planned)
+    assert planned <= manifest, sorted(planned - manifest)
+    for cell in sorted(manifest - planned):
+        dataset_type, variant, _instrument = cell.split(" ")[0].split("/")
+        setup_id, host_class = cell.split(" ")[1].split("@")
+        assert lc.designation(dataset_type, variant, host_class, setup_id) is None, cell
+
+
 sys.path.insert(0, str(ROOT))
 import _profile_cli as pc  # noqa: E402
 
@@ -83,17 +95,13 @@ def legs(path):
 def test_manifest_is_exactly_the_planned_cluster_cells():
     cells = p2e.coverage_cells()
     assert len(cells) == len({t.cell for t in cells}) == 10
-    assert {t.cell for t in cells} == planned_cluster_cells()
+    assert_measured_every_designated_cell({t.cell for t in cells}, planned_cluster_cells())
     assert Counter(t.variant for t in cells) == {"image_plane": 4, "source_plane": 6}
-    # The planned setups are the §3.3 tables the catalogue routes each variant to (D2).
-    for variant, table in (
-        ("image_plane", "point_source_image"),
-        ("source_plane", "point_source_source"),
-    ):
+    # The designated setups are among the ones the campaign ran (D2).
+    for variant in ("image_plane", "source_plane"):
         for host in ("hpc_ral_cpu", "hpc_a100"):
             planned = set(lc.planned_setups("cluster", variant, host, "simple"))
-            assert planned == {s for s, h in p2e.SETUPS[variant] if h == host}, (variant, host)
-        assert lc._table_name("cluster", variant) == table
+            assert planned <= {s for s, h in p2e.SETUPS[variant] if h == host}, (variant, host)
 
 
 def test_no_gpu_setup_is_planned_on_the_cpu_host_so_every_cell_runs():

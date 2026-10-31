@@ -35,6 +35,18 @@ from wall import check_submits  # noqa: E402
 sys.path.insert(0, str(ROOT / "scripts" / "misc" / "tooling"))
 import catalogue_lifecycle as lc  # noqa: E402
 
+
+def assert_measured_every_designated_cell(manifest, planned):
+    """A finished phase-2 manifest measured every cell the day-zero designations plan
+    (autolens_profiling#497); each extra cell is a setup its designation did not name."""
+    manifest, planned = set(manifest), set(planned)
+    assert planned <= manifest, sorted(planned - manifest)
+    for cell in sorted(manifest - planned):
+        dataset_type, variant, _instrument = cell.split(" ")[0].split("/")
+        setup_id, host_class = cell.split(" ")[1].split("@")
+        assert lc.designation(dataset_type, variant, host_class, setup_id) is None, cell
+
+
 sys.path.insert(0, str(ROOT))
 import _profile_cli as pc  # noqa: E402
 
@@ -79,7 +91,7 @@ def sbatch(text, key):
 def test_manifest_is_exactly_the_planned_imaging_cells():
     tasks = p2a.planned_tasks()
     assert len(tasks) == len({t.cell for t in tasks}) == 106
-    assert {t.cell for t in tasks} == planned_imaging_cells()
+    assert_measured_every_designated_cell({t.cell for t in tasks}, planned_imaging_cells())
     hosts = Counter(t.host_class for t in tasks)
     assert hosts == {"hpc_ral_cpu": 44, "hpc_a100": 62}
     a100_cpu = [t for t in tasks if t.host_class == "hpc_a100" and t.device == "cpu"]
@@ -151,7 +163,7 @@ def test_batch1_runs_every_cell_once_44_on_ral_and_62_on_gpu():
             assert sbatch(text, "array") is None  # one job per instrument, legs in turn
             assert all("@hpc_a100" in n for n in names)
     assert len(seen) == len(set(seen)) == 106 and ral == 44
-    assert set(seen) == planned_imaging_cells()
+    assert_measured_every_designated_cell(seen, planned_imaging_cells())
 
 
 def test_memory_follows_the_dataset_size():

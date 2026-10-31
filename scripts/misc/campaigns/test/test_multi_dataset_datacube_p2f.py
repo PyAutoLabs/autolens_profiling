@@ -41,6 +41,18 @@ from wall import check_submits  # noqa: E402
 sys.path.insert(0, str(ROOT / "scripts" / "misc" / "tooling"))
 import catalogue_lifecycle as lc  # noqa: E402
 
+
+def assert_measured_every_designated_cell(manifest, planned):
+    """A finished phase-2 manifest measured every cell the day-zero designations plan
+    (autolens_profiling#497); each extra cell is a setup its designation did not name."""
+    manifest, planned = set(manifest), set(planned)
+    assert planned <= manifest, sorted(planned - manifest)
+    for cell in sorted(manifest - planned):
+        dataset_type, variant, _instrument = cell.split(" ")[0].split("/")
+        setup_id, host_class = cell.split(" ")[1].split("@")
+        assert lc.designation(dataset_type, variant, host_class, setup_id) is None, cell
+
+
 sys.path.insert(0, str(ROOT))
 import _profile_cli as pc  # noqa: E402
 
@@ -91,7 +103,7 @@ def legs(path):
 def test_manifest_is_exactly_the_planned_cells():
     tasks = p2f.planned_tasks()
     assert len(tasks) == len({t.cell for t in tasks}) == 32
-    assert {t.cell for t in tasks} == planned_cells()
+    assert_measured_every_designated_cell({t.cell for t in tasks}, planned_cells())
     assert Counter(t.host_class for t in tasks) == {"hpc_ral_cpu": 18, "hpc_a100": 14}
     assert Counter(t.dataset for t in tasks) == {"multi_dataset": 10, "datacube": 22}
     for t in tasks:
@@ -103,9 +115,12 @@ def test_manifest_is_exactly_the_planned_cells():
                 assert t.device == "gpu"
         else:
             assert t.instrument == "hst"
-    # Every planned cell's class is the section 3.3 one.
+    # Every task the designations keep is planned; the rest were dropped by them.
     for t in tasks:
-        assert t.setup_id in lc.planned_setups(t.dataset, "delaunay", t.host_class, t.instrument)
+        if lc.designation(t.dataset, "delaunay", t.host_class, t.setup_id) is not None:
+            assert t.setup_id in lc.planned_setups(
+                t.dataset, "delaunay", t.host_class, t.instrument
+            )
 
 
 def test_d1_scopes_the_dense_datacube_route_to_sma_in_the_catalogue():
@@ -113,7 +128,11 @@ def test_d1_scopes_the_dense_datacube_route_to_sma_in_the_catalogue():
         for instrument in ("alma", "alma_high"):
             planned = lc.planned_setups("datacube", "delaunay", host, instrument)
             assert not any("_dense_" in s for s in planned), (host, instrument)
-        assert any("_dense_" in s for s in lc.planned_setups("datacube", "delaunay", host, "sma"))
+    # The held A100 group keeps the dense route at sma; the CPU designation names no dense setup.
+    assert any("_dense_" in s for s in lc.planned_setups("datacube", "delaunay", "hpc_a100", "sma"))
+    assert not any(
+        "_dense_" in s for s in lc.planned_setups("datacube", "delaunay", "hpc_ral_cpu", "sma")
+    )
 
 
 def test_every_task_names_a_real_script_its_flags_parse_and_its_own_cell():

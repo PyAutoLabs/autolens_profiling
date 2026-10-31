@@ -5,7 +5,7 @@ The day-zero move (autolens_profiling#442) placed every canonical result at
 <measurement>.json`` with ``history/``, ``scans/`` and ``experiments/`` beside it. This
 module reads that grammar natively and owns the phase-0 labelling rules; it reads no legacy
 path and no migration map. See PyAutoPulse REFERENCE.md "``profiling-summary`` v3" and the
-lifecycle report §3.3 (provisional designations) and §3.6 (day zero).
+lifecycle report §3.6 (day zero); classes come from the PyAutoPulse designation records.
 
 The rules, in one place:
 
@@ -27,10 +27,14 @@ The rules, in one place:
   superseded by the current record of its key on the reference host for its device. Records
   whose key has no current record cannot honestly be superseded and stay out of
   ``records[]``; ``coverage.excluded`` counts them per key.
-- **Class** (§3.3 provisional table): provisional Optimal rows are ``class: secondary`` with
-  ``provisional_optimal: true`` in ``limitations`` (R3: ``optimal`` needs a Pulse designation
-  ``decision_id``; none exists yet); mixed precision is ``experimental``; anything not in the
-  table is ``experimental``. Planned cells carry the provisional class itself.
+- **Class** (PyAutoPulse ``kind: designation`` records, mirrored in
+  ``catalogue/pulse_designations.json``; autolens_profiling#497): the designated optimal setup
+  on its key (likelihood, standard regime, hardware class) is ``class: optimal`` with the
+  designation's ``decision_id``; a named secondary is ``secondary`` with it; any other setup on
+  a designated key is ``experimental``. ``local_*`` hosts and non-standard regimes inherit the
+  role as ``secondary`` without a decision_id. A held group (``catalogue/designation_holds.json``)
+  keeps the provisional label (``secondary`` + ``provisional_optimal: true``). Mixed precision is
+  ``experimental``.
 """
 
 from __future__ import annotations
@@ -373,23 +377,73 @@ def size_note(variant: str, pixels: int | None) -> str:
     )
 
 
-# ---- §3.3 provisional designations: catalogue/provisional_designations.json is the one copy ----
+# ---- designations: the Pulse records (catalogue/pulse_designations.json) and the holds ----
 
-#: The machine copy of the lifecycle report's §3.3 table (``tables`` per host: ``optimal`` and
-#: ``secondary`` setup_ids). This module and ``coverage_matrix.py`` both read it; nothing else
-#: holds the table.
-DESIGNATIONS_PATH = (
-    Path(__file__).resolve().parents[3] / "catalogue" / "provisional_designations.json"
-)
-_DESIGNATIONS = json.loads(DESIGNATIONS_PATH.read_text())
-_TABLES = {
-    name: {host: (set(cells["optimal"]), set(cells["secondary"])) for host, cells in hosts.items()}
-    for name, hosts in _DESIGNATIONS["tables"].items()
+#: The machine mirror of PyAutoPulse ``decisions.yaml`` ``kind: designation`` rows, written by
+#: ``build_catalogue.py --sync-designations <PyAutoPulse>`` and checked against Pulse by
+#: ``build_catalogue.py --check --validate-with <PyAutoPulse>``. It is the source of
+#: ``class: optimal`` / ``secondary`` + ``decision_id`` (autolens_profiling#497); nothing here
+#: derives a designation from timings.
+DESIGNATIONS_PATH = Path(__file__).resolve().parents[3] / "catalogue" / "pulse_designations.json"
+#: Groups the human held provisional (no designation) and the planning metadata kept from the
+#: retired ``catalogue/provisional_designations.json``.
+HOLDS_PATH = Path(__file__).resolve().parents[3] / "catalogue" / "designation_holds.json"
+#: Host class -> the designation hardware class it reads. A ``local_*`` host has no designation
+#: of its own: it inherits its reference host's role without the decision_id (human ruling
+#: 2026-10-31, autolens_profiling#497).
+HARDWARE_CLASSES = {
+    "hpc_ral_cpu": "cpu_many_core",
+    "hpc_a100": "gpu_a100",
+    "local_laptop": "cpu_many_core",
+    "local_gpu": "gpu_a100",
 }
-#: Regime-specific routes are designated but not planned in the ``standard`` regime: DFT runs
-#: only below 10,000 visibilities and streaming only at ``n_vis >= 1e7``.
-_REGIME_ONLY = tuple(_DESIGNATIONS["regime_only_suffixes"])
-#: Designated setups planned only on some instruments (ruling R1(a) on #469: the dense pixelized
+#: The regime a day-zero designation covers; a record in another regime inherits its role.
+DESIGNATED_REGIME = "standard"
+#: Limitation on a record that inherits a designation's role without its decision_id.
+UNDESIGNATED = "undesignated_regime_or_host"
+DESIGNATION_FIELDS = (
+    "id",
+    "likelihood",
+    "regime",
+    "hardware_class",
+    "optimal",
+    "secondary",
+    "evidence",
+)
+
+
+def load_designations(doc: dict) -> dict:
+    """{(likelihood, hardware_class): designation} from a ``pulse-designations`` mirror."""
+    if doc.get("schema") != "pulse-designations" or doc.get("version") != 1:
+        raise ValueError(f"{DESIGNATIONS_PATH.name}: unsupported schema/version")
+    out = {}
+    for row in doc["designations"]:
+        if row["regime"] != DESIGNATED_REGIME:
+            raise ValueError(f"{row['id']}: only {DESIGNATED_REGIME!r} designations are read")
+        key = (row["likelihood"], row["hardware_class"])
+        if key in out:
+            raise ValueError(f"Two designations on {key}: {out[key]['id']}, {row['id']}")
+        out[key] = row
+    return out
+
+
+def load_holds(doc: dict) -> dict:
+    """{(likelihood, host_class): hold} from ``designation_holds.json``."""
+    if doc.get("schema") != "designation-holds" or doc.get("version") != 1:
+        raise ValueError(f"{HOLDS_PATH.name}: unsupported schema/version")
+    return {(h["likelihood"], h["host_class"]): h for h in doc["holds"]}
+
+
+_DESIGNATIONS = load_designations(json.loads(DESIGNATIONS_PATH.read_text()))
+_HOLDS_DOC = json.loads(HOLDS_PATH.read_text())
+_HOLDS = load_holds(_HOLDS_DOC)
+for _key in _HOLDS:
+    if (_key[0], HARDWARE_CLASSES[_key[1]]) in _DESIGNATIONS:
+        raise ValueError(f"{_key} is both designated and held")
+#: Regime-specific routes are never planned in the ``standard`` regime: DFT runs only below
+#: 10,000 visibilities and streaming only at ``n_vis >= 1e7``.
+_REGIME_ONLY = tuple(_HOLDS_DOC["regime_only_suffixes"])
+#: Setups planned only on some instruments (ruling R1(a) on #469: the dense pixelized
 #: interferometer NUFFT route at sma only): ``[(dataset_types, setups, planned_instruments)]``.
 _INSTRUMENT_SCOPED = tuple(
     (
@@ -397,60 +451,90 @@ _INSTRUMENT_SCOPED = tuple(
         frozenset(rule["setups"]),
         frozenset(rule["planned_instruments"]),
     )
-    for rule in _DESIGNATIONS.get("instrument_scoped_setups", [])
+    for rule in _HOLDS_DOC.get("instrument_scoped_setups", [])
 )
-_PIXELIZED_VARIANTS = tuple(_DESIGNATIONS["pixelized_variants"])
-#: Hosts with a GPU. A GPU setup is designated on every host its table lists it for, but planned
-#: only on these: a GPU-less host (``hpc_ral_cpu``, ``laptop``) cannot run it.
-_GPU_HOSTS = frozenset(_DESIGNATIONS["gpu_hosts"])
+#: Hosts with a GPU: a GPU setup is planned only on these.
+_GPU_HOSTS = frozenset(_HOLDS_DOC["gpu_hosts"])
 
 
-def _table_name(dataset_type: str, variant: str) -> str | None:
-    """The §3.3 table a likelihood reads (a point-source likelihood spells its setups ``_na_``)."""
-    if dataset_type in ("imaging", "multi_galaxy", "group", "multi_dataset"):
-        return "pixelized" if variant in _PIXELIZED_VARIANTS else "parametric"
-    if dataset_type == "interferometer":
-        return "interferometer_mge" if variant == "mge" else "interferometer_pixelized"
-    if dataset_type == "datacube":
-        return "interferometer_pixelized"
-    if dataset_type == "point_source_image" or (
-        dataset_type == "cluster" and variant == "image_plane"
-    ):
-        return "point_source_image"
-    if dataset_type in ("point_source_source", "cluster"):
-        return "point_source_source"
-    if dataset_type == "weak":
-        return "weak"
-    return None
+def _reference_host(host_class: str) -> str:
+    return REFERENCE_HOSTS["gpu" if HARDWARE_CLASSES[host_class] == "gpu_a100" else "cpu"]
 
 
-def _table(dataset_type: str, variant: str) -> dict | None:
-    name = _table_name(dataset_type, variant)
-    return None if name is None else _TABLES[name]
+def designation_of(dataset_type: str, variant: str, host_class: str) -> dict | None:
+    """The Pulse designation a host class reads for a likelihood, else None."""
+    if host_class not in HARDWARE_CLASSES:
+        return None
+    return _DESIGNATIONS.get((f"{dataset_type}/{variant}", HARDWARE_CLASSES[host_class]))
+
+
+def hold_of(dataset_type: str, variant: str, host_class: str) -> dict | None:
+    """The provisional hold a host class reads for a likelihood, else None."""
+    if host_class not in HARDWARE_CLASSES:
+        return None
+    return _HOLDS.get((f"{dataset_type}/{variant}", _reference_host(host_class)))
+
+
+def _role(entry: dict, setup_id: str) -> str | None:
+    optimal = entry["optimal"]
+    if setup_id in (optimal if isinstance(optimal, list) else [optimal]):
+        return "optimal"
+    return "secondary" if setup_id in entry["secondary"] else None
 
 
 def designation(dataset_type: str, variant: str, host_class: str, setup_id: str) -> str | None:
-    """``optimal`` / ``secondary`` per the §3.3 provisional table, else None."""
-    table = _table(dataset_type, variant)
-    if table is None or setup_id.split("_")[3] == "mixed":
+    """``optimal`` / ``secondary``: the role a designation (or a hold) names, else None."""
+    if setup_id.split("_")[3] == "mixed":
         return None
-    host = "laptop" if host_class == "local_laptop" else host_class
-    if host == "local_gpu":
-        host = "hpc_a100"
-    optimal, secondary = table[host]
-    if setup_id in optimal:
-        return "optimal"
-    return "secondary" if setup_id in secondary else None
+    entry = designation_of(dataset_type, variant, host_class) or hold_of(
+        dataset_type, variant, host_class
+    )
+    return None if entry is None else _role(entry, setup_id)
 
 
-def record_class(dataset_type, variant, host_class, setup_id) -> tuple[str, list[str]]:
-    """(v3 class, limitations) for a measured record (R3)."""
-    role = designation(dataset_type, variant, host_class, setup_id)
-    if role == "optimal":
-        return "secondary", ["provisional_optimal: true"]
-    if role == "secondary":
-        return "secondary", ["provisional_secondary: true"]
-    return "experimental", []
+def record_class(
+    dataset_type, variant, host_class, setup_id, regime=DESIGNATED_REGIME
+) -> tuple[str, str | None, list[str]]:
+    """(v3 class, decision_id, limitations) for a measured record.
+
+    - A setup a Pulse designation names, on its reference host in the standard regime: its role
+      (``optimal`` / ``secondary``) with the designation's ``decision_id``.
+    - The same setup on a ``local_*`` host or in another regime (``source_pixels_<n>``):
+      ``secondary`` with an ``undesignated_regime_or_host`` limitation naming the role it
+      inherits, and no ``decision_id`` (optimal needs a decision; ruling 2026-10-31).
+    - A setup a designation does not name on its key: ``experimental``.
+    - A held group (``designation_holds.json``): the provisional label, ``secondary`` with
+      ``provisional_optimal`` / ``provisional_secondary``, no ``decision_id``.
+    - Mixed precision and anything undesignated: ``experimental``.
+    """
+    if setup_id.split("_")[3] == "mixed":
+        return "experimental", None, []
+    entry = designation_of(dataset_type, variant, host_class)
+    if entry is not None:
+        role = _role(entry, setup_id)
+        if role is None:
+            return "experimental", None, []
+        where = []
+        if host_class in LOCAL_HOSTS:
+            where.append(f"host {host_class}")
+        if regime != DESIGNATED_REGIME:
+            where.append(f"regime {regime}")
+        if not where:
+            return role, entry["id"], []
+        return (
+            "secondary",
+            None,
+            [
+                f"{UNDESIGNATED}: {' and '.join(where)} inherits the {role} role of designation "
+                f"{entry['id']} ({DESIGNATED_REGIME} regime, {entry['hardware_class']}) without "
+                "its decision_id"
+            ],
+        )
+    hold = hold_of(dataset_type, variant, host_class)
+    role = None if hold is None else _role(hold, setup_id)
+    if role is not None:
+        return "secondary", None, [f"provisional_{role}: true"]
+    return "experimental", None, []
 
 
 def _instrument_scoped_out(dataset_type: str, setup_id: str, instrument: str | None) -> bool:
@@ -466,19 +550,22 @@ def _instrument_scoped_out(dataset_type: str, setup_id: str, instrument: str | N
 def planned_setups(
     dataset_type: str, variant: str, host_class: str, instrument: str | None = None
 ) -> dict[str, str]:
-    """{setup_id: class} the phase-0 plan intends to measure on a reference host.
+    """{setup_id: class} planned on a reference host: the designation's optimal and secondary
+    setups (or a held group's provisional ones, which carry the provisional class).
 
     Regime-only setups (``_dft``, ``_streaming``) are never planned; an instrument-scoped setup
     (``instrument_scoped_setups``, e.g. the dense pixelized interferometer NUFFT route, sma only)
     is planned only on its instruments. ``instrument`` None skips the instrument scoping. A GPU
     setup is planned only on a ``gpu_hosts`` host.
     """
-    table = _table(dataset_type, variant)
-    if table is None:
+    entry = designation_of(dataset_type, variant, host_class) or hold_of(
+        dataset_type, variant, host_class
+    )
+    if entry is None:
         return {}
-    optimal, secondary = table[host_class]
-    plan = {sid: "secondary" for sid in secondary}
-    plan.update({sid: "optimal" for sid in optimal})
+    optimal = entry["optimal"]
+    plan = {sid: "secondary" for sid in entry["secondary"]}
+    plan.update({sid: "optimal" for sid in (optimal if isinstance(optimal, list) else [optimal])})
     return {
         sid: plan[sid]
         for sid in sorted(plan)

@@ -57,7 +57,7 @@ ISSUE = "autolens_profiling#476"
 #: (decisions D2, D3).
 INSTRUMENTS = ("simple",)
 VARIANT = "isothermal"
-#: The §3.3 weak row (``catalogue/provisional_designations.json`` table ``weak``):
+#: The §3.3 weak row (the §3.3 copy (retired by #497) table ``weak``):
 #: ``jax_cpu_dense_fp64`` (provisional optimal) and ``jax_gpu_dense_fp64`` (secondary), the GPU
 #: setup only on the GPU host (``gpu_hosts``, autolens_profiling#481; decision D5).
 SETUPS = {

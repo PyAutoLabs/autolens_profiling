@@ -66,7 +66,7 @@ VARIANT_INSTRUMENTS = {
     "delaunay": INSTRUMENTS,
 }
 PIXELIZED = ("rectangular", "delaunay")
-#: The §3.3 setups per host class (``catalogue/provisional_designations.json``). No DFT cell
+#: The §3.3 setups per host class (the §3.3 copy (retired by #497)). No DFT cell
 #: (ruling R2); dense pixelized NUFFT is planned at sma only (ruling R1(a), :data:`DENSE_ONLY_AT`).
 SETUPS = {
     "mge": {

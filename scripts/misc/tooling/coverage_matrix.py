@@ -1,12 +1,12 @@
 """The lifecycle coverage matrix: planned cells x what the catalogue holds (stdlib only).
 
 Run ``python scripts/misc/tooling/coverage_matrix.py [--check]``. It reads the
-``profiling-summary@3`` catalogue (``dashboard/catalogue.json``) and the machine copy of the
-lifecycle report's §3.3 provisional designations (``catalogue/provisional_designations.json``)
-and writes ``dashboard/coverage.json`` + ``dashboard/coverage.md``: per likelihood x class x
+``profiling-summary@3`` catalogue (``dashboard/catalogue.json``), the mirror of the PyAutoPulse
+designation records (``catalogue/pulse_designations.json``) and the provisional holds
+(``catalogue/designation_holds.json``), and writes ``dashboard/coverage.json`` + ``dashboard/coverage.md``: per likelihood x class x
 measurement, how many planned cells are current, stale, superseded or missing, plus whether
 each planned setup has a parity witness. ``--check`` fails when the committed outputs differ
-from a fresh render, or when a planned cell's class disagrees with the §3.3 copy.
+from a fresh render, or when a planned cell's class disagrees with the designations.
 
 Cell states (the PyAutoBrain profiling conductor's vocabulary, ``CELL_STATES``):
 
@@ -38,7 +38,15 @@ import sys
 from pathlib import Path
 
 CATALOGUE = "dashboard/catalogue.json"
-DESIGNATIONS = "catalogue/provisional_designations.json"
+DESIGNATIONS = "catalogue/pulse_designations.json"
+HOLDS = "catalogue/designation_holds.json"
+#: Host class -> the designation hardware class it reads (local hosts inherit).
+HARDWARE_CLASSES = {
+    "hpc_ral_cpu": "cpu_many_core",
+    "hpc_a100": "gpu_a100",
+    "local_laptop": "cpu_many_core",
+    "local_gpu": "gpu_a100",
+}
 OUT_JSON = "dashboard/coverage.json"
 OUT_MD = "dashboard/coverage.md"
 CELL_STATES = ("current", "stale", "superseded", "missing")
@@ -77,47 +85,38 @@ def cell_name(key):
     return f"{dataset_type}/{variant}/{instrument} {setup_id}@{host}{note} [{measurement}]"
 
 
-# ---- §3.3 provisional designations (machine copy) ----
+# ---- the designations (Pulse mirror) and the provisional holds ----
 
 
-def load_designations(doc):
-    if doc.get("schema") != "provisional-designations" or doc.get("version") != 1:
+def load_designations(doc, holds):
+    """{"designations": {(likelihood, hardware_class): row}, "holds": {(likelihood, host): hold}}."""
+    if doc.get("schema") != "pulse-designations" or doc.get("version") != 1:
         raise ValueError(f"{DESIGNATIONS}: unsupported schema/version")
-    for name, table in doc["tables"].items():
-        for host in ("hpc_a100", "hpc_ral_cpu", "laptop"):
-            if set(table.get(host, {})) != {"optimal", "secondary"}:
-                raise ValueError(f"{DESIGNATIONS}: table {name} lacks {host} optimal/secondary")
-    for row in doc["rows"]:
-        for route in row["routes"]:
-            if route["table"] not in doc["tables"]:
-                raise ValueError(f"{DESIGNATIONS}: route names unknown table {route['table']}")
-    return doc
-
-
-def table_for(doc, dataset_type, variant):
-    """The §3.3 table of a likelihood: an exact variant route beats a ``*`` route."""
-    wildcard = None
-    for row in doc["rows"]:
-        for route in row["routes"]:
-            if route["dataset_type"] != dataset_type:
-                continue
-            if route["variants"] == "*":
-                wildcard = wildcard or route["table"]
-            elif variant in route["variants"]:
-                return route["table"]
-    return wildcard
+    if holds.get("schema") != "designation-holds" or holds.get("version") != 1:
+        raise ValueError(f"{HOLDS}: unsupported schema/version")
+    return {
+        "designations": {(r["likelihood"], r["hardware_class"]): r for r in doc["designations"]},
+        "holds": {(h["likelihood"], h["host_class"]): h for h in holds["holds"]},
+    }
 
 
 def designated_class(doc, dataset_type, variant, host_class, setup_id):
-    """``optimal`` / ``secondary`` / ``experimental`` per the §3.3 copy."""
-    name = table_for(doc, dataset_type, variant)
-    if name is None or "_mixed" in setup_id:
+    """``optimal`` / ``secondary`` / ``experimental`` a planned cell should carry: the role the
+    Pulse designation names, else a held group's provisional role, else experimental."""
+    if "_mixed" in setup_id or host_class not in HARDWARE_CLASSES:
         return "experimental"
-    host = {"local_laptop": "laptop", "local_gpu": "hpc_a100"}.get(host_class, host_class)
-    table = doc["tables"][name][host]
-    if setup_id in table["optimal"]:
+    likelihood = f"{dataset_type}/{variant}"
+    entry = doc["designations"].get((likelihood, HARDWARE_CLASSES[host_class]))
+    if entry is not None:
+        optimal = [entry["optimal"]]
+    else:
+        entry = doc["holds"].get((likelihood, host_class))
+        if entry is None:
+            return "experimental"
+        optimal = entry["optimal"]
+    if setup_id in optimal:
         return "optimal"
-    return "secondary" if setup_id in table["secondary"] else "experimental"
+    return "secondary" if setup_id in entry["secondary"] else "experimental"
 
 
 # ---- the matrix ----
@@ -161,8 +160,8 @@ def cell_state(records, pin):
     return "missing", "no record", None
 
 
-def build(catalogue, designations):
-    designations = load_designations(designations)
+def build(catalogue, designations, holds):
+    designations = load_designations(designations, holds)
     pin, pin_source = catalogue_pin(catalogue)
     by_key = {}
     for record in catalogue["records"]:
@@ -176,7 +175,7 @@ def build(catalogue, designations):
         state, reason, record = cell_state(by_key.get(key, []), pin)
         expected = designated_class(designations, key[0], key[1], key[4], key[3])
         if expected != declared:
-            mismatches.append({"cell": cell_name(key), "planned": declared, "s3_3": expected})
+            mismatches.append({"cell": cell_name(key), "planned": declared, "designated": expected})
         cells.append(
             {
                 "cell": cell_name(key),
@@ -242,7 +241,7 @@ def build(catalogue, designations):
     return {
         "schema": "profiling-coverage",
         "version": 1,
-        "sources": {"catalogue": CATALOGUE, "designations": DESIGNATIONS},
+        "sources": {"catalogue": CATALOGUE, "designations": DESIGNATIONS, "holds": HOLDS},
         "catalogue_generated_at": catalogue.get("generated_at"),
         "catalogue_release_pin": pin,
         "release_pin_source": pin_source,
@@ -289,8 +288,8 @@ def render_md(cov):
     lines = [
         "# Lifecycle coverage",
         "",
-        "<!-- Generated by scripts/misc/tooling/coverage_matrix.py from dashboard/catalogue.json "
-        "and catalogue/provisional_designations.json; do not edit. -->",
+        "<!-- Generated by scripts/misc/tooling/coverage_matrix.py from dashboard/catalogue.json, "
+        "catalogue/pulse_designations.json and catalogue/designation_holds.json; do not edit. -->",
         "",
         f"Catalogue generated {cov['catalogue_generated_at']}; catalogue pin "
         f"`{cov['catalogue_release_pin']}` ({cov['release_pin_source']}).",
@@ -340,9 +339,9 @@ def render_md(cov):
             f"{row['not_assessed']} | {row['missing']} |"
         )
     if cov["class_mismatches"]:
-        lines += ["", "## Class mismatches against §3.3", ""]
+        lines += ["", "## Class mismatches against the designations", ""]
         lines += [
-            f"- {m['cell']}: planned {m['planned']}, §3.3 {m['s3_3']}"
+            f"- {m['cell']}: planned {m['planned']}, designated {m['designated']}"
             for m in cov["class_mismatches"]
         ]
     return "\n".join(lines) + "\n"
@@ -353,7 +352,8 @@ def render(root):
     if catalogue.get("schema") != "profiling-summary" or catalogue.get("version") != 3:
         raise ValueError(f"{CATALOGUE} is not a profiling-summary@3 catalogue")
     designations = json.loads((root / DESIGNATIONS).read_text())
-    cov = build(catalogue, designations)
+    holds = json.loads((root / HOLDS).read_text())
+    cov = build(catalogue, designations, holds)
     return cov, {
         OUT_JSON: json.dumps(cov, indent=1, sort_keys=True) + "\n",
         OUT_MD: render_md(cov),
@@ -370,7 +370,7 @@ def main(argv=None):
     if cov["class_mismatches"]:
         print(
             f"coverage: FAILED: {len(cov['class_mismatches'])} planned cell class(es) disagree "
-            f"with {DESIGNATIONS}, e.g. {cov['class_mismatches'][0]}"
+            f"with {DESIGNATIONS} / {HOLDS}, e.g. {cov['class_mismatches'][0]}"
         )
         return 1
     stale = [
