@@ -25,6 +25,7 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 | [454796f33be5f6ff4459](b310f3aa503fe9f6a898.md) | results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/breakdown.json | 86 |
 | [60859d374c276ea53275](7790334b7c30ad7fe45b.md) | results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/breakdown.json | 85 |
 | [672992f3099eeff57eff](08b0c6d4e1d03b42efd5.md) | results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/experiments/plain_runtime/runtime.json | 2 |
+| [67c613cc14b687b6ae6f](c98a760b78996cea1406.md) | results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/history/2026.10.25.1_2026-10-28/runtime.json | 4 |
 | [c727c7ddf06adeec1b66](f8cac32988fb5a97bb4b.md) | results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/history/2026.10.17.1_2026-10-17/runtime.json | 4 |
 | [d975fdb15a82acc3e73a](aea470758acffa0c0f85.md) | results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_a100/experiments/plain_runtime/runtime.json | 2 |
 | [ea16834a47e489938c09](0f9bbc3aedb5aa9768f1.md) | results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/runtime.json | 4 |

@@ -139,9 +139,9 @@ For *how long the likelihood actually takes* on production hardware — i.e. a s
 | `interferometer/delaunay` | sdp81 | `jax_gpu_sparse_fp64_wtilde` | hpc_a100 | sparse (w-tilde) | 55.4 ms | v2026.8.17.1 |
 | `interferometer/delaunay` | sma | `jax_cpu_sparse_fp64_wtilde` | local_laptop | sparse (w-tilde) | 1.52 s | v2026.8.17.1 |
 | `interferometer/delaunay` | sma | `numba_cpu_sparse_fp64_wtilde` | local_laptop | sparse (numba) | 472.0 ms | v2026.8.17.1 |
-| `interferometer/delaunay` | sma | `jax_cpu_dense_fp64_nufft` | hpc_ral_cpu | dense (mapping) | 7.27 s | v2026.8.17.1 |
-| `interferometer/delaunay` | sma | `jax_cpu_sparse_fp64_wtilde` | hpc_ral_cpu | sparse (w-tilde) | 1.05 s | v2026.8.17.1 |
-| `interferometer/delaunay` | sma | `numba_cpu_sparse_fp64_wtilde` | hpc_ral_cpu | sparse (numba) | 529.7 ms | v2026.8.17.1 |
+| `interferometer/delaunay` | sma | `jax_cpu_dense_fp64_nufft` | hpc_ral_cpu | dense (mapping) | 5.74 s | v2026.8.17.1 |
+| `interferometer/delaunay` | sma | `jax_cpu_sparse_fp64_wtilde` | hpc_ral_cpu | sparse (w-tilde) | 726.5 ms | v2026.8.17.1 |
+| `interferometer/delaunay` | sma | `numba_cpu_sparse_fp64_wtilde` | hpc_ral_cpu | sparse (numba) | 422.0 ms | v2026.8.17.1 |
 | `interferometer/delaunay` | sma | `jax_gpu_dense_fp64_nufft` | hpc_a100 | dense (mapping) | 57.2 ms | v2026.8.17.1 |
 | `interferometer/delaunay` | sma | `jax_gpu_sparse_fp64_wtilde` | hpc_a100 | sparse (w-tilde) | 29.5 ms | v2026.8.17.1 |
 | `interferometer/delaunay` | sma | `jax_gpu_sparse_mixed_wtilde` | hpc_a100 | sparse (w-tilde) | 33.6 ms | v2026.8.17.1 |
@@ -169,7 +169,7 @@ For *how long the likelihood actually takes* on production hardware — i.e. a s
 | `interferometer/mge` | sdp81 | `jax_gpu_sparse_fp64_wtilde` | hpc_a100 | sparse (w-tilde) | 4.2 ms | v2026.8.17.1 |
 | `interferometer/mge` | sma | `jax_cpu_dense_fp64_nufft` | local_laptop | dense (mapping) | 84.0 ms | v2026.8.17.1 |
 | `interferometer/mge` | sma | `jax_cpu_sparse_fp64_wtilde` | local_laptop | sparse (w-tilde) | 11.8 ms | v2026.8.17.1 |
-| `interferometer/mge` | sma | `jax_cpu_dense_fp64_nufft` | hpc_ral_cpu | dense (mapping) | 96.4 ms | v2026.8.17.1 |
+| `interferometer/mge` | sma | `jax_cpu_dense_fp64_nufft` | hpc_ral_cpu | dense (mapping) | 75.9 ms | v2026.8.17.1 |
 | `interferometer/mge` | sma | `jax_gpu_dense_fp64_nufft` | hpc_a100 | dense (mapping) | 4.3 ms | v2026.8.17.1 |
 | `interferometer/mge_dft` | sma | _not recorded_ | local_cpu_fp64 | dense (mapping) | 32.9 ms | v2026.8.17.1 (archived) |
 | `interferometer/pixelization_numba_direct_conv` | alma | _not recorded_ | local_cpu_fp64 | sparse (numba) | 1.76 s | v2026.8.17.1 (archived) |
@@ -198,9 +198,9 @@ For *how long the likelihood actually takes* on production hardware — i.e. a s
 | `interferometer/rectangular` | sdp81 | `jax_gpu_sparse_fp64_wtilde` | hpc_a100 | sparse (w-tilde) | 46.2 ms | v2026.8.17.1 |
 | `interferometer/rectangular` | sma | `jax_cpu_sparse_fp64_wtilde` | local_laptop | sparse (w-tilde) | 1.24 s | v2026.8.17.1 |
 | `interferometer/rectangular` | sma | `numba_cpu_sparse_fp64_wtilde` | local_laptop | sparse (numba) | 1.15 s | v2026.8.17.1 |
-| `interferometer/rectangular` | sma | `jax_cpu_dense_fp64_nufft` | hpc_ral_cpu | dense (mapping) | 4.05 s | v2026.8.17.1 |
-| `interferometer/rectangular` | sma | `jax_cpu_sparse_fp64_wtilde` | hpc_ral_cpu | sparse (w-tilde) | 655.3 ms | v2026.8.17.1 |
-| `interferometer/rectangular` | sma | `numba_cpu_sparse_fp64_wtilde` | hpc_ral_cpu | sparse (numba) | 309.2 ms | v2026.8.17.1 |
+| `interferometer/rectangular` | sma | `jax_cpu_dense_fp64_nufft` | hpc_ral_cpu | dense (mapping) | 5.70 s | v2026.8.17.1 |
+| `interferometer/rectangular` | sma | `jax_cpu_sparse_fp64_wtilde` | hpc_ral_cpu | sparse (w-tilde) | 612.9 ms | v2026.8.17.1 |
+| `interferometer/rectangular` | sma | `numba_cpu_sparse_fp64_wtilde` | hpc_ral_cpu | sparse (numba) | 241.0 ms | v2026.8.17.1 |
 | `interferometer/rectangular` | sma | `jax_gpu_dense_fp64_nufft` | hpc_a100 | dense (mapping) | 50.8 ms | v2026.8.17.1 |
 | `interferometer/rectangular` | sma | `jax_gpu_sparse_fp64_wtilde` | hpc_a100 | sparse (w-tilde) | 24.5 ms | v2026.8.17.1 |
 | `interferometer/rectangular` | sma | `jax_gpu_sparse_mixed_wtilde` | hpc_a100 | sparse (w-tilde) | 29.4 ms | v2026.8.17.1 |

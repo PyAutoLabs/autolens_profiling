@@ -93,33 +93,39 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 | Exact configuration | Evidence source | Records |
 |---|---|---|
 | [baseline-not-defined](b6033a317777935f6491.md) | planned; no evidence | 0 |
+| [0be8dff42f0374ba4e92](82ab12dd7c50c64943b3.md) | results/interferometer/rectangular/sma/jax_cpu_dense_fp64_nufft/hpc_ral_cpu/breakdown.json | 71 |
 | [1802cd35280f6d314c23](267dfad5e22127a17590.md) | results/interferometer/rectangular/sma/comparison.json | 11 |
 | [1963e06f672781f802f4](73c887fabb11123d7e31.md) | results/interferometer/rectangular/sma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/scans/r2.0/breakdown.json | 29 |
+| [202158bc23cf9195935f](62e554fd30ffeaf01234.md) | results/interferometer/rectangular/sma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json | 29 |
 | [22398ce103a2f2aab0e1](ba45a13fb5510ab99cf2.md) | results/interferometer/rectangular/sma/jax_gpu_dense_fp64_nufft/hpc_a100/runtime.json | 10 |
+| [29e894c6a681ee9d3480](13014ede2b777d231e5b.md) | results/interferometer/rectangular/sma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/runtime.json | 1 |
 | [2d781dd05d89e7d08320](aa273b9a9441c4494327.md) | results/interferometer/rectangular/sma/jax_gpu_sparse_fp64_wtilde/hpc_a100/history/2026.8.17.1_2026-09-26/breakdown.json | 147 |
 | [317e381f4bb0a5391b2b](486d8ec74b0a6b005b76.md) | results/interferometer/rectangular/sma/numba_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json | 29 |
-| [3becb396ea2445a95849](89e013a87ea61d0edc6d.md) | results/interferometer/rectangular/sma/jax_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json | 118 |
-| [43e4c01e2de90565a6f2](3e225c6dd314c10d1fa3.md) | results/interferometer/rectangular/sma/jax_cpu_dense_fp64_nufft/hpc_ral_cpu/runtime.json | 9 |
+| [31fb93bd9b7564c40917](fccdf67f9df42d783246.md) | results/interferometer/rectangular/sma/jax_cpu_sparse_fp64_wtilde/hpc_ral_cpu/history/2026.10.25.1_2026-10-28/breakdown.json | 118 |
 | [56e5048f9e6614534f81](ff9c52d3db06862efe31.md) | results/interferometer/rectangular/sma/jax_gpu_dense_fp64_nufft/hpc_a100/breakdown.json | 72 |
 | [5ce13d66570ce6457c9c](d1584d7651975f925d96.md) | results/interferometer/rectangular/sma/jax_cpu_sparse_fp64_wtilde/hpc_ral_cpu/history/2026.8.17.1_2026-09-27/breakdown.json | 115 |
 | [642abc942cea3335bd7b](e5e41c0fd6abd8825ff6.md) | results/runtime/interferometer/pixelization/sma/pixelization_local_cpu_fp64.json | 3 |
-| [7047f080981d1cbe6522](29a5beabb169eaabb39a.md) | results/interferometer/rectangular/sma/jax_cpu_sparse_fp64_wtilde/hpc_ral_cpu/runtime.json | 10 |
-| [7d6cf750b112e2e6c95d](5596645b750f1da007f4.md) | results/interferometer/rectangular/sma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json | 29 |
-| [7e39177f783a34316f3d](a2bdbbd4d059fb027378.md) | results/interferometer/rectangular/sma/jax_cpu_dense_fp64_nufft/hpc_ral_cpu/breakdown.json | 71 |
+| [728636014ef23ab189a4](44d7ac0ec33fa2e87db1.md) | results/interferometer/rectangular/sma/jax_cpu_sparse_fp64_wtilde/hpc_ral_cpu/runtime.json | 10 |
+| [732b3f70426d9ed9d565](a0d5f1486f9db8f36c08.md) | results/interferometer/rectangular/sma/jax_cpu_sparse_fp64_wtilde/hpc_ral_cpu/history/2026.10.25.1_2026-10-28/runtime.json | 10 |
+| [8012959bab255b5783f9](23e75dba3ab993392b68.md) | results/interferometer/rectangular/sma/jax_cpu_dense_fp64_nufft/hpc_ral_cpu/history/2026.10.25.1_2026-10-28/runtime.json | 9 |
 | [8227ee633892f434c5e2](77e8c9d0d6f48951ec4c.md) | results/interferometer/rectangular/sma/comparison.json | 4 |
+| [84aeb6b682c4dc46309a](88e3b872da7898b9cfa2.md) | results/interferometer/rectangular/sma/jax_cpu_dense_fp64_nufft/hpc_ral_cpu/runtime.json | 9 |
 | [8b161e483237b463516c](55598159e29ca6c97f11.md) | results/interferometer/rectangular/sma/jax_gpu_sparse_fp64_wtilde/hpc_a100/runtime.json | 10 |
 | [8d02e18c80f41428d098](07b60c742c9922bff006.md) | results/runtime/interferometer/pixelization/sma/pixelization_local_cpu_mp.json | 3 |
 | [90692790a0401e9c7e41](f12d18ca93b93aba87d2.md) | results/interferometer/rectangular/sma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/scans/r5.0/breakdown.json | 29 |
 | [95b0fecbee3066045be2](a476508dc3081ca78074.md) | results/interferometer/rectangular/sma/comparison.json | 11 |
 | [990eae272df6b543b8ff](4a3a5433e28fff2cb76b.md) | results/interferometer/rectangular/sma/jax_gpu_sparse_fp64_wtilde/hpc_a100/scans/r5.0/breakdown.json | 123 |
 | [9d4ec81deedaf35a4e56](2fb72841c6547236004b.md) | results/interferometer/rectangular/sma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/history/2026.8.17.1_2026-09-27/breakdown.json | 29 |
+| [a220cc971723e6570572](6173d27969b6c52b1b1f.md) | results/interferometer/rectangular/sma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/history/2026.10.25.1_2026-10-28/runtime.json | 1 |
 | [aa8f9e9579748862aa4c](543485b6f90635d2705e.md) | results/interferometer/rectangular/sma/comparison.json | 4 |
 | [ab480a8112c2a9448b02](c0b995bc352f200c7f62.md) | results/interferometer/rectangular/sma/comparison.json | 11 |
-| [ab5200df34bbe5ed7f37](b3732c1b8bb2e99b0164.md) | results/interferometer/rectangular/sma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/runtime.json | 1 |
+| [b494083dee5720f8317f](b762b75598548fa35e66.md) | results/interferometer/rectangular/sma/jax_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json | 118 |
 | [baaffa77fe6c0b062251](ba3f7a7d2dc2e9986ab1.md) | results/interferometer/rectangular/sma/comparison.json | 10 |
 | [bb5306a19875bf520c86](4e47593f9b90bcc1d1b2.md) | results/interferometer/rectangular/sma/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json | 118 |
 | [c7865fc6f1cbd636618b](ae3957abd50db5a4c525.md) | results/interferometer/rectangular/sma/jax_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json | 139 |
+| [dfa3334a893d06c5bc9a](fe3be3e5c0282e6c0769.md) | results/interferometer/rectangular/sma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/history/2026.10.25.1_2026-10-28/breakdown.json | 29 |
 | [e62cf294f3098812d958](78faf9dc76ec543dd92d.md) | results/interferometer/rectangular/sma/jax_gpu_sparse_fp64_wtilde/hpc_a100/scans/r2.0/breakdown.json | 123 |
+| [e941842008042b9e1667](d108c4dcd2b262861d91.md) | results/interferometer/rectangular/sma/jax_cpu_dense_fp64_nufft/hpc_ral_cpu/history/2026.10.25.1_2026-10-28/breakdown.json | 71 |
 | [ebdd2ed2b0448cdf601f](c81eb8650ef02657e730.md) | results/interferometer/rectangular/sma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/experiments/numpy_cpu_matrixfree/runtime.json | 1 |
 | [f927b226479eed4cf668](76eff2240546aaaedb9e.md) | results/interferometer/rectangular/sma/jax_gpu_sparse_mixed_wtilde/hpc_a100/breakdown.json | 125 |
 
