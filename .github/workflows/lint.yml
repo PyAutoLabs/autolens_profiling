@@ -114,9 +114,10 @@ jobs:
       - name: coverage_matrix.py --check (lifecycle coverage drift)
         working-directory: autolens_profiling
         run: |
-          # dashboard/coverage.{json,md} are rendered from dashboard/catalogue.json and
-          # catalogue/provisional_designations.json; a catalogue change without a re-render,
-          # or a planned class that disagrees with the §3.3 copy, fails here. Pure stdlib.
+          # dashboard/coverage.{json,md} are rendered from dashboard/catalogue.json,
+          # catalogue/pulse_designations.json and catalogue/designation_holds.json; a catalogue
+          # change without a re-render, or a planned class that disagrees with the designations,
+          # fails here. Pure stdlib.
           python scripts/misc/tooling/coverage_matrix.py --check
 
       - name: check_wiki.py --check (research wiki drift)

@@ -66,7 +66,7 @@ VARIANT_INSTRUMENTS = {
     "delaunay_nn": ("hst",),
 }
 PIXELIZED = ("rectangular", "delaunay", "delaunay_nn")
-#: §3.3 provisional designations (``catalogue/provisional_designations.json``), optimal and
+#: §3.3 provisional designations (the §3.3 copy (retired by #497)), optimal and
 #: secondary, per host class.
 SETUPS = {
     "parametric": {

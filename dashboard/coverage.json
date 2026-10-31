@@ -55,32 +55,6 @@
    "state": "current"
   },
   {
-   "cell": "cluster/source_plane/simple jax_cpu_na_fp64@hpc_a100 [breakdown]",
-   "class": "optimal",
-   "host_class": "hpc_a100",
-   "instrument": "simple",
-   "likelihood": "cluster/source_plane",
-   "measurement": "breakdown",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/9a28b8cf0786696e64a7",
-   "setup_id": "jax_cpu_na_fp64",
-   "state": "current"
-  },
-  {
-   "cell": "cluster/source_plane/simple jax_cpu_na_fp64@hpc_a100 [runtime]",
-   "class": "optimal",
-   "host_class": "hpc_a100",
-   "instrument": "simple",
-   "likelihood": "cluster/source_plane",
-   "measurement": "runtime",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/bf18cb8f64de25466e5e",
-   "setup_id": "jax_cpu_na_fp64",
-   "state": "current"
-  },
-  {
    "cell": "cluster/source_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [breakdown]",
    "class": "optimal",
    "host_class": "hpc_ral_cpu",
@@ -108,7 +82,7 @@
   },
   {
    "cell": "cluster/source_plane/simple jax_gpu_na_fp64@hpc_a100 [breakdown]",
-   "class": "secondary",
+   "class": "optimal",
    "host_class": "hpc_a100",
    "instrument": "simple",
    "likelihood": "cluster/source_plane",
@@ -121,7 +95,7 @@
   },
   {
    "cell": "cluster/source_plane/simple jax_gpu_na_fp64@hpc_a100 [runtime]",
-   "class": "secondary",
+   "class": "optimal",
    "host_class": "hpc_a100",
    "instrument": "simple",
    "likelihood": "cluster/source_plane",
@@ -289,32 +263,6 @@
    "state": "current"
   },
   {
-   "cell": "datacube/delaunay/sma jax_cpu_dense_fp64_nufft@hpc_ral_cpu [breakdown]",
-   "class": "secondary",
-   "host_class": "hpc_ral_cpu",
-   "instrument": "sma",
-   "likelihood": "datacube/delaunay",
-   "measurement": "breakdown",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/ee206b1cdd5f82655d36",
-   "setup_id": "jax_cpu_dense_fp64_nufft",
-   "state": "current"
-  },
-  {
-   "cell": "datacube/delaunay/sma jax_cpu_dense_fp64_nufft@hpc_ral_cpu [runtime]",
-   "class": "secondary",
-   "host_class": "hpc_ral_cpu",
-   "instrument": "sma",
-   "likelihood": "datacube/delaunay",
-   "measurement": "runtime",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/84cc85952546c05eabe2",
-   "setup_id": "jax_cpu_dense_fp64_nufft",
-   "state": "current"
-  },
-  {
    "cell": "datacube/delaunay/sma jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [breakdown]",
    "class": "secondary",
    "host_class": "hpc_ral_cpu",
@@ -416,32 +364,6 @@
    "reason": null,
    "record": "lifecycle/5b411896dcf5b1cc5853",
    "setup_id": "numba_cpu_sparse_fp64_wtilde",
-   "state": "current"
-  },
-  {
-   "cell": "group/delaunay/euclid jax_cpu_sparse_fp64@hpc_a100 [breakdown]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "euclid",
-   "likelihood": "group/delaunay",
-   "measurement": "breakdown",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/d49b3d9ea46c5534f20e",
-   "setup_id": "jax_cpu_sparse_fp64",
-   "state": "current"
-  },
-  {
-   "cell": "group/delaunay/euclid jax_cpu_sparse_fp64@hpc_a100 [runtime]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "euclid",
-   "likelihood": "group/delaunay",
-   "measurement": "runtime",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/80934222de6174ccb881",
-   "setup_id": "jax_cpu_sparse_fp64",
    "state": "current"
   },
   {
@@ -601,32 +523,6 @@
    "state": "current"
   },
   {
-   "cell": "group/rectangular/euclid jax_cpu_sparse_fp64@hpc_a100 [breakdown]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "euclid",
-   "likelihood": "group/rectangular",
-   "measurement": "breakdown",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/50064de0f362f2d59fa2",
-   "setup_id": "jax_cpu_sparse_fp64",
-   "state": "current"
-  },
-  {
-   "cell": "group/rectangular/euclid jax_cpu_sparse_fp64@hpc_a100 [runtime]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "euclid",
-   "likelihood": "group/rectangular",
-   "measurement": "runtime",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/03069016cfefd3707cea",
-   "setup_id": "jax_cpu_sparse_fp64",
-   "state": "current"
-  },
-  {
    "cell": "group/rectangular/euclid jax_cpu_sparse_fp64@hpc_ral_cpu [breakdown]",
    "class": "secondary",
    "host_class": "hpc_ral_cpu",
@@ -728,32 +624,6 @@
    "reason": null,
    "record": "lifecycle/a393fa2e139fd0560564",
    "setup_id": "numba_cpu_sparse_fp64",
-   "state": "current"
-  },
-  {
-   "cell": "imaging/delaunay/ao jax_cpu_sparse_fp64@hpc_a100 [breakdown]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "ao",
-   "likelihood": "imaging/delaunay",
-   "measurement": "breakdown",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/bd293c05c3d4a7b576e8",
-   "setup_id": "jax_cpu_sparse_fp64",
-   "state": "current"
-  },
-  {
-   "cell": "imaging/delaunay/ao jax_cpu_sparse_fp64@hpc_a100 [runtime]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "ao",
-   "likelihood": "imaging/delaunay",
-   "measurement": "runtime",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/780ad479b1fe66279696",
-   "setup_id": "jax_cpu_sparse_fp64",
    "state": "current"
   },
   {
@@ -861,32 +731,6 @@
    "state": "current"
   },
   {
-   "cell": "imaging/delaunay/euclid jax_cpu_sparse_fp64@hpc_a100 [breakdown]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "euclid",
-   "likelihood": "imaging/delaunay",
-   "measurement": "breakdown",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/1d580013233bb30a8f0f",
-   "setup_id": "jax_cpu_sparse_fp64",
-   "state": "current"
-  },
-  {
-   "cell": "imaging/delaunay/euclid jax_cpu_sparse_fp64@hpc_a100 [runtime]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "euclid",
-   "likelihood": "imaging/delaunay",
-   "measurement": "runtime",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/a9e102b324300939da14",
-   "setup_id": "jax_cpu_sparse_fp64",
-   "state": "current"
-  },
-  {
    "cell": "imaging/delaunay/euclid jax_cpu_sparse_fp64@hpc_ral_cpu [breakdown]",
    "class": "secondary",
    "host_class": "hpc_ral_cpu",
@@ -988,32 +832,6 @@
    "reason": null,
    "record": "lifecycle/5556ca430bc180c2d536",
    "setup_id": "numba_cpu_sparse_fp64",
-   "state": "current"
-  },
-  {
-   "cell": "imaging/delaunay/hst jax_cpu_sparse_fp64@hpc_a100 [breakdown]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "hst",
-   "likelihood": "imaging/delaunay",
-   "measurement": "breakdown",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/bf3b8804d724b97aac8a",
-   "setup_id": "jax_cpu_sparse_fp64",
-   "state": "current"
-  },
-  {
-   "cell": "imaging/delaunay/hst jax_cpu_sparse_fp64@hpc_a100 [runtime]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "hst",
-   "likelihood": "imaging/delaunay",
-   "measurement": "runtime",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/0f45aa8eb79d60157031",
-   "setup_id": "jax_cpu_sparse_fp64",
    "state": "current"
   },
   {
@@ -1121,32 +939,6 @@
    "state": "current"
   },
   {
-   "cell": "imaging/delaunay/jwst jax_cpu_sparse_fp64@hpc_a100 [breakdown]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "jwst",
-   "likelihood": "imaging/delaunay",
-   "measurement": "breakdown",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/d96b932e4effe6a73128",
-   "setup_id": "jax_cpu_sparse_fp64",
-   "state": "current"
-  },
-  {
-   "cell": "imaging/delaunay/jwst jax_cpu_sparse_fp64@hpc_a100 [runtime]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "jwst",
-   "likelihood": "imaging/delaunay",
-   "measurement": "runtime",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/97d2ae3cab5f9bbc9d8f",
-   "setup_id": "jax_cpu_sparse_fp64",
-   "state": "current"
-  },
-  {
    "cell": "imaging/delaunay/jwst jax_cpu_sparse_fp64@hpc_ral_cpu [breakdown]",
    "class": "secondary",
    "host_class": "hpc_ral_cpu",
@@ -1248,32 +1040,6 @@
    "reason": null,
    "record": "lifecycle/d93b4dad29e8a0f77987",
    "setup_id": "numba_cpu_sparse_fp64",
-   "state": "current"
-  },
-  {
-   "cell": "imaging/delaunay_nn/hst jax_cpu_sparse_fp64@hpc_a100 [breakdown]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "hst",
-   "likelihood": "imaging/delaunay_nn",
-   "measurement": "breakdown",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/4ff67827139b135c3a47",
-   "setup_id": "jax_cpu_sparse_fp64",
-   "state": "current"
-  },
-  {
-   "cell": "imaging/delaunay_nn/hst jax_cpu_sparse_fp64@hpc_a100 [runtime]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "hst",
-   "likelihood": "imaging/delaunay_nn",
-   "measurement": "runtime",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/cbc5540f3214caf61aba",
-   "setup_id": "jax_cpu_sparse_fp64",
    "state": "current"
   },
   {
@@ -1589,32 +1355,6 @@
    "state": "current"
   },
   {
-   "cell": "imaging/rectangular/ao jax_cpu_sparse_fp64@hpc_a100 [breakdown]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "ao",
-   "likelihood": "imaging/rectangular",
-   "measurement": "breakdown",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/2b00122451483e055eb7",
-   "setup_id": "jax_cpu_sparse_fp64",
-   "state": "current"
-  },
-  {
-   "cell": "imaging/rectangular/ao jax_cpu_sparse_fp64@hpc_a100 [runtime]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "ao",
-   "likelihood": "imaging/rectangular",
-   "measurement": "runtime",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/3617cdce4ec7d5357c4f",
-   "setup_id": "jax_cpu_sparse_fp64",
-   "state": "current"
-  },
-  {
    "cell": "imaging/rectangular/ao jax_cpu_sparse_fp64@hpc_ral_cpu [breakdown]",
    "class": "secondary",
    "host_class": "hpc_ral_cpu",
@@ -1716,32 +1456,6 @@
    "reason": null,
    "record": "lifecycle/403420f8debaaa38956c",
    "setup_id": "numba_cpu_sparse_fp64",
-   "state": "current"
-  },
-  {
-   "cell": "imaging/rectangular/euclid jax_cpu_sparse_fp64@hpc_a100 [breakdown]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "euclid",
-   "likelihood": "imaging/rectangular",
-   "measurement": "breakdown",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/5a4b8d9b4ffdd501de43",
-   "setup_id": "jax_cpu_sparse_fp64",
-   "state": "current"
-  },
-  {
-   "cell": "imaging/rectangular/euclid jax_cpu_sparse_fp64@hpc_a100 [runtime]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "euclid",
-   "likelihood": "imaging/rectangular",
-   "measurement": "runtime",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/9e4861d45b9802a91868",
-   "setup_id": "jax_cpu_sparse_fp64",
    "state": "current"
   },
   {
@@ -1849,32 +1563,6 @@
    "state": "current"
   },
   {
-   "cell": "imaging/rectangular/hst jax_cpu_sparse_fp64@hpc_a100 [breakdown]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "hst",
-   "likelihood": "imaging/rectangular",
-   "measurement": "breakdown",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/a98b53f4d175daaba360",
-   "setup_id": "jax_cpu_sparse_fp64",
-   "state": "current"
-  },
-  {
-   "cell": "imaging/rectangular/hst jax_cpu_sparse_fp64@hpc_a100 [runtime]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "hst",
-   "likelihood": "imaging/rectangular",
-   "measurement": "runtime",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/22c24ae6e2c83dc51d89",
-   "setup_id": "jax_cpu_sparse_fp64",
-   "state": "current"
-  },
-  {
    "cell": "imaging/rectangular/hst jax_cpu_sparse_fp64@hpc_ral_cpu [breakdown]",
    "class": "secondary",
    "host_class": "hpc_ral_cpu",
@@ -1976,32 +1664,6 @@
    "reason": null,
    "record": "lifecycle/b62534053c00fb102bf4",
    "setup_id": "numba_cpu_sparse_fp64",
-   "state": "current"
-  },
-  {
-   "cell": "imaging/rectangular/jwst jax_cpu_sparse_fp64@hpc_a100 [breakdown]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "jwst",
-   "likelihood": "imaging/rectangular",
-   "measurement": "breakdown",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/11ad4f5f77f96664ac82",
-   "setup_id": "jax_cpu_sparse_fp64",
-   "state": "current"
-  },
-  {
-   "cell": "imaging/rectangular/jwst jax_cpu_sparse_fp64@hpc_a100 [runtime]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "jwst",
-   "likelihood": "imaging/rectangular",
-   "measurement": "runtime",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/cfba00e49ad2fb8681cb",
-   "setup_id": "jax_cpu_sparse_fp64",
    "state": "current"
   },
   {
@@ -2340,32 +2002,6 @@
    "reason": null,
    "record": "lifecycle/e63a97d451e1633c91aa",
    "setup_id": "numba_cpu_sparse_fp64_wtilde",
-   "state": "current"
-  },
-  {
-   "cell": "interferometer/delaunay/sma jax_cpu_dense_fp64_nufft@hpc_ral_cpu [breakdown]",
-   "class": "secondary",
-   "host_class": "hpc_ral_cpu",
-   "instrument": "sma",
-   "likelihood": "interferometer/delaunay",
-   "measurement": "breakdown",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/410d08c279e39968e2ca",
-   "setup_id": "jax_cpu_dense_fp64_nufft",
-   "state": "current"
-  },
-  {
-   "cell": "interferometer/delaunay/sma jax_cpu_dense_fp64_nufft@hpc_ral_cpu [runtime]",
-   "class": "secondary",
-   "host_class": "hpc_ral_cpu",
-   "instrument": "sma",
-   "likelihood": "interferometer/delaunay",
-   "measurement": "runtime",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/284efdc05b70e06e060a",
-   "setup_id": "jax_cpu_dense_fp64_nufft",
    "state": "current"
   },
   {
@@ -2759,32 +2395,6 @@
    "state": "current"
   },
   {
-   "cell": "interferometer/rectangular/sma jax_cpu_dense_fp64_nufft@hpc_ral_cpu [breakdown]",
-   "class": "secondary",
-   "host_class": "hpc_ral_cpu",
-   "instrument": "sma",
-   "likelihood": "interferometer/rectangular",
-   "measurement": "breakdown",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/12dc203414b54f1ee2b1",
-   "setup_id": "jax_cpu_dense_fp64_nufft",
-   "state": "current"
-  },
-  {
-   "cell": "interferometer/rectangular/sma jax_cpu_dense_fp64_nufft@hpc_ral_cpu [runtime]",
-   "class": "secondary",
-   "host_class": "hpc_ral_cpu",
-   "instrument": "sma",
-   "likelihood": "interferometer/rectangular",
-   "measurement": "runtime",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/0cec032ed12d6d948802",
-   "setup_id": "jax_cpu_dense_fp64_nufft",
-   "state": "current"
-  },
-  {
    "cell": "interferometer/rectangular/sma jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [breakdown]",
    "class": "secondary",
    "host_class": "hpc_ral_cpu",
@@ -2889,32 +2499,6 @@
    "state": "current"
   },
   {
-   "cell": "multi_dataset/delaunay/hst jax_cpu_sparse_fp64@hpc_a100 [breakdown]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "hst",
-   "likelihood": "multi_dataset/delaunay",
-   "measurement": "breakdown",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/31b4b98e13bb28bdef3a",
-   "setup_id": "jax_cpu_sparse_fp64",
-   "state": "current"
-  },
-  {
-   "cell": "multi_dataset/delaunay/hst jax_cpu_sparse_fp64@hpc_a100 [runtime]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "hst",
-   "likelihood": "multi_dataset/delaunay",
-   "measurement": "runtime",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/6aec4c792b0b8a7fb243",
-   "setup_id": "jax_cpu_sparse_fp64",
-   "state": "current"
-  },
-  {
    "cell": "multi_dataset/delaunay/hst jax_cpu_sparse_fp64@hpc_ral_cpu [breakdown]",
    "class": "secondary",
    "host_class": "hpc_ral_cpu",
@@ -3016,32 +2600,6 @@
    "reason": null,
    "record": "lifecycle/f57f23fc63823bcdf1bc",
    "setup_id": "numba_cpu_sparse_fp64",
-   "state": "current"
-  },
-  {
-   "cell": "multi_galaxy/delaunay/hst jax_cpu_sparse_fp64@hpc_a100 [breakdown]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "hst",
-   "likelihood": "multi_galaxy/delaunay",
-   "measurement": "breakdown",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/f2ba43f663bf3aebe064",
-   "setup_id": "jax_cpu_sparse_fp64",
-   "state": "current"
-  },
-  {
-   "cell": "multi_galaxy/delaunay/hst jax_cpu_sparse_fp64@hpc_a100 [runtime]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "hst",
-   "likelihood": "multi_galaxy/delaunay",
-   "measurement": "runtime",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/3ba2b009257a8b8c7f0e",
-   "setup_id": "jax_cpu_sparse_fp64",
    "state": "current"
   },
   {
@@ -3201,32 +2759,6 @@
    "state": "current"
   },
   {
-   "cell": "multi_galaxy/rectangular/hst jax_cpu_sparse_fp64@hpc_a100 [breakdown]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "hst",
-   "likelihood": "multi_galaxy/rectangular",
-   "measurement": "breakdown",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/b9d38cbc51bbfb2e9940",
-   "setup_id": "jax_cpu_sparse_fp64",
-   "state": "current"
-  },
-  {
-   "cell": "multi_galaxy/rectangular/hst jax_cpu_sparse_fp64@hpc_a100 [runtime]",
-   "class": "secondary",
-   "host_class": "hpc_a100",
-   "instrument": "hst",
-   "likelihood": "multi_galaxy/rectangular",
-   "measurement": "runtime",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/4cbaa1a32013c65a1422",
-   "setup_id": "jax_cpu_sparse_fp64",
-   "state": "current"
-  },
-  {
    "cell": "multi_galaxy/rectangular/hst jax_cpu_sparse_fp64@hpc_ral_cpu [breakdown]",
    "class": "secondary",
    "host_class": "hpc_ral_cpu",
@@ -3383,32 +2915,6 @@
    "state": "current"
   },
   {
-   "cell": "point_source_source/source_plane/simple jax_cpu_na_fp64@hpc_a100 [breakdown]",
-   "class": "optimal",
-   "host_class": "hpc_a100",
-   "instrument": "simple",
-   "likelihood": "point_source_source/source_plane",
-   "measurement": "breakdown",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/34401722a28437bc0319",
-   "setup_id": "jax_cpu_na_fp64",
-   "state": "current"
-  },
-  {
-   "cell": "point_source_source/source_plane/simple jax_cpu_na_fp64@hpc_a100 [runtime]",
-   "class": "optimal",
-   "host_class": "hpc_a100",
-   "instrument": "simple",
-   "likelihood": "point_source_source/source_plane",
-   "measurement": "runtime",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/c2bfeea342f97959dc7c",
-   "setup_id": "jax_cpu_na_fp64",
-   "state": "current"
-  },
-  {
    "cell": "point_source_source/source_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [breakdown]",
    "class": "optimal",
    "host_class": "hpc_ral_cpu",
@@ -3436,7 +2942,7 @@
   },
   {
    "cell": "point_source_source/source_plane/simple jax_gpu_na_fp64@hpc_a100 [breakdown]",
-   "class": "secondary",
+   "class": "optimal",
    "host_class": "hpc_a100",
    "instrument": "simple",
    "likelihood": "point_source_source/source_plane",
@@ -3449,7 +2955,7 @@
   },
   {
    "cell": "point_source_source/source_plane/simple jax_gpu_na_fp64@hpc_a100 [runtime]",
-   "class": "secondary",
+   "class": "optimal",
    "host_class": "hpc_a100",
    "instrument": "simple",
    "likelihood": "point_source_source/source_plane",
@@ -3458,32 +2964,6 @@
    "reason": null,
    "record": "lifecycle/fcb319f0f24b8cc9fd37",
    "setup_id": "jax_gpu_na_fp64",
-   "state": "current"
-  },
-  {
-   "cell": "weak/isothermal/simple jax_cpu_dense_fp64@hpc_a100 [breakdown]",
-   "class": "optimal",
-   "host_class": "hpc_a100",
-   "instrument": "simple",
-   "likelihood": "weak/isothermal",
-   "measurement": "breakdown",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/2b25af7d78aec8e7f41a",
-   "setup_id": "jax_cpu_dense_fp64",
-   "state": "current"
-  },
-  {
-   "cell": "weak/isothermal/simple jax_cpu_dense_fp64@hpc_a100 [runtime]",
-   "class": "optimal",
-   "host_class": "hpc_a100",
-   "instrument": "simple",
-   "likelihood": "weak/isothermal",
-   "measurement": "runtime",
-   "model_variant": "default",
-   "reason": null,
-   "record": "lifecycle/f449b3fe848876acf418",
-   "setup_id": "jax_cpu_dense_fp64",
    "state": "current"
   },
   {
@@ -3514,7 +2994,7 @@
   },
   {
    "cell": "weak/isothermal/simple jax_gpu_dense_fp64@hpc_a100 [breakdown]",
-   "class": "secondary",
+   "class": "optimal",
    "host_class": "hpc_a100",
    "instrument": "simple",
    "likelihood": "weak/isothermal",
@@ -3527,7 +3007,7 @@
   },
   {
    "cell": "weak/isothermal/simple jax_gpu_dense_fp64@hpc_a100 [runtime]",
-   "class": "secondary",
+   "class": "optimal",
    "host_class": "hpc_a100",
    "instrument": "simple",
    "likelihood": "weak/isothermal",
@@ -3578,24 +3058,6 @@
    "superseded": 0
   },
   {
-   "class": "secondary",
-   "current": 1,
-   "likelihood": "cluster/source_plane",
-   "measurement": "breakdown",
-   "missing": 0,
-   "stale": 0,
-   "superseded": 0
-  },
-  {
-   "class": "secondary",
-   "current": 1,
-   "likelihood": "cluster/source_plane",
-   "measurement": "runtime",
-   "missing": 0,
-   "stale": 0,
-   "superseded": 0
-  },
-  {
    "class": "optimal",
    "current": 6,
    "likelihood": "datacube/delaunay",
@@ -3615,7 +3077,7 @@
   },
   {
    "class": "secondary",
-   "current": 5,
+   "current": 4,
    "likelihood": "datacube/delaunay",
    "measurement": "breakdown",
    "missing": 0,
@@ -3624,7 +3086,7 @@
   },
   {
    "class": "secondary",
-   "current": 5,
+   "current": 4,
    "likelihood": "datacube/delaunay",
    "measurement": "runtime",
    "missing": 0,
@@ -3651,7 +3113,7 @@
   },
   {
    "class": "secondary",
-   "current": 3,
+   "current": 2,
    "likelihood": "group/delaunay",
    "measurement": "breakdown",
    "missing": 0,
@@ -3660,7 +3122,7 @@
   },
   {
    "class": "secondary",
-   "current": 3,
+   "current": 2,
    "likelihood": "group/delaunay",
    "measurement": "runtime",
    "missing": 0,
@@ -3705,7 +3167,7 @@
   },
   {
    "class": "secondary",
-   "current": 3,
+   "current": 2,
    "likelihood": "group/rectangular",
    "measurement": "breakdown",
    "missing": 0,
@@ -3714,7 +3176,7 @@
   },
   {
    "class": "secondary",
-   "current": 3,
+   "current": 2,
    "likelihood": "group/rectangular",
    "measurement": "runtime",
    "missing": 0,
@@ -3741,7 +3203,7 @@
   },
   {
    "class": "secondary",
-   "current": 12,
+   "current": 8,
    "likelihood": "imaging/delaunay",
    "measurement": "breakdown",
    "missing": 0,
@@ -3750,7 +3212,7 @@
   },
   {
    "class": "secondary",
-   "current": 12,
+   "current": 8,
    "likelihood": "imaging/delaunay",
    "measurement": "runtime",
    "missing": 0,
@@ -3777,7 +3239,7 @@
   },
   {
    "class": "secondary",
-   "current": 3,
+   "current": 2,
    "likelihood": "imaging/delaunay_nn",
    "measurement": "breakdown",
    "missing": 0,
@@ -3786,7 +3248,7 @@
   },
   {
    "class": "secondary",
-   "current": 3,
+   "current": 2,
    "likelihood": "imaging/delaunay_nn",
    "measurement": "runtime",
    "missing": 0,
@@ -3831,7 +3293,7 @@
   },
   {
    "class": "secondary",
-   "current": 12,
+   "current": 8,
    "likelihood": "imaging/rectangular",
    "measurement": "breakdown",
    "missing": 0,
@@ -3840,7 +3302,7 @@
   },
   {
    "class": "secondary",
-   "current": 12,
+   "current": 8,
    "likelihood": "imaging/rectangular",
    "measurement": "runtime",
    "missing": 0,
@@ -3867,7 +3329,7 @@
   },
   {
    "class": "secondary",
-   "current": 6,
+   "current": 5,
    "likelihood": "interferometer/delaunay",
    "measurement": "breakdown",
    "missing": 0,
@@ -3876,7 +3338,7 @@
   },
   {
    "class": "secondary",
-   "current": 6,
+   "current": 5,
    "likelihood": "interferometer/delaunay",
    "measurement": "runtime",
    "missing": 0,
@@ -3921,7 +3383,7 @@
   },
   {
    "class": "secondary",
-   "current": 6,
+   "current": 5,
    "likelihood": "interferometer/rectangular",
    "measurement": "breakdown",
    "missing": 0,
@@ -3930,7 +3392,7 @@
   },
   {
    "class": "secondary",
-   "current": 6,
+   "current": 5,
    "likelihood": "interferometer/rectangular",
    "measurement": "runtime",
    "missing": 0,
@@ -3957,7 +3419,7 @@
   },
   {
    "class": "secondary",
-   "current": 3,
+   "current": 2,
    "likelihood": "multi_dataset/delaunay",
    "measurement": "breakdown",
    "missing": 0,
@@ -3966,7 +3428,7 @@
   },
   {
    "class": "secondary",
-   "current": 3,
+   "current": 2,
    "likelihood": "multi_dataset/delaunay",
    "measurement": "runtime",
    "missing": 0,
@@ -3993,7 +3455,7 @@
   },
   {
    "class": "secondary",
-   "current": 3,
+   "current": 2,
    "likelihood": "multi_galaxy/delaunay",
    "measurement": "breakdown",
    "missing": 0,
@@ -4002,7 +3464,7 @@
   },
   {
    "class": "secondary",
-   "current": 3,
+   "current": 2,
    "likelihood": "multi_galaxy/delaunay",
    "measurement": "runtime",
    "missing": 0,
@@ -4047,7 +3509,7 @@
   },
   {
    "class": "secondary",
-   "current": 3,
+   "current": 2,
    "likelihood": "multi_galaxy/rectangular",
    "measurement": "breakdown",
    "missing": 0,
@@ -4056,7 +3518,7 @@
   },
   {
    "class": "secondary",
-   "current": 3,
+   "current": 2,
    "likelihood": "multi_galaxy/rectangular",
    "measurement": "runtime",
    "missing": 0,
@@ -4100,24 +3562,6 @@
    "superseded": 0
   },
   {
-   "class": "secondary",
-   "current": 1,
-   "likelihood": "point_source_source/source_plane",
-   "measurement": "breakdown",
-   "missing": 0,
-   "stale": 0,
-   "superseded": 0
-  },
-  {
-   "class": "secondary",
-   "current": 1,
-   "likelihood": "point_source_source/source_plane",
-   "measurement": "runtime",
-   "missing": 0,
-   "stale": 0,
-   "superseded": 0
-  },
-  {
    "class": "optimal",
    "current": 2,
    "likelihood": "weak/isothermal",
@@ -4129,24 +3573,6 @@
   {
    "class": "optimal",
    "current": 2,
-   "likelihood": "weak/isothermal",
-   "measurement": "runtime",
-   "missing": 0,
-   "stale": 0,
-   "superseded": 0
-  },
-  {
-   "class": "secondary",
-   "current": 1,
-   "likelihood": "weak/isothermal",
-   "measurement": "breakdown",
-   "missing": 0,
-   "stale": 0,
-   "superseded": 0
-  },
-  {
-   "class": "secondary",
-   "current": 1,
    "likelihood": "weak/isothermal",
    "measurement": "runtime",
    "missing": 0,
@@ -4169,12 +3595,6 @@
     "state": "match"
    },
    {
-    "cell": "cluster/source_plane/simple jax_cpu_na_fp64@hpc_a100 [parity]",
-    "class": "optimal",
-    "record": "lifecycle/33903eb14ffbf19c6632",
-    "state": "match"
-   },
-   {
     "cell": "cluster/source_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [parity]",
     "class": "optimal",
     "record": "lifecycle/8909566077ecf0ba922a",
@@ -4182,7 +3602,7 @@
    },
    {
     "cell": "cluster/source_plane/simple jax_gpu_na_fp64@hpc_a100 [parity]",
-    "class": "secondary",
+    "class": "optimal",
     "record": "lifecycle/34d551d02bba3ac253a1",
     "state": "match"
    },
@@ -4223,12 +3643,6 @@
     "state": "match"
    },
    {
-    "cell": "datacube/delaunay/sma jax_cpu_dense_fp64_nufft@hpc_ral_cpu [parity]",
-    "class": "secondary",
-    "record": "lifecycle/803151df21c7de55861a",
-    "state": "match"
-   },
-   {
     "cell": "datacube/delaunay/sma jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [parity]",
     "class": "secondary",
     "record": "lifecycle/8f9413a9807f794ae36e",
@@ -4250,12 +3664,6 @@
     "cell": "datacube/delaunay/sma numba_cpu_sparse_fp64_wtilde@hpc_ral_cpu [parity]",
     "class": "optimal",
     "record": "lifecycle/cdcbd9feaefdff4aba33",
-    "state": "match"
-   },
-   {
-    "cell": "group/delaunay/euclid jax_cpu_sparse_fp64@hpc_a100 [parity]",
-    "class": "secondary",
-    "record": "lifecycle/93f25f455dab0bd8f611",
     "state": "match"
    },
    {
@@ -4295,12 +3703,6 @@
     "state": "match"
    },
    {
-    "cell": "group/rectangular/euclid jax_cpu_sparse_fp64@hpc_a100 [parity]",
-    "class": "secondary",
-    "record": "lifecycle/c353682039acea4b886d",
-    "state": "match"
-   },
-   {
     "cell": "group/rectangular/euclid jax_cpu_sparse_fp64@hpc_ral_cpu [parity]",
     "class": "secondary",
     "record": "lifecycle/6e8c2db0c3afbfa0112f",
@@ -4322,12 +3724,6 @@
     "cell": "group/rectangular/euclid numba_cpu_sparse_fp64@hpc_ral_cpu [parity]",
     "class": "optimal",
     "record": "lifecycle/d1eb8e9cc712b7a123b0",
-    "state": "match"
-   },
-   {
-    "cell": "imaging/delaunay/ao jax_cpu_sparse_fp64@hpc_a100 [parity]",
-    "class": "secondary",
-    "record": "lifecycle/afc236d86c1d2fad6db9",
     "state": "match"
    },
    {
@@ -4355,12 +3751,6 @@
     "state": "match"
    },
    {
-    "cell": "imaging/delaunay/euclid jax_cpu_sparse_fp64@hpc_a100 [parity]",
-    "class": "secondary",
-    "record": "lifecycle/1c09fadde930b03b7518",
-    "state": "match"
-   },
-   {
     "cell": "imaging/delaunay/euclid jax_cpu_sparse_fp64@hpc_ral_cpu [parity]",
     "class": "secondary",
     "record": "lifecycle/095071358666d6efbc20",
@@ -4382,12 +3772,6 @@
     "cell": "imaging/delaunay/euclid numba_cpu_sparse_fp64@hpc_ral_cpu [parity]",
     "class": "optimal",
     "record": "lifecycle/99cf9f43e4608fb548ea",
-    "state": "match"
-   },
-   {
-    "cell": "imaging/delaunay/hst jax_cpu_sparse_fp64@hpc_a100 [parity]",
-    "class": "secondary",
-    "record": "lifecycle/d8087ff55a7a9c1902cc",
     "state": "match"
    },
    {
@@ -4415,12 +3799,6 @@
     "state": "match"
    },
    {
-    "cell": "imaging/delaunay/jwst jax_cpu_sparse_fp64@hpc_a100 [parity]",
-    "class": "secondary",
-    "record": "lifecycle/e0e005616c964f881ccd",
-    "state": "match"
-   },
-   {
     "cell": "imaging/delaunay/jwst jax_cpu_sparse_fp64@hpc_ral_cpu [parity]",
     "class": "secondary",
     "record": "lifecycle/489bebc145a525eab14d",
@@ -4442,12 +3820,6 @@
     "cell": "imaging/delaunay/jwst numba_cpu_sparse_fp64@hpc_ral_cpu [parity]",
     "class": "optimal",
     "record": "lifecycle/e3b1cad17937b4c1f9dc",
-    "state": "match"
-   },
-   {
-    "cell": "imaging/delaunay_nn/hst jax_cpu_sparse_fp64@hpc_a100 [parity]",
-    "class": "secondary",
-    "record": "lifecycle/5033bab3983481d5c826",
     "state": "match"
    },
    {
@@ -4523,12 +3895,6 @@
     "state": "match"
    },
    {
-    "cell": "imaging/rectangular/ao jax_cpu_sparse_fp64@hpc_a100 [parity]",
-    "class": "secondary",
-    "record": "lifecycle/48ae4d8138f5bb99846a",
-    "state": "match"
-   },
-   {
     "cell": "imaging/rectangular/ao jax_cpu_sparse_fp64@hpc_ral_cpu [parity]",
     "class": "secondary",
     "record": "lifecycle/e44433f6b0bb6fbb1519",
@@ -4550,12 +3916,6 @@
     "cell": "imaging/rectangular/ao numba_cpu_sparse_fp64@hpc_ral_cpu [parity]",
     "class": "optimal",
     "record": "lifecycle/a721c437cf9355984ca5",
-    "state": "match"
-   },
-   {
-    "cell": "imaging/rectangular/euclid jax_cpu_sparse_fp64@hpc_a100 [parity]",
-    "class": "secondary",
-    "record": "lifecycle/eb746ec4a8c1668c7a40",
     "state": "match"
    },
    {
@@ -4583,12 +3943,6 @@
     "state": "match"
    },
    {
-    "cell": "imaging/rectangular/hst jax_cpu_sparse_fp64@hpc_a100 [parity]",
-    "class": "secondary",
-    "record": "lifecycle/146b4d2fbd0c163f6276",
-    "state": "match"
-   },
-   {
     "cell": "imaging/rectangular/hst jax_cpu_sparse_fp64@hpc_ral_cpu [parity]",
     "class": "secondary",
     "record": "lifecycle/ee2df565d3603ba2bbd3",
@@ -4610,12 +3964,6 @@
     "cell": "imaging/rectangular/hst numba_cpu_sparse_fp64@hpc_ral_cpu [parity]",
     "class": "optimal",
     "record": "lifecycle/9e90c7a031fd6370f9af",
-    "state": "match"
-   },
-   {
-    "cell": "imaging/rectangular/jwst jax_cpu_sparse_fp64@hpc_a100 [parity]",
-    "class": "secondary",
-    "record": "lifecycle/72add1d2a2a70bb1304c",
     "state": "match"
    },
    {
@@ -4694,12 +4042,6 @@
     "cell": "interferometer/delaunay/jvla numba_cpu_sparse_fp64_wtilde@hpc_ral_cpu [parity]",
     "class": "optimal",
     "record": "lifecycle/bb2f3d9734b53f7fca77",
-    "state": "match"
-   },
-   {
-    "cell": "interferometer/delaunay/sma jax_cpu_dense_fp64_nufft@hpc_ral_cpu [parity]",
-    "class": "secondary",
-    "record": "lifecycle/56f48185c11f75209119",
     "state": "match"
    },
    {
@@ -4793,12 +4135,6 @@
     "state": "match"
    },
    {
-    "cell": "interferometer/rectangular/sma jax_cpu_dense_fp64_nufft@hpc_ral_cpu [parity]",
-    "class": "secondary",
-    "record": "lifecycle/ad305d23a04bd7700b82",
-    "state": "match"
-   },
-   {
     "cell": "interferometer/rectangular/sma jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [parity]",
     "class": "secondary",
     "record": "lifecycle/f90468fb8090019a8659",
@@ -4823,12 +4159,6 @@
     "state": "match"
    },
    {
-    "cell": "multi_dataset/delaunay/hst jax_cpu_sparse_fp64@hpc_a100 [parity]",
-    "class": "secondary",
-    "record": "lifecycle/cb0b7f79451adada3a21",
-    "state": "match"
-   },
-   {
     "cell": "multi_dataset/delaunay/hst jax_cpu_sparse_fp64@hpc_ral_cpu [parity]",
     "class": "secondary",
     "record": "lifecycle/41ebc7e42114bbb5173a",
@@ -4850,12 +4180,6 @@
     "cell": "multi_dataset/delaunay/hst numba_cpu_sparse_fp64@hpc_ral_cpu [parity]",
     "class": "optimal",
     "record": "lifecycle/d0be4a7b3506be7b53e9",
-    "state": "match"
-   },
-   {
-    "cell": "multi_galaxy/delaunay/hst jax_cpu_sparse_fp64@hpc_a100 [parity]",
-    "class": "secondary",
-    "record": "lifecycle/c644851d8b40c926e241",
     "state": "match"
    },
    {
@@ -4895,12 +4219,6 @@
     "state": "match"
    },
    {
-    "cell": "multi_galaxy/rectangular/hst jax_cpu_sparse_fp64@hpc_a100 [parity]",
-    "class": "secondary",
-    "record": "lifecycle/4303793bea7403d50fd2",
-    "state": "match"
-   },
-   {
     "cell": "multi_galaxy/rectangular/hst jax_cpu_sparse_fp64@hpc_ral_cpu [parity]",
     "class": "secondary",
     "record": "lifecycle/d7185e051ab18a8d35e1",
@@ -4937,12 +4255,6 @@
     "state": "match"
    },
    {
-    "cell": "point_source_source/source_plane/simple jax_cpu_na_fp64@hpc_a100 [parity]",
-    "class": "optimal",
-    "record": "lifecycle/5e68a4c3f41437c52c70",
-    "state": "match"
-   },
-   {
     "cell": "point_source_source/source_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [parity]",
     "class": "optimal",
     "record": "lifecycle/fa18efad842f4cc9fa73",
@@ -4950,14 +4262,8 @@
    },
    {
     "cell": "point_source_source/source_plane/simple jax_gpu_na_fp64@hpc_a100 [parity]",
-    "class": "secondary",
-    "record": "lifecycle/403a31905c1445a750ba",
-    "state": "match"
-   },
-   {
-    "cell": "weak/isothermal/simple jax_cpu_dense_fp64@hpc_a100 [parity]",
     "class": "optimal",
-    "record": "lifecycle/a982d26a01c73cc70d8e",
+    "record": "lifecycle/403a31905c1445a750ba",
     "state": "match"
    },
    {
@@ -4968,7 +4274,7 @@
    },
    {
     "cell": "weak/isothermal/simple jax_gpu_dense_fp64@hpc_a100 [parity]",
-    "class": "secondary",
+    "class": "optimal",
     "record": "lifecycle/bfd2db209cd80e6a6354",
     "state": "match"
    }
@@ -4991,14 +4297,6 @@
     "not_assessed": 0
    },
    {
-    "class": "secondary",
-    "diverged": 0,
-    "likelihood": "cluster/source_plane",
-    "match": 1,
-    "missing": 0,
-    "not_assessed": 0
-   },
-   {
     "class": "optimal",
     "diverged": 0,
     "likelihood": "datacube/delaunay",
@@ -5010,7 +4308,7 @@
     "class": "secondary",
     "diverged": 0,
     "likelihood": "datacube/delaunay",
-    "match": 5,
+    "match": 4,
     "missing": 0,
     "not_assessed": 0
    },
@@ -5026,7 +4324,7 @@
     "class": "secondary",
     "diverged": 0,
     "likelihood": "group/delaunay",
-    "match": 3,
+    "match": 2,
     "missing": 0,
     "not_assessed": 0
    },
@@ -5050,7 +4348,7 @@
     "class": "secondary",
     "diverged": 0,
     "likelihood": "group/rectangular",
-    "match": 3,
+    "match": 2,
     "missing": 0,
     "not_assessed": 0
    },
@@ -5066,7 +4364,7 @@
     "class": "secondary",
     "diverged": 0,
     "likelihood": "imaging/delaunay",
-    "match": 12,
+    "match": 8,
     "missing": 0,
     "not_assessed": 0
    },
@@ -5082,7 +4380,7 @@
     "class": "secondary",
     "diverged": 0,
     "likelihood": "imaging/delaunay_nn",
-    "match": 3,
+    "match": 2,
     "missing": 0,
     "not_assessed": 0
    },
@@ -5106,7 +4404,7 @@
     "class": "secondary",
     "diverged": 0,
     "likelihood": "imaging/rectangular",
-    "match": 12,
+    "match": 8,
     "missing": 0,
     "not_assessed": 0
    },
@@ -5122,7 +4420,7 @@
     "class": "secondary",
     "diverged": 0,
     "likelihood": "interferometer/delaunay",
-    "match": 6,
+    "match": 5,
     "missing": 0,
     "not_assessed": 0
    },
@@ -5146,7 +4444,7 @@
     "class": "secondary",
     "diverged": 0,
     "likelihood": "interferometer/rectangular",
-    "match": 6,
+    "match": 5,
     "missing": 0,
     "not_assessed": 0
    },
@@ -5162,7 +4460,7 @@
     "class": "secondary",
     "diverged": 0,
     "likelihood": "multi_dataset/delaunay",
-    "match": 3,
+    "match": 2,
     "missing": 0,
     "not_assessed": 0
    },
@@ -5178,7 +4476,7 @@
     "class": "secondary",
     "diverged": 0,
     "likelihood": "multi_galaxy/delaunay",
-    "match": 3,
+    "match": 2,
     "missing": 0,
     "not_assessed": 0
    },
@@ -5202,7 +4500,7 @@
     "class": "secondary",
     "diverged": 0,
     "likelihood": "multi_galaxy/rectangular",
-    "match": 3,
+    "match": 2,
     "missing": 0,
     "not_assessed": 0
    },
@@ -5223,36 +4521,20 @@
     "not_assessed": 0
    },
    {
-    "class": "secondary",
-    "diverged": 0,
-    "likelihood": "point_source_source/source_plane",
-    "match": 1,
-    "missing": 0,
-    "not_assessed": 0
-   },
-   {
     "class": "optimal",
     "diverged": 0,
     "likelihood": "weak/isothermal",
     "match": 2,
     "missing": 0,
     "not_assessed": 0
-   },
-   {
-    "class": "secondary",
-    "diverged": 0,
-    "likelihood": "weak/isothermal",
-    "match": 1,
-    "missing": 0,
-    "not_assessed": 0
    }
   ],
   "totals": {
    "diverged": 0,
-   "match": 136,
+   "match": 116,
    "missing": 0,
    "not_assessed": 0,
-   "setup_cells": 136
+   "setup_cells": 116
   }
  },
  "release_pin_source": "newest record",
@@ -5266,14 +4548,15 @@
  "schema": "profiling-coverage",
  "sources": {
   "catalogue": "dashboard/catalogue.json",
-  "designations": "catalogue/provisional_designations.json"
+  "designations": "catalogue/pulse_designations.json",
+  "holds": "catalogue/designation_holds.json"
  },
  "totals": {
-  "current": 272,
-  "current_records_unplanned": 189,
+  "current": 232,
+  "current_records_unplanned": 229,
   "missing": 0,
   "missing_size_fallback": 0,
-  "planned_cells": 272,
+  "planned_cells": 232,
   "records_superseded": 936,
   "stale": 0,
   "superseded": 0
@@ -5281,17 +4564,22 @@
  "unplanned_current_records": [
   "lifecycle/0123a0897b81eeacf937",
   "lifecycle/02470330dc1944ce5105",
+  "lifecycle/03069016cfefd3707cea",
   "lifecycle/034e6f55fb64137e2c3a",
   "lifecycle/04add9a30a520a293acf",
   "lifecycle/0511dfaa34cdcf7e5f88",
   "lifecycle/0645e8075d804d452f5c",
   "lifecycle/08f595a548287180e30f",
   "lifecycle/09602f2eb9d94f92def4",
+  "lifecycle/0cec032ed12d6d948802",
   "lifecycle/0d77d1377c7ffa548adc",
   "lifecycle/0e4eed8ae034e2d40659",
+  "lifecycle/0f45aa8eb79d60157031",
   "lifecycle/106177d28e1e8b535256",
   "lifecycle/10f21c9eef8dd133b548",
   "lifecycle/113be371339f7ba3799a",
+  "lifecycle/11ad4f5f77f96664ac82",
+  "lifecycle/12dc203414b54f1ee2b1",
   "lifecycle/13789af4a800483afae1",
   "lifecycle/143a597adf2947f8c065",
   "lifecycle/16145e8e080dc76bb25d",
@@ -5300,27 +4588,37 @@
   "lifecycle/1a420459e14081229799",
   "lifecycle/1a5d4536a8f9669e9def",
   "lifecycle/1b0832e72dc85ae51baf",
+  "lifecycle/1d580013233bb30a8f0f",
   "lifecycle/1ed4f8b68f193aae444b",
   "lifecycle/1ff4f937c6f29e68b213",
+  "lifecycle/22c24ae6e2c83dc51d89",
   "lifecycle/24cb5455a840f767432d",
   "lifecycle/2790c5800540e06ba221",
+  "lifecycle/284efdc05b70e06e060a",
   "lifecycle/2a53807c1b85c80c4198",
   "lifecycle/2a9cf67963bd7228bfcd",
+  "lifecycle/2b00122451483e055eb7",
+  "lifecycle/2b25af7d78aec8e7f41a",
   "lifecycle/2b67848ae18e606cd9b0",
   "lifecycle/2c6114c7be44886756e5",
+  "lifecycle/31b4b98e13bb28bdef3a",
   "lifecycle/3257d761fa5ed8bfc7a0",
   "lifecycle/340c91f9524b196bdbed",
+  "lifecycle/34401722a28437bc0319",
   "lifecycle/345b903cfcd5d079c143",
   "lifecycle/35132a47b09428b3d2a5",
   "lifecycle/35214c6fdb7dfc2f568e",
   "lifecycle/35270561ac7db6553c22",
+  "lifecycle/3617cdce4ec7d5357c4f",
   "lifecycle/37e9df544efcc48cc78e",
   "lifecycle/37fcbd80b848cfb12204",
   "lifecycle/3814b05e371119dfd7cd",
   "lifecycle/39dd12f09aa8fbd82104",
   "lifecycle/3a5c97b36b50e7f15bc1",
+  "lifecycle/3ba2b009257a8b8c7f0e",
   "lifecycle/3c52f95bebd47b59b371",
   "lifecycle/3dc16de0664023dbec5e",
+  "lifecycle/410d08c279e39968e2ca",
   "lifecycle/41bf1c7e0af200129f57",
   "lifecycle/43403b74fdb9e3ea2e13",
   "lifecycle/438c35ffb42fb15ff662",
@@ -5332,6 +4630,9 @@
   "lifecycle/4b0c8b2edaa4b5a24b63",
   "lifecycle/4c6e007df6f34c521a82",
   "lifecycle/4ca130ae912a1d0cb669",
+  "lifecycle/4cbaa1a32013c65a1422",
+  "lifecycle/4ff67827139b135c3a47",
+  "lifecycle/50064de0f362f2d59fa2",
   "lifecycle/552e143742d21b03df07",
   "lifecycle/55641ee3fdfa922635c3",
   "lifecycle/5731d3d1fab00cc16bf0",
@@ -5339,6 +4640,7 @@
   "lifecycle/58c3973dd145af30599f",
   "lifecycle/5985aa1f7a1f305a5cca",
   "lifecycle/5a24f78d1a669477578b",
+  "lifecycle/5a4b8d9b4ffdd501de43",
   "lifecycle/5c366a3050ff073f7047",
   "lifecycle/5e3fdc9e94b3396f8f17",
   "lifecycle/60441325b10aa7e4bad9",
@@ -5348,6 +4650,7 @@
   "lifecycle/64bfaad3ca8009082a55",
   "lifecycle/6536036ef1b447a6ec57",
   "lifecycle/66443bc95778ae99c344",
+  "lifecycle/6aec4c792b0b8a7fb243",
   "lifecycle/6c8e7b3e76f2c9faaac9",
   "lifecycle/6e7f6f4d600d1d9e8afa",
   "lifecycle/6e8bc9caec91f6c4bde8",
@@ -5355,14 +4658,17 @@
   "lifecycle/718dc6226fa3ba959aa1",
   "lifecycle/75a27609e90cfbbaba03",
   "lifecycle/77694762c2b9b9be47f6",
+  "lifecycle/780ad479b1fe66279696",
   "lifecycle/7b265a01e433b6761dbb",
   "lifecycle/7d41dc73443543f2c89f",
   "lifecycle/7dcf6e2d36385b569bb1",
   "lifecycle/7f75c2da526d2ba003fa",
   "lifecycle/7f8e9edbe2f8e40e0cb4",
+  "lifecycle/80934222de6174ccb881",
   "lifecycle/80a172b83beee2c9a6f9",
   "lifecycle/84717f072291c7bd3883",
   "lifecycle/84a1a86dfdd1ee6c1c82",
+  "lifecycle/84cc85952546c05eabe2",
   "lifecycle/85c760621cf4de77b93a",
   "lifecycle/86dc8ba07787d464aee1",
   "lifecycle/896a8d2b7825d7302e0c",
@@ -5377,20 +4683,25 @@
   "lifecycle/97094b4dbf75967b0eaa",
   "lifecycle/97158eb5dfede5c98506",
   "lifecycle/97b03dbb5d8de763ba23",
+  "lifecycle/97d2ae3cab5f9bbc9d8f",
   "lifecycle/99811cb0b413614d19ef",
   "lifecycle/99fa611619412f541e16",
   "lifecycle/9a0e8848999c25625de1",
+  "lifecycle/9a28b8cf0786696e64a7",
   "lifecycle/9b872e87a82ea4113a6c",
   "lifecycle/9c5ae26e8bbd7a64ce3d",
   "lifecycle/9c720e3945692daaa6a4",
   "lifecycle/9d2500d631b658e10a00",
   "lifecycle/9d69f400b26801e069d4",
   "lifecycle/9e27224ae5581602d1a4",
+  "lifecycle/9e4861d45b9802a91868",
   "lifecycle/9ed0a3f9aa3440153b66",
   "lifecycle/9ee62cee6fa5eec42940",
   "lifecycle/a221b42e6cbd10d2e866",
   "lifecycle/a33b4a937d27e875c955",
   "lifecycle/a3526c61b99594c64407",
+  "lifecycle/a98b53f4d175daaba360",
+  "lifecycle/a9e102b324300939da14",
   "lifecycle/a9e621c0f7324983d187",
   "lifecycle/aac8a32c5bfcabe4b008",
   "lifecycle/ab3efcae2f56329b2532",
@@ -5400,14 +4711,19 @@
   "lifecycle/b317e2f4906d04c7d20f",
   "lifecycle/b56a7e7f544b23f03a71",
   "lifecycle/b8202d0f1fb16afd29ff",
+  "lifecycle/b9d38cbc51bbfb2e9940",
   "lifecycle/baad8ee674afc7784af8",
   "lifecycle/bb3c117d46619765cfda",
   "lifecycle/bc7df8b4412157fe75b0",
   "lifecycle/bcc70464fa3ed6aa0eb6",
+  "lifecycle/bd293c05c3d4a7b576e8",
   "lifecycle/bdce7b421114b209b393",
   "lifecycle/be3a0e45761b787dfbd5",
   "lifecycle/bf00d1dbd912d11558ea",
+  "lifecycle/bf18cb8f64de25466e5e",
+  "lifecycle/bf3b8804d724b97aac8a",
   "lifecycle/bf77434c32fb11084067",
+  "lifecycle/c2bfeea342f97959dc7c",
   "lifecycle/c31a9e5611ccea781666",
   "lifecycle/c358b66c9a4580cdd9cf",
   "lifecycle/c4229ffc28288958a0cb",
@@ -5419,18 +4735,22 @@
   "lifecycle/c9047436d8e67786597e",
   "lifecycle/c9453fbf1cacd3460b68",
   "lifecycle/c9fb7e990dd04c645516",
+  "lifecycle/cbc5540f3214caf61aba",
   "lifecycle/cc5fff1cc5aad475f69b",
   "lifecycle/ccf6774f9d486d6e4c9c",
   "lifecycle/cd14a3aae4282553a20e",
   "lifecycle/cd3b9a5952e82e3a194e",
   "lifecycle/cd9d34f8b0ff57e2c3d3",
   "lifecycle/cece2927810c69a76169",
+  "lifecycle/cfba00e49ad2fb8681cb",
   "lifecycle/d19ef612cd8a4877503c",
   "lifecycle/d353258789a57fc9dd91",
+  "lifecycle/d49b3d9ea46c5534f20e",
   "lifecycle/d4e4b34bcfb23edda1c3",
   "lifecycle/d79f22b6c99ecc42fe11",
   "lifecycle/d8225629fe96234ab320",
   "lifecycle/d9665200a938db05f2d0",
+  "lifecycle/d96b932e4effe6a73128",
   "lifecycle/dbfdef023ac7d3a211a1",
   "lifecycle/dc712945a544e1964d19",
   "lifecycle/dcddae87a122ea588e91",
@@ -5452,11 +4772,14 @@
   "lifecycle/ea33e28df6fac7b8db50",
   "lifecycle/ecf2c7091b2bf6b34d74",
   "lifecycle/ed0a74fc9b547a4df82d",
+  "lifecycle/ee206b1cdd5f82655d36",
   "lifecycle/eeddba2b103c0e31af3b",
   "lifecycle/f04b65e0236da45e7aa8",
   "lifecycle/f18b9ad5b0ac13cbf5a9",
+  "lifecycle/f2ba43f663bf3aebe064",
   "lifecycle/f2d8c60fa7436997e676",
   "lifecycle/f39b7653da7a75bf1763",
+  "lifecycle/f449b3fe848876acf418",
   "lifecycle/f4f7daf2c66f56f58906",
   "lifecycle/f5cb0d1c73f5eff98d58",
   "lifecycle/f744f5cdd312bfcb3075",

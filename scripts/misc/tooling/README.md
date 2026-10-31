@@ -29,7 +29,9 @@ Repo tooling (not profiling scripts). Its tests, and the repo-wide layout tests
 - **`build_catalogue.py`** / **`catalogue_lifecycle.py`** — the `profiling-summary@3`
   lifecycle catalogue (`dashboard/catalogue.json`) and the companion v2 setup catalogue
   (`dashboard/catalogue/setups.json` + shards), read natively from the mirrored tree; CI runs
-  `--check --validate-with ../PyAutoPulse`. A result row with no recorded timestamp takes its
+  `--check --validate-with ../PyAutoPulse`, which also fails when
+  `catalogue/pulse_designations.json` drifts from PyAutoPulse's designation records and resolves
+  every `decision_id` (re-sync with `--sync-designations ../PyAutoPulse`, then rebuild). A result row with no recorded timestamp takes its
   `measured_at` from the UTC date its file was first committed (an upper bound), read from
   `catalogue/measured_at_first_commit.json`. The builder never calls git (CI clones are
   shallow), so after committing new undated rows run, in a checkout with full history,
@@ -39,7 +41,8 @@ Repo tooling (not profiling scripts). Its tests, and the repo-wide layout tests
   per likelihood x class x measurement, how many of the catalogue's planned cells are current,
   stale (release pin behind the catalogue pin), superseded or missing (a `size_fallback`-only
   cell counts as missing), plus a parity witness per planned setup cell. It cross-checks each
-  planned cell's class against `catalogue/provisional_designations.json`, the machine copy of
-  the lifecycle report's §3.3 table. CI runs `--check`; re-run it after `build_catalogue.py`.
+  planned cell's class against `catalogue/pulse_designations.json` (the PyAutoPulse designation
+  mirror) and `catalogue/designation_holds.json`. CI runs `--check`; re-run it after
+  `build_catalogue.py`.
 - **`parity_witness.py`** — the `parity.json` convention and its validator (`--check` over
   `results/**/parity.json`); see [results/README.md](../../../results/README.md#parity-witness).

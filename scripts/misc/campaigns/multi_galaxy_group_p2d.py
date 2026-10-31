@@ -60,7 +60,7 @@ INSTRUMENTS = dict(gg.INSTRUMENTS)
 #: The planned variants (decision D1): MGE, rectangular, Delaunay; no delaunay_nn, no sersic.
 VARIANTS = gg.VARIANTS
 PIXELIZED = gg.PIXELIZED
-#: §3.3 "multi_galaxy/*, group/* — as imaging rules" (``catalogue/provisional_designations.json``
+#: §3.3 "multi_galaxy/*, group/* — as imaging rules" (the §3.3 copy (retired by #497)
 #: tables ``parametric`` and ``pixelized``), optimal and secondary per host class.
 SETUPS = {
     "parametric": {

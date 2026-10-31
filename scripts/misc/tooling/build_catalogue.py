@@ -907,9 +907,16 @@ V3_LIMITATIONS = [
     "Phase-0 labels (autolens_profiling#442): nothing was re-measured. A current record is the "
     "canonical cell row on a reference host class for a planned baseline cell; it is not an "
     "accepted baseline and carries no day_zero stamp.",
-    "No designation decision exists yet: provisional Optimal rows are class secondary with "
-    "'provisional_optimal: true' in their limitations (R3); planned_cells carry the "
-    "provisional class.",
+    "Classes come from the PyAutoPulse designation records (decisions.yaml kind: designation, "
+    "mirrored in catalogue/pulse_designations.json; autolens_profiling#497): the designated "
+    "optimal setup on its likelihood x standard regime x hardware class (hpc_ral_cpu = "
+    "cpu_many_core, hpc_a100 = gpu_a100) is class optimal with that decision_id, a named "
+    "secondary is class secondary with it, and any other setup on a designated key is "
+    "experimental. Rows on local_* hosts or in a non-standard regime (source_pixels_<n>) "
+    "inherit the role as class secondary with an 'undesignated_regime_or_host' limitation and "
+    "no decision_id. The held datacube/delaunay hpc_a100 group (catalogue/designation_holds.json) "
+    "keeps its provisional label: class secondary with 'provisional_optimal: true' (or "
+    "provisional_secondary), and its planned_cells carry the provisional class.",
     "Standard source-pixel counts are Delaunay 1250 and rectangular 1225 (35x35). No committed "
     "row is at the standard size; current pixelized rows carry a size_fallback limitation.",
     "Records whose key has no current row (laptop-only, experiment-only, or outside the "
@@ -981,9 +988,6 @@ def lifecycle_candidates(
                 "sha256": hashlib.sha256(figure.read_bytes()).hexdigest(),
             }
         )
-    cls, notes = lc.record_class(
-        cell["dataset_type"], cell["variant"], cell["host_class"], cell["setup_id"]
-    )
     hosts, backfill = nodes or ({}, {})
     for payload, base, _context in rows(doc, adapter):
         groups = {}
@@ -1001,7 +1005,7 @@ def lifecycle_candidates(
         if not ident["software"]:
             reasons.append(f"{base or '/'}: no measured software version; no v3 record.")
             continue
-        measured_at, row_notes = prov["measured_at"], list(notes)
+        measured_at, row_notes = prov["measured_at"], []
         if measured_at is None:
             # v3 needs a UTC measured_at; a row without one is dated by the day its file was
             # first committed (an upper bound on when it was measured), and says so.
@@ -1016,6 +1020,14 @@ def lifecycle_candidates(
                 "file was first committed to git, an upper bound on the measurement date"
             )
         pixels = lc.size_pixels(cell["variant"], payload)
+        cls, decision_id, class_notes = lc.record_class(
+            cell["dataset_type"],
+            cell["variant"],
+            cell["host_class"],
+            cell["setup_id"],
+            lc.regime(cell["variant"], pixels),
+        )
+        row_notes = class_notes + row_notes
         size_rank, size_notes = size_variant_rank(cell, pixels, path)
         row_notes += size_notes
         resources = lc.row_resources(payload, path, base, backfill)
@@ -1060,7 +1072,7 @@ def lifecycle_candidates(
                     "superseded_by": None,
                     "day_zero": None,
                     "figures": figures,
-                    "decision_id": None,
+                    "decision_id": decision_id,
                     "release_pin": ident["library_version"],
                     **measured_pin(ident),
                     "measured_at": measured_at,
@@ -1104,9 +1116,6 @@ def parity_candidate(root, path, doc, releases=None, carries=None):
         entry["size_variant"] = cell["size_variant"]
     if doc["status"] == "not_assessed":
         return [], entry
-    cls, notes = lc.record_class(
-        cell["dataset_type"], cell["variant"], cell["host_class"], cell["setup_id"]
-    )
     # A witness records no library revisions: its release is the one its cell's rows name,
     # when they stamp the same autolens_version (the same run wrote them).
     sibling = None
@@ -1121,6 +1130,13 @@ def parity_candidate(root, path, doc, releases=None, carries=None):
     prov = {**prov, "measured_at": doc["measured_at"]}
     prov["unknowns"] = {k: v for k, v in prov["unknowns"].items() if k != "measured_at"}
     pixels = lc.size_pixels(cell["variant"], doc)
+    cls, decision_id, notes = lc.record_class(
+        cell["dataset_type"],
+        cell["variant"],
+        cell["host_class"],
+        cell["setup_id"],
+        lc.regime(cell["variant"], pixels),
+    )
     size_rank, size_notes = size_variant_rank(cell, pixels, path)
     record = {
         "id": "lifecycle/" + digest([path, "", "parity"]),
@@ -1141,7 +1157,7 @@ def parity_candidate(root, path, doc, releases=None, carries=None):
         "superseded_by": None,
         "day_zero": None,
         "figures": [],
-        "decision_id": None,
+        "decision_id": decision_id,
         "release_pin": ident["library_version"],
         **measured_pin(ident),
         "measured_at": doc["measured_at"],
@@ -1401,6 +1417,17 @@ def validate_lifecycle(root, doc):
             raise ValueError(f"Superseded record without a target: {record['id']}")
         if record["class"] == "optimal" and not text(record["decision_id"]):
             raise ValueError("class optimal needs a designation decision_id")
+        if record["decision_id"] is not None:
+            entry = lc.designation_of(
+                record["likelihood"]["dataset_type"],
+                record["likelihood"]["variant"],
+                record["host_class"],
+            )
+            if entry is None or entry["id"] != record["decision_id"]:
+                raise ValueError(
+                    f"{record['id']}: decision_id {record['decision_id']} is not the designation "
+                    "of its likelihood x hardware class"
+                )
         ev = record["evidence"]
         if ev["path"] not in sources:
             sources[ev["path"]] = load_json(source_path(root, ev["path"]))
@@ -1566,6 +1593,32 @@ def refresh_commit_dates(root):
     return 0
 
 
+DESIGNATIONS_MIRROR = "catalogue/pulse_designations.json"
+
+
+def designations_mirror(pulse_root):
+    """The ``pulse-designations`` mirror rendered from a PyAutoPulse checkout's validated
+    ``decisions.yaml`` (``pulse.decisions.load``): its ``kind: designation`` rows, by id."""
+    pulse_root = Path(pulse_root).resolve()
+    if str(pulse_root) not in sys.path:
+        sys.path.insert(0, str(pulse_root))
+    from pulse import decisions
+
+    rows = [r for r in decisions.load(pulse_root) if r.get("kind") == "designation"]
+    keep = (*lc.DESIGNATION_FIELDS, "rule", "date", "url", "supersedes")
+    doc = {
+        "schema": "pulse-designations",
+        "version": 1,
+        "source": "PyAutoPulse decisions.yaml (kind: designation), rendered by "
+        "scripts/misc/tooling/build_catalogue.py --sync-designations <PyAutoPulse>; "
+        "build_catalogue.py --check --validate-with <PyAutoPulse> fails when it drifts. "
+        "Do not edit.",
+        "designations": [{k: r[k] for k in keep} for r in sorted(rows, key=lambda r: r["id"])],
+    }
+    lc.load_designations(doc)
+    return json.dumps(doc, indent=2, ensure_ascii=False) + "\n"
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[3])
@@ -1576,6 +1629,12 @@ def main(argv=None):
         help="Pulse checkout: validate with its independent contract reader (v3 lifecycle, v2 companion)",
     )
     parser.add_argument(
+        "--sync-designations",
+        type=Path,
+        metavar="PULSE",
+        help=f"rewrite {DESIGNATIONS_MIRROR} from a PyAutoPulse checkout's designation records",
+    )
+    parser.add_argument(
         "--refresh-commit-dates",
         action="store_true",
         help=f"rewrite {COMMIT_DATES} from git history (first-add date, through the day-zero move)",
@@ -1584,6 +1643,12 @@ def main(argv=None):
     root = args.root.resolve()
     if args.refresh_commit_dates:
         return refresh_commit_dates(root)
+    if args.sync_designations:
+        (root / DESIGNATIONS_MIRROR).write_text(designations_mirror(args.sync_designations))
+        print(
+            f"catalogue: wrote {DESIGNATIONS_MIRROR}; rerun build_catalogue.py to re-class records"
+        )
+        return 0
     out = root / "dashboard/catalogue.json"
     # Reuse the established deterministic render stamp and producer revision.
     legacy = load_json(root / "dashboard/summary.json")
@@ -1594,7 +1659,21 @@ def main(argv=None):
         return 1
     if args.validate_with:
         sys.path.insert(0, str(args.validate_with.resolve()))
+        from pulse.ingest import unresolved_decisions
         from pulse.summary import classify
+
+        mirror = designations_mirror(args.validate_with)
+        if (root / DESIGNATIONS_MIRROR).read_text() != mirror:
+            print(
+                f"catalogue: {DESIGNATIONS_MIRROR} differs from {args.validate_with} "
+                "decisions.yaml; run build_catalogue.py --sync-designations <PyAutoPulse>"
+            )
+            return 1
+        unresolved = unresolved_decisions(
+            json.loads(outputs["catalogue.json"]), args.validate_with.resolve()
+        )
+        if unresolved:
+            raise ValueError("Pulse decision resolution failed: " + "; ".join(unresolved[:20]))
 
         for name, content in outputs.items():
             version = 3 if name == "catalogue.json" else 2

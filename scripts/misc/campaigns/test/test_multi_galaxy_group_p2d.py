@@ -38,6 +38,18 @@ from wall import check_submits, rates  # noqa: E402
 sys.path.insert(0, str(ROOT / "scripts" / "misc" / "tooling"))
 import catalogue_lifecycle as lc  # noqa: E402
 
+
+def assert_measured_every_designated_cell(manifest, planned):
+    """A finished phase-2 manifest measured every cell the day-zero designations plan
+    (autolens_profiling#497); each extra cell is a setup its designation did not name."""
+    manifest, planned = set(manifest), set(planned)
+    assert planned <= manifest, sorted(planned - manifest)
+    for cell in sorted(manifest - planned):
+        dataset_type, variant, _instrument = cell.split(" ")[0].split("/")
+        setup_id, host_class = cell.split(" ")[1].split("@")
+        assert lc.designation(dataset_type, variant, host_class, setup_id) is None, cell
+
+
 sys.path.insert(0, str(ROOT))
 import _profile_cli as pc  # noqa: E402
 
@@ -86,7 +98,7 @@ def legs(path):
 def test_manifest_is_exactly_the_planned_cells():
     tasks = p2d.planned_tasks()
     assert len(tasks) == len({t.cell for t in tasks}) == 48
-    assert {t.cell for t in tasks} == planned_cells()
+    assert_measured_every_designated_cell({t.cell for t in tasks}, planned_cells())
     assert Counter(t.host_class for t in tasks) == {"hpc_ral_cpu": 20, "hpc_a100": 28}
     assert Counter((t.dataset_type, t.variant) for t in tasks) == {
         (dt, v): n
@@ -102,7 +114,8 @@ def test_manifest_is_exactly_the_planned_cells():
 def test_the_setups_are_the_33_imaging_tables():
     for t in p2d.planned_tasks():
         planned = lc.planned_setups(t.dataset_type, t.variant, t.host_class, t.instrument)
-        assert t.setup_id in planned, t.cell
+        designated = lc.designation(t.dataset_type, t.variant, t.host_class, t.setup_id)
+        assert (t.setup_id in planned) == (designated is not None), t.cell
         table = "pixelized" if t.variant in p2d.PIXELIZED else "parametric"
         assert t.setup_id in p2d.SETUPS[table][t.host_class]
     registry = json.loads((ROOT / "catalogue" / "registry.json").read_text())
