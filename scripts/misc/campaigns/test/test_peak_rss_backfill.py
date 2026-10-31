@@ -106,16 +106,25 @@ def test_walls_mismatch_refuses():
         bf.build(_dump(swap_wall="imaging/mge/hst x@hpc_a100 [runtime]"), exists=lambda p: True)
 
 
+def _batch1_row(output: str) -> str:
+    # Phase 3 (#495) re-measured every 2a JAX cell; the batch-1 row it superseded, and its
+    # sidecar entry, moved to the cell's history/.
+    path = Path(output)
+    moved = path.parent / "history" / "2026.10.23.1_2026-10-25" / path.name
+    return moved.as_posix() if (ROOT / moved).is_file() else output
+
+
 def test_committed_sidecar_covers_every_committed_2a_row():
     doc = json.loads((ROOT / bf.SIDECAR).read_text())
     tasks = p2a.planned_tasks()
-    committed = {t.output for t in tasks if (ROOT / t.output).is_file()}
+    rows = {t.output: _batch1_row(t.output) for t in tasks}
+    committed = {r for r in rows.values() if (ROOT / r).is_file()}
     # Rows written after #462 (the two ao gpu-dense breakdowns rerun in #466) carry their own
     # ``resources`` block and need no sidecar entry; the sidecar stays batch 1's record.
     own = {o for o in committed if "resources" in json.loads((ROOT / o).read_text())}
     assert set(doc["rows"]) == committed - own
     assert len(committed - own) == 104
-    assert {t.cell for t in tasks if t.output not in committed - own} == set(
+    assert {t.cell for t in tasks if rows[t.output] not in committed - own} == set(
         doc["legs_without_row"]
     )
     for entry in doc["rows"].values():

@@ -96,14 +96,16 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 | Exact configuration | Evidence source | Records |
 |---|---|---|
 | [baseline-not-defined](fc16cf17254dfb9d30b9.md) | planned; no evidence | 0 |
-| [09831f795e38f7090e01](1ce8ab3954b84ba61cf4.md) | results/interferometer/delaunay/sma/comparison.json | 10 |
+| [041bc3601c2a3921d663](057958e235a299edfdd5.md) | results/interferometer/delaunay/sma/comparison.json | 11 |
 | [1d1072cd8bafe46efd38](cbba201352d400b4e6f5.md) | results/interferometer/delaunay/sma/jax_gpu_sparse_fp64_wtilde/hpc_a100/history/2026.10.25.1_2026-10-28/breakdown.json | 118 |
+| [20f9c5db4885b9344d03](6a68ada66304bdc25e83.md) | results/interferometer/delaunay/sma/comparison.json | 11 |
 | [268366f4eab33230f22e](671376f7d093bd3c7aa9.md) | results/interferometer/delaunay/sma/jax_cpu_sparse_fp64_wtilde/local_laptop/breakdown.json | 139 |
+| [34cab678a3b62bba759a](9a9f64feab5af68a857d.md) | results/interferometer/delaunay/sma/comparison.json | 10 |
+| [36695c8e4004ceea6b65](74315cafff3eb2004ea7.md) | results/interferometer/delaunay/sma/comparison.json | 11 |
 | [37b7de976bd74324550c](d23bc0324f6115af0629.md) | results/interferometer/delaunay/sma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/runtime.json | 1 |
 | [3a5fb1c6461716be4ace](369290535455f77656bf.md) | results/interferometer/delaunay/sma/jax_gpu_dense_fp64_nufft/hpc_a100/runtime.json | 10 |
 | [3c154769d4831afac2f9](4a62c8d02783be86d5f6.md) | results/interferometer/delaunay/sma/comparison.json | 4 |
 | [4bf8cad38fd9682b56db](b2a9acb0f696081a1f39.md) | results/interferometer/delaunay/sma/jax_gpu_dense_fp64_nufft/hpc_a100/history/2026.10.25.1_2026-10-28/runtime.json | 10 |
-| [4cc009e3b50422332534](c87280aeabfc20ce705b.md) | results/interferometer/delaunay/sma/comparison.json | 11 |
 | [4e40c39af27e87d93960](9dfd7e693d016c4ed993.md) | results/interferometer/delaunay/sma/jax_cpu_sparse_fp64_wtilde/hpc_ral_cpu/history/2026.8.17.1_2026-09-27/breakdown.json | 117 |
 | [50582caa6ed6bb628a84](3e8e7adb17cddfdd4388.md) | results/interferometer/delaunay/sma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/scans/r2.0/breakdown.json | 29 |
 | [54b6800ee5a8684e0b02](c05191ced8007861913f.md) | results/interferometer/delaunay/sma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/scans/r5.0/breakdown.json | 29 |
@@ -112,7 +114,6 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 | [5f7d8c9e4414108048b9](9e9c71fe7c3a68913cc8.md) | results/interferometer/delaunay/sma/jax_gpu_dense_fp64_nufft/hpc_a100/breakdown.json | 72 |
 | [624d61e5536c5839b4ac](5446ec210590bbeff521.md) | results/interferometer/delaunay/sma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/history/2026.10.25.1_2026-10-28/runtime.json | 1 |
 | [638fae82cb1bedd79eb5](30153de2e8d6df99e426.md) | results/interferometer/delaunay/sma/jax_cpu_dense_fp64_nufft/hpc_ral_cpu/breakdown.json | 71 |
-| [65dc24e4562c18071ca8](ebb505f6d9edd7449762.md) | results/interferometer/delaunay/sma/comparison.json | 11 |
 | [6967e713753e3b4f41a1](0c88d6868b737875bee1.md) | results/interferometer/delaunay/sma/jax_cpu_dense_fp64_nufft/hpc_ral_cpu/runtime.json | 9 |
 | [6c4e58d2887222b7e355](73a87588e70aba0c96b1.md) | results/interferometer/delaunay/sma/jax_cpu_dense_fp64_nufft/hpc_ral_cpu/history/2026.10.25.1_2026-10-28/breakdown.json | 70 |
 | [7301a030817fa89987cb](0e3507974a308384db1f.md) | results/interferometer/delaunay/sma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/history/2026.8.17.1_2026-09-27/breakdown.json | 29 |
@@ -129,7 +130,6 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 | [bc4ecdc856fff3d86c8d](6f931bd2e8aa37419c59.md) | results/interferometer/delaunay/sma/jax_gpu_sparse_fp64_wtilde/hpc_a100/scans/r5.0/breakdown.json | 121 |
 | [bf1e80ab8cd8f5bcbf30](a2c3867956ea48d49eeb.md) | results/runtime/interferometer/delaunay/sma/delaunay_local_cpu_mp.json | 3 |
 | [c1c05d569ac74ab4ba8b](f7310b986225ed53922f.md) | results/interferometer/delaunay/sma/comparison.json | 4 |
-| [cad3ae47a87e0db96320](06a8a844c40dd7f5dd1d.md) | results/interferometer/delaunay/sma/comparison.json | 11 |
 | [dcc906e7abf098dc40e2](8e779510784c60273c40.md) | results/interferometer/delaunay/sma/numba_cpu_sparse_fp64_wtilde/hpc_ral_cpu/breakdown.json | 29 |
 | [dfa048425c14fbbfd871](9186b351ab79f15687cc.md) | results/interferometer/delaunay/sma/jax_gpu_dense_fp64_nufft/hpc_a100/history/2026.10.25.1_2026-10-28/breakdown.json | 72 |
 | [e486dd7dc4d64693eb92](6a4b5cb411fe221f8285.md) | results/interferometer/delaunay/sma/jax_cpu_dense_fp64_nufft/hpc_ral_cpu/history/2026.10.25.1_2026-10-28/runtime.json | 9 |

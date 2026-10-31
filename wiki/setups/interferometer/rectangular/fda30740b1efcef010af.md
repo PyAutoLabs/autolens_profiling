@@ -3,7 +3,7 @@
 
 [Model index](index.md)
 
-Exact setup ID: `interferometer/rectangular/sma/1802cd35280f6d314c23`.
+Exact setup ID: `interferometer/rectangular/sma/2a2963fa6e0500f0cce2`.
 
 Imported support is unreviewed; this page grants no baseline acceptance. Timing axes remain separate; no total fit-time prediction is made.
 
@@ -13,8 +13,8 @@ Identity limitations: Isolated to source row: legacy metadata is insufficient fo
 
 | Setting | Recorded value | Unit | Unknown reason |
 |---|---|---|---|
-| host_load_avg_end | [3.67, 3.85, 2.15] | recorded |  |
-| host_load_avg_start | [3.56, 3.85, 2.05] | recorded |  |
+| host_load_avg_end | [1.14, 1.22, 2.55] | recorded |  |
+| host_load_avg_start | [1.07, 1.24, 2.96] | recorded |  |
 | image_pixels_masked | 3852 | count |  |
 | image_shape | null | pixel | Not recorded in this legacy evidence; no current default substituted. |
 | inversion_class | "InversionInterferometerMapping" | recorded |  |
@@ -37,17 +37,17 @@ Identity limitations: Isolated to source row: legacy metadata is insufficient fo
 | sparse_batch_size | null | recorded | Not recorded in this legacy evidence; no current default substituted. |
 | sparse_operator_method | null | recorded | Not recorded in this legacy evidence; no current default substituted. |
 | standard_size | true | recorded |  |
-| sweep_config | "hpc_a100_fp64" | recorded |  |
+| sweep_config | "hpc_ral_cpu_fp64" | recorded |  |
 | transformer | "TransformerNUFFT" | name |  |
 | transformer_chunk_size | null | recorded | Not recorded in this legacy evidence; no current default substituted. |
 | transformer_chunk_size_preset | null | recorded | Not recorded in this legacy evidence; no current default substituted. |
 | use_mixed_precision | false | recorded |  |
 | visibilities | 190 | recorded |  |
-| vmap_batch_size | 1 | recorded |  |
+| vmap_batch_size | 3 | recorded |  |
 
 ## Evidence
 
-[Original setup artifact](../../../../results/interferometer/rectangular/sma/comparison.json); JSON pointer: `/configs/hpc_a100_fp64`.
+[Original setup artifact](../../../../results/interferometer/rectangular/sma/comparison.json); JSON pointer: `/configs/hpc_ral_cpu_fp64`.
 
 ### Selected references
 
@@ -59,8 +59,8 @@ No selected reference for this exact setup; archive evidence is available below.
 
 | Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
 |---|---|---|---|---|---|---|
-| `measurement/54a1eef8758bf74893b2` | full_pipeline_vmap1.steady_per_call_s | {"full_pipeline_vmap1.steady_per_call_s": 0.05012710429728031} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/interferometer/rectangular/sma/comparison.json) `/configs/hpc_a100_fp64/jit_phases/full_pipeline_vmap1/steady_per_call_s` |
-| `measurement/f78353ee88efb85409d1` | full_pipeline.steady_per_call_s | {"full_pipeline.steady_per_call_s": 0.05012258940259926} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/interferometer/rectangular/sma/comparison.json) `/configs/hpc_a100_fp64/jit_phases/full_pipeline/steady_per_call_s` |
+| `measurement/23d30606d50776365ed5` | full_pipeline_vmap3.steady_per_call_s | {"full_pipeline_vmap3.steady_per_call_s": 5.38033470409767} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/interferometer/rectangular/sma/comparison.json) `/configs/hpc_ral_cpu_fp64/jit_phases/full_pipeline_vmap3/steady_per_call_s` |
+| `measurement/fcce3a1cad1eb71e65cd` | full_pipeline.steady_per_call_s | {"full_pipeline.steady_per_call_s": 5.391474505409133} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/interferometer/rectangular/sma/comparison.json) `/configs/hpc_ral_cpu_fp64/jit_phases/full_pipeline/steady_per_call_s` |
 
 </details>
 
@@ -70,24 +70,23 @@ No selected reference for this exact setup; archive evidence is available below.
 
 | Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
 |---|---|---|---|---|---|---|
-| `measurement/3148561d36b7d0c259fb` | full_pipeline_vmap1.first_call_s | {"full_pipeline_vmap1.first_call_s": 4.143590004008729} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/interferometer/rectangular/sma/comparison.json) `/configs/hpc_a100_fp64/jit_phases/full_pipeline_vmap1/first_call_s` |
-| `measurement/6730575ef78e299ac305` | full_pipeline.compile_s | {"full_pipeline.compile_s": 2.7847231079940684} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/interferometer/rectangular/sma/comparison.json) `/configs/hpc_a100_fp64/jit_phases/full_pipeline/compile_s` |
-| `measurement/746e330d3e075b3129f7` | full_pipeline.first_call_s | {"full_pipeline.first_call_s": 0.1580589659861289} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/interferometer/rectangular/sma/comparison.json) `/configs/hpc_a100_fp64/jit_phases/full_pipeline/first_call_s` |
-| `measurement/a46392d0d3cb653c07eb` | full_pipeline.lower_s | {"full_pipeline.lower_s": 0.373152039013803} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/interferometer/rectangular/sma/comparison.json) `/configs/hpc_a100_fp64/jit_phases/full_pipeline/lower_s` |
+| `measurement/acd355dc864180840b60` | full_pipeline_vmap3.first_call_s | {"full_pipeline_vmap3.first_call_s": 18.49035323993303} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/interferometer/rectangular/sma/comparison.json) `/configs/hpc_ral_cpu_fp64/jit_phases/full_pipeline_vmap3/first_call_s` |
+| `measurement/bc67b2d61f3f536be899` | full_pipeline.lower_s | {"full_pipeline.lower_s": 0.3324292480247095} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/interferometer/rectangular/sma/comparison.json) `/configs/hpc_ral_cpu_fp64/jit_phases/full_pipeline/lower_s` |
+| `measurement/fb11bc63cf7810bed0f1` | full_pipeline.first_call_s | {"full_pipeline.first_call_s": 5.239857416017912} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/interferometer/rectangular/sma/comparison.json) `/configs/hpc_ral_cpu_fp64/jit_phases/full_pipeline/first_call_s` |
+| `measurement/fb95cc35942042a879bc` | full_pipeline.compile_s | {"full_pipeline.compile_s": 1.1314214810263366} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/interferometer/rectangular/sma/comparison.json) `/configs/hpc_ral_cpu_fp64/jit_phases/full_pipeline/compile_s` |
 
 </details>
 
 ### runtime
 
-<details><summary>5 recorded runtime measurements</summary>
+<details><summary>4 recorded runtime measurements</summary>
 
 | Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
 |---|---|---|---|---|---|---|
-| `measurement/0c2c2c13facd0ef5b5db` | vmap.per_call | {"vmap.per_call": 0.05012710429728031} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/interferometer/rectangular/sma/comparison.json) `/configs/hpc_a100_fp64/vmap/per_call` |
-| `measurement/798af83c302a226f6683` | single_jit_median | {"single_jit_median": 0.050055789994075894} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/interferometer/rectangular/sma/comparison.json) `/configs/hpc_a100_fp64/full_pipeline_single_jit_median` |
-| `measurement/9420e4ddd3e451d1c15c` | single_jit_block | {"single_jit_block": 0.05012258940259926} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/interferometer/rectangular/sma/comparison.json) `/configs/hpc_a100_fp64/full_pipeline_single_jit` |
-| `measurement/ee0f576d9b5ae8301ca4` | single_call | {"single_call": 0.05012258940259926} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/interferometer/rectangular/sma/comparison.json) `/configs/hpc_a100_fp64/full_pipeline_per_call` |
-| `measurement/ffdc011f64e1a7515f7a` | vmap.batch_time | {"vmap.batch_time": 0.05012710429728031} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/interferometer/rectangular/sma/comparison.json) `/configs/hpc_a100_fp64/vmap/batch_time` |
+| `measurement/19f94ab4c9865e96dd3a` | single_call | {"single_call": 5.391474505409133} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/interferometer/rectangular/sma/comparison.json) `/configs/hpc_ral_cpu_fp64/full_pipeline_per_call` |
+| `measurement/64117a9d1cc8214a1beb` | single_jit_block | {"single_jit_block": 5.391474505409133} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/interferometer/rectangular/sma/comparison.json) `/configs/hpc_ral_cpu_fp64/full_pipeline_single_jit` |
+| `measurement/95db89335a84e6e33435` | vmap.per_call | {"vmap.per_call": 5.38033470409767} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/interferometer/rectangular/sma/comparison.json) `/configs/hpc_ral_cpu_fp64/vmap/per_call` |
+| `measurement/dfb3d07f438d13ef28db` | vmap.batch_time | {"vmap.batch_time": 16.14100411229301} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/interferometer/rectangular/sma/comparison.json) `/configs/hpc_ral_cpu_fp64/vmap/batch_time` |
 
 </details>
 
@@ -96,18 +95,17 @@ No selected reference for this exact setup; archive evidence is available below.
 ```json
 {
   "identity": {
-    "backend": "gpu",
-    "device": "a100",
+    "backend": "cpu",
+    "device": "cpu",
     "hardware_details": {
       "autotune_cache_entries_at_start": 0,
-      "backend": "gpu",
+      "backend": "cpu",
       "cache_fresh": true,
-      "cpu_count": 124,
-      "device": "cuda:0",
-      "hostname": "euclid-ral-gpu-1",
-      "nvidia_smi": "NVIDIA A100 80GB PCIe, 16873 MiB, 81920 MiB",
+      "cpu_count": 236,
+      "device": "cpu:0",
+      "hostname": "euclid-ral-compute-10-3",
       "omp_num_threads": "1",
-      "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+      "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_cpu_multi_thread_eigen=false --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
     },
     "library_version": "2026.8.17.1",
     "precision": "float64",
@@ -123,82 +121,10 @@ No selected reference for this exact setup; archive evidence is available below.
       "PyAutoLens.library_versions": "2026.8.17.1",
       "PyAutoNerves.library_revisions": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
       "PyAutoNerves.library_versions": "2026.8.17.1",
-      "autolens_profiling.library_revisions": "80bbb028284ad8eb36d34692a414319f881b1d1e",
+      "autolens_profiling.library_revisions": "7c682ccbca9eb2bcad63b659e5d6328644a99617",
       "finufft.dependency_versions": "2.5.1",
-      "jax.dependency_versions": "0.10.2",
-      "jaxlib.dependency_versions": "0.10.2",
-      "nufftax.dependency_versions": "0.6.1",
-      "numba.dependency_versions": "0.65.1",
-      "numpy.dependency_versions": "2.2.6",
-      "scipy.dependency_versions": "1.17.1"
-    },
-    "unknowns": {}
-  },
-  "method": {
-    "cache_state": null,
-    "repetitions": null,
-    "statistic": "median",
-    "synchronization": null,
-    "unknowns": {
-      "cache_state": "Not recorded in this legacy evidence; no current default substituted.",
-      "repetitions": "Not recorded in this legacy evidence; no current default substituted.",
-      "synchronization": "Not recorded in this legacy evidence; no current default substituted.",
-      "warmup": "Not recorded in this legacy evidence; no current default substituted."
-    },
-    "warmup": null
-  },
-  "provenance": {
-    "has_provenance": true,
-    "host": "euclid-ral-gpu-1",
-    "measured_at": "2026-10-28T13:57:53Z",
-    "qualified": false,
-    "unknowns": {}
-  },
-  "validation": {
-    "reason": "Legacy evidence transcribed without scientific baseline acceptance.",
-    "status": "unreviewed"
-  }
-}
-```
-
-</details>
-
-<details><summary>Recorded hardware, software, method and limitations</summary>
-
-```json
-{
-  "identity": {
-    "backend": "gpu",
-    "device": "a100",
-    "hardware_details": {
-      "autotune_cache_entries_at_start": 0,
-      "backend": "gpu",
-      "cache_fresh": true,
-      "cpu_count": 124,
-      "device": "cuda:0",
-      "hostname": "euclid-ral-gpu-1",
-      "nvidia_smi": "NVIDIA A100 80GB PCIe, 16873 MiB, 81920 MiB",
-      "omp_num_threads": "1",
-      "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
-    },
-    "library_version": "2026.8.17.1",
-    "precision": "float64",
-    "software": {
-      "PyAutoArray.library_revisions": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
-      "PyAutoArray.library_versions": "2026.8.17.1",
-      "PyAutoFit.library_revisions": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
-      "PyAutoFit.library_versions": "2026.8.17.1",
-      "PyAutoGalaxy.library_revisions": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
-      "PyAutoGalaxy.library_versions": "2026.8.17.1",
-      "PyAutoLens": "2026.8.17.1",
-      "PyAutoLens.library_revisions": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8",
-      "PyAutoLens.library_versions": "2026.8.17.1",
-      "PyAutoNerves.library_revisions": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
-      "PyAutoNerves.library_versions": "2026.8.17.1",
-      "autolens_profiling.library_revisions": "80bbb028284ad8eb36d34692a414319f881b1d1e",
-      "finufft.dependency_versions": "2.5.1",
-      "jax.dependency_versions": "0.10.2",
-      "jaxlib.dependency_versions": "0.10.2",
+      "jax.dependency_versions": "0.11.2",
+      "jaxlib.dependency_versions": "0.11.2",
       "nufftax.dependency_versions": "0.6.1",
       "numba.dependency_versions": "0.65.1",
       "numpy.dependency_versions": "2.2.6",
@@ -222,8 +148,8 @@ No selected reference for this exact setup; archive evidence is available below.
   },
   "provenance": {
     "has_provenance": true,
-    "host": "euclid-ral-gpu-1",
-    "measured_at": "2026-10-28T13:57:53Z",
+    "host": "euclid-ral-compute-10-3",
+    "measured_at": "2026-10-30T08:41:23Z",
     "qualified": false,
     "unknowns": {}
   },
