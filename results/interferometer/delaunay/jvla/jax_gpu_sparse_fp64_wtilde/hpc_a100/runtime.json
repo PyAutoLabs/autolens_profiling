@@ -3,35 +3,35 @@
   "device": {
     "backend": "gpu",
     "device": "cuda:0",
-    "hostname": "euclid-ral-gpu-1",
+    "hostname": "euclid-ral-gpu-2",
     "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
     "omp_num_threads": "1",
     "cpu_count": 124,
-    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2a/output/jax_cache/p2b_413165_1",
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2dg/output/jax_cache/p2b_413625_1",
     "autotune_cache_entries_at_start": 0,
     "cache_fresh": true,
     "provenance": {
       "provenance_schema": 1,
-      "captured_at": "2026-10-28T14:01:22Z",
-      "host": "euclid-ral-gpu-1",
+      "captured_at": "2026-10-30T16:45:03Z",
+      "host": "euclid-ral-gpu-2",
       "slurm": {
-        "job_id": "413165",
+        "job_id": "413625",
         "array_job_id": null,
         "array_task_id": null
       },
       "loadavg_at_import": [
-        3.5,
-        3.82,
-        2.07
+        3.04,
+        4.07,
+        2.58
       ],
       "loadavg_at_write": [
-        1.68,
-        3.04,
-        2.19
+        1.05,
+        2.42,
+        2.25
       ],
-      "profiling_revision": "80bbb028284ad8eb36d34692a414319f881b1d1e",
+      "profiling_revision": "8860c50c0dc924ee591bfd0157cde7946a80a25e",
       "library_revisions": {
-        "autolens_profiling": "80bbb028284ad8eb36d34692a414319f881b1d1e",
+        "autolens_profiling": "8860c50c0dc924ee591bfd0157cde7946a80a25e",
         "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
         "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
         "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
@@ -46,8 +46,8 @@
         "PyAutoLens": "2026.8.17.1"
       },
       "dependency_versions": {
-        "jax": "0.10.2",
-        "jaxlib": "0.10.2",
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
         "numpy": "2.2.6",
         "scipy": "1.17.1",
         "numba": "0.65.1",
@@ -64,7 +64,7 @@
     "cpus_per_eval": 8,
     "cpus_per_eval_basis": "jax gpu: one device; cpus_per_eval = NPROC host threads",
     "devices_per_eval": 1,
-    "peak_rss_gb": 14.346908,
+    "peak_rss_gb": 14.329934,
     "peak_rss_basis": "in_process_ru_maxrss",
     "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
   },
@@ -186,28 +186,28 @@
     "inversion_class": "InversionInterferometerSparse",
     "sparse_operator_method": "nufft",
     "sparse_batch_size": 128,
-    "operator_build_s": 12.50551925500622,
+    "operator_build_s": 12.598433690029196,
     "n_repeats": 10,
     "host_load_avg_start": [
-      3.5,
-      3.82,
-      2.07
+      3.04,
+      4.07,
+      2.58
     ],
     "host_load_avg_end": [
-      1.68,
-      3.04,
-      2.19
+      1.05,
+      2.42,
+      2.25
     ]
   },
-  "log_evidence_jit": -301473358.0378037,
-  "full_pipeline_single_jit": 0.4402975295030046,
-  "full_pipeline_single_jit_median": 0.4401938800292555,
-  "full_pipeline_single_jit_median_ms": 440.1938800292555,
-  "full_pipeline_single_jit_p10_ms": 439.9768503208179,
-  "full_pipeline_single_jit_p90_ms": 440.7428936974611,
+  "log_evidence_jit": -301473358.0378036,
+  "full_pipeline_single_jit": 0.4434031132026576,
+  "full_pipeline_single_jit_median": 0.44440264301374555,
+  "full_pipeline_single_jit_median_ms": 444.40264301374555,
+  "full_pipeline_single_jit_p10_ms": 443.5188502073288,
+  "full_pipeline_single_jit_p90_ms": 445.3102426370606,
   "full_pipeline_single_jit_median_protocol": {
     "n_warm": 5,
-    "n_timed": 68,
+    "n_timed": 67,
     "statistic": "median of individually timed calls after warm calls",
     "full_pipeline_single_jit_is": "mean of one 10-call block after one first call (first block after compile)",
     "issue": "autolens_profiling#371; timing-noise audit P8 (#362)"
@@ -216,27 +216,27 @@
     "batch_size": 3,
     "batch_size_resolved": 3,
     "batch_size_source": "table",
-    "batch_time": 1.3782641590049025,
-    "per_call": 0.4594213863349675,
-    "speedup_vs_single_jit": 0.96,
+    "batch_time": 1.3955544274067506,
+    "per_call": 0.4651848091355835,
+    "speedup_vs_single_jit": 0.95,
     "instances": "draw 0 broadcast to the batch (the runtime cells' convention)",
     "attempts": []
   },
   "jit_phases": {
     "full_pipeline": {
-      "lower_s": 0.46487885899841785,
-      "compile_s": 3.5403103129938245,
-      "first_call_s": 0.5262561140116304,
-      "steady_per_call_s": 0.4402975295030046
+      "lower_s": 0.5681893100263551,
+      "compile_s": 4.872183085069992,
+      "first_call_s": 0.5007575820200145,
+      "steady_per_call_s": 0.4434031132026576
     },
     "full_pipeline_vmap3": {
-      "first_call_s": 6.194416397949681,
-      "batch_per_call_s": 1.3782641590049025,
-      "steady_per_call_s": 0.4594213863349675
+      "first_call_s": 7.816078896052204,
+      "batch_per_call_s": 1.3955544274067506,
+      "steady_per_call_s": 0.4651848091355835
     }
   },
   "parity_candidate": {
-    "log_likelihood": -301473358.0378037,
+    "log_likelihood": -301473358.0378036,
     "quantity": "log_likelihood_function (the cell's figure of merit, the log evidence) at the standard cell's iid draw 0, vs the visibility-chunked eager NumPy dense reference",
     "variant": "delaunay",
     "instrument": "jvla",
@@ -257,7 +257,7 @@
     "use_mixed_precision": false
   },
   "log_likelihood_eager": -301464590.725608,
-  "figure_of_merit_eager": -301473358.0378037,
+  "figure_of_merit_eager": -301473358.03780365,
   "eager_inversion_class": "InversionInterferometerSparse",
-  "eager_vs_jit_abs_diff": 0.0
+  "eager_vs_jit_abs_diff": 5.960464477539063e-08
 }
