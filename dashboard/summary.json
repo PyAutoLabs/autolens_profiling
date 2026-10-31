@@ -3,11 +3,11 @@
  "version": 1,
  "project": "autolens_profiling",
  "scope": "release-runtime",
- "generated_at": "2026-10-31T12:31:15Z",
+ "generated_at": "2026-10-31T12:36:45Z",
  "evidence_updated_at": "2026-10-25T00:00:00Z",
  "evidence_updated_at_reason": null,
  "valid_until": null,
- "producer_revision": "af6e2bb7a7c5dd65a8b637bbad134077da5bbb6e",
+ "producer_revision": "af2e1ce10aa9bb5c804e681bf4893470db524670",
  "comparison_policy": {
   "id": "runtime-drift-2x-1ms",
   "ratio": 2.0,
@@ -1462,6 +1462,22 @@
     "reason": "loadavg 98.5 above the cap 8",
     "evidence": {
      "path": "results/multi_galaxy/rectangular/hst/numba_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
+     "fragment": null
+    }
+   },
+   {
+    "id": "breakdown:point_source_image/image_plane:simple:jax_cpu_na_fp64:hpc_ral_cpu:default@2026.10.25.1",
+    "reason": "loadavg 10.3 above the cap 8",
+    "evidence": {
+     "path": "results/point_source_image/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/breakdown.json",
+     "fragment": null
+    }
+   },
+   {
+    "id": "breakdown:point_source_source/source_plane:simple:jax_cpu_na_fp64:hpc_ral_cpu:default@2026.10.25.1",
+    "reason": "loadavg 10.3 above the cap 8",
+    "evidence": {
+     "path": "results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/breakdown.json",
      "fragment": null
     }
    }
@@ -5620,7 +5636,7 @@
     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
    },
    "evidence": {
-    "path": "results/interferometer/delaunay/alma_high/jax_gpu_sparse_fp64_wtilde/hpc_a100/runtime.json",
+    "path": "results/interferometer/delaunay/alma_high/jax_gpu_sparse_fp64_wtilde/hpc_a100/history/2026.10.25.1_2026-10-28/runtime.json",
     "fragment": null
    }
   },
@@ -6260,7 +6276,7 @@
     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
    },
    "evidence": {
-    "path": "results/interferometer/rectangular/alma_high/jax_gpu_sparse_fp64_wtilde/hpc_a100/runtime.json",
+    "path": "results/interferometer/rectangular/alma_high/jax_gpu_sparse_fp64_wtilde/hpc_a100/history/2026.10.25.1_2026-10-28/runtime.json",
     "fragment": null
    }
   },
@@ -11338,9 +11354,9 @@
    "axis": "runtime",
    "unit": "s",
    "measurement": {
-    "single_jit_s": 0.08296770500601269,
+    "single_jit_s": 0.0780861530220136,
     "vmap_per_call_s": null,
-    "single_jit_block_mean_s": 0.0832129640970379
+    "single_jit_block_mean_s": 0.07833339469507336
    },
    "identity": {
     "section": "breakdown",
@@ -11357,12 +11373,12 @@
     "reason": null
    },
    "provenance": {
-    "host": "euclid-ral-gpu-1",
-    "job": "413164",
-    "loadavg": 2.33,
+    "host": "euclid-ral-gpu-2",
+    "job": "413624",
+    "loadavg": 0.62,
     "has_provenance": true,
-    "qualified": false,
-    "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    "qualified": true,
+    "reason": null
    },
    "evidence": {
     "path": "results/interferometer/delaunay/alma_high/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
@@ -13341,9 +13357,9 @@
    "axis": "runtime",
    "unit": "s",
    "measurement": {
-    "single_jit_s": 0.07382051498279907,
+    "single_jit_s": 0.06912656204076484,
     "vmap_per_call_s": null,
-    "single_jit_block_mean_s": 0.07389071159996093
+    "single_jit_block_mean_s": 0.0690782001009211
    },
    "identity": {
     "section": "breakdown",
@@ -13360,12 +13376,12 @@
     "reason": null
    },
    "provenance": {
-    "host": "euclid-ral-gpu-1",
-    "job": "413164",
-    "loadavg": 5.68,
+    "host": "euclid-ral-gpu-2",
+    "job": "413624",
+    "loadavg": 5.04,
     "has_provenance": true,
-    "qualified": false,
-    "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    "qualified": true,
+    "reason": null
    },
    "evidence": {
     "path": "results/interferometer/rectangular/alma_high/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
@@ -14352,7 +14368,7 @@
     "reason": "off the reference host (euclid-ral-compute-10-5 != euclid-ral-gpu-2)"
    },
    "evidence": {
-    "path": "results/point_source_image/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/breakdown.json",
+    "path": "results/point_source_image/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/history/2026.10.25.1_2026-10-28/breakdown.json",
     "fragment": null
    }
   },
@@ -14527,7 +14543,7 @@
     "reason": "off the reference host (euclid-ral-compute-10-5 != euclid-ral-gpu-2)"
    },
    "evidence": {
-    "path": "results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/breakdown.json",
+    "path": "results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/history/2026.10.25.1_2026-10-28/breakdown.json",
     "fragment": null
    }
   },
@@ -17605,8 +17621,7 @@
    "qualified": false,
    "reasons": [
     "endpoints use different headline estimators (steady median vs legacy block mean): not compared",
-    "baseline row unqualified: no provenance block (pre-#342 row)",
-    "candidate row unqualified: off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    "baseline row unqualified: no provenance block (pre-#342 row)"
    ]
   },
   {
@@ -18316,8 +18331,7 @@
    "qualified": false,
    "reasons": [
     "endpoints use different headline estimators (steady median vs legacy block mean): not compared",
-    "baseline row unqualified: no provenance block (pre-#342 row)",
-    "candidate row unqualified: off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    "baseline row unqualified: no provenance block (pre-#342 row)"
    ]
   },
   {
@@ -18777,6 +18791,6 @@
   "single_jit_s is the steady median (>= 5 warm calls, median of individually timed calls) where a record also carries single_jit_block_mean_s, else the legacy headline; a comparison whose endpoints use different estimators is insufficient",
   "rows without a device.provenance block (pre-autolens_profiling#342) are unqualified",
   "HPC rows measured off the reference host euclid-ral-gpu-2 are unqualified",
-  "179 row(s) above the load-average cap 8 are listed under coverage.excluded and never enter records"
+  "181 row(s) above the load-average cap 8 are listed under coverage.excluded and never enter records"
  ]
 }
