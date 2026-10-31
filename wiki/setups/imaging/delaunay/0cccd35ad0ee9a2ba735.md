@@ -1,0 +1,171 @@
+<!-- generated: build_setup_wiki.py; do not edit -->
+# delaunay · jwst
+
+[Model index](index.md)
+
+Exact setup ID: `imaging/delaunay/jwst/0e66b517719e98306a8e`.
+
+Imported support is unreviewed; this page grants no baseline acceptance. Timing axes remain separate; no total fit-time prediction is made.
+
+## Configuration
+
+Identity limitations: Isolated to source row: legacy metadata is insufficient for cross-file joins.
+
+| Setting | Recorded value | Unit | Unknown reason |
+|---|---|---|---|
+| adapt_image | "subtracted S/N (truth tracer), floored" | recorded |  |
+| adapt_minimum_percent | 0.01 | recorded |  |
+| delaunay_vertices | 1280 | recorded |  |
+| edge_zeroed_pixels | 30 | recorded |  |
+| image_pixels_masked | 42737 | count |  |
+| image_shape | null | pixel | Not recorded in this legacy evidence; no current default substituted. |
+| lens_light_source | "truth" | recorded |  |
+| mask_radius_arcsec | 3.5 | recorded |  |
+| memo | "library_default (inert on the JAX path)" | recorded |  |
+| mesh_adapt_snr_cap | 3.0 | recorded |  |
+| n_vis | null | count | Not recorded in this legacy evidence; no current default substituted. |
+| over_sample_size_lp_rule | {"centre": [0.0, 0.0], "radial_list": [0.1, 0.3], "sub_size_list": [4, 2, 2]} | recorded |  |
+| over_sample_size_pixelization_rule | {"pixels_above": 5407, "pixels_below": 37330, "source_snr_cut": 3.0, "sub_size_above": 4, "sub_size_below": 2, "threshold_map": "uncapped subtracted S/N (production)"} | recorded |  |
+| over_sampled_pixels | 171392 | recorded |  |
+| over_sampling_preset | "hst_source_pix_2_standard_jwst" | recorded |  |
+| oversampled_pixels | 171392 | recorded |  |
+| oversampling | null | dimensionless | Not recorded in this legacy evidence; no current default substituted. |
+| pixel_scale_arcsec | 0.03 | recorded |  |
+| preloads | null | name | Not recorded in this legacy evidence; no current default substituted. |
+| production_data_record | {"adapt_image": "subtracted S/N (truth tracer), floored", "adapt_minimum_percent": 0.01, "lens_light_source": "truth", "mesh_adapt_snr_cap": 3.0, "over_sample_size_lp_rule": {"centre": [0.0, 0.0], "radial_list": [0.1, 0.3], "sub_size_list": [4, 2, 2]}, "over_sample_size_pixelization_rule": {"pixels_above": 5407, "pixels_below": 37330, "source_snr_cut": 3.0, "sub_size_above": 4, "sub_size_below": 2, "threshold_map": "uncapped subtracted S/N (production)"}, "over_sampling_preset": "hst_source_pix_2_standard_jwst"} | recorded |  |
+| production_preset | {"adapt_snr_cap": 3.0, "instance": "iid draw 0 of the preset sequence (seeded)", "lens_light": "mge_60_linear_2_basis", "memo": "off", "mesh": {"edge_pixels": 30, "hilbert_pixels": 1250, "hilbert_weight_floor": 0.01, "hilbert_weight_power": 3.5, "kind": "delaunay", "vertices": 1280, "zeroed_pixels": 30}, "mesh_kind": "delaunay", "mge_gaussian_per_basis": 2, "mge_total_gaussians": 30, "over_sample_size_lp_rule": {"centre": [0.0, 0.0], "radial_list": [0.1, 0.3], "sub_size_list": [4, 2, 2]}, "over_sample_size_pixelization_rule": {"source_snr_cut": 3.0, "sub_size_above": 4, "sub_size_below": 2}, "positions_penalty": null, "preset": "hst_source_pix_2_standard_jwst", "production_data": {"enabled": true, "lens_light_source": "truth"}, "production_source": {"adapt_image": "PyAutoGalaxy@7472211 autogalaxy/analysis/adapt_images/adapt_images.py:138 galaxy_name_image_dict_via_result_from: the source's subtracted S/N map (data minus the other galaxies' model images, over the noise map), floored at adapt_minimum_percent (0.01, subhalo_validation config/general.yaml:28) x max", "mesh_and_regularization_adapt_image": "subhalo_validation scripts/pipelines/spec.py:9-36 capped_galaxy_name_image_dict_from (S/N capped at 3.0); used by delaunay_adapt_split.py:123,:165 and rectangular_adapt.py:109", "model_stand_in": "no previous-stage fit exists in a profiling cell: the dataset's truth tracer (tracer.json) stands in for the maximum-likelihood model whose lens light is subtracted", "over_sampling": "subhalo_validation scripts/imaging.py:213-255 apply_adaptive_pixelization_over_sampling: sub-size 4 where the UNCAPPED source S/N > 3.0, else 2; light-profile bins :175-184", "rectangular_mesh": "subhalo_validation scripts/pipelines/rectangular_adapt.py:74-96 (source_pix[2]): af.Model(al.mesh.RectangularBilinearAdaptImage, shape) with al.reg.Adapt; weight priors config/priors/mesh/rectangular.yaml:43-61"}, "provenance": "subhalo_validation/scripts/imaging.py + scripts/pipelines/delaunay_adapt_split.py (source_pix[2], job 342311): mesh :41,:61-63, image mesh :37-38,:125-129, regularization :151, adapt S/N cap pipelines/spec.py:9,:31, over-sampling :213,:216-255, sparse operator :252-253,:807, no positions penalty :384-388, MGE :273-278, threads hpc/batch_cpu/submit_source_pix:5,51-55 \u2014 production data (human ruling 2026-10-24): subtracted S/N adapt image, uncapped over-sampling cut; no jwst production reference: borrows the hst preset 'hst_source_pix_2' with the jwst dataset", "regularization": {"free": true, "priors": {"inner_coefficient": {"lower": 1e-06, "type": "LogUniform", "upper": 1000000.0}, "outer_coefficient": {"lower": 1e-06, "type": "LogUniform", "upper": 1000000.0}, "signal_scale": {"lower": 0.0, "type": "Uniform", "upper": 1.0}}, "scheme": "adapt_split"}, "sequence": {"kind": "iid", "seed": 235, "unit_high": 0.6, "unit_low": 0.4}, "size_override": "production data (human ruling 2026-10-24): subtracted S/N adapt image, uncapped over-sampling cut; no jwst production reference: borrows the hst preset 'hst_source_pix_2' with the jwst dataset", "variant": "production"} | recorded |  |
+| psf_shape | null | pixel | Not recorded in this legacy evidence; no current default substituted. |
+| regularization | {"free": true, "priors": {"inner_coefficient": {"lower": 1e-06, "type": "LogUniform", "upper": 1000000.0}, "outer_coefficient": {"lower": 1e-06, "type": "LogUniform", "upper": 1000000.0}, "signal_scale": {"lower": 0.0, "type": "Uniform", "upper": 1.0}}, "scheme": "adapt_split"} | name |  |
+| solver | null | name | Not recorded in this legacy evidence; no current default substituted. |
+| source_pixels | 1280 | count |  |
+| source_pixels_requested | 1250 | recorded |  |
+| sparse_batch_size | 128 | recorded |  |
+| standard_size | true | recorded |  |
+| thread_env | {"n_threads": null, "note": "Not pinned (legacy variant): recorded as found.", "overridden": {}, "preexisting": {"MKL_NUM_THREADS": "1", "OMP_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1"}, "set_to": null, "vars": ["OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "OMP_NUM_THREADS", "VECLIB_MAXIMUM_THREADS", "NUMEXPR_NUM_THREADS"]} | recorded |  |
+| transformer | null | name | Not recorded in this legacy evidence; no current default substituted. |
+| vmap_batch_size | 3 | recorded |  |
+
+## Evidence
+
+[Original setup artifact](../../../../results/imaging/delaunay/jwst/jax_cpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json); JSON pointer: `(document root)`.
+
+### Selected references
+
+No selected reference for this exact setup; archive evidence is available below.
+
+### compile
+
+<details><summary>3 recorded compile measurements</summary>
+
+| Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
+|---|---|---|---|---|---|---|
+| `measurement/2a8aaf9032d2bccd6caa` | full_pipeline.first_call | {"full_pipeline.first_call": 5.121204396011308} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/delaunay/jwst/jax_cpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json) `/full_pipeline_first_call_s` |
+| `measurement/7bc3d81eeaeb1060f964` | full_pipeline.lower | {"full_pipeline.lower": 4.02433075098088} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/delaunay/jwst/jax_cpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json) `/full_pipeline_lower_s` |
+| `measurement/abef1e202f5151f0e986` | full_pipeline.compile | {"full_pipeline.compile": 6.518163339991588} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/delaunay/jwst/jax_cpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json) `/full_pipeline_compile_s` |
+
+</details>
+
+### runtime
+
+<details><summary>3 recorded runtime measurements</summary>
+
+| Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
+|---|---|---|---|---|---|---|
+| `measurement/12cdbac6bc31af4aa600` | single_jit_block | {"single_jit_block": 5.0855908033991} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/delaunay/jwst/jax_cpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json) `/full_pipeline_single_jit` |
+| `measurement/622ca044eb1cf5ca10b6` | vmap.per_call | {"vmap.per_call": 4.68563346293328} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/delaunay/jwst/jax_cpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json) `/vmap/per_call` |
+| `measurement/c4880ace09eb0a6cceb9` | vmap.batch_time | {"vmap.batch_time": 14.056900388799841} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/delaunay/jwst/jax_cpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json) `/vmap/batch_time` |
+
+</details>
+
+<details><summary>Recorded hardware, software, method and limitations</summary>
+
+```json
+{
+  "identity": {
+    "backend": "cpu",
+    "device": "a100",
+    "hardware_details": {
+      "autotune_cache_entries_at_start": 0,
+      "backend": "cpu",
+      "cache_fresh": true,
+      "cpu_count": 124,
+      "device": "cpu:0",
+      "hostname": "euclid-ral-gpu-1",
+      "omp_num_threads": "1",
+      "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+    },
+    "library_version": "2026.8.17.1",
+    "precision": "float64",
+    "software": {
+      "PyAutoArray.library_revisions": "d99ec2b30224ac021e39628b9904d01c44f33b29",
+      "PyAutoArray.library_versions": "2026.8.17.1",
+      "PyAutoFit.library_revisions": "d3a7721294652f81ec726b92931ab610ed27e3ac",
+      "PyAutoFit.library_versions": "2026.8.17.1",
+      "PyAutoGalaxy.library_revisions": "e00b5e7d554d6958a6c8821edef6afdf01188e6d",
+      "PyAutoGalaxy.library_versions": "2026.8.17.1",
+      "PyAutoLens": "2026.8.17.1",
+      "PyAutoLens.library_revisions": "f791ac77d136d664346fff21cc36079f8f9b1196",
+      "PyAutoLens.library_versions": "2026.8.17.1",
+      "PyAutoNerves.library_revisions": "f116f70077e442db19a2a152f5ee78d57294c504",
+      "PyAutoNerves.library_versions": "2026.8.17.1",
+      "autolens_profiling.library_revisions": "86c287d1fc90f7595b2106dbb6b55102c4d7c800",
+      "jax.dependency_versions": "0.10.2",
+      "jaxlib.dependency_versions": "0.10.2",
+      "nufftax.dependency_versions": "0.6.1",
+      "numba.dependency_versions": "0.65.1",
+      "numpy.dependency_versions": "2.2.6",
+      "scipy.dependency_versions": "1.17.1"
+    },
+    "unknowns": {}
+  },
+  "method": {
+    "cache_state": null,
+    "repetitions": null,
+    "statistic": null,
+    "synchronization": null,
+    "unknowns": {
+      "cache_state": "Not recorded in this legacy evidence; no current default substituted.",
+      "repetitions": "Not recorded in this legacy evidence; no current default substituted.",
+      "statistic": "Not recorded in this legacy evidence; no current default substituted.",
+      "synchronization": "Not recorded in this legacy evidence; no current default substituted.",
+      "warmup": "Not recorded in this legacy evidence; no current default substituted."
+    },
+    "warmup": null
+  },
+  "provenance": {
+    "has_provenance": true,
+    "host": "euclid-ral-gpu-1",
+    "measured_at": "2026-10-25T14:19:30Z",
+    "qualified": false,
+    "unknowns": {}
+  },
+  "validation": {
+    "reason": "Legacy evidence transcribed without scientific baseline acceptance.",
+    "status": "unreviewed"
+  }
+}
+```
+
+</details>
+
+## Hazards
+
+No explicitly bound applicable evidence; this does not establish absence of hazards or validate a setting.
+
+## Recommendations
+
+No explicitly bound applicable evidence; this does not establish absence of hazards or validate a setting.
+
+## Scripts
+
+Navigation links identify the model family; they do not reconstruct historical settings or promise an executable replay.
+
+- [likelihood_breakdown](../../../../scripts/imaging/delaunay/likelihood_breakdown.py)
+- [likelihood_breakdown_numba](../../../../scripts/imaging/delaunay/likelihood_breakdown_numba.py)
+- [likelihood_runtime](../../../../scripts/imaging/delaunay/likelihood_runtime.py)
+- [likelihood_runtime_numba](../../../../scripts/imaging/delaunay/likelihood_runtime_numba.py)
+- [quick_update](../../../../scripts/imaging/delaunay/quick_update.py)
+
+## Campaigns
+
+No campaign explicitly bound; campaign applicability is unknown.

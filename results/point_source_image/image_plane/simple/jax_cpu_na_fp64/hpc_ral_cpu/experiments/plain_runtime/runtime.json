@@ -4,34 +4,34 @@
     "backend": "cpu",
     "device": "cpu:0",
     "hostname": "euclid-ral-compute-10-5",
-    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_cpu_multi_thread_eigen=false --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
     "omp_num_threads": "1",
     "cpu_count": 236,
-    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2c/output/jax_cache/p2c_413203_1",
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2dg/output/jax_cache/p2c_413686_4",
     "autotune_cache_entries_at_start": 0,
     "cache_fresh": true,
     "provenance": {
       "provenance_schema": 1,
-      "captured_at": "2026-10-28T22:44:39Z",
+      "captured_at": "2026-10-31T12:16:44Z",
       "host": "euclid-ral-compute-10-5",
       "slurm": {
-        "job_id": "413203",
-        "array_job_id": "413192",
-        "array_task_id": "1"
+        "job_id": "413686",
+        "array_job_id": "413683",
+        "array_task_id": "4"
       },
       "loadavg_at_import": [
-        2.2,
-        1.56,
-        2.39
+        10.32,
+        10.21,
+        8.79
       ],
       "loadavg_at_write": [
-        6.06,
-        2.46,
-        2.67
+        11.87,
+        10.56,
+        8.92
       ],
-      "profiling_revision": "2f98e01a150d2f59aebb5735c4c12ae286a7b1d3",
+      "profiling_revision": "8860c50c0dc924ee591bfd0157cde7946a80a25e",
       "library_revisions": {
-        "autolens_profiling": "2f98e01a150d2f59aebb5735c4c12ae286a7b1d3",
+        "autolens_profiling": "8860c50c0dc924ee591bfd0157cde7946a80a25e",
         "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
         "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
         "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
@@ -46,8 +46,8 @@
         "PyAutoLens": "2026.8.17.1"
       },
       "dependency_versions": {
-        "jax": "0.10.2",
-        "jaxlib": "0.10.2",
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
         "numpy": "2.2.6",
         "scipy": "1.17.1",
         "numba": "0.65.1",
@@ -63,7 +63,7 @@
     "cpus_per_eval": 8,
     "cpus_per_eval_basis": "jax cpu: NPROC threads in XLA's CPU intra-op pool",
     "devices_per_eval": 0,
-    "peak_rss_gb": 0.879944,
+    "peak_rss_gb": 0.809427,
     "peak_rss_basis": "in_process_ru_maxrss",
     "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
   },
@@ -74,13 +74,13 @@
     "positions_noise_sigma": 0.05,
     "free_parameters": 8
   },
-  "eager_per_call": 0.15968733839690685,
+  "eager_per_call": 0.1692530439933762,
   "eager_log_likelihood": 7.196577317761017,
-  "full_pipeline_single_jit": 0.0018228734959848225,
-  "full_pipeline_single_jit_median": 0.001526898005977273,
-  "full_pipeline_single_jit_median_ms": 1.526898005977273,
-  "full_pipeline_single_jit_p10_ms": 1.452325697755441,
-  "full_pipeline_single_jit_p90_ms": 1.9197766087017953,
+  "full_pipeline_single_jit": 0.0015479190042242408,
+  "full_pipeline_single_jit_median": 0.0013113675522617996,
+  "full_pipeline_single_jit_median_ms": 1.3113675522617996,
+  "full_pipeline_single_jit_p10_ms": 1.1821797234006226,
+  "full_pipeline_single_jit_p90_ms": 1.5568041242659092,
   "full_pipeline_single_jit_median_protocol": {
     "n_warm": 5,
     "n_timed": 200,
@@ -91,9 +91,9 @@
   "full_pipeline_log_likelihood": 7.196577317761015,
   "vmap": {
     "batch_size": 3,
-    "batch_time": 0.003209193504881114,
-    "per_call": 0.0010697311682937047,
-    "speedup_vs_single_jit": 1.7
+    "batch_time": 0.0028153249062597752,
+    "per_call": 0.000938441635419925,
+    "speedup_vs_single_jit": 1.6
   },
   "pinned_expected": 7.196577317761017,
   "pinned_drift": []

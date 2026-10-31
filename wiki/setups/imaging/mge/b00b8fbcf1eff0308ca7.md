@@ -43,15 +43,15 @@ No selected reference for this exact setup; archive evidence is available below.
 
 | Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
 |---|---|---|---|---|---|---|
-| `measurement/35113fc155399e6e7a79` | steps.Mapping matrix | {"steps.Mapping matrix": 0.02055453149951063} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/jwst/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json) `/steps/Mapping matrix` |
-| `measurement/4eacdfd406bcbe384613` | steps.Data vector (D) | {"steps.Data vector (D)": 0.0005564501014305278} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/jwst/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json) `/steps/Data vector (D)` |
-| `measurement/4ece1c026bf0d61217f7` | steps.Ray-trace grids | {"steps.Ray-trace grids": 0.004261425402364694} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/jwst/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json) `/steps/Ray-trace grids` |
-| `measurement/83a0b81f79bb247ca119` | steps.Blurred mapping matrix | {"steps.Blurred mapping matrix": 0.03639970020158216} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/jwst/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json) `/steps/Blurred mapping matrix` |
-| `measurement/bfb754867330de651bd3` | steps.Curvature matrix (F) | {"steps.Curvature matrix (F)": 0.0038865882001118735} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/jwst/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json) `/steps/Curvature matrix (F)` |
-| `measurement/d1bdd54b4908d80e3ab3` | steps.Mapped reconstructed image | {"steps.Mapped reconstructed image": 0.0003202883002813905} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/jwst/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json) `/steps/Mapped reconstructed image` |
-| `measurement/d57cb9f7d4f6aac73ae2` | component_total | {"component_total": 0.06646655370423103} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/jwst/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json) `/total_step_by_step` |
-| `measurement/e238aaa087b699320c87` | steps.Chi-squared & log likelihood | {"steps.Chi-squared & log likelihood": 0.0001897110982099548} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/jwst/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json) `/steps/Chi-squared & log likelihood` |
-| `measurement/ef7de87cd9556ac76dd4` | steps.Reconstruction (NNLS) | {"steps.Reconstruction (NNLS)": 0.00029785890073981137} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/jwst/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json) `/steps/Reconstruction (NNLS)` |
+| `measurement/35113fc155399e6e7a79` | steps.Mapping matrix | {"steps.Mapping matrix": 0.021202400501351804} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/jwst/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json) `/steps/Mapping matrix` |
+| `measurement/4eacdfd406bcbe384613` | steps.Data vector (D) | {"steps.Data vector (D)": 0.0004965586005710066} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/jwst/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json) `/steps/Data vector (D)` |
+| `measurement/4ece1c026bf0d61217f7` | steps.Ray-trace grids | {"steps.Ray-trace grids": 0.0026940373005345463} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/jwst/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json) `/steps/Ray-trace grids` |
+| `measurement/83a0b81f79bb247ca119` | steps.Blurred mapping matrix | {"steps.Blurred mapping matrix": 0.04461472650291398} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/jwst/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json) `/steps/Blurred mapping matrix` |
+| `measurement/bfb754867330de651bd3` | steps.Curvature matrix (F) | {"steps.Curvature matrix (F)": 0.0038021015003323554} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/jwst/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json) `/steps/Curvature matrix (F)` |
+| `measurement/d1bdd54b4908d80e3ab3` | steps.Mapped reconstructed image | {"steps.Mapped reconstructed image": 0.00036075410898774864} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/jwst/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json) `/steps/Mapped reconstructed image` |
+| `measurement/d57cb9f7d4f6aac73ae2` | component_total | {"component_total": 0.07361966961761937} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/jwst/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json) `/total_step_by_step` |
+| `measurement/e238aaa087b699320c87` | steps.Chi-squared & log likelihood | {"steps.Chi-squared & log likelihood": 0.00013486840762197972} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/jwst/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json) `/steps/Chi-squared & log likelihood` |
+| `measurement/ef7de87cd9556ac76dd4` | steps.Reconstruction (NNLS) | {"steps.Reconstruction (NNLS)": 0.0003142226953059435} | s | cpu / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/jwst/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json) `/steps/Reconstruction (NNLS)` |
 
 </details>
 
@@ -66,29 +66,30 @@ No selected reference for this exact setup; archive evidence is available below.
       "autotune_cache_entries_at_start": 0,
       "backend": "cpu",
       "cache_fresh": true,
-      "cpu_count": 252,
+      "cpu_count": 236,
       "device": "cpu:0",
-      "hostname": "euclid-ral-compute-1",
+      "hostname": "euclid-ral-compute-10-5",
       "omp_num_threads": "1",
-      "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
+      "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_cpu_multi_thread_eigen=false --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
     },
     "library_version": "2026.8.17.1",
     "precision": "float64",
     "software": {
-      "PyAutoArray.library_revisions": "d99ec2b30224ac021e39628b9904d01c44f33b29",
+      "PyAutoArray.library_revisions": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
       "PyAutoArray.library_versions": "2026.8.17.1",
-      "PyAutoFit.library_revisions": "d3a7721294652f81ec726b92931ab610ed27e3ac",
+      "PyAutoFit.library_revisions": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
       "PyAutoFit.library_versions": "2026.8.17.1",
-      "PyAutoGalaxy.library_revisions": "e00b5e7d554d6958a6c8821edef6afdf01188e6d",
+      "PyAutoGalaxy.library_revisions": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
       "PyAutoGalaxy.library_versions": "2026.8.17.1",
       "PyAutoLens": "2026.8.17.1",
-      "PyAutoLens.library_revisions": "f791ac77d136d664346fff21cc36079f8f9b1196",
+      "PyAutoLens.library_revisions": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8",
       "PyAutoLens.library_versions": "2026.8.17.1",
-      "PyAutoNerves.library_revisions": "f116f70077e442db19a2a152f5ee78d57294c504",
+      "PyAutoNerves.library_revisions": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
       "PyAutoNerves.library_versions": "2026.8.17.1",
-      "autolens_profiling.library_revisions": "86c287d1fc90f7595b2106dbb6b55102c4d7c800",
-      "jax.dependency_versions": "0.10.2",
-      "jaxlib.dependency_versions": "0.10.2",
+      "autolens_profiling.library_revisions": "8860c50c0dc924ee591bfd0157cde7946a80a25e",
+      "finufft.dependency_versions": "2.5.1",
+      "jax.dependency_versions": "0.11.2",
+      "jaxlib.dependency_versions": "0.11.2",
       "nufftax.dependency_versions": "0.6.1",
       "numba.dependency_versions": "0.65.1",
       "numpy.dependency_versions": "2.2.6",
@@ -112,8 +113,8 @@ No selected reference for this exact setup; archive evidence is available below.
   },
   "provenance": {
     "has_provenance": true,
-    "host": "euclid-ral-compute-1",
-    "measured_at": "2026-10-25T14:16:39Z",
+    "host": "euclid-ral-compute-10-5",
+    "measured_at": "2026-10-30T16:33:07Z",
     "qualified": false,
     "unknowns": {}
   },

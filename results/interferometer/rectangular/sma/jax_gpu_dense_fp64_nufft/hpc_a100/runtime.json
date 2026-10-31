@@ -3,35 +3,35 @@
   "device": {
     "backend": "gpu",
     "device": "cuda:0",
-    "hostname": "euclid-ral-gpu-1",
+    "hostname": "euclid-ral-gpu-2",
     "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
     "omp_num_threads": "1",
     "cpu_count": 124,
-    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2a/output/jax_cache/p2b_413162_7",
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2dg/output/jax_cache/p2b_413622_7",
     "autotune_cache_entries_at_start": 0,
     "cache_fresh": true,
     "provenance": {
       "provenance_schema": 1,
-      "captured_at": "2026-10-28T13:57:53Z",
-      "host": "euclid-ral-gpu-1",
+      "captured_at": "2026-10-30T16:37:40Z",
+      "host": "euclid-ral-gpu-2",
       "slurm": {
-        "job_id": "413162",
+        "job_id": "413622",
         "array_job_id": null,
         "array_task_id": null
       },
       "loadavg_at_import": [
-        3.56,
-        3.85,
-        2.05
+        7.44,
+        4.79,
+        2.27
       ],
       "loadavg_at_write": [
-        3.67,
-        3.85,
-        2.15
+        6.47,
+        4.89,
+        2.44
       ],
-      "profiling_revision": "80bbb028284ad8eb36d34692a414319f881b1d1e",
+      "profiling_revision": "8860c50c0dc924ee591bfd0157cde7946a80a25e",
       "library_revisions": {
-        "autolens_profiling": "80bbb028284ad8eb36d34692a414319f881b1d1e",
+        "autolens_profiling": "8860c50c0dc924ee591bfd0157cde7946a80a25e",
         "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
         "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
         "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
@@ -46,8 +46,8 @@
         "PyAutoLens": "2026.8.17.1"
       },
       "dependency_versions": {
-        "jax": "0.10.2",
-        "jaxlib": "0.10.2",
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
         "numpy": "2.2.6",
         "scipy": "1.17.1",
         "numba": "0.65.1",
@@ -64,7 +64,7 @@
     "cpus_per_eval": 8,
     "cpus_per_eval_basis": "jax gpu: one device; cpus_per_eval = NPROC host threads",
     "devices_per_eval": 1,
-    "peak_rss_gb": 4.781126,
+    "peak_rss_gb": 4.721713,
     "peak_rss_basis": "in_process_ru_maxrss",
     "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
   },
@@ -171,22 +171,22 @@
     "operator_build_s": null,
     "n_repeats": 10,
     "host_load_avg_start": [
-      3.56,
-      3.85,
-      2.05
+      7.44,
+      4.79,
+      2.27
     ],
     "host_load_avg_end": [
-      3.67,
-      3.85,
-      2.15
+      6.47,
+      4.89,
+      2.44
     ]
   },
-  "log_evidence_jit": -3162.993028348079,
-  "full_pipeline_single_jit": 0.05012258940259926,
-  "full_pipeline_single_jit_median": 0.050055789994075894,
-  "full_pipeline_single_jit_median_ms": 50.055789994075894,
-  "full_pipeline_single_jit_p10_ms": 50.00130099942908,
-  "full_pipeline_single_jit_p90_ms": 50.329127989243716,
+  "log_evidence_jit": -3162.9930285172877,
+  "full_pipeline_single_jit": 0.052136752509977666,
+  "full_pipeline_single_jit_median": 0.05188042303780094,
+  "full_pipeline_single_jit_median_ms": 51.88042303780094,
+  "full_pipeline_single_jit_p10_ms": 51.75961294444278,
+  "full_pipeline_single_jit_p90_ms": 52.13518789969385,
   "full_pipeline_single_jit_median_protocol": {
     "n_warm": 5,
     "n_timed": 200,
@@ -198,38 +198,38 @@
     "batch_size": 1,
     "batch_size_resolved": 64,
     "batch_size_source": "table",
-    "batch_time": 0.05012710429728031,
-    "per_call": 0.05012710429728031,
+    "batch_time": 0.0519838614971377,
+    "per_call": 0.0519838614971377,
     "speedup_vs_single_jit": 1.0,
     "instances": "draw 0 broadcast to the batch (the runtime cells' convention)",
     "attempts": [
       {
         "batch": 64,
         "status": "oom",
-        "error": "RESOURCE_EXHAUSTED: Out of memory while trying to allocate 651.50GiB. [executable_name='jit_full_pipeline'] [tf-allocator-allocation-error='']"
+        "error": "RESOURCE_EXHAUSTED: Out of memory while trying to allocate 651.50GiB with allocator GPU_0_bfc on device 0. [executable_name='jit_full_pipeline'] [tf-allocator-allocation-error='']"
       },
       {
         "batch": 32,
         "status": "oom",
-        "error": "RESOURCE_EXHAUSTED: Out of memory while trying to allocate 325.75GiB. [executable_name='jit_full_pipeline'] [tf-allocator-allocation-error='']"
+        "error": "RESOURCE_EXHAUSTED: Out of memory while trying to allocate 325.75GiB with allocator GPU_0_bfc on device 0. [executable_name='jit_full_pipeline'] [tf-allocator-allocation-error='']"
       }
     ]
   },
   "jit_phases": {
     "full_pipeline": {
-      "lower_s": 0.373152039013803,
-      "compile_s": 2.7847231079940684,
-      "first_call_s": 0.1580589659861289,
-      "steady_per_call_s": 0.05012258940259926
+      "lower_s": 0.45957617403473705,
+      "compile_s": 2.8435237129451707,
+      "first_call_s": 0.16279449593275785,
+      "steady_per_call_s": 0.052136752509977666
     },
     "full_pipeline_vmap1": {
-      "first_call_s": 4.143590004008729,
-      "batch_per_call_s": 0.05012710429728031,
-      "steady_per_call_s": 0.05012710429728031
+      "first_call_s": 4.130743262940086,
+      "batch_per_call_s": 0.0519838614971377,
+      "steady_per_call_s": 0.0519838614971377
     }
   },
   "parity_candidate": {
-    "log_likelihood": -3162.993028348079,
+    "log_likelihood": -3162.9930285172877,
     "quantity": "log_likelihood_function (the cell's figure of merit, the log evidence) at the standard cell's iid draw 0, vs the visibility-chunked eager NumPy dense reference",
     "variant": "rectangular",
     "instrument": "sma",
@@ -252,13 +252,13 @@
     "use_mixed_precision": false
   },
   "log_likelihood_eager": -3155.038169636796,
-  "figure_of_merit_eager": -3162.9930291999062,
+  "figure_of_merit_eager": -3162.993029527046,
   "eager_inversion_class": "InversionInterferometerMapping",
-  "eager_vs_jit_abs_diff": 8.51827280712314e-07,
+  "eager_vs_jit_abs_diff": 1.0097583071910776e-06,
   "parity_reference": {
-    "log_evidence": -3162.9930291999062,
+    "log_evidence": -3162.993029527046,
     "method": "eager NumPy dense route (InversionInterferometerMapping via FitInterferometer(xp=np) on the dataset without its sparse operator); T formed per visibility chunk and column block by TransformerNUFFT (finufft on the NumPy path) and accumulated into F and D, which the library inversion then solves (positive-only, edge-zeroed subset, log determinants); chi-squared s^T F s - 2 s^T D + d^T N^-1 d. Independent of the W~ operator, numba and JAX (ruling R6).",
     "n_vis_chunks": 1,
-    "total_s": 13.592131943034474
+    "total_s": 16.03930579603184
   }
 }

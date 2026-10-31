@@ -17,22 +17,30 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 | Exact configuration | Evidence source | Records |
 |---|---|---|
 | [baseline-not-defined](6d2c73066a541f674b3e.md) | planned; no evidence | 0 |
+| [09a4b77e504d138a5e05](96b504d8b4d688817947.md) | results/imaging/mge/ao/jax_cpu_dense_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/runtime.json | 4 |
 | [0f48862b72b292bac318](2226da751c406a1c616a.md) | results/imaging/mge/ao/jax_gpu_dense_fp64/hpc_a100/runtime.json | 4 |
 | [157317d79b4d0b87ca62](e19c5616b9ad312270b6.md) | results/imaging/mge/ao/jax_cpu_dense_mixed/local_laptop/runtime.json | 3 |
 | [3e96ffb4fc8a5e647f17](b6fce992834333589a75.md) | results/imaging/mge/ao/jax_gpu_dense_fp64/hpc_a100/breakdown.json | 9 |
 | [4ef0aa094f4645afc502](45ed2d774a10d2da1e96.md) | results/imaging/mge/ao/jax_cpu_dense_fp64/hpc_ral_cpu/runtime.json | 4 |
+| [79248bbeb5356956adee](030954d19b722c1919d9.md) | results/imaging/mge/ao/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json | 4 |
 | [7d3a4d74a25931b88df8](41dc9494d5fad5322d4a.md) | results/imaging/mge/ao/jax_cpu_dense_fp64/local_laptop/runtime.json | 3 |
+| [c506d2dd168aef0c58a0](db87ae546832e3fad67f.md) | results/imaging/mge/ao/jax_cpu_dense_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/breakdown.json | 9 |
 | [dbce8237cc56a1f90531](35096b73412a6ce4a844.md) | results/imaging/mge/ao/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json | 9 |
+| [e1e38eed876e0b7f0d98](eca093067a5fbbb6cf72.md) | results/imaging/mge/ao/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json | 9 |
 
 ## euclid
 
 | Exact configuration | Evidence source | Records |
 |---|---|---|
 | [baseline-not-defined](b459a084d72b3a148783.md) | planned; no evidence | 0 |
+| [1a9a47ef6bf92472da31](1e824fbea2888cfb70ed.md) | results/imaging/mge/euclid/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json | 9 |
+| [1bd9c3d93dbf94aa6c7a](dbbd9e884031aa7a16df.md) | results/imaging/mge/euclid/jax_cpu_dense_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/runtime.json | 4 |
 | [27cad6da81e69016685b](7aa2bd0204c76d760baf.md) | results/imaging/mge/euclid/jax_gpu_dense_fp64/hpc_a100/breakdown.json | 9 |
 | [2d3178e03f48111452ee](41262d917de15547836e.md) | results/imaging/mge/euclid/jax_gpu_dense_fp64/hpc_a100/runtime.json | 4 |
 | [6e640fe646b2e1ab532a](a8b41d6fd31dbdee5651.md) | results/imaging/mge/euclid/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json | 9 |
+| [97daba6a1e8eeeb643b3](6b52c0f19bc2a90a6e1f.md) | results/imaging/mge/euclid/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json | 4 |
 | [c22ccb341aad42accc98](79873d3e836e9a042aad.md) | results/imaging/mge/euclid/jax_cpu_dense_fp64/hpc_ral_cpu/runtime.json | 4 |
+| [cb14202d5c84e33fb890](e778bc4c69b280173910.md) | results/imaging/mge/euclid/jax_cpu_dense_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/breakdown.json | 9 |
 
 ## hst
 
@@ -43,6 +51,7 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 | [01e1b9f9f6dc4397f19d](e9844c031c7a1072d911.md) | scripts/misc/jax_compile/results/local_cpu/mge.json | 4 |
 | [05aca978db135516bfcb](b42fb4c5aba79fecdb5e.md) | results/runtime/imaging/mge_mass_jax/mge_mass_jax_likelihood_summary_hst_v2026.8.17.1.json | 1 |
 | [0644314a8f3ae8363f94](a259f170ffeac1dcaaa6.md) | results/imaging/mge/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json | 9 |
+| [0b3adf4f826783861b38](fc210d8ea8f39b4f0724.md) | results/imaging/mge/hst/jax_cpu_dense_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/runtime.json | 4 |
 | [102e8b02da100104609c](f0a28d5d7754505a3ce7.md) | scripts/misc/jax_compile/results/local_cpu/mge.json | 4 |
 | [10a2680c4362a98768b1](5c7760a24a18612cf67e.md) | scripts/misc/jax_compile/results/local_cpu/mge.json | 4 |
 | [18582c5bbdb595ffb882](07413d9da5aa5f5e7346.md) | scripts/misc/jax_compile/results/local_cpu/mge.json | 4 |
@@ -60,6 +69,7 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 | [63f5c6d919a4cd9de48c](b5e5622f0381690517d3.md) | archive/2026/05/hostless_summaries/breakdown/imaging/mge_breakdown_hst_v2026.5.29.4.json | 9 |
 | [65a86cb85bbb6e3f5abc](a607ee44cb23004ec7c0.md) | results/imaging/mge/hst/jax_cpu_dense_fp64/hpc_ral_cpu/runtime.json | 4 |
 | [6c4289487b818a20d249](ebfd02ad9376c34ce62a.md) | scripts/misc/jax_compile/results/local_cpu/mge.json | 4 |
+| [6e31d36a1220578af8fc](78868fb8f67f48dad7fc.md) | results/imaging/mge/hst/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json | 9 |
 | [6f6624e3fa08759a3c57](78ee6f4ea12e388431c9.md) | scripts/misc/jax_compile/results/local_cpu/mge.json | 4 |
 | [6f9ac9947a9a25f9b4e1](78b519550b3d7de6ab58.md) | results/imaging/mge/hst/jax_cpu_sparse_mixed/local_laptop/runtime.json | 3 |
 | [71a3b65048e3e11f11d0](eb647a68b36852d28727.md) | scripts/misc/jax_compile/results/local_cpu/mge.json | 4 |
@@ -84,10 +94,12 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 | [bcac2710e0a9c99e964d](368f3b92f698f7b8d6f9.md) | scripts/misc/jax_compile/results/local_cpu/mge.json | 4 |
 | [bf5559145a26b4e0e687](7b83fc72dc04fb75111e.md) | scripts/misc/jax_compile/results/local_cpu/mge.json | 4 |
 | [c451d5de856633ed2a95](9e64635837b0651d1cfb.md) | scripts/misc/jax_compile/results/local_cpu/mge.json | 4 |
+| [c861aa7eb6779c960757](4f76feb59182d05b58f8.md) | results/imaging/mge/hst/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json | 4 |
 | [d8e53c3503809d19b83e](4bf5c47cb2ad6b5fa4e1.md) | results/imaging/mge/hst/jax_cpu_sparse_fp64/local_laptop/runtime.json | 3 |
 | [e3edec2c27fcf819d4ca](25f059f1cc51cb4f6ffd.md) | scripts/misc/jax_compile/results/local_cpu/mge.json | 4 |
 | [e832bf45fa85d58497a7](3498cdbe6900793fba96.md) | scripts/misc/jax_compile/results/local_cpu/mge.json | 4 |
 | [ef301caea3427500bd15](2805dfe13e49a41242af.md) | scripts/misc/jax_compile/results/local_cpu/mge.json | 4 |
+| [f49e627fe8f213e638be](52414eadd13014cc622c.md) | results/imaging/mge/hst/jax_cpu_dense_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/breakdown.json | 9 |
 | [f55545dc449ca327ae41](fb4383a7988a52dd98ec.md) | scripts/misc/jax_compile/results/local_cpu/mge.json | 4 |
 
 ## jwst
@@ -95,12 +107,16 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 | Exact configuration | Evidence source | Records |
 |---|---|---|
 | [baseline-not-defined](de892d0a303337bc8198.md) | planned; no evidence | 0 |
+| [06f4774228b595db1edf](c595b1ac945dbdf2501b.md) | results/imaging/mge/jwst/jax_cpu_dense_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/breakdown.json | 9 |
 | [18370895011ef925f9fc](f5a7e6d47f9562facf87.md) | results/imaging/mge/jwst/jax_cpu_dense_mixed/local_laptop/runtime.json | 3 |
 | [33988e079487b4c63687](3e4f1a36a03289bfc479.md) | results/imaging/mge/jwst/jax_gpu_dense_fp64/hpc_a100/breakdown.json | 9 |
+| [6feea8b61ff07aba92b8](e069b414872b3209fad5.md) | results/imaging/mge/jwst/jax_cpu_dense_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/runtime.json | 4 |
 | [7d9990af9c66936ff510](ea55ed8f315b9360a689.md) | results/imaging/mge/jwst/jax_cpu_sparse_mixed/local_laptop/runtime.json | 3 |
 | [82bd551d946745b69247](b00b8fbcf1eff0308ca7.md) | results/imaging/mge/jwst/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json | 9 |
 | [838839b354bde4e8f177](aa4d5ac4c85beaaaf80c.md) | results/imaging/mge/jwst/jax_cpu_dense_fp64/local_laptop/runtime.json | 3 |
+| [9fdce762fd444d66b204](9ff4cf7a1c95b86864a1.md) | results/imaging/mge/jwst/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json | 9 |
 | [a71b0913b02fadb6aaa6](ee0beda4e0703c49be52.md) | results/imaging/mge/jwst/jax_gpu_dense_fp64/hpc_a100/runtime.json | 4 |
 | [c875a039ed0505212e27](b3c56cbd88a206bf8f5f.md) | results/imaging/mge/jwst/jax_cpu_sparse_fp64/local_laptop/runtime.json | 3 |
+| [dbc26a9b550c87fc57e3](d18ea0e5d2150ef7566f.md) | results/imaging/mge/jwst/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json | 4 |
 | [fae46c8b1bf3f06ad792](0db21dd6538822f542ea.md) | results/imaging/mge/jwst/jax_cpu_dense_fp64/hpc_ral_cpu/runtime.json | 4 |
 

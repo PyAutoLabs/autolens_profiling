@@ -2,15 +2,15 @@
   "schema": "parity-witness",
   "version": 1,
   "status": "match",
-  "log_likelihood": -3163.917626097604,
-  "reference_log_likelihood": -3163.917626157263,
-  "tolerance": 3.163917626157263e-05,
+  "log_likelihood": -3163.91762609545,
+  "reference_log_likelihood": -3163.9176261585812,
+  "tolerance": 3.163917626158581e-05,
   "tolerance_rule": "1e-08 x |reference_log_likelihood| (fp64)",
   "reference": {
     "source": "visibility-chunked eager NumPy dense reference computed in the same process (1 chunk(s) of 500000 visibilities)",
-    "date": "2026-10-28"
+    "date": "2026-10-30"
   },
-  "measured_at": "2026-10-28T13:52:48Z",
+  "measured_at": "2026-10-30T16:32:35Z",
   "autolens_version": "2026.8.17.1",
   "quantity": "log_likelihood_function (the cell's figure of merit, the log evidence) at the standard cell's iid draw 0, vs the visibility-chunked eager NumPy dense reference",
   "source_pixels": 1280,

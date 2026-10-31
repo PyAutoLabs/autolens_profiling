@@ -43,15 +43,15 @@ No selected reference for this exact setup; archive evidence is available below.
 
 | Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
 |---|---|---|---|---|---|---|
-| `measurement/191c4580f41445499f1b` | steps.Curvature matrix (F) | {"steps.Curvature matrix (F)": 0.0003957606997573748} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json) `/steps/Curvature matrix (F)` |
-| `measurement/30612c4ed1a676fa44bf` | steps.Chi-squared & log likelihood | {"steps.Chi-squared & log likelihood": 0.00013455549778882415} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json) `/steps/Chi-squared & log likelihood` |
-| `measurement/3b19cf9a628e4c8f0816` | steps.Ray-trace grids | {"steps.Ray-trace grids": 0.00017925009888131171} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json) `/steps/Ray-trace grids` |
-| `measurement/6015cb9507b377796dad` | steps.Reconstruction (NNLS) | {"steps.Reconstruction (NNLS)": 0.003026946997852065} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json) `/steps/Reconstruction (NNLS)` |
-| `measurement/98fb002843bd4173cd44` | steps.Data vector (D) | {"steps.Data vector (D)": 0.00013244540023151785} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json) `/steps/Data vector (D)` |
-| `measurement/9ccd4afec3b235d47887` | steps.Blurred mapping matrix | {"steps.Blurred mapping matrix": 0.0036562363005941735} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json) `/steps/Blurred mapping matrix` |
-| `measurement/a39c04e83c05dbce86c0` | steps.Mapped reconstructed image | {"steps.Mapped reconstructed image": 0.00014079450047574938} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json) `/steps/Mapped reconstructed image` |
-| `measurement/bb910461b542bce1e9d3` | component_total | {"component_total": 0.008957591495709493} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json) `/total_step_by_step` |
-| `measurement/ec221d1d76651085cf1d` | steps.Mapping matrix | {"steps.Mapping matrix": 0.0012916020001284777} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json) `/steps/Mapping matrix` |
+| `measurement/191c4580f41445499f1b` | steps.Curvature matrix (F) | {"steps.Curvature matrix (F)": 0.00039919549599289896} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json) `/steps/Curvature matrix (F)` |
+| `measurement/30612c4ed1a676fa44bf` | steps.Chi-squared & log likelihood | {"steps.Chi-squared & log likelihood": 0.00015151699772104622} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json) `/steps/Chi-squared & log likelihood` |
+| `measurement/3b19cf9a628e4c8f0816` | steps.Ray-trace grids | {"steps.Ray-trace grids": 0.00019589080475270748} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json) `/steps/Ray-trace grids` |
+| `measurement/6015cb9507b377796dad` | steps.Reconstruction (NNLS) | {"steps.Reconstruction (NNLS)": 0.0030587685061618684} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json) `/steps/Reconstruction (NNLS)` |
+| `measurement/98fb002843bd4173cd44` | steps.Data vector (D) | {"steps.Data vector (D)": 0.00016380799934267998} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json) `/steps/Data vector (D)` |
+| `measurement/9ccd4afec3b235d47887` | steps.Blurred mapping matrix | {"steps.Blurred mapping matrix": 0.0038200594950467347} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json) `/steps/Blurred mapping matrix` |
+| `measurement/a39c04e83c05dbce86c0` | steps.Mapped reconstructed image | {"steps.Mapped reconstructed image": 0.0001433380995877087} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json) `/steps/Mapped reconstructed image` |
+| `measurement/bb910461b542bce1e9d3` | component_total | {"component_total": 0.009335059404838829} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json) `/total_step_by_step` |
+| `measurement/ec221d1d76651085cf1d` | steps.Mapping matrix | {"steps.Mapping matrix": 0.0014024820062331854} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/imaging/mge/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json) `/steps/Mapping matrix` |
 
 </details>
 
@@ -76,20 +76,21 @@ No selected reference for this exact setup; archive evidence is available below.
     "library_version": "2026.8.17.1",
     "precision": "float64",
     "software": {
-      "PyAutoArray.library_revisions": "d99ec2b30224ac021e39628b9904d01c44f33b29",
+      "PyAutoArray.library_revisions": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
       "PyAutoArray.library_versions": "2026.8.17.1",
-      "PyAutoFit.library_revisions": "d3a7721294652f81ec726b92931ab610ed27e3ac",
+      "PyAutoFit.library_revisions": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
       "PyAutoFit.library_versions": "2026.8.17.1",
-      "PyAutoGalaxy.library_revisions": "e00b5e7d554d6958a6c8821edef6afdf01188e6d",
+      "PyAutoGalaxy.library_revisions": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
       "PyAutoGalaxy.library_versions": "2026.8.17.1",
       "PyAutoLens": "2026.8.17.1",
-      "PyAutoLens.library_revisions": "f791ac77d136d664346fff21cc36079f8f9b1196",
+      "PyAutoLens.library_revisions": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8",
       "PyAutoLens.library_versions": "2026.8.17.1",
-      "PyAutoNerves.library_revisions": "f116f70077e442db19a2a152f5ee78d57294c504",
+      "PyAutoNerves.library_revisions": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
       "PyAutoNerves.library_versions": "2026.8.17.1",
-      "autolens_profiling.library_revisions": "86c287d1fc90f7595b2106dbb6b55102c4d7c800",
-      "jax.dependency_versions": "0.10.2",
-      "jaxlib.dependency_versions": "0.10.2",
+      "autolens_profiling.library_revisions": "8860c50c0dc924ee591bfd0157cde7946a80a25e",
+      "finufft.dependency_versions": "2.5.1",
+      "jax.dependency_versions": "0.11.2",
+      "jaxlib.dependency_versions": "0.11.2",
       "nufftax.dependency_versions": "0.6.1",
       "numba.dependency_versions": "0.65.1",
       "numpy.dependency_versions": "2.2.6",
@@ -114,7 +115,7 @@ No selected reference for this exact setup; archive evidence is available below.
   "provenance": {
     "has_provenance": true,
     "host": "euclid-ral-gpu-1",
-    "measured_at": "2026-10-25T14:38:38Z",
+    "measured_at": "2026-10-30T16:55:19Z",
     "qualified": false,
     "unknowns": {}
   },

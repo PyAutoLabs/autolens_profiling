@@ -4,34 +4,34 @@
     "backend": "cpu",
     "device": "cpu:0",
     "hostname": "euclid-ral-compute-10-5",
-    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_cpu_multi_thread_eigen=false --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
     "omp_num_threads": "1",
     "cpu_count": 236,
-    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2c/output/jax_cache/p2c_413205_3",
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2dg/output/jax_cache/p2c_413683_5",
     "autotune_cache_entries_at_start": 0,
     "cache_fresh": true,
     "provenance": {
       "provenance_schema": 1,
-      "captured_at": "2026-10-28T22:44:43Z",
+      "captured_at": "2026-10-31T12:16:29Z",
       "host": "euclid-ral-compute-10-5",
       "slurm": {
-        "job_id": "413205",
-        "array_job_id": "413192",
-        "array_task_id": "3"
+        "job_id": "413683",
+        "array_job_id": "413683",
+        "array_task_id": "5"
       },
       "loadavg_at_import": [
-        6.06,
-        2.46,
-        2.67
+        10.32,
+        10.21,
+        8.79
       ],
       "loadavg_at_write": [
-        6.53,
-        2.62,
-        2.72
+        10.32,
+        10.21,
+        8.79
       ],
-      "profiling_revision": "2f98e01a150d2f59aebb5735c4c12ae286a7b1d3",
+      "profiling_revision": "8860c50c0dc924ee591bfd0157cde7946a80a25e",
       "library_revisions": {
-        "autolens_profiling": "2f98e01a150d2f59aebb5735c4c12ae286a7b1d3",
+        "autolens_profiling": "8860c50c0dc924ee591bfd0157cde7946a80a25e",
         "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
         "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
         "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
@@ -46,8 +46,8 @@
         "PyAutoLens": "2026.8.17.1"
       },
       "dependency_versions": {
-        "jax": "0.10.2",
-        "jaxlib": "0.10.2",
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
         "numpy": "2.2.6",
         "scipy": "1.17.1",
         "numba": "0.65.1",
@@ -63,7 +63,7 @@
     "cpus_per_eval": 8,
     "cpus_per_eval_basis": "jax cpu: NPROC threads in XLA's CPU intra-op pool",
     "devices_per_eval": 0,
-    "peak_rss_gb": 0.545599,
+    "peak_rss_gb": 0.518701,
     "peak_rss_basis": "in_process_ru_maxrss",
     "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
   },
@@ -74,15 +74,15 @@
     "positions_noise_sigma": 0.05,
     "free_parameters": 8
   },
-  "eager_per_call": 0.0016097617702325805,
+  "eager_per_call": 0.0016091174294706435,
   "eager_log_likelihood": 12.75281004008905,
   "full_pipeline_jits": true,
   "full_pipeline_blocker": null,
-  "full_pipeline_single_jit": 0.00020511790062300862,
-  "full_pipeline_single_jit_median": 0.00015605200314894319,
-  "full_pipeline_single_jit_median_ms": 0.15605200314894319,
-  "full_pipeline_single_jit_p10_ms": 0.13746001641266048,
-  "full_pipeline_single_jit_p90_ms": 0.21248807897791266,
+  "full_pipeline_single_jit": 0.00016375930281355977,
+  "full_pipeline_single_jit_median": 0.00015846744645386934,
+  "full_pipeline_single_jit_median_ms": 0.15846744645386934,
+  "full_pipeline_single_jit_p10_ms": 0.13984512770548463,
+  "full_pipeline_single_jit_p90_ms": 0.17910852329805493,
   "full_pipeline_single_jit_median_protocol": {
     "n_warm": 5,
     "n_timed": 200,
@@ -92,13 +92,13 @@
   },
   "jit_able_prefix": {
     "name": "ray-trace observed positions to source plane",
-    "per_call": 0.00014844239922240376
+    "per_call": 0.00015437540132552386
   },
   "vmap_prefix": {
     "batch_size": 3,
-    "batch_time": 0.00017120999982580542,
-    "per_call": 5.706999994193514e-05,
-    "speedup_vs_single_jit_prefix": 2.6
+    "batch_time": 0.0001831838977523148,
+    "per_call": 6.10612992507716e-05,
+    "speedup_vs_single_jit_prefix": 2.5
   },
   "pinned_expected": 12.752810040089676,
   "pinned_drift": []

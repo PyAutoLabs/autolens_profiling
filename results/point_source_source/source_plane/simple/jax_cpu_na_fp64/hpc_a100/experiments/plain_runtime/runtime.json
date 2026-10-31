@@ -3,35 +3,35 @@
   "device": {
     "backend": "cpu",
     "device": "cpu:0",
-    "hostname": "euclid-ral-gpu-1",
-    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "hostname": "euclid-ral-gpu-2",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_cpu_multi_thread_eigen=false --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
     "omp_num_threads": "1",
     "cpu_count": 124,
-    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2c/output/jax_cache/p2c_413193_3",
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2dg/output/jax_cache/p2c_413626_7",
     "autotune_cache_entries_at_start": 0,
     "cache_fresh": true,
     "provenance": {
       "provenance_schema": 1,
-      "captured_at": "2026-10-28T21:55:04Z",
-      "host": "euclid-ral-gpu-1",
+      "captured_at": "2026-10-30T16:41:37Z",
+      "host": "euclid-ral-gpu-2",
       "slurm": {
-        "job_id": "413193",
+        "job_id": "413626",
         "array_job_id": null,
         "array_task_id": null
       },
       "loadavg_at_import": [
-        1.65,
-        1.62,
-        0.78
+        2.55,
+        3.79,
+        2.56
       ],
       "loadavg_at_write": [
-        1.6,
-        1.6,
-        0.78
+        2.55,
+        3.79,
+        2.56
       ],
-      "profiling_revision": "2f98e01a150d2f59aebb5735c4c12ae286a7b1d3",
+      "profiling_revision": "8860c50c0dc924ee591bfd0157cde7946a80a25e",
       "library_revisions": {
-        "autolens_profiling": "2f98e01a150d2f59aebb5735c4c12ae286a7b1d3",
+        "autolens_profiling": "8860c50c0dc924ee591bfd0157cde7946a80a25e",
         "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
         "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
         "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
@@ -46,8 +46,8 @@
         "PyAutoLens": "2026.8.17.1"
       },
       "dependency_versions": {
-        "jax": "0.10.2",
-        "jaxlib": "0.10.2",
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
         "numpy": "2.2.6",
         "scipy": "1.17.1",
         "numba": "0.65.1",
@@ -63,7 +63,7 @@
     "cpus_per_eval": 8,
     "cpus_per_eval_basis": "jax cpu: NPROC threads in XLA's CPU intra-op pool",
     "devices_per_eval": 0,
-    "peak_rss_gb": 0.539808,
+    "peak_rss_gb": 0.543146,
     "peak_rss_basis": "in_process_ru_maxrss",
     "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
   },
@@ -74,15 +74,15 @@
     "positions_noise_sigma": 0.05,
     "free_parameters": 8
   },
-  "eager_per_call": 0.0022909708897350355,
+  "eager_per_call": 0.0022877813305240123,
   "eager_log_likelihood": 12.752810040089676,
   "full_pipeline_jits": true,
   "full_pipeline_blocker": null,
-  "full_pipeline_single_jit": 0.0002768476027995348,
-  "full_pipeline_single_jit_median": 0.00025521102361381054,
-  "full_pipeline_single_jit_median_ms": 0.25521102361381054,
-  "full_pipeline_single_jit_p10_ms": 0.2255149360280484,
-  "full_pipeline_single_jit_p90_ms": 0.28193796752020717,
+  "full_pipeline_single_jit": 0.0003053991007618606,
+  "full_pipeline_single_jit_median": 0.0002557229599915445,
+  "full_pipeline_single_jit_median_ms": 0.2557229599915445,
+  "full_pipeline_single_jit_p10_ms": 0.22885393118485808,
+  "full_pipeline_single_jit_p90_ms": 0.3097490407526493,
   "full_pipeline_single_jit_median_protocol": {
     "n_warm": 5,
     "n_timed": 200,
@@ -92,13 +92,13 @@
   },
   "jit_able_prefix": {
     "name": "ray-trace observed positions to source plane",
-    "per_call": 0.0003016953996848315
+    "per_call": 0.00024749650619924066
   },
   "vmap_prefix": {
     "batch_size": 3,
-    "batch_time": 0.0002967392967548221,
-    "per_call": 9.891309891827404e-05,
-    "speedup_vs_single_jit_prefix": 3.1
+    "batch_time": 0.0002915982971899211,
+    "per_call": 9.719943239664037e-05,
+    "speedup_vs_single_jit_prefix": 2.5
   },
   "pinned_expected": 12.752810040089676,
   "pinned_drift": []

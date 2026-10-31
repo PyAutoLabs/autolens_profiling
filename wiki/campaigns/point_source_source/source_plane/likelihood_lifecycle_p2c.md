@@ -267,6 +267,15 @@ presentation points, not defects in the rows:
 
 ## Journal
 
+### 2026-10-31 — phase 3, the JAX legs on jax 0.11.2 (autolens_profiling#495)
+
+The A100 cells (413626) and the two RAL CPU breakdown cells the quiet rerun did not cover
+(413683) were re-measured on jax/jaxlib 0.11.2 (human Q7), along with the `plain_runtime`
+experiments. Witnesses are `match`. The breakdown-only RAL cells keep the quiet runtime row's
+witness and fit figure. `vmap.per_call` after/before on the A100: image plane GPU 0.97, source
+plane GPU 1.13, source plane node CPU 0.93. None moves a verdict. Prior rows are in
+`history/2026.10.25.1_2026-10-28/`.
+
 ### 2026-10-31 — quiet-node rerun of the two solved RAL CPU runtime cells (autolens_profiling#493)
 
 Both solved RAL CPU runtime cells ran on loaded nodes (load 33), so they were rerun on an

@@ -1,0 +1,16 @@
+{
+  "schema": "parity-witness",
+  "version": 1,
+  "status": "match",
+  "log_likelihood": 12.752810039006214,
+  "reference_log_likelihood": 12.75281004008905,
+  "tolerance": 0.001275281004008905,
+  "tolerance_rule": "0.0001 x |reference_log_likelihood| (fp64)",
+  "reference": {
+    "source": "eager NumPy AnalysisPoint(use_jax=False).fit_from(instance).figure_of_merit in the same process: simple, FitPositionsSource (source-plane chi-squared), same dataset, PointSolver, model and instance",
+    "date": "2026-10-31"
+  },
+  "measured_at": "2026-10-31T12:16:29Z",
+  "autolens_version": "2026.8.17.1",
+  "quantity": "log_likelihood_function (JIT cell vs eager NumPy reference)"
+}

@@ -4,35 +4,35 @@
   "device": {
     "backend": "gpu",
     "device": "cuda:0",
-    "hostname": "euclid-ral-gpu-1",
+    "hostname": "euclid-ral-gpu-2",
     "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
     "omp_num_threads": "1",
     "cpu_count": 124,
-    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2a/output/jax_cache/p2b_413162_4",
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2dg/output/jax_cache/p2b_413622_4",
     "autotune_cache_entries_at_start": 0,
     "cache_fresh": true,
     "provenance": {
       "provenance_schema": 1,
-      "captured_at": "2026-10-28T13:55:22Z",
-      "host": "euclid-ral-gpu-1",
+      "captured_at": "2026-10-30T16:35:07Z",
+      "host": "euclid-ral-gpu-2",
       "slurm": {
-        "job_id": "413162",
+        "job_id": "413622",
         "array_job_id": null,
         "array_task_id": null
       },
       "loadavg_at_import": [
-        5.64,
-        4.11,
-        1.87
+        4.49,
+        3.27,
+        1.49
       ],
       "loadavg_at_write": [
-        5.06,
-        4.06,
-        1.89
+        5.72,
+        3.6,
+        1.63
       ],
-      "profiling_revision": "80bbb028284ad8eb36d34692a414319f881b1d1e",
+      "profiling_revision": "8860c50c0dc924ee591bfd0157cde7946a80a25e",
       "library_revisions": {
-        "autolens_profiling": "80bbb028284ad8eb36d34692a414319f881b1d1e",
+        "autolens_profiling": "8860c50c0dc924ee591bfd0157cde7946a80a25e",
         "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
         "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
         "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
@@ -47,8 +47,8 @@
         "PyAutoLens": "2026.8.17.1"
       },
       "dependency_versions": {
-        "jax": "0.10.2",
-        "jaxlib": "0.10.2",
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
         "numpy": "2.2.6",
         "scipy": "1.17.1",
         "numba": "0.65.1",
@@ -65,7 +65,7 @@
     "cpus_per_eval": 8,
     "cpus_per_eval_basis": "jax gpu: one device; cpus_per_eval = NPROC host threads",
     "devices_per_eval": 1,
-    "peak_rss_gb": 1.038934,
+    "peak_rss_gb": 0.991863,
     "peak_rss_basis": "in_process_ru_maxrss",
     "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
   },
@@ -118,14 +118,14 @@
       "note": "Not pinned (legacy variant): recorded as found."
     },
     "host_load_avg_start": [
-      5.64,
-      4.11,
-      1.87
+      4.49,
+      3.27,
+      1.49
     ],
     "host_load_avg_end": [
-      5.06,
-      4.06,
-      1.89
+      5.72,
+      3.6,
+      1.63
     ]
   },
   "reference_mode": "eager_numpy",
@@ -165,28 +165,28 @@
     "preconditioning": "raw"
   },
   "steps": {
-    "Ray-trace grids": 0.000768499803962186,
-    "Mapping matrix (20 Gaussians)": -1.9540800713002703e-05,
-    "Transformed mapping matrix (NUFFT)": 0.0006346403970383108,
-    "Data vector (D)": 0.00013680129777640104,
-    "Curvature matrix (F)": 0.00016346609918400646,
-    "Reconstruction (PDIP NNLS)": 0.002457440597936511,
-    "Fast chi-squared + figure of merit": 0.00011939959949813783
+    "Ray-trace grids": 0.0005141038913279772,
+    "Mapping matrix (20 Gaussians)": 0.00041144150309264666,
+    "Transformed mapping matrix (NUFFT)": 0.0004929330083541571,
+    "Data vector (D)": 0.00012039520079270005,
+    "Curvature matrix (F)": 0.00017879789229482412,
+    "Reconstruction (PDIP NNLS)": 0.0025073966942727568,
+    "Fast chi-squared + figure of merit": 0.00012929319636896254
   },
-  "total_step_by_step": 0.00426070699468255,
+  "total_step_by_step": 0.004354361386504024,
   "source_revisions": {
-    "autolens_profiling": "80bbb028284ad8eb36d34692a414319f881b1d1e",
+    "autolens_profiling": "8860c50c0dc924ee591bfd0157cde7946a80a25e",
     "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
     "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
     "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
     "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
     "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
   },
-  "full_pipeline_single_jit": 0.00377410480286926,
-  "full_pipeline_single_jit_median": 0.00364285652176477,
-  "full_pipeline_single_jit_median_ms": 3.64285652176477,
-  "full_pipeline_single_jit_p10_ms": 3.6045100074261427,
-  "full_pipeline_single_jit_p90_ms": 3.69120595860295,
+  "full_pipeline_single_jit": 0.003714189399033785,
+  "full_pipeline_single_jit_median": 0.0036402930272743106,
+  "full_pipeline_single_jit_median_ms": 3.6402930272743106,
+  "full_pipeline_single_jit_p10_ms": 3.613189817406237,
+  "full_pipeline_single_jit_p90_ms": 3.7023339769802988,
   "full_pipeline_single_jit_median_protocol": {
     "n_warm": 5,
     "n_timed": 200,
@@ -195,96 +195,96 @@
     "issue": "autolens_profiling#371; timing-noise audit P8 (#362)"
   },
   "steps_sub_rows": {
-    "Ray-trace (standalone, eager tracer)": 0.000166553002782166,
-    "transform_mapping_matrix (standalone)": 0.0007202444016002118,
-    "Mapped visibilities + residual chi-squared (log_likelihood)": 0.00012438150006346404,
-    "Dense chain from mapping matrix (steps 3-8 fused)": 0.0029849422979168596
+    "Ray-trace (standalone, eager tracer)": 0.00018457189435139298,
+    "transform_mapping_matrix (standalone)": 0.0007597984047606587,
+    "Mapped visibilities + residual chi-squared (log_likelihood)": 0.00015395309310406446,
+    "Dense chain from mapping matrix (steps 3-8 fused)": 0.0030938931042328475
   },
   "setup_split": {
-    "Ray-trace grids": 0.000768499803962186,
-    "Mapping matrix (20 Gaussians)": -1.9540800713002703e-05,
-    "Transformed mapping matrix (NUFFT)": 0.0006346403970383108
+    "Ray-trace grids": 0.0005141038913279772,
+    "Mapping matrix (20 Gaussians)": 0.00041144150309264666,
+    "Transformed mapping matrix (NUFFT)": 0.0004929330083541571
   },
   "setup_prefix_per_call_s": {
-    "1": 0.000768499803962186,
-    "2": 0.0007489590032491833,
-    "3": 0.001383599400287494
+    "1": 0.0005141038913279772,
+    "2": 0.0009255453944206238,
+    "3": 0.001418478402774781
   },
   "jit_phases": {
     "setup_prefix_1": {
-      "lower_s": 0.11952547600958496,
-      "compile_s": 0.41440024599432945,
-      "first_call_s": 0.0024006710154935718,
-      "steady_per_call_s": 0.000768499803962186
+      "lower_s": 0.23985219607129693,
+      "compile_s": 0.3892285729525611,
+      "first_call_s": 0.0026032530004158616,
+      "steady_per_call_s": 0.0005141038913279772
     },
     "setup_prefix_2": {
-      "lower_s": 0.42734018102055416,
-      "compile_s": 1.856303327018395,
-      "first_call_s": 0.004898061975836754,
-      "steady_per_call_s": 0.0007489590032491833
+      "lower_s": 0.3026835130294785,
+      "compile_s": 1.872849153005518,
+      "first_call_s": 0.005302036995999515,
+      "steady_per_call_s": 0.0009255453944206238
     },
     "setup_prefix_3": {
-      "lower_s": 0.5555466020014137,
-      "compile_s": 2.262645760027226,
-      "first_call_s": 0.014426395995542407,
-      "steady_per_call_s": 0.001383599400287494
+      "lower_s": 0.5732499989680946,
+      "compile_s": 2.3124333570012823,
+      "first_call_s": 0.1342515399446711,
+      "steady_per_call_s": 0.001418478402774781
     },
     "ray_trace_standalone": {
-      "lower_s": 0.07514074997743592,
-      "compile_s": 0.41546399000799283,
-      "first_call_s": 0.0012264249962754548,
-      "steady_per_call_s": 0.000166553002782166
+      "lower_s": 0.07411427807528526,
+      "compile_s": 0.4308180889347568,
+      "first_call_s": 0.0014487809967249632,
+      "steady_per_call_s": 0.00018457189435139298
     },
     "transform_mapping_matrix_standalone": {
-      "lower_s": 0.043182062974665314,
-      "compile_s": 0.3508585949894041,
-      "first_call_s": 0.0041782999760471284,
-      "steady_per_call_s": 0.0007202444016002118
+      "lower_s": 0.04001595498993993,
+      "compile_s": 0.3706974359229207,
+      "first_call_s": 0.004685371997766197,
+      "steady_per_call_s": 0.0007597984047606587
     },
     "data_vector": {
-      "lower_s": 0.01087062997976318,
-      "compile_s": 0.05165205098455772,
-      "first_call_s": 0.0007455309969373047,
-      "steady_per_call_s": 0.00013680129777640104
+      "lower_s": 0.0078010730212554336,
+      "compile_s": 0.06757373595610261,
+      "first_call_s": 0.0007273759692907333,
+      "steady_per_call_s": 0.00012039520079270005
     },
     "curvature_matrix": {
-      "lower_s": 0.016846098005771637,
-      "compile_s": 0.05908507201820612,
-      "first_call_s": 0.04216828499920666,
-      "steady_per_call_s": 0.00016346609918400646
+      "lower_s": 0.018349668011069298,
+      "compile_s": 0.051021798979490995,
+      "first_call_s": 0.04022425401490182,
+      "steady_per_call_s": 0.00017879789229482412
     },
     "reconstruction": {
-      "lower_s": 0.07335930195404217,
-      "compile_s": 0.37668480596039444,
-      "first_call_s": 0.014403206994757056,
-      "steady_per_call_s": 0.002457440597936511
+      "lower_s": 0.0745560850482434,
+      "compile_s": 0.3947575590573251,
+      "first_call_s": 0.014239193056710064,
+      "steady_per_call_s": 0.0025073966942727568
     },
     "figure_of_merit": {
-      "lower_s": 0.011889017012435943,
-      "compile_s": 0.06962749600643292,
-      "first_call_s": 0.0009874069946818054,
-      "steady_per_call_s": 0.00011939959949813783
+      "lower_s": 0.009291933965869248,
+      "compile_s": 0.09620463196188211,
+      "first_call_s": 0.001031912979669869,
+      "steady_per_call_s": 0.00012929319636896254
     },
     "log_likelihood_residual_visibilities": {
-      "lower_s": 0.009642795019317418,
-      "compile_s": 0.09683145902818069,
-      "first_call_s": 0.0009039290016517043,
-      "steady_per_call_s": 0.00012438150006346404
+      "lower_s": 0.006650739931501448,
+      "compile_s": 0.11117912002373487,
+      "first_call_s": 0.0010056738974526525,
+      "steady_per_call_s": 0.00015395309310406446
     },
     "dense_chain_from_mapping_matrix": {
-      "lower_s": 0.08185443899128586,
-      "compile_s": 0.66910174197983,
-      "first_call_s": 0.00955788599094376,
-      "steady_per_call_s": 0.0029849422979168596
+      "lower_s": 0.08010321098845452,
+      "compile_s": 0.7400116610806435,
+      "first_call_s": 0.009148583048954606,
+      "steady_per_call_s": 0.0030938931042328475
     },
     "full_pipeline": {
-      "lower_s": 0.9244614109629765,
-      "compile_s": 2.8250614349963143,
-      "first_call_s": 0.023244900978170335,
-      "steady_per_call_s": 0.00377410480286926
+      "lower_s": 1.001907691010274,
+      "compile_s": 2.710529956035316,
+      "first_call_s": 0.012583352974615991,
+      "steady_per_call_s": 0.003714189399033785
     }
   },
-  "peak_rss_mb": 990.8046875,
+  "peak_rss_mb": 945.9140625,
   "pinned_expected": -3153.948230379729,
   "pinned_drift": []
 }
