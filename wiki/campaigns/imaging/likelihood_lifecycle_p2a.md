@@ -249,6 +249,30 @@ fit: lens-core residuals and a low-level ring pattern are expected.
 
 ## Journal
 
+### 2026-10-31 — phase 3: every JAX cell re-measured on jax 0.11.2 (#495)
+
+Day zero is one environment (human Q7, 2026-10-30): jax/jaxlib 0.11.2 with
+`--xla_cpu_multi_thread_eigen=false` on CPU legs, on the 2026.10.25.1 private checkout (RAL
+413614-413617, A100 413618-413621; all exit 0, 44/44 witnesses `match`). All 44 JAX cells
+replace their rows, which were measured on 2026.10.23.1 under jax 0.10.2 and are now in
+`history/2026.10.23.1_2026-10-25/`. Numba rows are carried. Per-call after/before, by host and
+device:
+
+| host | device | cells | median | range |
+|---|---|---|---|---|
+| A100 node | GPU | 22 | 0.98 | 0.88-1.02 |
+| A100 node | CPU (JAX, eigen flag) | 9 | 1.09 | 0.94-1.34 |
+| ral node | CPU (JAX, eigen flag) | 13 | 1.46 | 1.04-1.58 |
+
+GPU rows did not move: jax 0.11.2 alone costs nothing on the A100. JAX CPU rows got slower,
+most on the ral nodes (worst: delaunay hst `jax_cpu_sparse_fp64` 1.58, rectangular ao
+`jax_cpu_sparse_fp64` 1.57, mge ao `jax_cpu_dense_fp64` 1.55). The eigen flag is CPU-only and
+turns off XLA:CPU's multi-threaded Eigen kernels, so it is the likely cause, though the ral
+legs also ran on shared, loaded nodes (human ruling 2026-10-30) and this batch cannot separate
+the two. A flag on/off pair on one quiet node would. **This moves the many-core CPU
+comparison toward numba**, so the phase-3 designation draft's `cpu_many_core` imaging
+proposals are re-checked on these rows before any record is written.
+
 ### 2026-10-25 — cores per call, peak memory and node throughput (#462)
 
 Phase 2x attached `cpus_per_eval` and `peak_rss_gb` to the 104 committed rows through

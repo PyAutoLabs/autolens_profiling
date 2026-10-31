@@ -46,10 +46,10 @@ No selected reference for this exact setup; archive evidence is available below.
 
 | Record | Metric | Value | Unit | Device / precision | Selection | Evidence pointer |
 |---|---|---|---|---|---|---|
-| `measurement/121a97d51c07bcc06138` | single_jit_median | {"single_jit_median": 0.00026165152667090297} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/runtime.json) `/full_pipeline_single_jit_median` |
-| `measurement/9bcc41c7ce5232aafa34` | vmap.per_call | {"vmap.per_call": 0.00010873170103877784} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/runtime.json) `/vmap/per_call` |
-| `measurement/a95c3a5feebc8d4fef51` | single_jit_block | {"single_jit_block": 0.00031455529970116915} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/runtime.json) `/full_pipeline_single_jit` |
-| `measurement/edcdade3c1c1c5016a3d` | vmap.batch_time | {"vmap.batch_time": 0.0003261951031163335} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/runtime.json) `/vmap/batch_time` |
+| `measurement/121a97d51c07bcc06138` | single_jit_median | {"single_jit_median": 0.00023925298592075706} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/runtime.json) `/full_pipeline_single_jit_median` |
+| `measurement/9bcc41c7ce5232aafa34` | vmap.per_call | {"vmap.per_call": 0.00012311326572671534} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/runtime.json) `/vmap/per_call` |
+| `measurement/a95c3a5feebc8d4fef51` | single_jit_block | {"single_jit_block": 0.0003058292088098824} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/runtime.json) `/full_pipeline_single_jit` |
+| `measurement/edcdade3c1c1c5016a3d` | vmap.batch_time | {"vmap.batch_time": 0.000369339797180146} | s | a100 / float64 | archive support; unreviewed | [artifact](../../../../results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/runtime.json) `/vmap/batch_time` |
 
 </details>
 
@@ -66,8 +66,8 @@ No selected reference for this exact setup; archive evidence is available below.
       "cache_fresh": true,
       "cpu_count": 124,
       "device": "cuda:0",
-      "hostname": "euclid-ral-gpu-1",
-      "nvidia_smi": "NVIDIA A100 80GB PCIe, 441 MiB, 81920 MiB",
+      "hostname": "euclid-ral-gpu-2",
+      "nvidia_smi": "NVIDIA A100 80GB PCIe, 437 MiB, 81920 MiB",
       "omp_num_threads": "1",
       "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
     },
@@ -85,10 +85,10 @@ No selected reference for this exact setup; archive evidence is available below.
       "PyAutoLens.library_versions": "2026.8.17.1",
       "PyAutoNerves.library_revisions": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
       "PyAutoNerves.library_versions": "2026.8.17.1",
-      "autolens_profiling.library_revisions": "2f98e01a150d2f59aebb5735c4c12ae286a7b1d3",
+      "autolens_profiling.library_revisions": "8860c50c0dc924ee591bfd0157cde7946a80a25e",
       "finufft.dependency_versions": "2.5.1",
-      "jax.dependency_versions": "0.10.2",
-      "jaxlib.dependency_versions": "0.10.2",
+      "jax.dependency_versions": "0.11.2",
+      "jaxlib.dependency_versions": "0.11.2",
       "nufftax.dependency_versions": "0.6.1",
       "numba.dependency_versions": "0.65.1",
       "numpy.dependency_versions": "2.2.6",
@@ -111,8 +111,8 @@ No selected reference for this exact setup; archive evidence is available below.
   },
   "provenance": {
     "has_provenance": true,
-    "host": "euclid-ral-gpu-1",
-    "measured_at": "2026-10-28T21:57:08Z",
+    "host": "euclid-ral-gpu-2",
+    "measured_at": "2026-10-30T16:41:06Z",
     "qualified": false,
     "unknowns": {}
   },
@@ -138,8 +138,8 @@ No selected reference for this exact setup; archive evidence is available below.
       "cache_fresh": true,
       "cpu_count": 124,
       "device": "cuda:0",
-      "hostname": "euclid-ral-gpu-1",
-      "nvidia_smi": "NVIDIA A100 80GB PCIe, 441 MiB, 81920 MiB",
+      "hostname": "euclid-ral-gpu-2",
+      "nvidia_smi": "NVIDIA A100 80GB PCIe, 437 MiB, 81920 MiB",
       "omp_num_threads": "1",
       "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false"
     },
@@ -157,10 +157,10 @@ No selected reference for this exact setup; archive evidence is available below.
       "PyAutoLens.library_versions": "2026.8.17.1",
       "PyAutoNerves.library_revisions": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
       "PyAutoNerves.library_versions": "2026.8.17.1",
-      "autolens_profiling.library_revisions": "2f98e01a150d2f59aebb5735c4c12ae286a7b1d3",
+      "autolens_profiling.library_revisions": "8860c50c0dc924ee591bfd0157cde7946a80a25e",
       "finufft.dependency_versions": "2.5.1",
-      "jax.dependency_versions": "0.10.2",
-      "jaxlib.dependency_versions": "0.10.2",
+      "jax.dependency_versions": "0.11.2",
+      "jaxlib.dependency_versions": "0.11.2",
       "nufftax.dependency_versions": "0.6.1",
       "numba.dependency_versions": "0.65.1",
       "numpy.dependency_versions": "2.2.6",
@@ -184,8 +184,8 @@ No selected reference for this exact setup; archive evidence is available below.
   },
   "provenance": {
     "has_provenance": true,
-    "host": "euclid-ral-gpu-1",
-    "measured_at": "2026-10-28T21:57:08Z",
+    "host": "euclid-ral-gpu-2",
+    "measured_at": "2026-10-30T16:41:06Z",
     "qualified": false,
     "unknowns": {}
   },

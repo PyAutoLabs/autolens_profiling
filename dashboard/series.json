@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "generated": "2026-10-31T12:03:54Z",
+ "generated": "2026-10-31T12:31:15Z",
  "reference_host": "euclid-ral-gpu-2",
  "loadavg_cap": 8.0,
  "drift_ratio": 2.0,
@@ -625,7 +625,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.3681638000125531,
      "vmap_per_call_s": 0.3669254026986891,
      "host": "euclid-ral-gpu-1",
@@ -633,20 +633,35 @@
      "job": "412927",
      "loadavg": 0.92,
      "has_provenance": true,
-     "source": "results/imaging/delaunay/ao/jax_gpu_dense_fp64/hpc_a100/runtime.json",
+     "source": "results/imaging/delaunay/ao/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 0.36673204689868727,
      "single_jit_median_s": 0.3681638000125531,
-     "measured_version": "2026.10.23.1",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.34830661199521273,
+     "vmap_per_call_s": 0.34786781939910727,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413618",
+     "loadavg": 1.44,
+     "has_provenance": true,
+     "source": "results/imaging/delaunay/ao/jax_gpu_dense_fp64/hpc_a100/runtime.json",
+     "headline_estimator": "steady median",
+     "single_jit_block_mean_s": 0.3478345295996405,
+     "single_jit_median_s": 0.34830661199521273,
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 0.946,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -665,7 +680,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 56.742351743299515,
      "vmap_per_call_s": 57.17888280389889,
      "host": "euclid-ral-gpu-1",
@@ -673,17 +688,29 @@
      "job": "412927",
      "loadavg": 5.22,
      "has_provenance": true,
+     "source": "results/imaging/delaunay/ao/jax_cpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 56.36658660270041,
+     "vmap_per_call_s": 56.565838898194485,
+     "host": "euclid-ral-gpu-1",
+     "backend": "cpu",
+     "job": "413618",
+     "loadavg": 5.72,
+     "has_provenance": true,
      "source": "results/imaging/delaunay/ao/jax_cpu_sparse_fp64/hpc_a100/runtime.json",
-     "measured_version": "2026.10.23.1",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 0.993,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -702,7 +729,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.8867051329871174,
      "vmap_per_call_s": 0.9353394016012316,
      "host": "euclid-ral-gpu-1",
@@ -710,20 +737,35 @@
      "job": "412927",
      "loadavg": 0.83,
      "has_provenance": true,
-     "source": "results/imaging/delaunay/ao/jax_gpu_sparse_fp64/hpc_a100/runtime.json",
+     "source": "results/imaging/delaunay/ao/jax_gpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 0.8849196652008686,
      "single_jit_median_s": 0.8867051329871174,
-     "measured_version": "2026.10.23.1",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.8565018069930375,
+     "vmap_per_call_s": 0.8214911062037572,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413618",
+     "loadavg": 1.4,
+     "has_provenance": true,
+     "source": "results/imaging/delaunay/ao/jax_gpu_sparse_fp64/hpc_a100/runtime.json",
+     "headline_estimator": "steady median",
+     "single_jit_block_mean_s": 0.8543172276113182,
+     "single_jit_median_s": 0.8565018069930375,
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 0.966,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -742,7 +784,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 1.1463155384990387,
      "vmap_per_call_s": 0.8574389941000845,
      "host": "euclid-ral-gpu-1",
@@ -750,20 +792,35 @@
      "job": "412943",
      "loadavg": 6.12,
      "has_provenance": true,
-     "source": "results/imaging/delaunay/euclid/jax_cpu_sparse_fp64/hpc_a100/runtime.json",
+     "source": "results/imaging/delaunay/euclid/jax_cpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 1.1305084600986448,
      "single_jit_median_s": 1.1463155384990387,
-     "measured_version": "2026.10.23.1",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 1.1380557115189731,
+     "vmap_per_call_s": 1.1483545221659976,
+     "host": "euclid-ral-gpu-1",
+     "backend": "cpu",
+     "job": "413619",
+     "loadavg": 6.11,
+     "has_provenance": true,
+     "source": "results/imaging/delaunay/euclid/jax_cpu_sparse_fp64/hpc_a100/runtime.json",
+     "headline_estimator": "steady median",
+     "single_jit_block_mean_s": 1.1425776278949342,
+     "single_jit_median_s": 1.1380557115189731,
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 0.993,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -976,7 +1033,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 2.5618017567991047,
      "vmap_per_call_s": 2.110378340033155,
      "host": "euclid-ral-gpu-1",
@@ -984,17 +1041,29 @@
      "job": "412944",
      "loadavg": 7.21,
      "has_provenance": true,
+     "source": "results/imaging/delaunay/hst/jax_cpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 2.5067579001071865,
+     "vmap_per_call_s": 2.4778206851993065,
+     "host": "euclid-ral-gpu-1",
+     "backend": "cpu",
+     "job": "413620",
+     "loadavg": 6.18,
+     "has_provenance": true,
      "source": "results/imaging/delaunay/hst/jax_cpu_sparse_fp64/hpc_a100/runtime.json",
-     "measured_version": "2026.10.23.1",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 0.979,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -1027,7 +1096,7 @@
      "reason": "no provenance block (pre-#342 row)"
     },
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.07623319848789833,
      "vmap_per_call_s": 0.04793449853750644,
      "host": "euclid-ral-gpu-1",
@@ -1035,19 +1104,34 @@
      "job": "412944",
      "loadavg": 7.38,
      "has_provenance": true,
-     "source": "results/imaging/delaunay/hst/jax_gpu_sparse_fp64/hpc_a100/runtime.json",
+     "source": "results/imaging/delaunay/hst/jax_gpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 0.0766433196986327,
      "single_jit_median_s": 0.07623319848789833,
-     "measured_version": "2026.10.23.1",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.07364762498764321,
+     "vmap_per_call_s": 0.04716497893095948,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413620",
+     "loadavg": 7.43,
+     "has_provenance": true,
+     "source": "results/imaging/delaunay/hst/jax_gpu_sparse_fp64/hpc_a100/runtime.json",
+     "headline_estimator": "steady median",
+     "single_jit_block_mean_s": 0.07367801029467955,
+     "single_jit_median_s": 0.07364762498764321,
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "estimator-mismatch",
-    "ratio": null,
-    "from": "2026.8.17.1",
+    "status": "steady",
+    "ratio": 0.966,
+    "from": "2026.10.23.1",
     "to": "2026.10.25.1"
    }
   },
@@ -1211,7 +1295,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.0886305004969472,
      "vmap_per_call_s": 0.07228920599991398,
      "host": "euclid-ral-gpu-1",
@@ -1219,11 +1303,62 @@
      "job": "412945",
      "loadavg": 6.78,
      "has_provenance": true,
-     "source": "results/imaging/delaunay/jwst/jax_gpu_dense_fp64/hpc_a100/runtime.json",
+     "source": "results/imaging/delaunay/jwst/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 0.09017893830023241,
      "single_jit_median_s": 0.0886305004969472,
-     "measured_version": "2026.10.23.1",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.0863219229504466,
+     "vmap_per_call_s": 0.06969950402562972,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413621",
+     "loadavg": 5.99,
+     "has_provenance": true,
+     "source": "results/imaging/delaunay/jwst/jax_gpu_dense_fp64/hpc_a100/runtime.json",
+     "headline_estimator": "steady median",
+     "single_jit_block_mean_s": 0.08650889099808409,
+     "single_jit_median_s": 0.0863219229504466,
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    }
+   ],
+   "drift": {
+    "status": "steady",
+    "ratio": 0.974,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
+   }
+  },
+  {
+   "key": "runtime:imaging/delaunay:jwst:jax_cpu_sparse_fp64:hpc_a100:default",
+   "section": "runtime",
+   "cell": "imaging/delaunay/jwst",
+   "config": "hpc_a100_fp64",
+   "sparse": true,
+   "identity": {
+    "likelihood": "imaging/delaunay",
+    "instrument": "jwst",
+    "setup_id": "jax_cpu_sparse_fp64",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
+   "points": [
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 5.104748937499243,
+     "vmap_per_call_s": 5.08535592953364,
+     "host": "euclid-ral-gpu-1",
+     "backend": "cpu",
+     "job": "413621",
+     "loadavg": 7.68,
+     "has_provenance": true,
+     "source": "results/imaging/delaunay/jwst/jax_cpu_sparse_fp64/hpc_a100/runtime.json",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
@@ -1251,7 +1386,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.1242144370044116,
      "vmap_per_call_s": 0.10810742296234821,
      "host": "euclid-ral-gpu-1",
@@ -1259,20 +1394,35 @@
      "job": "412945",
      "loadavg": 5.77,
      "has_provenance": true,
-     "source": "results/imaging/delaunay/jwst/jax_gpu_sparse_fp64/hpc_a100/runtime.json",
+     "source": "results/imaging/delaunay/jwst/jax_gpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 0.12476323300215882,
      "single_jit_median_s": 0.1242144370044116,
-     "measured_version": "2026.10.23.1",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.12339978001546115,
+     "vmap_per_call_s": 0.10759893076174194,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413621",
+     "loadavg": 5.77,
+     "has_provenance": true,
+     "source": "results/imaging/delaunay/jwst/jax_gpu_sparse_fp64/hpc_a100/runtime.json",
+     "headline_estimator": "steady median",
+     "single_jit_block_mean_s": 0.1241596339037642,
+     "single_jit_median_s": 0.12339978001546115,
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 0.993,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -1334,7 +1484,7 @@
      "reason": "no provenance block (pre-#342 row)"
     },
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.08959485798550304,
      "vmap_per_call_s": 0.04274271657504869,
      "host": "euclid-ral-gpu-1",
@@ -1342,19 +1492,34 @@
      "job": "412944",
      "loadavg": 4.22,
      "has_provenance": true,
-     "source": "results/imaging/delaunay_nn/hst/jax_gpu_dense_fp64/hpc_a100/runtime.json",
+     "source": "results/imaging/delaunay_nn/hst/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 0.08990679619892035,
      "single_jit_median_s": 0.08959485798550304,
-     "measured_version": "2026.10.23.1",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.08771140145836398,
+     "vmap_per_call_s": 0.041742290850379504,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413620",
+     "loadavg": 3.81,
+     "has_provenance": true,
+     "source": "results/imaging/delaunay_nn/hst/jax_gpu_dense_fp64/hpc_a100/runtime.json",
+     "headline_estimator": "steady median",
+     "single_jit_block_mean_s": 0.0878320022020489,
+     "single_jit_median_s": 0.08771140145836398,
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "estimator-mismatch",
-    "ratio": null,
-    "from": "2026.8.17.1",
+    "status": "steady",
+    "ratio": 0.979,
+    "from": "2026.10.23.1",
     "to": "2026.10.25.1"
    }
   },
@@ -1374,7 +1539,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 6.249941009300528,
      "vmap_per_call_s": 6.234587844467023,
      "host": "euclid-ral-gpu-1",
@@ -1382,17 +1547,29 @@
      "job": "412944",
      "loadavg": 5.3,
      "has_provenance": true,
+     "source": "results/imaging/delaunay_nn/hst/jax_cpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 5.606390566402115,
+     "vmap_per_call_s": 5.876718904000396,
+     "host": "euclid-ral-gpu-1",
+     "backend": "cpu",
+     "job": "413620",
+     "loadavg": 6.43,
+     "has_provenance": true,
      "source": "results/imaging/delaunay_nn/hst/jax_cpu_sparse_fp64/hpc_a100/runtime.json",
-     "measured_version": "2026.10.23.1",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 0.897,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -1425,7 +1602,7 @@
      "reason": "no provenance block (pre-#342 row)"
     },
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 1.2007481714972528,
      "vmap_per_call_s": 1.1494532450187762,
      "host": "euclid-ral-gpu-1",
@@ -1433,19 +1610,34 @@
      "job": "412944",
      "loadavg": 3.35,
      "has_provenance": true,
-     "source": "results/imaging/delaunay_nn/hst/jax_gpu_sparse_fp64/hpc_a100/runtime.json",
+     "source": "results/imaging/delaunay_nn/hst/jax_gpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 1.2011242606007726,
      "single_jit_median_s": 1.2007481714972528,
-     "measured_version": "2026.10.23.1",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 1.198367806035094,
+     "vmap_per_call_s": 1.1489945059438469,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413620",
+     "loadavg": 3.63,
+     "has_provenance": true,
+     "source": "results/imaging/delaunay_nn/hst/jax_gpu_sparse_fp64/hpc_a100/runtime.json",
+     "headline_estimator": "steady median",
+     "single_jit_block_mean_s": 1.1986606772057713,
+     "single_jit_median_s": 1.198367806035094,
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "estimator-mismatch",
-    "ratio": null,
-    "from": "2026.8.17.1",
+    "status": "steady",
+    "ratio": 0.998,
+    "from": "2026.10.23.1",
     "to": "2026.10.25.1"
    }
   },
@@ -1595,7 +1787,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.01572623450192623,
      "vmap_per_call_s": 0.018979008866396422,
      "host": "euclid-ral-gpu-1",
@@ -1603,11 +1795,65 @@
      "job": "412927",
      "loadavg": 1.15,
      "has_provenance": true,
-     "source": "results/imaging/mge/ao/jax_gpu_dense_fp64/hpc_a100/runtime.json",
+     "source": "results/imaging/mge/ao/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 0.01580807539867237,
      "single_jit_median_s": 0.01572623450192623,
-     "measured_version": "2026.10.23.1",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.015235260012559593,
+     "vmap_per_call_s": 0.018784493398076543,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413618",
+     "loadavg": 1.16,
+     "has_provenance": true,
+     "source": "results/imaging/mge/ao/jax_gpu_dense_fp64/hpc_a100/runtime.json",
+     "headline_estimator": "steady median",
+     "single_jit_block_mean_s": 0.015307992708403616,
+     "single_jit_median_s": 0.015235260012559593,
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    }
+   ],
+   "drift": {
+    "status": "steady",
+    "ratio": 0.969,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
+   }
+  },
+  {
+   "key": "runtime:imaging/mge:euclid:jax_gpu_dense_fp64:hpc_a100:default",
+   "section": "runtime",
+   "cell": "imaging/mge/euclid",
+   "config": "hpc_a100_fp64",
+   "sparse": false,
+   "identity": {
+    "likelihood": "imaging/mge",
+    "instrument": "euclid",
+    "setup_id": "jax_gpu_dense_fp64",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
+   "points": [
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.0056298075360246,
+     "vmap_per_call_s": 0.00019851339220622322,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413619",
+     "loadavg": 7.21,
+     "has_provenance": true,
+     "source": "results/imaging/mge/euclid/jax_gpu_dense_fp64/hpc_a100/runtime.json",
+     "headline_estimator": "steady median",
+     "single_jit_block_mean_s": 0.005616527795791626,
+     "single_jit_median_s": 0.0056298075360246,
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
@@ -1792,7 +2038,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.006285307492362335,
      "vmap_per_call_s": 0.0004115555843782204,
      "host": "euclid-ral-gpu-1",
@@ -1800,20 +2046,35 @@
      "job": "412944",
      "loadavg": 3.76,
      "has_provenance": true,
-     "source": "results/imaging/mge/hst/jax_gpu_dense_fp64/hpc_a100/runtime.json",
+     "source": "results/imaging/mge/hst/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 0.0064334240014432,
      "single_jit_median_s": 0.006285307492362335,
-     "measured_version": "2026.10.23.1",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.006117341457866132,
+     "vmap_per_call_s": 0.00039153370471467497,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413620",
+     "loadavg": 6.77,
+     "has_provenance": true,
+     "source": "results/imaging/mge/hst/jax_gpu_dense_fp64/hpc_a100/runtime.json",
+     "headline_estimator": "steady median",
+     "single_jit_block_mean_s": 0.006353471195325255,
+     "single_jit_median_s": 0.006117341457866132,
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 0.973,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -1976,7 +2237,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.006999579010880552,
      "vmap_per_call_s": 0.0009966248609089234,
      "host": "euclid-ral-gpu-1",
@@ -1984,20 +2245,35 @@
      "job": "412945",
      "loadavg": 5.16,
      "has_provenance": true,
-     "source": "results/imaging/mge/jwst/jax_gpu_dense_fp64/hpc_a100/runtime.json",
+     "source": "results/imaging/mge/jwst/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 0.007146334199933335,
      "single_jit_median_s": 0.006999579010880552,
-     "measured_version": "2026.10.23.1",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.006883237510919571,
+     "vmap_per_call_s": 0.0009179863407553057,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413621",
+     "loadavg": 6.41,
+     "has_provenance": true,
+     "source": "results/imaging/mge/jwst/jax_gpu_dense_fp64/hpc_a100/runtime.json",
+     "headline_estimator": "steady median",
+     "single_jit_block_mean_s": 0.006976510502863675,
+     "single_jit_median_s": 0.006883237510919571,
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 0.983,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -2140,7 +2416,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.3096161610155832,
      "vmap_per_call_s": 0.31083233579993247,
      "host": "euclid-ral-gpu-1",
@@ -2148,20 +2424,35 @@
      "job": "412927",
      "loadavg": 0.85,
      "has_provenance": true,
-     "source": "results/imaging/rectangular/ao/jax_gpu_dense_fp64/hpc_a100/runtime.json",
+     "source": "results/imaging/rectangular/ao/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 0.3078921856998932,
      "single_jit_median_s": 0.3096161610155832,
-     "measured_version": "2026.10.23.1",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.29717177792917937,
+     "vmap_per_call_s": 0.31710851209936664,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413618",
+     "loadavg": 1.59,
+     "has_provenance": true,
+     "source": "results/imaging/rectangular/ao/jax_gpu_dense_fp64/hpc_a100/runtime.json",
+     "headline_estimator": "steady median",
+     "single_jit_block_mean_s": 0.29633394139818847,
+     "single_jit_median_s": 0.29717177792917937,
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 0.96,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -2180,7 +2471,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 50.291423347199455,
      "vmap_per_call_s": 50.84276133849926,
      "host": "euclid-ral-gpu-1",
@@ -2188,17 +2479,29 @@
      "job": "412927",
      "loadavg": 1.29,
      "has_provenance": true,
+     "source": "results/imaging/rectangular/ao/jax_cpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 50.3715888831066,
+     "vmap_per_call_s": 50.70251043069875,
+     "host": "euclid-ral-gpu-1",
+     "backend": "cpu",
+     "job": "413618",
+     "loadavg": 1.47,
+     "has_provenance": true,
      "source": "results/imaging/rectangular/ao/jax_cpu_sparse_fp64/hpc_a100/runtime.json",
-     "measured_version": "2026.10.23.1",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 1.002,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -2217,7 +2520,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.9683689090015832,
      "vmap_per_call_s": 1.0532987551996484,
      "host": "euclid-ral-gpu-1",
@@ -2225,20 +2528,35 @@
      "job": "412927",
      "loadavg": 1.24,
      "has_provenance": true,
-     "source": "results/imaging/rectangular/ao/jax_gpu_sparse_fp64/hpc_a100/runtime.json",
+     "source": "results/imaging/rectangular/ao/jax_gpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 0.9666530781978508,
      "single_jit_median_s": 0.9683689090015832,
-     "measured_version": "2026.10.23.1",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 1.0380890339729376,
+     "vmap_per_call_s": 0.9369904136052355,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413618",
+     "loadavg": 0.85,
+     "has_provenance": true,
+     "source": "results/imaging/rectangular/ao/jax_gpu_sparse_fp64/hpc_a100/runtime.json",
+     "headline_estimator": "steady median",
+     "single_jit_block_mean_s": 1.0368798121926375,
+     "single_jit_median_s": 1.0380890339729376,
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 1.072,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -2257,7 +2575,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.02983378949284088,
      "vmap_per_call_s": 0.007925599459395017,
      "host": "euclid-ral-gpu-1",
@@ -2265,20 +2583,35 @@
      "job": "412943",
      "loadavg": 6.36,
      "has_provenance": true,
-     "source": "results/imaging/rectangular/euclid/jax_gpu_dense_fp64/hpc_a100/runtime.json",
+     "source": "results/imaging/rectangular/euclid/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 0.02978021059825551,
      "single_jit_median_s": 0.02983378949284088,
-     "measured_version": "2026.10.23.1",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.029323739930987358,
+     "vmap_per_call_s": 0.007683681954586063,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413619",
+     "loadavg": 6.01,
+     "has_provenance": true,
+     "source": "results/imaging/rectangular/euclid/jax_gpu_dense_fp64/hpc_a100/runtime.json",
+     "headline_estimator": "steady median",
+     "single_jit_block_mean_s": 0.029784111899789422,
+     "single_jit_median_s": 0.029323739930987358,
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 0.983,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -2297,7 +2630,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.8273544090043288,
      "vmap_per_call_s": 0.6337535231665242,
      "host": "euclid-ral-gpu-1",
@@ -2305,20 +2638,35 @@
      "job": "412943",
      "loadavg": 7.02,
      "has_provenance": true,
-     "source": "results/imaging/rectangular/euclid/jax_cpu_sparse_fp64/hpc_a100/runtime.json",
+     "source": "results/imaging/rectangular/euclid/jax_cpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 0.8276064499019412,
      "single_jit_median_s": 0.8273544090043288,
-     "measured_version": "2026.10.23.1",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.8316819444880821,
+     "vmap_per_call_s": 0.8252343457308599,
+     "host": "euclid-ral-gpu-1",
+     "backend": "cpu",
+     "job": "413619",
+     "loadavg": 6.16,
+     "has_provenance": true,
+     "source": "results/imaging/rectangular/euclid/jax_cpu_sparse_fp64/hpc_a100/runtime.json",
+     "headline_estimator": "steady median",
+     "single_jit_block_mean_s": 0.828696493699681,
+     "single_jit_median_s": 0.8316819444880821,
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 1.005,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -2337,7 +2685,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.03467643100884743,
      "vmap_per_call_s": 0.013191267443744437,
      "host": "euclid-ral-gpu-1",
@@ -2345,20 +2693,35 @@
      "job": "412943",
      "loadavg": 5.82,
      "has_provenance": true,
-     "source": "results/imaging/rectangular/euclid/jax_gpu_sparse_fp64/hpc_a100/runtime.json",
+     "source": "results/imaging/rectangular/euclid/jax_gpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 0.03477436719986145,
      "single_jit_median_s": 0.03467643100884743,
-     "measured_version": "2026.10.23.1",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.034427753009367734,
+     "vmap_per_call_s": 0.012930002012581099,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413619",
+     "loadavg": 6.06,
+     "has_provenance": true,
+     "source": "results/imaging/rectangular/euclid/jax_gpu_sparse_fp64/hpc_a100/runtime.json",
+     "headline_estimator": "steady median",
+     "single_jit_block_mean_s": 0.03431599090108648,
+     "single_jit_median_s": 0.034427753009367734,
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 0.993,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -2548,7 +2911,7 @@
      "reason": "no provenance block (pre-#342 row)"
     },
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.04066428400983568,
      "vmap_per_call_s": 0.025501322662421444,
      "host": "euclid-ral-gpu-1",
@@ -2556,19 +2919,34 @@
      "job": "412944",
      "loadavg": 4.27,
      "has_provenance": true,
-     "source": "results/imaging/rectangular/hst/jax_gpu_dense_fp64/hpc_a100/runtime.json",
+     "source": "results/imaging/rectangular/hst/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 0.04074336880003102,
      "single_jit_median_s": 0.04066428400983568,
-     "measured_version": "2026.10.23.1",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.03951638750731945,
+     "vmap_per_call_s": 0.024682602612301707,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413620",
+     "loadavg": 3.31,
+     "has_provenance": true,
+     "source": "results/imaging/rectangular/hst/jax_gpu_dense_fp64/hpc_a100/runtime.json",
+     "headline_estimator": "steady median",
+     "single_jit_block_mean_s": 0.039672826905734836,
+     "single_jit_median_s": 0.03951638750731945,
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "estimator-mismatch",
-    "ratio": null,
-    "from": "2026.8.17.1",
+    "status": "steady",
+    "ratio": 0.972,
+    "from": "2026.10.23.1",
     "to": "2026.10.25.1"
    }
   },
@@ -2588,7 +2966,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 1.9675420400017174,
      "vmap_per_call_s": 1.7091398410334175,
      "host": "euclid-ral-gpu-1",
@@ -2596,20 +2974,35 @@
      "job": "412944",
      "loadavg": 3.28,
      "has_provenance": true,
-     "source": "results/imaging/rectangular/hst/jax_cpu_sparse_fp64/hpc_a100/runtime.json",
+     "source": "results/imaging/rectangular/hst/jax_cpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 1.9894698535004864,
      "single_jit_median_s": 1.9675420400017174,
-     "measured_version": "2026.10.23.1",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 1.9832536875619553,
+     "vmap_per_call_s": 1.9319604244665243,
+     "host": "euclid-ral-gpu-1",
+     "backend": "cpu",
+     "job": "413620",
+     "loadavg": 4.59,
+     "has_provenance": true,
+     "source": "results/imaging/rectangular/hst/jax_cpu_sparse_fp64/hpc_a100/runtime.json",
+     "headline_estimator": "steady median",
+     "single_jit_block_mean_s": 1.9910522370017134,
+     "single_jit_median_s": 1.9832536875619553,
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 1.008,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -2642,7 +3035,7 @@
      "reason": "no provenance block (pre-#342 row)"
     },
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.06155086950457189,
      "vmap_per_call_s": 0.04118986614375899,
      "host": "euclid-ral-gpu-1",
@@ -2650,19 +3043,34 @@
      "job": "412944",
      "loadavg": 4.06,
      "has_provenance": true,
-     "source": "results/imaging/rectangular/hst/jax_gpu_sparse_fp64/hpc_a100/runtime.json",
+     "source": "results/imaging/rectangular/hst/jax_gpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 0.061748616499244235,
      "single_jit_median_s": 0.06155086950457189,
-     "measured_version": "2026.10.23.1",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.05983016546815634,
+     "vmap_per_call_s": 0.04051758516288828,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413620",
+     "loadavg": 3.04,
+     "has_provenance": true,
+     "source": "results/imaging/rectangular/hst/jax_gpu_sparse_fp64/hpc_a100/runtime.json",
+     "headline_estimator": "steady median",
+     "single_jit_block_mean_s": 0.05994468330172822,
+     "single_jit_median_s": 0.05983016546815634,
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "estimator-mismatch",
-    "ratio": null,
-    "from": "2026.8.17.1",
+    "status": "steady",
+    "ratio": 0.972,
+    "from": "2026.10.23.1",
     "to": "2026.10.25.1"
    }
   },
@@ -2862,7 +3270,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.0663024089881219,
      "vmap_per_call_s": 0.06284201140006189,
      "host": "euclid-ral-gpu-1",
@@ -2870,20 +3278,35 @@
      "job": "412945",
      "loadavg": 3.52,
      "has_provenance": true,
-     "source": "results/imaging/rectangular/jwst/jax_gpu_dense_fp64/hpc_a100/runtime.json",
+     "source": "results/imaging/rectangular/jwst/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 0.06628076890192461,
      "single_jit_median_s": 0.0663024089881219,
-     "measured_version": "2026.10.23.1",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.0637011454673484,
+     "vmap_per_call_s": 0.06070941416255664,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413621",
+     "loadavg": 3.75,
+     "has_provenance": true,
+     "source": "results/imaging/rectangular/jwst/jax_gpu_dense_fp64/hpc_a100/runtime.json",
+     "headline_estimator": "steady median",
+     "single_jit_block_mean_s": 0.06370203479891642,
+     "single_jit_median_s": 0.0637011454673484,
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 0.961,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -2902,7 +3325,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 4.140575968800112,
      "vmap_per_call_s": 3.9401540663665706,
      "host": "euclid-ral-gpu-1",
@@ -2910,17 +3333,29 @@
      "job": "412945",
      "loadavg": 4.81,
      "has_provenance": true,
+     "source": "results/imaging/rectangular/jwst/jax_cpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 4.144011949398555,
+     "vmap_per_call_s": 4.197639477932049,
+     "host": "euclid-ral-gpu-1",
+     "backend": "cpu",
+     "job": "413621",
+     "loadavg": 5.34,
+     "has_provenance": true,
      "source": "results/imaging/rectangular/jwst/jax_cpu_sparse_fp64/hpc_a100/runtime.json",
-     "measured_version": "2026.10.23.1",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 1.001,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -2939,7 +3374,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.11683515900222119,
      "vmap_per_call_s": 0.10746221533772768,
      "host": "euclid-ral-gpu-1",
@@ -2947,20 +3382,35 @@
      "job": "412945",
      "loadavg": 4.49,
      "has_provenance": true,
-     "source": "results/imaging/rectangular/jwst/jax_gpu_sparse_fp64/hpc_a100/runtime.json",
+     "source": "results/imaging/rectangular/jwst/jax_gpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 0.11696091879857703,
      "single_jit_median_s": 0.11683515900222119,
-     "measured_version": "2026.10.23.1",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.12571022554766387,
+     "vmap_per_call_s": 0.1073251502137282,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413621",
+     "loadavg": 4.24,
+     "has_provenance": true,
+     "source": "results/imaging/rectangular/jwst/jax_gpu_sparse_fp64/hpc_a100/runtime.json",
+     "headline_estimator": "steady median",
+     "single_jit_block_mean_s": 0.1257163107045926,
+     "single_jit_median_s": 0.12571022554766387,
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 1.076,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -3016,7 +3466,7 @@
      "job": "413163",
      "loadavg": 4.76,
      "has_provenance": true,
-     "source": "results/interferometer/delaunay/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/runtime.json",
+     "source": "results/interferometer/delaunay/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/history/2026.10.25.1_2026-10-28/runtime.json",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 0.04045131040038541,
      "single_jit_median_s": 0.040262141497805715,
@@ -3318,7 +3768,7 @@
      "job": "413162",
      "loadavg": 4.83,
      "has_provenance": true,
-     "source": "results/interferometer/delaunay/sma/jax_gpu_dense_fp64_nufft/hpc_a100/runtime.json",
+     "source": "results/interferometer/delaunay/sma/jax_gpu_dense_fp64_nufft/hpc_a100/history/2026.10.25.1_2026-10-28/runtime.json",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 0.05613967420067638,
      "single_jit_median_s": 0.0558593044988811,
@@ -3373,7 +3823,7 @@
      "job": "413162",
      "loadavg": 6.59,
      "has_provenance": true,
-     "source": "results/interferometer/delaunay/sma/jax_gpu_sparse_fp64_wtilde/hpc_a100/runtime.json",
+     "source": "results/interferometer/delaunay/sma/jax_gpu_sparse_fp64_wtilde/hpc_a100/history/2026.10.25.1_2026-10-28/runtime.json",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 0.027568420098396017,
      "single_jit_median_s": 0.027487260493217036,
@@ -3523,7 +3973,7 @@
      "job": "413162",
      "loadavg": 4.89,
      "has_provenance": true,
-     "source": "results/interferometer/mge/sma/jax_gpu_dense_fp64_nufft/hpc_a100/runtime.json",
+     "source": "results/interferometer/mge/sma/jax_gpu_dense_fp64_nufft/hpc_a100/history/2026.10.25.1_2026-10-28/runtime.json",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 0.0038483629003167154,
      "single_jit_median_s": 0.0037179604987613857,
@@ -3620,7 +4070,7 @@
      "job": "413163",
      "loadavg": 6.28,
      "has_provenance": true,
-     "source": "results/interferometer/rectangular/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/runtime.json",
+     "source": "results/interferometer/rectangular/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/history/2026.10.25.1_2026-10-28/runtime.json",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 0.036097501800395546,
      "single_jit_median_s": 0.03600580248166807,
@@ -3864,7 +4314,7 @@
      "job": "413162",
      "loadavg": 3.56,
      "has_provenance": true,
-     "source": "results/interferometer/rectangular/sma/jax_gpu_dense_fp64_nufft/hpc_a100/runtime.json",
+     "source": "results/interferometer/rectangular/sma/jax_gpu_dense_fp64_nufft/hpc_a100/history/2026.10.25.1_2026-10-28/runtime.json",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 0.05012258940259926,
      "single_jit_median_s": 0.050055789994075894,
@@ -3919,7 +4369,7 @@
      "job": "413162",
      "loadavg": 2.81,
      "has_provenance": true,
-     "source": "results/interferometer/rectangular/sma/jax_gpu_sparse_fp64_wtilde/hpc_a100/runtime.json",
+     "source": "results/interferometer/rectangular/sma/jax_gpu_sparse_fp64_wtilde/hpc_a100/history/2026.10.25.1_2026-10-28/runtime.json",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 0.022990547498920932,
      "single_jit_median_s": 0.022946574521483853,
@@ -4378,7 +4828,7 @@
      "job": "413193",
      "loadavg": 2.07,
      "has_provenance": true,
-     "source": "results/point_source_image/image_plane/simple/jax_gpu_na_fp64/hpc_a100/runtime.json",
+     "source": "results/point_source_image/image_plane/simple/jax_gpu_na_fp64/hpc_a100/history/2026.10.25.1_2026-10-28/runtime.json",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 0.001050053397193551,
      "single_jit_median_s": 0.0008472389890812337,
@@ -4485,7 +4935,7 @@
      "job": "413193",
      "loadavg": 1.94,
      "has_provenance": true,
-     "source": "results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_a100/runtime.json",
+     "source": "results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_a100/history/2026.10.25.1_2026-10-28/runtime.json",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 0.00032449609716422856,
      "single_jit_median_s": 0.00026525199064053595,
@@ -4540,7 +4990,7 @@
      "job": "413193",
      "loadavg": 1.86,
      "has_provenance": true,
-     "source": "results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/runtime.json",
+     "source": "results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/history/2026.10.25.1_2026-10-28/runtime.json",
      "headline_estimator": "steady median",
      "single_jit_block_mean_s": 0.00031455529970116915,
      "single_jit_median_s": 0.00026165152667090297,
@@ -5454,7 +5904,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.3607076287007658,
      "vmap_per_call_s": null,
      "host": "euclid-ral-gpu-1",
@@ -5462,17 +5912,29 @@
      "job": "413034",
      "loadavg": 0.52,
      "has_provenance": true,
+     "source": "results/imaging/delaunay/ao/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.3401277013821527,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413618",
+     "loadavg": 1.37,
+     "has_provenance": true,
      "source": "results/imaging/delaunay/ao/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
-     "measured_version": "2026.10.23.1",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 0.943,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -5491,7 +5953,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 57.5222826902027,
      "vmap_per_call_s": null,
      "host": "euclid-ral-gpu-1",
@@ -5499,17 +5961,29 @@
      "job": "412927",
      "loadavg": 0.0,
      "has_provenance": true,
+     "source": "results/imaging/delaunay/ao/jax_cpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 57.546895997994575,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "cpu",
+     "job": "413618",
+     "loadavg": 5.67,
+     "has_provenance": true,
      "source": "results/imaging/delaunay/ao/jax_cpu_sparse_fp64/hpc_a100/breakdown.json",
-     "measured_version": "2026.10.23.1",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 1.0,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -5528,7 +6002,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.9004466288984987,
      "vmap_per_call_s": null,
      "host": "euclid-ral-gpu-1",
@@ -5536,8 +6010,56 @@
      "job": "412927",
      "loadavg": 1.02,
      "has_provenance": true,
+     "source": "results/imaging/delaunay/ao/jax_gpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.8663701776880771,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413618",
+     "loadavg": 1.14,
+     "has_provenance": true,
      "source": "results/imaging/delaunay/ao/jax_gpu_sparse_fp64/hpc_a100/breakdown.json",
-     "measured_version": "2026.10.23.1",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    }
+   ],
+   "drift": {
+    "status": "steady",
+    "ratio": 0.962,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
+   }
+  },
+  {
+   "key": "breakdown:imaging/delaunay:euclid:jax_gpu_dense_fp64:hpc_a100:default",
+   "section": "breakdown",
+   "cell": "imaging/delaunay/euclid",
+   "config": "hpc_a100_fp64",
+   "sparse": false,
+   "identity": {
+    "likelihood": "imaging/delaunay",
+    "instrument": "euclid",
+    "setup_id": "jax_gpu_dense_fp64",
+    "host_class": "hpc_a100",
+    "model_variant": "default",
+    "measurement": "breakdown"
+   },
+   "points": [
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.044848221412394196,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413619",
+     "loadavg": 7.94,
+     "has_provenance": true,
+     "source": "results/imaging/delaunay/euclid/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
@@ -5565,7 +6087,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 1.1854304654087173,
      "vmap_per_call_s": null,
      "host": "euclid-ral-gpu-1",
@@ -5573,17 +6095,29 @@
      "job": "412943",
      "loadavg": 0.62,
      "has_provenance": true,
+     "source": "results/imaging/delaunay/euclid/jax_cpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 1.179683963395655,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "cpu",
+     "job": "413619",
+     "loadavg": 1.14,
+     "has_provenance": true,
      "source": "results/imaging/delaunay/euclid/jax_cpu_sparse_fp64/hpc_a100/breakdown.json",
-     "measured_version": "2026.10.23.1",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 0.995,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -5735,7 +6269,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 2.645794239200768,
      "vmap_per_call_s": null,
      "host": "euclid-ral-gpu-1",
@@ -5743,17 +6277,29 @@
      "job": "412944",
      "loadavg": 0.32,
      "has_provenance": true,
+     "source": "results/imaging/delaunay/hst/jax_cpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 2.6167450172128155,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "cpu",
+     "job": "413620",
+     "loadavg": 0.89,
+     "has_provenance": true,
      "source": "results/imaging/delaunay/hst/jax_cpu_sparse_fp64/hpc_a100/breakdown.json",
-     "measured_version": "2026.10.23.1",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 0.989,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -5880,7 +6426,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.08988214420096483,
      "vmap_per_call_s": null,
      "host": "euclid-ral-gpu-1",
@@ -5888,17 +6434,29 @@
      "job": "412945",
      "loadavg": 7.3,
      "has_provenance": true,
+     "source": "results/imaging/delaunay/jwst/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.09789455896243453,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413621",
+     "loadavg": 7.15,
+     "has_provenance": true,
      "source": "results/imaging/delaunay/jwst/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
-     "measured_version": "2026.10.23.1",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 1.089,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -5917,7 +6475,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 5.047908113003359,
      "vmap_per_call_s": null,
      "host": "euclid-ral-gpu-1",
@@ -5925,17 +6483,29 @@
      "job": "412945",
      "loadavg": 0.89,
      "has_provenance": true,
+     "source": "results/imaging/delaunay/jwst/jax_cpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 5.084110813296866,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "cpu",
+     "job": "413621",
+     "loadavg": 1.37,
+     "has_provenance": true,
      "source": "results/imaging/delaunay/jwst/jax_cpu_sparse_fp64/hpc_a100/breakdown.json",
-     "measured_version": "2026.10.23.1",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 1.007,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -5954,7 +6524,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.1274381539958995,
      "vmap_per_call_s": null,
      "host": "euclid-ral-gpu-1",
@@ -5962,17 +6532,29 @@
      "job": "412945",
      "loadavg": 7.15,
      "has_provenance": true,
+     "source": "results/imaging/delaunay/jwst/jax_gpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.1252510877791792,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413621",
+     "loadavg": 6.22,
+     "has_provenance": true,
      "source": "results/imaging/delaunay/jwst/jax_gpu_sparse_fp64/hpc_a100/breakdown.json",
-     "measured_version": "2026.10.23.1",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 0.983,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -6033,7 +6615,7 @@
      "reason": "no provenance block (pre-#342 row)"
     },
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.09021218270354439,
      "vmap_per_call_s": null,
      "host": "euclid-ral-gpu-1",
@@ -6041,16 +6623,28 @@
      "job": "412944",
      "loadavg": 4.63,
      "has_provenance": true,
+     "source": "results/imaging/delaunay_nn/hst/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.08819552480708809,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413620",
+     "loadavg": 4.44,
+     "has_provenance": true,
      "source": "results/imaging/delaunay_nn/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
-     "measured_version": "2026.10.23.1",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
     "status": "steady",
-    "ratio": 1.204,
-    "from": "2026.8.17.1",
+    "ratio": 0.978,
+    "from": "2026.10.23.1",
     "to": "2026.10.25.1"
    }
   },
@@ -6070,7 +6664,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 6.233732678298838,
      "vmap_per_call_s": null,
      "host": "euclid-ral-gpu-1",
@@ -6078,17 +6672,29 @@
      "job": "412944",
      "loadavg": 6.35,
      "has_provenance": true,
+     "source": "results/imaging/delaunay_nn/hst/jax_cpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 5.6874627280049035,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "cpu",
+     "job": "413620",
+     "loadavg": 5.55,
+     "has_provenance": true,
      "source": "results/imaging/delaunay_nn/hst/jax_cpu_sparse_fp64/hpc_a100/breakdown.json",
-     "measured_version": "2026.10.23.1",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 0.912,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -6120,7 +6726,7 @@
      "reason": "no provenance block (pre-#342 row)"
     },
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 1.2045824451022782,
      "vmap_per_call_s": null,
      "host": "euclid-ral-gpu-1",
@@ -6128,16 +6734,28 @@
      "job": "412944",
      "loadavg": 3.52,
      "has_provenance": true,
+     "source": "results/imaging/delaunay_nn/hst/jax_gpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 1.1991476528230123,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413620",
+     "loadavg": 4.08,
+     "has_provenance": true,
      "source": "results/imaging/delaunay_nn/hst/jax_gpu_sparse_fp64/hpc_a100/breakdown.json",
-     "measured_version": "2026.10.23.1",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "drifted",
-    "ratio": 14.216,
-    "from": "2026.8.17.1",
+    "status": "steady",
+    "ratio": 0.995,
+    "from": "2026.10.23.1",
     "to": "2026.10.25.1"
    }
   },
@@ -6215,7 +6833,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.023238669199054127,
      "vmap_per_call_s": null,
      "host": "euclid-ral-gpu-1",
@@ -6223,17 +6841,29 @@
      "job": "412927",
      "loadavg": 1.27,
      "has_provenance": true,
+     "source": "results/imaging/mge/ao/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.022481023776344953,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413618",
+     "loadavg": 1.26,
+     "has_provenance": true,
      "source": "results/imaging/mge/ao/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
-     "measured_version": "2026.10.23.1",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 0.967,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -6320,7 +6950,7 @@
      "reason": "no provenance block (pre-#342 row)"
     },
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.008957591495709493,
      "vmap_per_call_s": null,
      "host": "euclid-ral-gpu-1",
@@ -6328,16 +6958,28 @@
      "job": "412944",
      "loadavg": 3.8,
      "has_provenance": true,
+     "source": "results/imaging/mge/hst/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.009335059404838829,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413620",
+     "loadavg": 7.4,
+     "has_provenance": true,
      "source": "results/imaging/mge/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
-     "measured_version": "2026.10.23.1",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
     "status": "steady",
-    "ratio": 1.154,
-    "from": "2026.7.6.649",
+    "ratio": 1.042,
+    "from": "2026.10.23.1",
     "to": "2026.10.25.1"
    }
   },
@@ -6357,7 +6999,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.010499625603551974,
      "vmap_per_call_s": null,
      "host": "euclid-ral-gpu-1",
@@ -6365,17 +7007,29 @@
      "job": "412945",
      "loadavg": 5.41,
      "has_provenance": true,
+     "source": "results/imaging/mge/jwst/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.010829311492852867,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413621",
+     "loadavg": 5.9,
+     "has_provenance": true,
      "source": "results/imaging/mge/jwst/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
-     "measured_version": "2026.10.23.1",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 1.031,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -6586,7 +7240,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.3165426333027426,
      "vmap_per_call_s": null,
      "host": "euclid-ral-gpu-1",
@@ -6594,17 +7248,29 @@
      "job": "413033",
      "loadavg": 0.52,
      "has_provenance": true,
+     "source": "results/imaging/rectangular/ao/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.3029221644042991,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413618",
+     "loadavg": 1.05,
+     "has_provenance": true,
      "source": "results/imaging/rectangular/ao/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
-     "measured_version": "2026.10.23.1",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 0.957,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -6623,7 +7289,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 51.624940705197524,
      "vmap_per_call_s": null,
      "host": "euclid-ral-gpu-1",
@@ -6631,17 +7297,29 @@
      "job": "412927",
      "loadavg": 1.03,
      "has_provenance": true,
+     "source": "results/imaging/rectangular/ao/jax_cpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 51.19699068123009,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "cpu",
+     "job": "413618",
+     "loadavg": 1.06,
+     "has_provenance": true,
      "source": "results/imaging/rectangular/ao/jax_cpu_sparse_fp64/hpc_a100/breakdown.json",
-     "measured_version": "2026.10.23.1",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 0.992,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -6660,7 +7338,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.988421823992394,
      "vmap_per_call_s": null,
      "host": "euclid-ral-gpu-1",
@@ -6668,17 +7346,29 @@
      "job": "412927",
      "loadavg": 1.29,
      "has_provenance": true,
+     "source": "results/imaging/rectangular/ao/jax_gpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.8990808449918405,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413618",
+     "loadavg": 1.39,
+     "has_provenance": true,
      "source": "results/imaging/rectangular/ao/jax_gpu_sparse_fp64/hpc_a100/breakdown.json",
-     "measured_version": "2026.10.23.1",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 0.91,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -6697,7 +7387,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.0338299544993788,
      "vmap_per_call_s": null,
      "host": "euclid-ral-gpu-1",
@@ -6705,17 +7395,29 @@
      "job": "412943",
      "loadavg": 6.89,
      "has_provenance": true,
+     "source": "results/imaging/rectangular/euclid/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.03384095359360799,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413619",
+     "loadavg": 6.04,
+     "has_provenance": true,
      "source": "results/imaging/rectangular/euclid/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
-     "measured_version": "2026.10.23.1",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 1.0,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -6734,7 +7436,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.9616862501046853,
      "vmap_per_call_s": null,
      "host": "euclid-ral-gpu-1",
@@ -6742,17 +7444,29 @@
      "job": "412943",
      "loadavg": 7.11,
      "has_provenance": true,
+     "source": "results/imaging/rectangular/euclid/jax_cpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.9676027192967013,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "cpu",
+     "job": "413619",
+     "loadavg": 7.72,
+     "has_provenance": true,
      "source": "results/imaging/rectangular/euclid/jax_cpu_sparse_fp64/hpc_a100/breakdown.json",
-     "measured_version": "2026.10.23.1",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 1.006,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -6771,7 +7485,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.04324914899771101,
      "vmap_per_call_s": null,
      "host": "euclid-ral-gpu-1",
@@ -6779,17 +7493,29 @@
      "job": "412943",
      "loadavg": 5.33,
      "has_provenance": true,
+     "source": "results/imaging/rectangular/euclid/jax_gpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.04130540825426579,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413619",
+     "loadavg": 5.1,
+     "has_provenance": true,
      "source": "results/imaging/rectangular/euclid/jax_gpu_sparse_fp64/hpc_a100/breakdown.json",
-     "measured_version": "2026.10.23.1",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 0.955,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -6821,7 +7547,7 @@
      "reason": "no provenance block (pre-#342 row)"
     },
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.04967548310523853,
      "vmap_per_call_s": null,
      "host": "euclid-ral-gpu-1",
@@ -6829,16 +7555,28 @@
      "job": "412944",
      "loadavg": 3.45,
      "has_provenance": true,
+     "source": "results/imaging/rectangular/hst/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.04822739530354739,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413620",
+     "loadavg": 3.56,
+     "has_provenance": true,
      "source": "results/imaging/rectangular/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
-     "measured_version": "2026.10.23.1",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
     "status": "steady",
-    "ratio": 0.828,
-    "from": "2026.8.17.1",
+    "ratio": 0.971,
+    "from": "2026.10.23.1",
     "to": "2026.10.25.1"
    }
   },
@@ -6858,7 +7596,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 2.20074286161107,
      "vmap_per_call_s": null,
      "host": "euclid-ral-gpu-1",
@@ -6866,17 +7604,29 @@
      "job": "412944",
      "loadavg": 3.32,
      "has_provenance": true,
+     "source": "results/imaging/rectangular/hst/jax_cpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 2.181886390631553,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "cpu",
+     "job": "413620",
+     "loadavg": 5.04,
+     "has_provenance": true,
      "source": "results/imaging/rectangular/hst/jax_cpu_sparse_fp64/hpc_a100/breakdown.json",
-     "measured_version": "2026.10.23.1",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 0.991,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -6908,7 +7658,7 @@
      "reason": "no provenance block (pre-#342 row)"
     },
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.07041281580168288,
      "vmap_per_call_s": null,
      "host": "euclid-ral-gpu-1",
@@ -6916,16 +7666,28 @@
      "job": "412944",
      "loadavg": 4.44,
      "has_provenance": true,
+     "source": "results/imaging/rectangular/hst/jax_gpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.06809786149533464,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413620",
+     "loadavg": 3.19,
+     "has_provenance": true,
      "source": "results/imaging/rectangular/hst/jax_gpu_sparse_fp64/hpc_a100/breakdown.json",
-     "measured_version": "2026.10.23.1",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
     "status": "steady",
-    "ratio": 0.994,
-    "from": "2026.8.17.1",
+    "ratio": 0.967,
+    "from": "2026.10.23.1",
     "to": "2026.10.25.1"
    }
   },
@@ -7017,7 +7779,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.07542152010137215,
      "vmap_per_call_s": null,
      "host": "euclid-ral-gpu-1",
@@ -7025,17 +7787,29 @@
      "job": "412945",
      "loadavg": 3.77,
      "has_provenance": true,
+     "source": "results/imaging/rectangular/jwst/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.07271445490187034,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413621",
+     "loadavg": 3.91,
+     "has_provenance": true,
      "source": "results/imaging/rectangular/jwst/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
-     "measured_version": "2026.10.23.1",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 0.964,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -7054,7 +7828,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 4.345491493601003,
      "vmap_per_call_s": null,
      "host": "euclid-ral-gpu-1",
@@ -7062,17 +7836,29 @@
      "job": "412945",
      "loadavg": 5.52,
      "has_provenance": true,
+     "source": "results/imaging/rectangular/jwst/jax_cpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 4.426554837776348,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "cpu",
+     "job": "413621",
+     "loadavg": 6.02,
+     "has_provenance": true,
      "source": "results/imaging/rectangular/jwst/jax_cpu_sparse_fp64/hpc_a100/breakdown.json",
-     "measured_version": "2026.10.23.1",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 1.019,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -7091,7 +7877,7 @@
    },
    "points": [
     {
-     "version": "2026.10.25.1",
+     "version": "2026.10.23.1",
      "single_jit_s": 0.12559640560939445,
      "vmap_per_call_s": null,
      "host": "euclid-ral-gpu-1",
@@ -7099,17 +7885,29 @@
      "job": "412945",
      "loadavg": 3.54,
      "has_provenance": true,
+     "source": "results/imaging/rectangular/jwst/jax_gpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json",
+     "qualified": false,
+     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    },
+    {
+     "version": "2026.10.25.1",
+     "single_jit_s": 0.12506158316973595,
+     "vmap_per_call_s": null,
+     "host": "euclid-ral-gpu-1",
+     "backend": "gpu",
+     "job": "413621",
+     "loadavg": 4.65,
+     "has_provenance": true,
      "source": "results/imaging/rectangular/jwst/jax_gpu_sparse_fp64/hpc_a100/breakdown.json",
-     "measured_version": "2026.10.23.1",
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
     }
    ],
    "drift": {
-    "status": "single-release",
-    "ratio": null,
-    "from": null,
-    "to": null
+    "status": "steady",
+    "ratio": 0.996,
+    "from": "2026.10.23.1",
+    "to": "2026.10.25.1"
    }
   },
   {
@@ -7251,19 +8049,19 @@
     },
     {
      "version": "2026.10.25.1",
-     "single_jit_s": 0.04037269498803653,
+     "single_jit_s": 0.03833663050318137,
      "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-1",
+     "host": "euclid-ral-gpu-2",
      "backend": "gpu",
-     "job": "413163",
-     "loadavg": 1.46,
+     "job": "413623",
+     "loadavg": 0.62,
      "has_provenance": true,
      "source": "results/interferometer/delaunay/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
      "headline_estimator": "steady median",
-     "single_jit_block_mean_s": 0.041105938697000965,
-     "single_jit_median_s": 0.04037269498803653,
-     "qualified": false,
-     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+     "single_jit_block_mean_s": 0.0383265670039691,
+     "single_jit_median_s": 0.03833663050318137,
+     "qualified": true,
+     "reason": null
     }
    ],
    "drift": {
@@ -7788,19 +8586,19 @@
    "points": [
     {
      "version": "2026.10.25.1",
-     "single_jit_s": 0.05593202350428328,
+     "single_jit_s": 0.05762009299360216,
      "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-1",
+     "host": "euclid-ral-gpu-2",
      "backend": "gpu",
-     "job": "413162",
-     "loadavg": 1.0,
+     "job": "413622",
+     "loadavg": 0.62,
      "has_provenance": true,
      "source": "results/interferometer/delaunay/sma/jax_gpu_dense_fp64_nufft/hpc_a100/breakdown.json",
      "headline_estimator": "steady median",
-     "single_jit_block_mean_s": 0.055901342997094615,
-     "single_jit_median_s": 0.05593202350428328,
-     "qualified": false,
-     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+     "single_jit_block_mean_s": 0.058066513296216725,
+     "single_jit_median_s": 0.05762009299360216,
+     "qualified": true,
+     "reason": null
     }
    ],
    "drift": {
@@ -7841,19 +8639,19 @@
     },
     {
      "version": "2026.10.25.1",
-     "single_jit_s": 0.027726646978408098,
+     "single_jit_s": 0.02708071452798322,
      "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-1",
+     "host": "euclid-ral-gpu-2",
      "backend": "gpu",
-     "job": "413162",
-     "loadavg": 6.78,
+     "job": "413622",
+     "loadavg": 5.18,
      "has_provenance": true,
      "source": "results/interferometer/delaunay/sma/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
      "headline_estimator": "steady median",
-     "single_jit_block_mean_s": 0.02788238429930061,
-     "single_jit_median_s": 0.027726646978408098,
-     "qualified": false,
-     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+     "single_jit_block_mean_s": 0.027252262597903608,
+     "single_jit_median_s": 0.02708071452798322,
+     "qualified": true,
+     "reason": null
     }
    ],
    "drift": {
@@ -8699,19 +9497,19 @@
     },
     {
      "version": "2026.10.25.1",
-     "single_jit_s": 0.00364285652176477,
+     "single_jit_s": 0.0036402930272743106,
      "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-1",
+     "host": "euclid-ral-gpu-2",
      "backend": "gpu",
-     "job": "413162",
-     "loadavg": 5.64,
+     "job": "413622",
+     "loadavg": 4.49,
      "has_provenance": true,
      "source": "results/interferometer/mge/sma/jax_gpu_dense_fp64_nufft/hpc_a100/breakdown.json",
      "headline_estimator": "steady median",
-     "single_jit_block_mean_s": 0.00377410480286926,
-     "single_jit_median_s": 0.00364285652176477,
-     "qualified": false,
-     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+     "single_jit_block_mean_s": 0.003714189399033785,
+     "single_jit_median_s": 0.0036402930272743106,
+     "qualified": true,
+     "reason": null
     }
    ],
    "drift": {
@@ -9063,19 +9861,19 @@
     },
     {
      "version": "2026.10.25.1",
-     "single_jit_s": 0.036025802488438785,
+     "single_jit_s": 0.033947288000490516,
      "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-1",
+     "host": "euclid-ral-gpu-2",
      "backend": "gpu",
-     "job": "413163",
-     "loadavg": 6.14,
+     "job": "413623",
+     "loadavg": 5.1,
      "has_provenance": true,
      "source": "results/interferometer/rectangular/alma/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
      "headline_estimator": "steady median",
-     "single_jit_block_mean_s": 0.03594720049877651,
-     "single_jit_median_s": 0.036025802488438785,
-     "qualified": false,
-     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+     "single_jit_block_mean_s": 0.0340537011041306,
+     "single_jit_median_s": 0.033947288000490516,
+     "qualified": true,
+     "reason": null
     }
    ],
    "drift": {
@@ -9600,19 +10398,19 @@
    "points": [
     {
      "version": "2026.10.25.1",
-     "single_jit_s": 0.050050240504788235,
+     "single_jit_s": 0.05154152098111808,
      "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-1",
+     "host": "euclid-ral-gpu-2",
      "backend": "gpu",
-     "job": "413162",
-     "loadavg": 4.36,
+     "job": "413622",
+     "loadavg": 6.31,
      "has_provenance": true,
      "source": "results/interferometer/rectangular/sma/jax_gpu_dense_fp64_nufft/hpc_a100/breakdown.json",
      "headline_estimator": "steady median",
-     "single_jit_block_mean_s": 0.05021866119932383,
-     "single_jit_median_s": 0.050050240504788235,
-     "qualified": false,
-     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+     "single_jit_block_mean_s": 0.051463534799404444,
+     "single_jit_median_s": 0.05154152098111808,
+     "qualified": true,
+     "reason": null
     }
    ],
    "drift": {
@@ -9653,19 +10451,19 @@
     },
     {
      "version": "2026.10.25.1",
-     "single_jit_s": 0.022968489036429673,
+     "single_jit_s": 0.02276717498898506,
      "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-1",
+     "host": "euclid-ral-gpu-2",
      "backend": "gpu",
-     "job": "413162",
-     "loadavg": 3.81,
+     "job": "413622",
+     "loadavg": 5.01,
      "has_provenance": true,
      "source": "results/interferometer/rectangular/sma/jax_gpu_sparse_fp64_wtilde/hpc_a100/breakdown.json",
      "headline_estimator": "steady median",
-     "single_jit_block_mean_s": 0.02298215149785392,
-     "single_jit_median_s": 0.022968489036429673,
-     "qualified": false,
-     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+     "single_jit_block_mean_s": 0.022889158199541272,
+     "single_jit_median_s": 0.02276717498898506,
+     "qualified": true,
+     "reason": null
     }
    ],
    "drift": {
@@ -10187,21 +10985,21 @@
     },
     {
      "version": "2026.10.25.1",
-     "single_jit_s": 0.0010600331937894226,
+     "single_jit_s": 0.0010532496031373738,
      "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-1",
+     "host": "euclid-ral-gpu-2",
      "backend": "gpu",
-     "job": "413193",
-     "loadavg": 0.22,
+     "job": "413626",
+     "loadavg": 4.68,
      "has_provenance": true,
      "source": "results/point_source_image/image_plane/simple/jax_gpu_na_fp64/hpc_a100/breakdown.json",
-     "qualified": false,
-     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+     "qualified": true,
+     "reason": null
     }
    ],
    "drift": {
     "status": "steady",
-    "ratio": 0.976,
+    "ratio": 0.97,
     "from": "2026.8.17.1",
     "to": "2026.10.25.1"
    }
@@ -10308,16 +11106,16 @@
    "points": [
     {
      "version": "2026.10.25.1",
-     "single_jit_s": 0.0002605619956739247,
+     "single_jit_s": 0.0002462139818817377,
      "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-1",
+     "host": "euclid-ral-gpu-2",
      "backend": "cpu",
-     "job": "413193",
-     "loadavg": 2.39,
+     "job": "413626",
+     "loadavg": 4.13,
      "has_provenance": true,
      "source": "results/point_source_source/source_plane/simple/jax_cpu_na_fp64/hpc_a100/breakdown.json",
-     "qualified": false,
-     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+     "qualified": true,
+     "reason": null
     }
    ],
    "drift": {
@@ -10357,21 +11155,21 @@
     },
     {
      "version": "2026.10.25.1",
-     "single_jit_s": 0.00024976200074888766,
+     "single_jit_s": 0.00023603852605447173,
      "vmap_per_call_s": null,
-     "host": "euclid-ral-gpu-1",
+     "host": "euclid-ral-gpu-2",
      "backend": "gpu",
-     "job": "413193",
-     "loadavg": 1.6,
+     "job": "413626",
+     "loadavg": 3.86,
      "has_provenance": true,
      "source": "results/point_source_source/source_plane/simple/jax_gpu_na_fp64/hpc_a100/breakdown.json",
-     "qualified": false,
-     "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+     "qualified": true,
+     "reason": null
     }
    ],
    "drift": {
     "status": "steady",
-    "ratio": 1.126,
+    "ratio": 1.065,
     "from": "2026.8.17.1",
     "to": "2026.10.25.1"
    }
@@ -10792,10 +11590,28 @@
    "job": "412929",
    "loadavg": 8.61,
    "has_provenance": true,
-   "source": "results/imaging/delaunay/ao/jax_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
+   "source": "results/imaging/delaunay/ao/jax_cpu_sparse_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/runtime.json",
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 8.6 above the cap 8",
+   "key": "runtime:imaging/delaunay:ao:jax_cpu_sparse_fp64:hpc_ral_cpu:default",
+   "section": "runtime",
+   "cell": "imaging/delaunay/ao",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": true
+  },
+  {
+   "version": "2026.10.25.1",
+   "single_jit_s": 81.96658933790168,
+   "vmap_per_call_s": 81.31091341580031,
+   "host": "euclid-ral-compute-10-5",
+   "backend": "cpu",
+   "job": "413628",
+   "loadavg": 75.94,
+   "has_provenance": true,
+   "source": "results/imaging/delaunay/ao/jax_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
+   "qualified": false,
+   "reason": "loadavg 75.9 above the cap 8",
    "key": "runtime:imaging/delaunay:ao:jax_cpu_sparse_fp64:hpc_ral_cpu:default",
    "section": "runtime",
    "cell": "imaging/delaunay/ao",
@@ -10811,13 +11627,34 @@
    "job": "412938",
    "loadavg": 8.61,
    "has_provenance": true,
-   "source": "results/imaging/delaunay/euclid/jax_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
+   "source": "results/imaging/delaunay/euclid/jax_cpu_sparse_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/runtime.json",
    "headline_estimator": "steady median",
    "single_jit_block_mean_s": 1.1581560757011176,
    "single_jit_median_s": 1.1220503880176693,
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 8.6 above the cap 8",
+   "key": "runtime:imaging/delaunay:euclid:jax_cpu_sparse_fp64:hpc_ral_cpu:default",
+   "section": "runtime",
+   "cell": "imaging/delaunay/euclid",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": true
+  },
+  {
+   "version": "2026.10.25.1",
+   "single_jit_s": 1.2487347190035507,
+   "vmap_per_call_s": 1.2469129786632644,
+   "host": "euclid-ral-compute-10-5",
+   "backend": "cpu",
+   "job": "413633",
+   "loadavg": 73.61,
+   "has_provenance": true,
+   "source": "results/imaging/delaunay/euclid/jax_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
+   "headline_estimator": "steady median",
+   "single_jit_block_mean_s": 1.2396337970974856,
+   "single_jit_median_s": 1.2487347190035507,
+   "qualified": false,
+   "reason": "loadavg 73.6 above the cap 8",
    "key": "runtime:imaging/delaunay:euclid:jax_cpu_sparse_fp64:hpc_ral_cpu:default",
    "section": "runtime",
    "cell": "imaging/delaunay/euclid",
@@ -10852,13 +11689,34 @@
    "job": "412943",
    "loadavg": 12.31,
    "has_provenance": true,
-   "source": "results/imaging/delaunay/euclid/jax_gpu_dense_fp64/hpc_a100/runtime.json",
+   "source": "results/imaging/delaunay/euclid/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json",
    "headline_estimator": "steady median",
    "single_jit_block_mean_s": 0.04366484810016118,
    "single_jit_median_s": 0.04472524700395297,
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 12.3 above the cap 8",
+   "key": "runtime:imaging/delaunay:euclid:jax_gpu_dense_fp64:hpc_a100:default",
+   "section": "runtime",
+   "cell": "imaging/delaunay/euclid",
+   "config": "hpc_a100_fp64",
+   "sparse": false
+  },
+  {
+   "version": "2026.10.25.1",
+   "single_jit_s": 0.042767388513311744,
+   "vmap_per_call_s": 0.014498157923480904,
+   "host": "euclid-ral-gpu-1",
+   "backend": "gpu",
+   "job": "413619",
+   "loadavg": 9.98,
+   "has_provenance": true,
+   "source": "results/imaging/delaunay/euclid/jax_gpu_dense_fp64/hpc_a100/runtime.json",
+   "headline_estimator": "steady median",
+   "single_jit_block_mean_s": 0.04276375590125099,
+   "single_jit_median_s": 0.042767388513311744,
+   "qualified": false,
+   "reason": "loadavg 10.0 above the cap 8",
    "key": "runtime:imaging/delaunay:euclid:jax_gpu_dense_fp64:hpc_a100:default",
    "section": "runtime",
    "cell": "imaging/delaunay/euclid",
@@ -10874,13 +11732,34 @@
    "job": "412943",
    "loadavg": 10.45,
    "has_provenance": true,
-   "source": "results/imaging/delaunay/euclid/jax_gpu_sparse_fp64/hpc_a100/runtime.json",
+   "source": "results/imaging/delaunay/euclid/jax_gpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json",
    "headline_estimator": "steady median",
    "single_jit_block_mean_s": 0.047057745800702835,
    "single_jit_median_s": 0.046854614512994885,
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 10.4 above the cap 8",
+   "key": "runtime:imaging/delaunay:euclid:jax_gpu_sparse_fp64:hpc_a100:default",
+   "section": "runtime",
+   "cell": "imaging/delaunay/euclid",
+   "config": "hpc_a100_fp64",
+   "sparse": true
+  },
+  {
+   "version": "2026.10.25.1",
+   "single_jit_s": 0.04668146197218448,
+   "vmap_per_call_s": 0.01795552761414001,
+   "host": "euclid-ral-gpu-1",
+   "backend": "gpu",
+   "job": "413619",
+   "loadavg": 12.83,
+   "has_provenance": true,
+   "source": "results/imaging/delaunay/euclid/jax_gpu_sparse_fp64/hpc_a100/runtime.json",
+   "headline_estimator": "steady median",
+   "single_jit_block_mean_s": 0.04706223049433902,
+   "single_jit_median_s": 0.04668146197218448,
+   "qualified": false,
+   "reason": "loadavg 12.8 above the cap 8",
    "key": "runtime:imaging/delaunay:euclid:jax_gpu_sparse_fp64:hpc_a100:default",
    "section": "runtime",
    "cell": "imaging/delaunay/euclid",
@@ -10896,10 +11775,28 @@
    "job": "412950",
    "loadavg": 19.72,
    "has_provenance": true,
-   "source": "results/imaging/delaunay/hst/jax_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
+   "source": "results/imaging/delaunay/hst/jax_cpu_sparse_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/runtime.json",
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 19.7 above the cap 8",
+   "key": "runtime:imaging/delaunay:hst:jax_cpu_sparse_fp64:hpc_ral_cpu:default",
+   "section": "runtime",
+   "cell": "imaging/delaunay/hst",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": true
+  },
+  {
+   "version": "2026.10.25.1",
+   "single_jit_s": 3.0387198043987156,
+   "vmap_per_call_s": 2.991060625598766,
+   "host": "euclid-ral-compute-10-5",
+   "backend": "cpu",
+   "job": "413638",
+   "loadavg": 77.07,
+   "has_provenance": true,
+   "source": "results/imaging/delaunay/hst/jax_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
+   "qualified": false,
+   "reason": "loadavg 77.1 above the cap 8",
    "key": "runtime:imaging/delaunay:hst:jax_cpu_sparse_fp64:hpc_ral_cpu:default",
    "section": "runtime",
    "cell": "imaging/delaunay/hst",
@@ -10934,13 +11831,34 @@
    "job": "412944",
    "loadavg": 11.44,
    "has_provenance": true,
-   "source": "results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100/runtime.json",
+   "source": "results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json",
    "headline_estimator": "steady median",
    "single_jit_block_mean_s": 0.0604242412984604,
    "single_jit_median_s": 0.059577635998721235,
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 11.4 above the cap 8",
+   "key": "runtime:imaging/delaunay:hst:jax_gpu_dense_fp64:hpc_a100:default",
+   "section": "runtime",
+   "cell": "imaging/delaunay/hst",
+   "config": "hpc_a100_fp64",
+   "sparse": false
+  },
+  {
+   "version": "2026.10.25.1",
+   "single_jit_s": 0.05775110947433859,
+   "vmap_per_call_s": 0.0341920564249449,
+   "host": "euclid-ral-gpu-1",
+   "backend": "gpu",
+   "job": "413620",
+   "loadavg": 12.9,
+   "has_provenance": true,
+   "source": "results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100/runtime.json",
+   "headline_estimator": "steady median",
+   "single_jit_block_mean_s": 0.058004243695177135,
+   "single_jit_median_s": 0.05775110947433859,
+   "qualified": false,
+   "reason": "loadavg 12.9 above the cap 8",
    "key": "runtime:imaging/delaunay:hst:jax_gpu_dense_fp64:hpc_a100:default",
    "section": "runtime",
    "cell": "imaging/delaunay/hst",
@@ -10956,10 +11874,28 @@
    "job": "412963",
    "loadavg": 32.02,
    "has_provenance": true,
-   "source": "results/imaging/delaunay/jwst/jax_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
+   "source": "results/imaging/delaunay/jwst/jax_cpu_sparse_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/runtime.json",
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 32.0 above the cap 8",
+   "key": "runtime:imaging/delaunay:jwst:jax_cpu_sparse_fp64:hpc_ral_cpu:default",
+   "section": "runtime",
+   "cell": "imaging/delaunay/jwst",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": true
+  },
+  {
+   "version": "2026.10.25.1",
+   "single_jit_s": 6.632168888300657,
+   "vmap_per_call_s": 6.561824830365367,
+   "host": "euclid-ral-compute-10-5",
+   "backend": "cpu",
+   "job": "413645",
+   "loadavg": 88.98,
+   "has_provenance": true,
+   "source": "results/imaging/delaunay/jwst/jax_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
+   "qualified": false,
+   "reason": "loadavg 89.0 above the cap 8",
    "key": "runtime:imaging/delaunay:jwst:jax_cpu_sparse_fp64:hpc_ral_cpu:default",
    "section": "runtime",
    "cell": "imaging/delaunay/jwst",
@@ -10994,7 +11930,7 @@
    "job": "412945",
    "loadavg": 10.84,
    "has_provenance": true,
-   "source": "results/imaging/delaunay/jwst/jax_cpu_sparse_fp64/hpc_a100/runtime.json",
+   "source": "results/imaging/delaunay/jwst/jax_cpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json",
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 10.8 above the cap 8",
@@ -11013,10 +11949,28 @@
    "job": "412954",
    "loadavg": 29.37,
    "has_provenance": true,
-   "source": "results/imaging/delaunay_nn/hst/jax_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
+   "source": "results/imaging/delaunay_nn/hst/jax_cpu_sparse_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/runtime.json",
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 29.4 above the cap 8",
+   "key": "runtime:imaging/delaunay_nn:hst:jax_cpu_sparse_fp64:hpc_ral_cpu:default",
+   "section": "runtime",
+   "cell": "imaging/delaunay_nn/hst",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": true
+  },
+  {
+   "version": "2026.10.25.1",
+   "single_jit_s": 7.092627229506616,
+   "vmap_per_call_s": 7.24894812440034,
+   "host": "euclid-ral-compute-10-5",
+   "backend": "cpu",
+   "job": "413640",
+   "loadavg": 76.25,
+   "has_provenance": true,
+   "source": "results/imaging/delaunay_nn/hst/jax_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
+   "qualified": false,
+   "reason": "loadavg 76.2 above the cap 8",
    "key": "runtime:imaging/delaunay_nn:hst:jax_cpu_sparse_fp64:hpc_ral_cpu:default",
    "section": "runtime",
    "cell": "imaging/delaunay_nn/hst",
@@ -11051,13 +12005,34 @@
    "job": "412933",
    "loadavg": 8.61,
    "has_provenance": true,
-   "source": "results/imaging/mge/ao/jax_cpu_dense_fp64/hpc_ral_cpu/runtime.json",
+   "source": "results/imaging/mge/ao/jax_cpu_dense_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/runtime.json",
    "headline_estimator": "steady median",
    "single_jit_block_mean_s": 0.3802280405012425,
    "single_jit_median_s": 0.38889611199556384,
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 8.6 above the cap 8",
+   "key": "runtime:imaging/mge:ao:jax_cpu_dense_fp64:hpc_ral_cpu:default",
+   "section": "runtime",
+   "cell": "imaging/mge/ao",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": false
+  },
+  {
+   "version": "2026.10.25.1",
+   "single_jit_s": 0.5563743285601959,
+   "vmap_per_call_s": 0.5118009344674647,
+   "host": "euclid-ral-compute-10-5",
+   "backend": "cpu",
+   "job": "413630",
+   "loadavg": 75.94,
+   "has_provenance": true,
+   "source": "results/imaging/mge/ao/jax_cpu_dense_fp64/hpc_ral_cpu/runtime.json",
+   "headline_estimator": "steady median",
+   "single_jit_block_mean_s": 0.49369508218951524,
+   "single_jit_median_s": 0.5563743285601959,
+   "qualified": false,
+   "reason": "loadavg 75.9 above the cap 8",
    "key": "runtime:imaging/mge:ao:jax_cpu_dense_fp64:hpc_ral_cpu:default",
    "section": "runtime",
    "cell": "imaging/mge/ao",
@@ -11073,13 +12048,34 @@
    "job": "412942",
    "loadavg": 8.61,
    "has_provenance": true,
-   "source": "results/imaging/mge/euclid/jax_cpu_dense_fp64/hpc_ral_cpu/runtime.json",
+   "source": "results/imaging/mge/euclid/jax_cpu_dense_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/runtime.json",
    "headline_estimator": "steady median",
    "single_jit_block_mean_s": 0.008093741498305463,
    "single_jit_median_s": 0.007896395502029918,
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 8.6 above the cap 8",
+   "key": "runtime:imaging/mge:euclid:jax_cpu_dense_fp64:hpc_ral_cpu:default",
+   "section": "runtime",
+   "cell": "imaging/mge/euclid",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": false
+  },
+  {
+   "version": "2026.10.25.1",
+   "single_jit_s": 0.00846665253629908,
+   "vmap_per_call_s": 0.007067500598107775,
+   "host": "euclid-ral-compute-10-5",
+   "backend": "cpu",
+   "job": "413635",
+   "loadavg": 73.61,
+   "has_provenance": true,
+   "source": "results/imaging/mge/euclid/jax_cpu_dense_fp64/hpc_ral_cpu/runtime.json",
+   "headline_estimator": "steady median",
+   "single_jit_block_mean_s": 0.008840054098982364,
+   "single_jit_median_s": 0.00846665253629908,
+   "qualified": false,
+   "reason": "loadavg 73.6 above the cap 8",
    "key": "runtime:imaging/mge:euclid:jax_cpu_dense_fp64:hpc_ral_cpu:default",
    "section": "runtime",
    "cell": "imaging/mge/euclid",
@@ -11095,7 +12091,7 @@
    "job": "412943",
    "loadavg": 8.85,
    "has_provenance": true,
-   "source": "results/imaging/mge/euclid/jax_gpu_dense_fp64/hpc_a100/runtime.json",
+   "source": "results/imaging/mge/euclid/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json",
    "headline_estimator": "steady median",
    "single_jit_block_mean_s": 0.005998284299857914,
    "single_jit_median_s": 0.005915789501159452,
@@ -11117,13 +12113,34 @@
    "job": "412958",
    "loadavg": 28.79,
    "has_provenance": true,
-   "source": "results/imaging/mge/hst/jax_cpu_dense_fp64/hpc_ral_cpu/runtime.json",
+   "source": "results/imaging/mge/hst/jax_cpu_dense_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/runtime.json",
    "headline_estimator": "steady median",
    "single_jit_block_mean_s": 0.020722382998792456,
    "single_jit_median_s": 0.021215502012637444,
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 28.8 above the cap 8",
+   "key": "runtime:imaging/mge:hst:jax_cpu_dense_fp64:hpc_ral_cpu:default",
+   "section": "runtime",
+   "cell": "imaging/mge/hst",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": false
+  },
+  {
+   "version": "2026.10.25.1",
+   "single_jit_s": 0.021342984517104924,
+   "vmap_per_call_s": 0.016290551567605387,
+   "host": "euclid-ral-compute-10-5",
+   "backend": "cpu",
+   "job": "413642",
+   "loadavg": 84.73,
+   "has_provenance": true,
+   "source": "results/imaging/mge/hst/jax_cpu_dense_fp64/hpc_ral_cpu/runtime.json",
+   "headline_estimator": "steady median",
+   "single_jit_block_mean_s": 0.021831438702065498,
+   "single_jit_median_s": 0.021342984517104924,
+   "qualified": false,
+   "reason": "loadavg 84.7 above the cap 8",
    "key": "runtime:imaging/mge:hst:jax_cpu_dense_fp64:hpc_ral_cpu:default",
    "section": "runtime",
    "cell": "imaging/mge/hst",
@@ -11139,13 +12156,34 @@
    "job": "412967",
    "loadavg": 36.8,
    "has_provenance": true,
-   "source": "results/imaging/mge/jwst/jax_cpu_dense_fp64/hpc_ral_cpu/runtime.json",
+   "source": "results/imaging/mge/jwst/jax_cpu_dense_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/runtime.json",
    "headline_estimator": "steady median",
    "single_jit_block_mean_s": 0.045920762300374916,
    "single_jit_median_s": 0.05024812500050757,
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 36.8 above the cap 8",
+   "key": "runtime:imaging/mge:jwst:jax_cpu_dense_fp64:hpc_ral_cpu:default",
+   "section": "runtime",
+   "cell": "imaging/mge/jwst",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": false
+  },
+  {
+   "version": "2026.10.25.1",
+   "single_jit_s": 0.05660950002493337,
+   "vmap_per_call_s": 0.05054883416742086,
+   "host": "euclid-ral-compute-10-5",
+   "backend": "cpu",
+   "job": "413649",
+   "loadavg": 91.78,
+   "has_provenance": true,
+   "source": "results/imaging/mge/jwst/jax_cpu_dense_fp64/hpc_ral_cpu/runtime.json",
+   "headline_estimator": "steady median",
+   "single_jit_block_mean_s": 0.047946025396231565,
+   "single_jit_median_s": 0.05660950002493337,
+   "qualified": false,
+   "reason": "loadavg 91.8 above the cap 8",
    "key": "runtime:imaging/mge:jwst:jax_cpu_dense_fp64:hpc_ral_cpu:default",
    "section": "runtime",
    "cell": "imaging/mge/jwst",
@@ -11161,10 +12199,28 @@
    "job": "412935",
    "loadavg": 8.61,
    "has_provenance": true,
-   "source": "results/imaging/rectangular/ao/jax_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
+   "source": "results/imaging/rectangular/ao/jax_cpu_sparse_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/runtime.json",
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 8.6 above the cap 8",
+   "key": "runtime:imaging/rectangular:ao:jax_cpu_sparse_fp64:hpc_ral_cpu:default",
+   "section": "runtime",
+   "cell": "imaging/rectangular/ao",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": true
+  },
+  {
+   "version": "2026.10.25.1",
+   "single_jit_s": 78.08903250520817,
+   "vmap_per_call_s": 76.81753861010074,
+   "host": "euclid-ral-compute-10-5",
+   "backend": "cpu",
+   "job": "413614",
+   "loadavg": 75.94,
+   "has_provenance": true,
+   "source": "results/imaging/rectangular/ao/jax_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
+   "qualified": false,
+   "reason": "loadavg 75.9 above the cap 8",
    "key": "runtime:imaging/rectangular:ao:jax_cpu_sparse_fp64:hpc_ral_cpu:default",
    "section": "runtime",
    "cell": "imaging/rectangular/ao",
@@ -11180,13 +12236,34 @@
    "job": "412947",
    "loadavg": 20.63,
    "has_provenance": true,
-   "source": "results/imaging/rectangular/euclid/jax_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
+   "source": "results/imaging/rectangular/euclid/jax_cpu_sparse_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/runtime.json",
    "headline_estimator": "steady median",
    "single_jit_block_mean_s": 0.8333823547000065,
    "single_jit_median_s": 0.8585021810140461,
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 20.6 above the cap 8",
+   "key": "runtime:imaging/rectangular:euclid:jax_cpu_sparse_fp64:hpc_ral_cpu:default",
+   "section": "runtime",
+   "cell": "imaging/rectangular/euclid",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": true
+  },
+  {
+   "version": "2026.10.25.1",
+   "single_jit_s": 0.9130572410067543,
+   "vmap_per_call_s": 0.910614695167169,
+   "host": "euclid-ral-compute-10-5",
+   "backend": "cpu",
+   "job": "413615",
+   "loadavg": 73.61,
+   "has_provenance": true,
+   "source": "results/imaging/rectangular/euclid/jax_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
+   "headline_estimator": "steady median",
+   "single_jit_block_mean_s": 0.9001479013939389,
+   "single_jit_median_s": 0.9130572410067543,
+   "qualified": false,
+   "reason": "loadavg 73.6 above the cap 8",
    "key": "runtime:imaging/rectangular:euclid:jax_cpu_sparse_fp64:hpc_ral_cpu:default",
    "section": "runtime",
    "cell": "imaging/rectangular/euclid",
@@ -11221,10 +12298,28 @@
    "job": "412960",
    "loadavg": 32.29,
    "has_provenance": true,
-   "source": "results/imaging/rectangular/hst/jax_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
+   "source": "results/imaging/rectangular/hst/jax_cpu_sparse_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/runtime.json",
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 32.3 above the cap 8",
+   "key": "runtime:imaging/rectangular:hst:jax_cpu_sparse_fp64:hpc_ral_cpu:default",
+   "section": "runtime",
+   "cell": "imaging/rectangular/hst",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": true
+  },
+  {
+   "version": "2026.10.25.1",
+   "single_jit_s": 2.994239801901858,
+   "vmap_per_call_s": 2.963007117400412,
+   "host": "euclid-ral-compute-10-5",
+   "backend": "cpu",
+   "job": "413616",
+   "loadavg": 87.31,
+   "has_provenance": true,
+   "source": "results/imaging/rectangular/hst/jax_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
+   "qualified": false,
+   "reason": "loadavg 87.3 above the cap 8",
    "key": "runtime:imaging/rectangular:hst:jax_cpu_sparse_fp64:hpc_ral_cpu:default",
    "section": "runtime",
    "cell": "imaging/rectangular/hst",
@@ -11259,10 +12354,28 @@
    "job": "412969",
    "loadavg": 37.34,
    "has_provenance": true,
-   "source": "results/imaging/rectangular/jwst/jax_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
+   "source": "results/imaging/rectangular/jwst/jax_cpu_sparse_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/runtime.json",
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 37.3 above the cap 8",
+   "key": "runtime:imaging/rectangular:jwst:jax_cpu_sparse_fp64:hpc_ral_cpu:default",
+   "section": "runtime",
+   "cell": "imaging/rectangular/jwst",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": true
+  },
+  {
+   "version": "2026.10.25.1",
+   "single_jit_s": 5.831219884997699,
+   "vmap_per_call_s": 5.753561279297962,
+   "host": "euclid-ral-compute-10-5",
+   "backend": "cpu",
+   "job": "413617",
+   "loadavg": 92.11,
+   "has_provenance": true,
+   "source": "results/imaging/rectangular/jwst/jax_cpu_sparse_fp64/hpc_ral_cpu/runtime.json",
+   "qualified": false,
+   "reason": "loadavg 92.1 above the cap 8",
    "key": "runtime:imaging/rectangular:jwst:jax_cpu_sparse_fp64:hpc_ral_cpu:default",
    "section": "runtime",
    "cell": "imaging/rectangular/jwst",
@@ -12187,6 +13300,24 @@
   },
   {
    "version": "2026.10.25.1",
+   "single_jit_s": 92.75621951018694,
+   "vmap_per_call_s": null,
+   "host": "euclid-ral-compute-10-5",
+   "backend": "cpu",
+   "job": "413627",
+   "loadavg": 75.94,
+   "has_provenance": true,
+   "source": "results/imaging/delaunay/ao/jax_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
+   "qualified": false,
+   "reason": "loadavg 75.9 above the cap 8",
+   "key": "breakdown:imaging/delaunay:ao:jax_cpu_sparse_fp64:hpc_ral_cpu:default",
+   "section": "breakdown",
+   "cell": "imaging/delaunay/ao",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": true
+  },
+  {
+   "version": "2026.10.25.1",
    "single_jit_s": 54.9227979386982,
    "vmap_per_call_s": null,
    "host": "euclid-ral-compute-1",
@@ -12194,13 +13325,31 @@
    "job": "412928",
    "loadavg": 8.61,
    "has_provenance": true,
-   "source": "results/imaging/delaunay/ao/jax_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
+   "source": "results/imaging/delaunay/ao/jax_cpu_sparse_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/breakdown.json",
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 8.6 above the cap 8",
    "key": "breakdown:imaging/delaunay:ao:jax_cpu_sparse_fp64:hpc_ral_cpu:default",
    "section": "breakdown",
    "cell": "imaging/delaunay/ao",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": true
+  },
+  {
+   "version": "2026.10.25.1",
+   "single_jit_s": 1.2913720412063414,
+   "vmap_per_call_s": null,
+   "host": "euclid-ral-compute-10-5",
+   "backend": "cpu",
+   "job": "413632",
+   "loadavg": 73.61,
+   "has_provenance": true,
+   "source": "results/imaging/delaunay/euclid/jax_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
+   "qualified": false,
+   "reason": "loadavg 73.6 above the cap 8",
+   "key": "breakdown:imaging/delaunay:euclid:jax_cpu_sparse_fp64:hpc_ral_cpu:default",
+   "section": "breakdown",
+   "cell": "imaging/delaunay/euclid",
    "config": "hpc_ral_cpu_fp64",
    "sparse": true
   },
@@ -12213,7 +13362,7 @@
    "job": "412937",
    "loadavg": 8.61,
    "has_provenance": true,
-   "source": "results/imaging/delaunay/euclid/jax_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
+   "source": "results/imaging/delaunay/euclid/jax_cpu_sparse_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/breakdown.json",
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 8.6 above the cap 8",
@@ -12251,7 +13400,7 @@
    "job": "412943",
    "loadavg": 10.82,
    "has_provenance": true,
-   "source": "results/imaging/delaunay/euclid/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
+   "source": "results/imaging/delaunay/euclid/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json",
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 10.8 above the cap 8",
@@ -12263,6 +13412,24 @@
   },
   {
    "version": "2026.10.25.1",
+   "single_jit_s": 0.04820793081307784,
+   "vmap_per_call_s": null,
+   "host": "euclid-ral-gpu-1",
+   "backend": "gpu",
+   "job": "413619",
+   "loadavg": 11.37,
+   "has_provenance": true,
+   "source": "results/imaging/delaunay/euclid/jax_gpu_sparse_fp64/hpc_a100/breakdown.json",
+   "qualified": false,
+   "reason": "loadavg 11.4 above the cap 8",
+   "key": "breakdown:imaging/delaunay:euclid:jax_gpu_sparse_fp64:hpc_a100:default",
+   "section": "breakdown",
+   "cell": "imaging/delaunay/euclid",
+   "config": "hpc_a100_fp64",
+   "sparse": true
+  },
+  {
+   "version": "2026.10.25.1",
    "single_jit_s": 0.05104261669912375,
    "vmap_per_call_s": null,
    "host": "euclid-ral-gpu-1",
@@ -12270,7 +13437,7 @@
    "job": "412943",
    "loadavg": 12.41,
    "has_provenance": true,
-   "source": "results/imaging/delaunay/euclid/jax_gpu_sparse_fp64/hpc_a100/breakdown.json",
+   "source": "results/imaging/delaunay/euclid/jax_gpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json",
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 12.4 above the cap 8",
@@ -12282,6 +13449,24 @@
   },
   {
    "version": "2026.10.25.1",
+   "single_jit_s": 3.1747951818048024,
+   "vmap_per_call_s": null,
+   "host": "euclid-ral-compute-10-5",
+   "backend": "cpu",
+   "job": "413637",
+   "loadavg": 77.07,
+   "has_provenance": true,
+   "source": "results/imaging/delaunay/hst/jax_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
+   "qualified": false,
+   "reason": "loadavg 77.1 above the cap 8",
+   "key": "breakdown:imaging/delaunay:hst:jax_cpu_sparse_fp64:hpc_ral_cpu:default",
+   "section": "breakdown",
+   "cell": "imaging/delaunay/hst",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": true
+  },
+  {
+   "version": "2026.10.25.1",
    "single_jit_s": 2.336528575894772,
    "vmap_per_call_s": null,
    "host": "euclid-ral-compute-1",
@@ -12289,7 +13474,7 @@
    "job": "412949",
    "loadavg": 19.72,
    "has_provenance": true,
-   "source": "results/imaging/delaunay/hst/jax_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
+   "source": "results/imaging/delaunay/hst/jax_cpu_sparse_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/breakdown.json",
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 19.7 above the cap 8",
@@ -12320,6 +13505,24 @@
   },
   {
    "version": "2026.10.25.1",
+   "single_jit_s": 0.06300834277644753,
+   "vmap_per_call_s": null,
+   "host": "euclid-ral-gpu-1",
+   "backend": "gpu",
+   "job": "413620",
+   "loadavg": 11.14,
+   "has_provenance": true,
+   "source": "results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
+   "qualified": false,
+   "reason": "loadavg 11.1 above the cap 8",
+   "key": "breakdown:imaging/delaunay:hst:jax_gpu_dense_fp64:hpc_a100:default",
+   "section": "breakdown",
+   "cell": "imaging/delaunay/hst",
+   "config": "hpc_a100_fp64",
+   "sparse": false
+  },
+  {
+   "version": "2026.10.25.1",
    "single_jit_s": 0.06454236489953473,
    "vmap_per_call_s": null,
    "host": "euclid-ral-gpu-1",
@@ -12327,7 +13530,7 @@
    "job": "412944",
    "loadavg": 12.91,
    "has_provenance": true,
-   "source": "results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
+   "source": "results/imaging/delaunay/hst/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json",
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 12.9 above the cap 8",
@@ -12339,6 +13542,24 @@
   },
   {
    "version": "2026.10.25.1",
+   "single_jit_s": 0.07914069809485227,
+   "vmap_per_call_s": null,
+   "host": "euclid-ral-gpu-1",
+   "backend": "gpu",
+   "job": "413620",
+   "loadavg": 9.58,
+   "has_provenance": true,
+   "source": "results/imaging/delaunay/hst/jax_gpu_sparse_fp64/hpc_a100/breakdown.json",
+   "qualified": false,
+   "reason": "loadavg 9.6 above the cap 8",
+   "key": "breakdown:imaging/delaunay:hst:jax_gpu_sparse_fp64:hpc_a100:default",
+   "section": "breakdown",
+   "cell": "imaging/delaunay/hst",
+   "config": "hpc_a100_fp64",
+   "sparse": true
+  },
+  {
+   "version": "2026.10.25.1",
    "single_jit_s": 0.08035239510063547,
    "vmap_per_call_s": null,
    "host": "euclid-ral-gpu-1",
@@ -12346,7 +13567,7 @@
    "job": "412944",
    "loadavg": 9.16,
    "has_provenance": true,
-   "source": "results/imaging/delaunay/hst/jax_gpu_sparse_fp64/hpc_a100/breakdown.json",
+   "source": "results/imaging/delaunay/hst/jax_gpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json",
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 9.2 above the cap 8",
@@ -12358,6 +13579,24 @@
   },
   {
    "version": "2026.10.25.1",
+   "single_jit_s": 6.609452997311018,
+   "vmap_per_call_s": null,
+   "host": "euclid-ral-compute-10-5",
+   "backend": "cpu",
+   "job": "413644",
+   "loadavg": 87.31,
+   "has_provenance": true,
+   "source": "results/imaging/delaunay/jwst/jax_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
+   "qualified": false,
+   "reason": "loadavg 87.3 above the cap 8",
+   "key": "breakdown:imaging/delaunay:jwst:jax_cpu_sparse_fp64:hpc_ral_cpu:default",
+   "section": "breakdown",
+   "cell": "imaging/delaunay/jwst",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": true
+  },
+  {
+   "version": "2026.10.25.1",
    "single_jit_s": 4.742925284308149,
    "vmap_per_call_s": null,
    "host": "euclid-ral-compute-1",
@@ -12365,7 +13604,7 @@
    "job": "412962",
    "loadavg": 32.02,
    "has_provenance": true,
-   "source": "results/imaging/delaunay/jwst/jax_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
+   "source": "results/imaging/delaunay/jwst/jax_cpu_sparse_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/breakdown.json",
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 32.0 above the cap 8",
@@ -12396,6 +13635,24 @@
   },
   {
    "version": "2026.10.25.1",
+   "single_jit_s": 7.269104724994395,
+   "vmap_per_call_s": null,
+   "host": "euclid-ral-compute-10-5",
+   "backend": "cpu",
+   "job": "413639",
+   "loadavg": 76.25,
+   "has_provenance": true,
+   "source": "results/imaging/delaunay_nn/hst/jax_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
+   "qualified": false,
+   "reason": "loadavg 76.2 above the cap 8",
+   "key": "breakdown:imaging/delaunay_nn:hst:jax_cpu_sparse_fp64:hpc_ral_cpu:default",
+   "section": "breakdown",
+   "cell": "imaging/delaunay_nn/hst",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": true
+  },
+  {
+   "version": "2026.10.25.1",
    "single_jit_s": 6.97750138239644,
    "vmap_per_call_s": null,
    "host": "euclid-ral-compute-1",
@@ -12403,7 +13660,7 @@
    "job": "412953",
    "loadavg": 25.84,
    "has_provenance": true,
-   "source": "results/imaging/delaunay_nn/hst/jax_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
+   "source": "results/imaging/delaunay_nn/hst/jax_cpu_sparse_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/breakdown.json",
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 25.8 above the cap 8",
@@ -12434,6 +13691,24 @@
   },
   {
    "version": "2026.10.25.1",
+   "single_jit_s": 0.9058243336039594,
+   "vmap_per_call_s": null,
+   "host": "euclid-ral-compute-10-5",
+   "backend": "cpu",
+   "job": "413629",
+   "loadavg": 75.94,
+   "has_provenance": true,
+   "source": "results/imaging/mge/ao/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json",
+   "qualified": false,
+   "reason": "loadavg 75.9 above the cap 8",
+   "key": "breakdown:imaging/mge:ao:jax_cpu_dense_fp64:hpc_ral_cpu:default",
+   "section": "breakdown",
+   "cell": "imaging/mge/ao",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": false
+  },
+  {
+   "version": "2026.10.25.1",
    "single_jit_s": 0.7759809507027967,
    "vmap_per_call_s": null,
    "host": "euclid-ral-compute-1",
@@ -12441,13 +13716,31 @@
    "job": "412932",
    "loadavg": 8.61,
    "has_provenance": true,
-   "source": "results/imaging/mge/ao/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json",
+   "source": "results/imaging/mge/ao/jax_cpu_dense_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/breakdown.json",
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 8.6 above the cap 8",
    "key": "breakdown:imaging/mge:ao:jax_cpu_dense_fp64:hpc_ral_cpu:default",
    "section": "breakdown",
    "cell": "imaging/mge/ao",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": false
+  },
+  {
+   "version": "2026.10.25.1",
+   "single_jit_s": 0.013525937416125088,
+   "vmap_per_call_s": null,
+   "host": "euclid-ral-compute-10-5",
+   "backend": "cpu",
+   "job": "413634",
+   "loadavg": 73.61,
+   "has_provenance": true,
+   "source": "results/imaging/mge/euclid/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json",
+   "qualified": false,
+   "reason": "loadavg 73.6 above the cap 8",
+   "key": "breakdown:imaging/mge:euclid:jax_cpu_dense_fp64:hpc_ral_cpu:default",
+   "section": "breakdown",
+   "cell": "imaging/mge/euclid",
    "config": "hpc_ral_cpu_fp64",
    "sparse": false
   },
@@ -12460,7 +13753,7 @@
    "job": "412941",
    "loadavg": 8.61,
    "has_provenance": true,
-   "source": "results/imaging/mge/euclid/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json",
+   "source": "results/imaging/mge/euclid/jax_cpu_dense_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/breakdown.json",
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 8.6 above the cap 8",
@@ -12472,6 +13765,24 @@
   },
   {
    "version": "2026.10.25.1",
+   "single_jit_s": 0.008389694802463054,
+   "vmap_per_call_s": null,
+   "host": "euclid-ral-gpu-1",
+   "backend": "gpu",
+   "job": "413619",
+   "loadavg": 8.49,
+   "has_provenance": true,
+   "source": "results/imaging/mge/euclid/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
+   "qualified": false,
+   "reason": "loadavg 8.5 above the cap 8",
+   "key": "breakdown:imaging/mge:euclid:jax_gpu_dense_fp64:hpc_a100:default",
+   "section": "breakdown",
+   "cell": "imaging/mge/euclid",
+   "config": "hpc_a100_fp64",
+   "sparse": false
+  },
+  {
+   "version": "2026.10.25.1",
    "single_jit_s": 0.008647054099128582,
    "vmap_per_call_s": null,
    "host": "euclid-ral-gpu-1",
@@ -12479,7 +13790,7 @@
    "job": "412943",
    "loadavg": 8.93,
    "has_provenance": true,
-   "source": "results/imaging/mge/euclid/jax_gpu_dense_fp64/hpc_a100/breakdown.json",
+   "source": "results/imaging/mge/euclid/jax_gpu_dense_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/breakdown.json",
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 8.9 above the cap 8",
@@ -12491,6 +13802,24 @@
   },
   {
    "version": "2026.10.25.1",
+   "single_jit_s": 0.03897768270689994,
+   "vmap_per_call_s": null,
+   "host": "euclid-ral-compute-10-5",
+   "backend": "cpu",
+   "job": "413641",
+   "loadavg": 84.73,
+   "has_provenance": true,
+   "source": "results/imaging/mge/hst/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json",
+   "qualified": false,
+   "reason": "loadavg 84.7 above the cap 8",
+   "key": "breakdown:imaging/mge:hst:jax_cpu_dense_fp64:hpc_ral_cpu:default",
+   "section": "breakdown",
+   "cell": "imaging/mge/hst",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": false
+  },
+  {
+   "version": "2026.10.25.1",
    "single_jit_s": 0.03325306099723094,
    "vmap_per_call_s": null,
    "host": "euclid-ral-compute-1",
@@ -12498,13 +13827,31 @@
    "job": "412957",
    "loadavg": 28.79,
    "has_provenance": true,
-   "source": "results/imaging/mge/hst/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json",
+   "source": "results/imaging/mge/hst/jax_cpu_dense_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/breakdown.json",
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 28.8 above the cap 8",
    "key": "breakdown:imaging/mge:hst:jax_cpu_dense_fp64:hpc_ral_cpu:default",
    "section": "breakdown",
    "cell": "imaging/mge/hst",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": false
+  },
+  {
+   "version": "2026.10.25.1",
+   "single_jit_s": 0.07361966961761937,
+   "vmap_per_call_s": null,
+   "host": "euclid-ral-compute-10-5",
+   "backend": "cpu",
+   "job": "413648",
+   "loadavg": 88.1,
+   "has_provenance": true,
+   "source": "results/imaging/mge/jwst/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json",
+   "qualified": false,
+   "reason": "loadavg 88.1 above the cap 8",
+   "key": "breakdown:imaging/mge:jwst:jax_cpu_dense_fp64:hpc_ral_cpu:default",
+   "section": "breakdown",
+   "cell": "imaging/mge/jwst",
    "config": "hpc_ral_cpu_fp64",
    "sparse": false
   },
@@ -12517,7 +13864,7 @@
    "job": "412966",
    "loadavg": 34.44,
    "has_provenance": true,
-   "source": "results/imaging/mge/jwst/jax_cpu_dense_fp64/hpc_ral_cpu/breakdown.json",
+   "source": "results/imaging/mge/jwst/jax_cpu_dense_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/breakdown.json",
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 34.4 above the cap 8",
@@ -12529,6 +13876,24 @@
   },
   {
    "version": "2026.10.25.1",
+   "single_jit_s": 80.26287042940966,
+   "vmap_per_call_s": null,
+   "host": "euclid-ral-compute-10-5",
+   "backend": "cpu",
+   "job": "413631",
+   "loadavg": 75.94,
+   "has_provenance": true,
+   "source": "results/imaging/rectangular/ao/jax_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
+   "qualified": false,
+   "reason": "loadavg 75.9 above the cap 8",
+   "key": "breakdown:imaging/rectangular:ao:jax_cpu_sparse_fp64:hpc_ral_cpu:default",
+   "section": "breakdown",
+   "cell": "imaging/rectangular/ao",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": true
+  },
+  {
+   "version": "2026.10.25.1",
    "single_jit_s": 52.36489712830517,
    "vmap_per_call_s": null,
    "host": "euclid-ral-compute-1",
@@ -12536,13 +13901,31 @@
    "job": "412934",
    "loadavg": 8.61,
    "has_provenance": true,
-   "source": "results/imaging/rectangular/ao/jax_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
+   "source": "results/imaging/rectangular/ao/jax_cpu_sparse_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/breakdown.json",
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 8.6 above the cap 8",
    "key": "breakdown:imaging/rectangular:ao:jax_cpu_sparse_fp64:hpc_ral_cpu:default",
    "section": "breakdown",
    "cell": "imaging/rectangular/ao",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": true
+  },
+  {
+   "version": "2026.10.25.1",
+   "single_jit_s": 1.0431795418960974,
+   "vmap_per_call_s": null,
+   "host": "euclid-ral-compute-10-5",
+   "backend": "cpu",
+   "job": "413636",
+   "loadavg": 73.61,
+   "has_provenance": true,
+   "source": "results/imaging/rectangular/euclid/jax_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
+   "qualified": false,
+   "reason": "loadavg 73.6 above the cap 8",
+   "key": "breakdown:imaging/rectangular:euclid:jax_cpu_sparse_fp64:hpc_ral_cpu:default",
+   "section": "breakdown",
+   "cell": "imaging/rectangular/euclid",
    "config": "hpc_ral_cpu_fp64",
    "sparse": true
   },
@@ -12555,7 +13938,7 @@
    "job": "412946",
    "loadavg": 19.72,
    "has_provenance": true,
-   "source": "results/imaging/rectangular/euclid/jax_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
+   "source": "results/imaging/rectangular/euclid/jax_cpu_sparse_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/breakdown.json",
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 19.7 above the cap 8",
@@ -12586,6 +13969,24 @@
   },
   {
    "version": "2026.10.25.1",
+   "single_jit_s": 2.7429785297135822,
+   "vmap_per_call_s": null,
+   "host": "euclid-ral-compute-10-5",
+   "backend": "cpu",
+   "job": "413643",
+   "loadavg": 84.8,
+   "has_provenance": true,
+   "source": "results/imaging/rectangular/hst/jax_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
+   "qualified": false,
+   "reason": "loadavg 84.8 above the cap 8",
+   "key": "breakdown:imaging/rectangular:hst:jax_cpu_sparse_fp64:hpc_ral_cpu:default",
+   "section": "breakdown",
+   "cell": "imaging/rectangular/hst",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": true
+  },
+  {
+   "version": "2026.10.25.1",
    "single_jit_s": 2.3118716147029774,
    "vmap_per_call_s": null,
    "host": "euclid-ral-compute-1",
@@ -12593,7 +13994,7 @@
    "job": "412959",
    "loadavg": 32.29,
    "has_provenance": true,
-   "source": "results/imaging/rectangular/hst/jax_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
+   "source": "results/imaging/rectangular/hst/jax_cpu_sparse_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/breakdown.json",
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 32.3 above the cap 8",
@@ -12624,6 +14025,24 @@
   },
   {
    "version": "2026.10.25.1",
+   "single_jit_s": 6.121575952135027,
+   "vmap_per_call_s": null,
+   "host": "euclid-ral-compute-10-5",
+   "backend": "cpu",
+   "job": "413650",
+   "loadavg": 92.11,
+   "has_provenance": true,
+   "source": "results/imaging/rectangular/jwst/jax_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
+   "qualified": false,
+   "reason": "loadavg 92.1 above the cap 8",
+   "key": "breakdown:imaging/rectangular:jwst:jax_cpu_sparse_fp64:hpc_ral_cpu:default",
+   "section": "breakdown",
+   "cell": "imaging/rectangular/jwst",
+   "config": "hpc_ral_cpu_fp64",
+   "sparse": true
+  },
+  {
+   "version": "2026.10.25.1",
    "single_jit_s": 4.17100551269832,
    "vmap_per_call_s": null,
    "host": "euclid-ral-compute-1",
@@ -12631,7 +14050,7 @@
    "job": "412968",
    "loadavg": 36.8,
    "has_provenance": true,
-   "source": "results/imaging/rectangular/jwst/jax_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json",
+   "source": "results/imaging/rectangular/jwst/jax_cpu_sparse_fp64/hpc_ral_cpu/history/2026.10.23.1_2026-10-25/breakdown.json",
    "measured_version": "2026.10.23.1",
    "qualified": false,
    "reason": "loadavg 36.8 above the cap 8",
