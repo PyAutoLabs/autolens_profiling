@@ -3,35 +3,35 @@
   "device": {
     "backend": "cpu",
     "device": "cpu:0",
-    "hostname": "euclid-ral-compute-1",
-    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "hostname": "euclid-ral-compute-10-3",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_cpu_multi_thread_eigen=false --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
     "omp_num_threads": "1",
-    "cpu_count": 252,
-    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2a/output/jax_cache/p2b_413150_3",
+    "cpu_count": 236,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2b_rerun/output/jax_cache/p2b_quiet_413385_3",
     "autotune_cache_entries_at_start": 0,
     "cache_fresh": true,
     "provenance": {
       "provenance_schema": 1,
-      "captured_at": "2026-10-28T13:50:11Z",
-      "host": "euclid-ral-compute-1",
+      "captured_at": "2026-10-30T08:29:42Z",
+      "host": "euclid-ral-compute-10-3",
       "slurm": {
-        "job_id": "413150",
-        "array_job_id": "413146",
+        "job_id": "413385",
+        "array_job_id": "413320",
         "array_task_id": "3"
       },
       "loadavg_at_import": [
-        45.79,
-        45.93,
-        47.4
+        1.28,
+        1.75,
+        4.41
       ],
       "loadavg_at_write": [
-        59.97,
-        50.75,
-        48.98
+        1.23,
+        1.62,
+        4.15
       ],
-      "profiling_revision": "80bbb028284ad8eb36d34692a414319f881b1d1e",
+      "profiling_revision": "7c682ccbca9eb2bcad63b659e5d6328644a99617",
       "library_revisions": {
-        "autolens_profiling": "80bbb028284ad8eb36d34692a414319f881b1d1e",
+        "autolens_profiling": "7c682ccbca9eb2bcad63b659e5d6328644a99617",
         "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
         "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
         "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
@@ -46,8 +46,8 @@
         "PyAutoLens": "2026.8.17.1"
       },
       "dependency_versions": {
-        "jax": "0.10.2",
-        "jaxlib": "0.10.2",
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
         "numpy": "2.2.6",
         "scipy": "1.17.1",
         "numba": "0.65.1",
@@ -63,7 +63,7 @@
     "cpus_per_eval": 8,
     "cpus_per_eval_basis": "jax cpu: NPROC threads in XLA's CPU intra-op pool",
     "devices_per_eval": 0,
-    "peak_rss_gb": 1.324601,
+    "peak_rss_gb": 1.266348,
     "peak_rss_basis": "in_process_ru_maxrss",
     "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
   },
@@ -185,28 +185,28 @@
     "inversion_class": "InversionInterferometerSparse",
     "sparse_operator_method": "nufft",
     "sparse_batch_size": 128,
-    "operator_build_s": 3.1978551679640077,
+    "operator_build_s": 1.480772158014588,
     "n_repeats": 10,
     "host_load_avg_start": [
-      45.79,
-      45.93,
-      47.4
+      1.28,
+      1.75,
+      4.41
     ],
     "host_load_avg_end": [
-      59.97,
-      50.75,
-      48.98
+      1.23,
+      1.62,
+      4.15
     ]
   },
-  "log_evidence_jit": -3163.9176261656567,
-  "full_pipeline_single_jit": 1.1620210923021659,
-  "full_pipeline_single_jit_median": 1.1687025620485656,
-  "full_pipeline_single_jit_median_ms": 1168.7025620485656,
-  "full_pipeline_single_jit_p10_ms": 1001.2304490199313,
-  "full_pipeline_single_jit_p90_ms": 1298.3591775991954,
+  "log_evidence_jit": -3163.9176261594457,
+  "full_pipeline_single_jit": 0.7247318506939336,
+  "full_pipeline_single_jit_median": 0.7181463950546458,
+  "full_pipeline_single_jit_median_ms": 718.1463950546458,
+  "full_pipeline_single_jit_p10_ms": 703.4782050177455,
+  "full_pipeline_single_jit_p90_ms": 736.2351339543238,
   "full_pipeline_single_jit_median_protocol": {
     "n_warm": 5,
-    "n_timed": 25,
+    "n_timed": 41,
     "statistic": "median of individually timed calls after warm calls",
     "full_pipeline_single_jit_is": "mean of one 10-call block after one first call (first block after compile)",
     "issue": "autolens_profiling#371; timing-noise audit P8 (#362)"
@@ -215,27 +215,27 @@
     "batch_size": 3,
     "batch_size_resolved": 3,
     "batch_size_source": "table, clamped to 3 on cpu",
-    "batch_time": 2.577677744900575,
-    "per_call": 0.8592259149668583,
-    "speedup_vs_single_jit": 1.35,
+    "batch_time": 2.353739205992315,
+    "per_call": 0.7845797353307716,
+    "speedup_vs_single_jit": 0.92,
     "instances": "draw 0 broadcast to the batch (the runtime cells' convention)",
     "attempts": []
   },
   "jit_phases": {
     "full_pipeline": {
-      "lower_s": 0.7819918129825965,
-      "compile_s": 2.1495579390320927,
-      "first_call_s": 1.130659505026415,
-      "steady_per_call_s": 1.1620210923021659
+      "lower_s": 0.3236792789539322,
+      "compile_s": 1.2412597429938614,
+      "first_call_s": 0.7593801280017942,
+      "steady_per_call_s": 0.7247318506939336
     },
     "full_pipeline_vmap3": {
-      "first_call_s": 7.02121175598586,
-      "batch_per_call_s": 2.577677744900575,
-      "steady_per_call_s": 0.8592259149668583
+      "first_call_s": 4.764180917991325,
+      "batch_per_call_s": 2.353739205992315,
+      "steady_per_call_s": 0.7845797353307716
     }
   },
   "parity_candidate": {
-    "log_likelihood": -3163.9176261656567,
+    "log_likelihood": -3163.9176261594457,
     "quantity": "log_likelihood_function (the cell's figure of merit, the log evidence) at the standard cell's iid draw 0, vs the visibility-chunked eager NumPy dense reference",
     "variant": "delaunay",
     "instrument": "sma",
@@ -256,13 +256,13 @@
     "use_mixed_precision": false
   },
   "log_likelihood_eager": -3154.1191556603862,
-  "figure_of_merit_eager": -3163.917626157263,
+  "figure_of_merit_eager": -3163.9176261417538,
   "eager_inversion_class": "InversionInterferometerSparseNumba",
-  "eager_vs_jit_abs_diff": 8.393726602662355e-09,
+  "eager_vs_jit_abs_diff": 1.7691945686237887e-08,
   "parity_reference": {
-    "log_evidence": -3163.917626157263,
+    "log_evidence": -3163.9176261417538,
     "method": "eager NumPy dense route (InversionInterferometerMapping via FitInterferometer(xp=np) on the dataset without its sparse operator); T formed per visibility chunk and column block by TransformerNUFFT (finufft on the NumPy path) and accumulated into F and D, which the library inversion then solves (positive-only, edge-zeroed subset, log determinants); chi-squared s^T F s - 2 s^T D + d^T N^-1 d. Independent of the W~ operator, numba and JAX (ruling R6).",
     "n_vis_chunks": 1,
-    "total_s": 13.877194099011831
+    "total_s": 9.686400634003803
   }
 }

@@ -786,6 +786,10 @@ iteration counts, budgets in iterations, geometry or formatting, not a measured 
   `--time` at 1.25x batch 0's measured walls once they exist; `--mem` at 1.5x measured MaxRSS).
   `scripts/misc/campaigns/test/test_interferometer_p2b.py::test_batch1_walls_are_measured_by_batch0_and_batch0_never_guards`
   checks it, as the 2a test does.
+  `scripts/misc/campaigns/test/test_interferometer_p2b.py::test_quiet_rerun_time_is_batch1_elapsed_plus_the_quiet_wait`
+  (autolens_profiling#493) checks the quiet-rerun submits' `--time` with the same multiplier:
+  1.25x (batch 1's sacct Elapsed plus the quiet gate's wait), plus the slack, rounded up. It
+  sizes a SLURM wall when the submit is written; no verdict reads it. S1 is still the gate.
 - `scripts/misc/campaigns/weak_p2g.py::WALL_HEADROOM` (autolens_profiling#476): the 2g
   generator's copy of the same `--time` multiplier (1.25x batch 0's measured walls, in since
   batch 0 ran 2026-10-29). `scripts/misc/campaigns/test/test_weak_p2g.py::test_batch1_walls_are_measured_by_batch0_and_batch0_never_guards`

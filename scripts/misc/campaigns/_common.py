@@ -119,7 +119,7 @@ done
 echo "AP_ROOT rev: $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
 
 cd "$AP_ROOT"
-@IMPORT_GUARD@
+@QUIET_DEF@@IMPORT_GUARD@
 # After each leg: the row's recorded library revisions must be the private checkout's HEADs.
 check_revisions() {
 python3 - "$1" <<'EOF_PY'
@@ -165,7 +165,7 @@ run_leg() {
     echo "  cell script: scripts/${CELLS[$I]}.py ${FLAGS[$I]} -> $RESULTS_ROOT/${OUTS[$I]}"
     echo "  JAX_PLATFORMS=$JAX_PLATFORMS  NPROC=$NPROC  log=$LOG"
     echo "  XLA_FLAGS=$XLA_FLAGS"
-    local T0=$(date +%s)
+@QUIET_CALL@    local T0=$(date +%s)
     # A START line first, so a leg killed at --time (which never reaches its WALL line) still shows.
     printf 'START\t%s\t%s\t%s\t%s\n' "${SLURM_JOB_ID:-local}" "$I" "$T0" "${CELLNAMES[$I]}" >> "$AP_ROOT/output/@LOGS@/walls.tsv"
     python3 -u scripts/${CELLS[$I]}.py --instrument ${INSTS[$I]} ${FLAGS[$I]} --output-path "$RESULTS_ROOT/${OUTS[$I]}" > "$LOG" 2>&1 \
@@ -179,6 +179,57 @@ run_leg() {
     fi
 }
 """
+
+
+#: The quiet-node gate of a rerun whose rows must qualify under the dashboard's load cap
+#: (``hpc/release_sweep.conf`` RELEASE_SWEEP_LOADAVG_CAP, judged on the 1-minute load average the
+#: row records as ``loadavg_at_import``, which ``_profile_cli`` samples when the cell script
+#: imports it, before the leg's own compile and timing work). The job holds its node
+#: (``#SBATCH --exclusive``), pins itself to the leg's cores so the leg sees the 8-CPU allocation
+#: of the run it repeats, and starts each leg only once the node's 1-minute load has decayed to
+#: ``load_max`` (the previous tenant's work, or the dataset preflight, can leave it high).
+QUIET_DEF = r"""# QUIET NODE. This job holds its node exclusively (#SBATCH --exclusive), so the leg is the only
+# work on it. Every process is pinned to cores 0..$((SLURM_CPUS_PER_TASK-1)) (taskset), the
+# allocation size of the run this repeats, and each leg starts only once the 1-minute load
+# average (recorded by the row as loadavg_at_import and refused by the dashboard above
+# RELEASE_SWEEP_LOADAVG_CAP) is at most @LOAD_MAX@: polled every @POLL@ s for at most @WAIT@ s,
+# after which the leg runs anyway and its row shows the load it started at.
+echo "exclusive: SLURM_JOB_CPUS_PER_NODE=${SLURM_JOB_CPUS_PER_NODE:-unset}  node cpus=$(nproc --all)  cpuset=$(nproc)"
+taskset -cp "0-$(( ${SLURM_CPUS_PER_TASK:-8} - 1 ))" $$ \
+    || { echo "REFUSING: cannot pin to ${SLURM_CPUS_PER_TASK:-8} cores (is the node exclusive?)"; exit 6; }
+quiet_wait() {
+    local waited=0 load1
+    while :; do
+        load1=$(cut -d' ' -f1 /proc/loadavg)
+        if awk -v l="$load1" -v m=@LOAD_MAX@ 'BEGIN { exit !(l <= m) }'; then
+            echo "QUIET: 1-min load $load1 <= @LOAD_MAX@ after ${waited} s ($(cat /proc/loadavg))"
+            return 0
+        fi
+        if [ "$waited" -ge @WAIT@ ]; then
+            echo "QUIET-WAIT TIMEOUT: 1-min load $load1 > @LOAD_MAX@ after ${waited} s; running anyway"
+            return 0
+        fi
+        sleep @POLL@
+        waited=$((waited + @POLL@))
+    done
+}
+"""
+
+
+@dataclass(frozen=True)
+class QuietGate:
+    """The quiet-node gate's knobs (:data:`QUIET_DEF`)."""
+
+    load_max: float = 2.0
+    wait_s: int = 1200
+    poll_s: int = 15
+
+    def text(self) -> str:
+        return (
+            QUIET_DEF.replace("@LOAD_MAX@", f"{self.load_max:g}")
+            .replace("@WAIT@", str(self.wait_s))
+            .replace("@POLL@", str(self.poll_s))
+        )
 
 
 @dataclass(frozen=True)
@@ -195,13 +246,16 @@ class Campaign:
     allow_var: str  # e.g. P2A_ALLOW_PROVISIONAL_WALL
     private_var: str = "PYAUTO_PRIVATE_BASE"  # env var overriding the private base
     shas: dict = field(default_factory=dict)  # non-empty -> SHA guard instead of tag guard
+    quiet: QuietGate | None = None  # set -> the quiet-node gate (exclusive node, load wait)
 
 
 def preamble(c: Campaign, name: str) -> str:
     """The submit body before the manifest arrays, for campaign ``c`` and submit ``name``."""
     guard = SHA_GUARD.replace("@SHAS@", json.dumps(c.shas)) if c.shas else TAG_GUARD
     return (
-        PREAMBLE.replace("@IMPORT_GUARD@", guard)
+        PREAMBLE.replace("@QUIET_DEF@", c.quiet.text() if c.quiet else "")
+        .replace("@QUIET_CALL@", "    quiet_wait\n" if c.quiet else "")
+        .replace("@IMPORT_GUARD@", guard)
         .replace("@HPC_BASE@", c.hpc_base)
         .replace("@PRIVATE_VAR@", c.private_var)
         .replace("@PRIVATE_BASE@", c.private_base)
@@ -304,10 +358,17 @@ def wall_rows(
 
 
 def sbatch_block(
-    job: str, kind: str, n: int, *, mem: int, time: str, throttle: str | None = None
+    job: str,
+    kind: str,
+    n: int,
+    *,
+    mem: int,
+    time: str,
+    throttle: str | None = None,
+    exclusive: bool = False,
 ) -> list[str]:
     """The ``#SBATCH`` lines. ``kind``: ``ral_cpu`` (array, ``throttle`` e.g. ``%8``),
-    ``a100_job`` (one GPU job) or ``a100_array`` (``%2``)."""
+    ``a100_job`` (one GPU job) or ``a100_array`` (``%2``). ``exclusive`` holds whole nodes."""
     lines = [f"#SBATCH -J {job}"]
     if kind == "ral_cpu":
         lines += ["#SBATCH --partition=ral", f"#SBATCH --array=0-{n - 1}{throttle}"]
@@ -315,6 +376,8 @@ def sbatch_block(
         lines += ["#SBATCH --partition=gpu", "#SBATCH --gres=gpu:1"]
         if kind == "a100_array":
             lines += [f"#SBATCH --array=0-{n - 1}%2"]
+    if exclusive:
+        lines += ["#SBATCH --exclusive"]
     arrayed = "array" in kind or kind == "ral_cpu"
     lines += [
         "#SBATCH --ntasks=1",

@@ -1,0 +1,418 @@
+{
+  "autolens_version": "2026.8.17.1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "hostname": "euclid-ral-compute-1",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 252,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2a/output/jax_cache/p2b_413159_7",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-10-28T14:04:05Z",
+      "host": "euclid-ral-compute-1",
+      "slurm": {
+        "job_id": "413159",
+        "array_job_id": "413159",
+        "array_task_id": "7"
+      },
+      "loadavg_at_import": [
+        60.14,
+        57.09,
+        52.09
+      ],
+      "loadavg_at_write": [
+        64.08,
+        65.23,
+        58.3
+      ],
+      "profiling_revision": "80bbb028284ad8eb36d34692a414319f881b1d1e",
+      "library_revisions": {
+        "autolens_profiling": "80bbb028284ad8eb36d34692a414319f881b1d1e",
+        "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+        "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+        "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+        "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+        "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.10.2",
+        "jaxlib": "0.10.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.65.1",
+        "nufftax": "0.6.1",
+        "finufft": "2.5.1"
+      }
+    }
+  },
+  "resources": {
+    "resources_schema": 1,
+    "engine": "numba",
+    "device": "cpu",
+    "cpus_per_eval": 1,
+    "cpus_per_eval_basis": "numba: one serial evaluation, numba and BLAS threads pinned to 1",
+    "devices_per_eval": 0,
+    "peak_rss_gb": 2.32151,
+    "peak_rss_basis": "in_process_ru_maxrss",
+    "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
+  },
+  "instrument": "alma_high",
+  "model": "pixelization_numba",
+  "transformer": "TransformerNUFFT",
+  "configuration": {
+    "pixel_scale_arcsec": 0.025,
+    "mask_radius_arcsec": 3.5,
+    "real_space_shape": [
+      800,
+      800
+    ],
+    "image_pixels_masked": 61572,
+    "visibilities": 5000000,
+    "source_pixels": 1225,
+    "source_pixels_requested": 1225,
+    "standard_size": true,
+    "production_preset": {
+      "preset": "interferometer_hst_rect_adapt_standard",
+      "variant": "production",
+      "provenance": "subhalo_validation/scripts/pipelines/rectangular_adapt.py (rect_adapt source_pix[2], job 342311): RectangularBilinearAdaptImage shape (32, 32) (MESH_PIXELS_YX :38), regularization Adapt; the rest of the stage (adapt S/N cap, over-sampling, MGE, threads) as hst_source_pix_2 \u2014 likelihood-lifecycle 2b ruling R3 (human 2026-10-25): the hst source_pix[2] mesh and regularization at the standard size, no lens light, the truth lensed-source adapt image with no S/N cap: RectangularBilinearAdaptImage 35x35, adapt regularization; borrows the hst preset's mesh and regularization only",
+      "mesh_kind": "rectangular",
+      "adapt_snr_cap": null,
+      "over_sample_size_lp_rule": null,
+      "over_sample_size_pixelization_rule": null,
+      "regularization": {
+        "scheme": "adapt",
+        "free": false,
+        "coefficient": 1.0
+      },
+      "positions_penalty": null,
+      "lens_light": null,
+      "mge_total_gaussians": 0,
+      "mge_gaussian_per_basis": 2,
+      "sequence": {
+        "kind": "iid",
+        "unit_low": 0.4,
+        "unit_high": 0.6,
+        "seed": 235
+      },
+      "memo": "off",
+      "size_override": "likelihood-lifecycle 2b ruling R3 (human 2026-10-25): the hst source_pix[2] mesh and regularization at the standard size, no lens light, the truth lensed-source adapt image with no S/N cap: RectangularBilinearAdaptImage 35x35, adapt regularization; borrows the hst preset's mesh and regularization only",
+      "mesh": {
+        "kind": "rectangular",
+        "shape": [
+          35,
+          35
+        ],
+        "source_pixels": 1225,
+        "class": "RectangularBilinearAdaptImage",
+        "free_weights": {
+          "weight_power": {
+            "type": "Uniform",
+            "lower": 0.0,
+            "upper": 10.0
+          },
+          "weight_floor": {
+            "type": "LogUniform",
+            "lower": 1e-05,
+            "upper": 1.0
+          }
+        }
+      },
+      "dataset_type": "interferometer",
+      "adapt_image": "truth lensed source (lensed_source.fits), no S/N cap",
+      "instance": "iid draw 0 of the preset sequence (seeded)",
+      "instance_unit_vector": [
+        0.499784489007424,
+        0.41402443684610074,
+        0.41327450881714656,
+        0.4200167345680767,
+        0.5789514047288555,
+        0.4702516857248635,
+        0.567334291975647,
+        0.47173759315010344,
+        0.5239626288064884,
+        0.5543072472409505,
+        0.5399346262699198,
+        0.5099305691842051
+      ],
+      "instrument": "alma_high"
+    },
+    "regularization": {
+      "scheme": "adapt",
+      "free": false,
+      "coefficient": 1.0
+    },
+    "memo_provenance": {
+      "requested": "off",
+      "settings_nnls_warm_start_memo": false,
+      "env_AUTOARRAY_NNLS_WARM_START": "0",
+      "env_before": null,
+      "note": "Both gates are set for memo=off: the Settings flag and the AUTOARRAY_NNLS_WARM_START env kill-switch (autoarray/inversion/inversion/nnls_memo.py:63). settings_nnls_warm_start_memo is read back off the constructed Settings, so it records what took effect. The library default is true and both production projects leave it unset."
+    },
+    "transformer_chunk_size": 1000000,
+    "transformer_chunk_size_preset": 1000000,
+    "lens_light": null,
+    "inversion_path": "sparse_numba",
+    "headline_arm": "default",
+    "arms": [
+      "default",
+      "numba",
+      "numpy_fft"
+    ],
+    "headline_route": "packaged cost model (Settings.interferometer_numba_nnz_per_source_max=None)",
+    "use_jax": false,
+    "n_instances": 10,
+    "thread_env": {
+      "n_threads": 1,
+      "vars": [
+        "OPENBLAS_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OMP_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+        "NUMEXPR_NUM_THREADS"
+      ],
+      "set_to": "1",
+      "preexisting": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1"
+      },
+      "overridden": {},
+      "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+    },
+    "numba_version": "0.65.1",
+    "numba_threads": 1,
+    "sparse_operator_method": "nufft",
+    "sparse_batch_size": 128,
+    "operator_extent_shape": [
+      280,
+      280
+    ],
+    "preload": {
+      "cache": "on",
+      "cache_hit": true,
+      "cache_path": "dataset/interferometer/alma_high/nufft_precision_operator_nufft_800x800_r3.5.npy",
+      "operator_build_s": 2.714844032016117,
+      "note": "One-off per dataset + geometry (W~ preload + dirty image); not a per-evaluation step. A cache hit times only the dirty image and operator wrap."
+    },
+    "host_load_avg_start": [
+      60.21,
+      57.15,
+      52.14
+    ],
+    "host_load_avg_end": [
+      64.08,
+      65.23,
+      58.3
+    ]
+  },
+  "full_pipeline_single_jit": 17.723035195522243,
+  "protocol": "instance 0 discarded (numba compile / cold-cache hazard); the next n_cold evaluations are cold evals comparable to PyAutoFit's logged 'Log Likelihood Function Evaluation Time'; the rest are warm iid evaluations.",
+  "warmup_incl_numba_compile_s": 20.43672602798324,
+  "cold_eval_s": [
+    12.983339754980989,
+    11.25016399496235,
+    20.09841289196629
+  ],
+  "cold_eval_median_s": 12.983339754980989,
+  "warm_iid_median_s": 17.723035195522243,
+  "warm_iid_mean_s": 18.173965054001503,
+  "n_warm": 6,
+  "n_cold": 3,
+  "route_per_instance": [
+    "numpy_fft",
+    "numpy_fft",
+    "numpy_fft",
+    "numpy_fft",
+    "numpy_fft",
+    "numpy_fft",
+    "numpy_fft",
+    "numpy_fft",
+    "numpy_fft",
+    "numpy_fft"
+  ],
+  "route_counts": {
+    "numpy_fft": 10
+  },
+  "log_likelihood_per_instance": [
+    -60242863.54108324,
+    -60249207.975160606,
+    -60241430.31610575,
+    -60244060.59436382,
+    -60243175.21077913,
+    -60245795.290024005,
+    -60248131.69014372,
+    -60243561.89924154,
+    -60244046.566925265,
+    -60243488.00001606
+  ],
+  "arms": {
+    "default": {
+      "protocol": "instance 0 discarded (numba compile / cold-cache hazard); the next n_cold evaluations are cold evals comparable to PyAutoFit's logged 'Log Likelihood Function Evaluation Time'; the rest are warm iid evaluations.",
+      "warmup_incl_numba_compile_s": 20.43672602798324,
+      "cold_eval_s": [
+        12.983339754980989,
+        11.25016399496235,
+        20.09841289196629
+      ],
+      "cold_eval_median_s": 12.983339754980989,
+      "warm_iid_median_s": 17.723035195522243,
+      "warm_iid_mean_s": 18.173965054001503,
+      "n_warm": 6,
+      "n_cold": 3,
+      "settings": "packaged (cost model)",
+      "route_per_instance": [
+        "numpy_fft",
+        "numpy_fft",
+        "numpy_fft",
+        "numpy_fft",
+        "numpy_fft",
+        "numpy_fft",
+        "numpy_fft",
+        "numpy_fft",
+        "numpy_fft",
+        "numpy_fft"
+      ],
+      "route_counts": {
+        "numpy_fft": 10
+      },
+      "log_likelihood_per_instance": [
+        -60242863.54108324,
+        -60249207.975160606,
+        -60241430.31610575,
+        -60244060.59436382,
+        -60243175.21077913,
+        -60245795.290024005,
+        -60248131.69014372,
+        -60243561.89924154,
+        -60244046.566925265,
+        -60243488.00001606
+      ]
+    },
+    "numba": {
+      "protocol": "instance 0 discarded (numba compile / cold-cache hazard); the next n_cold evaluations are cold evals comparable to PyAutoFit's logged 'Log Likelihood Function Evaluation Time'; the rest are warm iid evaluations.",
+      "warmup_incl_numba_compile_s": 16.051440668990836,
+      "cold_eval_s": [
+        14.131221881019883,
+        13.70014645694755,
+        19.352782547008246
+      ],
+      "cold_eval_median_s": 14.131221881019883,
+      "warm_iid_median_s": 16.788821101974463,
+      "warm_iid_mean_s": 16.455989883329796,
+      "n_warm": 6,
+      "n_cold": 3,
+      "settings": {
+        "interferometer_route": "numba"
+      },
+      "route_per_instance": [
+        "numba",
+        "numba",
+        "numba",
+        "numba",
+        "numba",
+        "numba",
+        "numba",
+        "numba",
+        "numba",
+        "numba"
+      ],
+      "route_counts": {
+        "numba": 10
+      },
+      "log_likelihood_per_instance": [
+        -60242863.54108324,
+        -60249207.975160606,
+        -60241430.31610575,
+        -60244060.59436382,
+        -60243175.21077913,
+        -60245795.290024005,
+        -60248131.69014372,
+        -60243561.89924154,
+        -60244046.566925265,
+        -60243488.00001606
+      ]
+    },
+    "numpy_fft": {
+      "protocol": "instance 0 discarded (numba compile / cold-cache hazard); the next n_cold evaluations are cold evals comparable to PyAutoFit's logged 'Log Likelihood Function Evaluation Time'; the rest are warm iid evaluations.",
+      "warmup_incl_numba_compile_s": 13.624985382950399,
+      "cold_eval_s": [
+        13.298598660039715,
+        18.20644545002142,
+        17.516324960975908
+      ],
+      "cold_eval_median_s": 17.516324960975908,
+      "warm_iid_median_s": 16.32846444050665,
+      "warm_iid_mean_s": 18.06741842201639,
+      "n_warm": 6,
+      "n_cold": 3,
+      "settings": {
+        "interferometer_route": "fft"
+      },
+      "route_per_instance": [
+        "numpy_fft",
+        "numpy_fft",
+        "numpy_fft",
+        "numpy_fft",
+        "numpy_fft",
+        "numpy_fft",
+        "numpy_fft",
+        "numpy_fft",
+        "numpy_fft",
+        "numpy_fft"
+      ],
+      "route_counts": {
+        "numpy_fft": 10
+      },
+      "log_likelihood_per_instance": [
+        -60242863.54108324,
+        -60249207.975160606,
+        -60241430.31610575,
+        -60244060.59436382,
+        -60243175.21077913,
+        -60245795.290024005,
+        -60248131.69014372,
+        -60243561.89924154,
+        -60244046.566925265,
+        -60243488.00001606
+      ]
+    }
+  },
+  "agreement": {
+    "numba_vs_numpy_fft_max_abs_nats": 0.0
+  },
+  "log_likelihood": -60243488.00001606,
+  "parity_candidate": {
+    "log_likelihood": -60242863.54108324,
+    "quantity": "log_likelihood_function (the cell's figure of merit, the log evidence) at the standard cell's iid draw 0, vs the visibility-chunked eager NumPy dense reference",
+    "variant": "rectangular",
+    "instrument": "alma_high",
+    "instance_unit_vector": [
+      0.499784489007424,
+      0.41402443684610074,
+      0.41327450881714656,
+      0.4200167345680767,
+      0.5789514047288555,
+      0.4702516857248635,
+      0.567334291975647,
+      0.47173759315010344,
+      0.5239626288064884,
+      0.5543072472409505,
+      0.5399346262699198,
+      0.5099305691842051
+    ],
+    "source_pixels": 1225,
+    "source_pixels_requested": 1225,
+    "use_mixed_precision": false
+  }
+}

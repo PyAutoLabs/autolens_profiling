@@ -3,35 +3,35 @@
   "device": {
     "backend": "cpu",
     "device": "cpu:0",
-    "hostname": "euclid-ral-compute-1",
-    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "hostname": "euclid-ral-compute-10-3",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_cpu_multi_thread_eigen=false --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
     "omp_num_threads": "1",
-    "cpu_count": 252,
-    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2a/output/jax_cache/p2b_413159_7",
+    "cpu_count": 236,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2b_rerun/output/jax_cache/p2b_quiet_413322_7",
     "autotune_cache_entries_at_start": 0,
     "cache_fresh": true,
     "provenance": {
       "provenance_schema": 1,
-      "captured_at": "2026-10-28T14:04:05Z",
-      "host": "euclid-ral-compute-1",
+      "captured_at": "2026-10-30T09:56:15Z",
+      "host": "euclid-ral-compute-10-3",
       "slurm": {
-        "job_id": "413159",
-        "array_job_id": "413159",
+        "job_id": "413322",
+        "array_job_id": "413322",
         "array_task_id": "7"
       },
       "loadavg_at_import": [
-        60.14,
-        57.09,
-        52.09
+        0.92,
+        0.98,
+        1.03
       ],
       "loadavg_at_write": [
-        64.08,
-        65.23,
-        58.3
+        1.0,
+        1.0,
+        1.0
       ],
-      "profiling_revision": "80bbb028284ad8eb36d34692a414319f881b1d1e",
+      "profiling_revision": "7c682ccbca9eb2bcad63b659e5d6328644a99617",
       "library_revisions": {
-        "autolens_profiling": "80bbb028284ad8eb36d34692a414319f881b1d1e",
+        "autolens_profiling": "7c682ccbca9eb2bcad63b659e5d6328644a99617",
         "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
         "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
         "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
@@ -46,8 +46,8 @@
         "PyAutoLens": "2026.8.17.1"
       },
       "dependency_versions": {
-        "jax": "0.10.2",
-        "jaxlib": "0.10.2",
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
         "numpy": "2.2.6",
         "scipy": "1.17.1",
         "numba": "0.65.1",
@@ -63,7 +63,7 @@
     "cpus_per_eval": 1,
     "cpus_per_eval_basis": "numba: one serial evaluation, numba and BLAS threads pinned to 1",
     "devices_per_eval": 0,
-    "peak_rss_gb": 2.32151,
+    "peak_rss_gb": 2.326704,
     "peak_rss_basis": "in_process_ru_maxrss",
     "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
   },
@@ -202,31 +202,31 @@
       "cache": "on",
       "cache_hit": true,
       "cache_path": "dataset/interferometer/alma_high/nufft_precision_operator_nufft_800x800_r3.5.npy",
-      "operator_build_s": 2.714844032016117,
+      "operator_build_s": 1.5372828500112519,
       "note": "One-off per dataset + geometry (W~ preload + dirty image); not a per-evaluation step. A cache hit times only the dirty image and operator wrap."
     },
     "host_load_avg_start": [
-      60.21,
-      57.15,
-      52.14
+      0.92,
+      0.98,
+      1.03
     ],
     "host_load_avg_end": [
-      64.08,
-      65.23,
-      58.3
+      1.0,
+      1.0,
+      1.0
     ]
   },
-  "full_pipeline_single_jit": 17.723035195522243,
+  "full_pipeline_single_jit": 8.91904271801468,
   "protocol": "instance 0 discarded (numba compile / cold-cache hazard); the next n_cold evaluations are cold evals comparable to PyAutoFit's logged 'Log Likelihood Function Evaluation Time'; the rest are warm iid evaluations.",
-  "warmup_incl_numba_compile_s": 20.43672602798324,
+  "warmup_incl_numba_compile_s": 12.783092157915235,
   "cold_eval_s": [
-    12.983339754980989,
-    11.25016399496235,
-    20.09841289196629
+    8.937389711034484,
+    8.921489136992022,
+    8.938625941984355
   ],
-  "cold_eval_median_s": 12.983339754980989,
-  "warm_iid_median_s": 17.723035195522243,
-  "warm_iid_mean_s": 18.173965054001503,
+  "cold_eval_median_s": 8.937389711034484,
+  "warm_iid_median_s": 8.91904271801468,
+  "warm_iid_mean_s": 8.917725806357339,
   "n_warm": 6,
   "n_cold": 3,
   "route_per_instance": [
@@ -245,29 +245,29 @@
     "numpy_fft": 10
   },
   "log_likelihood_per_instance": [
-    -60242863.54108324,
+    -60242863.54108343,
     -60249207.975160606,
-    -60241430.31610575,
+    -60241430.316105604,
     -60244060.59436382,
-    -60243175.21077913,
-    -60245795.290024005,
+    -60243175.21077871,
+    -60245795.290021464,
     -60248131.69014372,
-    -60243561.89924154,
-    -60244046.566925265,
-    -60243488.00001606
+    -60243561.899237975,
+    -60244046.56692818,
+    -60243488.000016056
   ],
   "arms": {
     "default": {
       "protocol": "instance 0 discarded (numba compile / cold-cache hazard); the next n_cold evaluations are cold evals comparable to PyAutoFit's logged 'Log Likelihood Function Evaluation Time'; the rest are warm iid evaluations.",
-      "warmup_incl_numba_compile_s": 20.43672602798324,
+      "warmup_incl_numba_compile_s": 12.783092157915235,
       "cold_eval_s": [
-        12.983339754980989,
-        11.25016399496235,
-        20.09841289196629
+        8.937389711034484,
+        8.921489136992022,
+        8.938625941984355
       ],
-      "cold_eval_median_s": 12.983339754980989,
-      "warm_iid_median_s": 17.723035195522243,
-      "warm_iid_mean_s": 18.173965054001503,
+      "cold_eval_median_s": 8.937389711034484,
+      "warm_iid_median_s": 8.91904271801468,
+      "warm_iid_mean_s": 8.917725806357339,
       "n_warm": 6,
       "n_cold": 3,
       "settings": "packaged (cost model)",
@@ -287,29 +287,29 @@
         "numpy_fft": 10
       },
       "log_likelihood_per_instance": [
-        -60242863.54108324,
+        -60242863.54108343,
         -60249207.975160606,
-        -60241430.31610575,
+        -60241430.316105604,
         -60244060.59436382,
-        -60243175.21077913,
-        -60245795.290024005,
+        -60243175.21077871,
+        -60245795.290021464,
         -60248131.69014372,
-        -60243561.89924154,
-        -60244046.566925265,
-        -60243488.00001606
+        -60243561.899237975,
+        -60244046.56692818,
+        -60243488.000016056
       ]
     },
     "numba": {
       "protocol": "instance 0 discarded (numba compile / cold-cache hazard); the next n_cold evaluations are cold evals comparable to PyAutoFit's logged 'Log Likelihood Function Evaluation Time'; the rest are warm iid evaluations.",
-      "warmup_incl_numba_compile_s": 16.051440668990836,
+      "warmup_incl_numba_compile_s": 11.510450967005454,
       "cold_eval_s": [
-        14.131221881019883,
-        13.70014645694755,
-        19.352782547008246
+        10.536415604059584,
+        10.51299877394922,
+        10.552500040037557
       ],
-      "cold_eval_median_s": 14.131221881019883,
-      "warm_iid_median_s": 16.788821101974463,
-      "warm_iid_mean_s": 16.455989883329796,
+      "cold_eval_median_s": 10.536415604059584,
+      "warm_iid_median_s": 10.564572300994769,
+      "warm_iid_mean_s": 10.561226778663695,
       "n_warm": 6,
       "n_cold": 3,
       "settings": {
@@ -331,29 +331,29 @@
         "numba": 10
       },
       "log_likelihood_per_instance": [
-        -60242863.54108324,
-        -60249207.975160606,
-        -60241430.31610575,
+        -60242863.54108343,
+        -60249207.9751606,
+        -60241430.316105604,
         -60244060.59436382,
-        -60243175.21077913,
-        -60245795.290024005,
+        -60243175.21077871,
+        -60245795.290021464,
         -60248131.69014372,
-        -60243561.89924154,
-        -60244046.566925265,
-        -60243488.00001606
+        -60243561.899237975,
+        -60244046.56692818,
+        -60243488.000016056
       ]
     },
     "numpy_fft": {
       "protocol": "instance 0 discarded (numba compile / cold-cache hazard); the next n_cold evaluations are cold evals comparable to PyAutoFit's logged 'Log Likelihood Function Evaluation Time'; the rest are warm iid evaluations.",
-      "warmup_incl_numba_compile_s": 13.624985382950399,
+      "warmup_incl_numba_compile_s": 8.937702564988285,
       "cold_eval_s": [
-        13.298598660039715,
-        18.20644545002142,
-        17.516324960975908
+        8.930000049993396,
+        8.916621259064414,
+        8.932883315021172
       ],
-      "cold_eval_median_s": 17.516324960975908,
-      "warm_iid_median_s": 16.32846444050665,
-      "warm_iid_mean_s": 18.06741842201639,
+      "cold_eval_median_s": 8.930000049993396,
+      "warm_iid_median_s": 8.917345540015958,
+      "warm_iid_mean_s": 8.994140551852373,
       "n_warm": 6,
       "n_cold": 3,
       "settings": {
@@ -375,25 +375,25 @@
         "numpy_fft": 10
       },
       "log_likelihood_per_instance": [
-        -60242863.54108324,
+        -60242863.54108343,
         -60249207.975160606,
-        -60241430.31610575,
+        -60241430.316105604,
         -60244060.59436382,
-        -60243175.21077913,
-        -60245795.290024005,
+        -60243175.21077871,
+        -60245795.290021464,
         -60248131.69014372,
-        -60243561.89924154,
-        -60244046.566925265,
-        -60243488.00001606
+        -60243561.899237975,
+        -60244046.56692818,
+        -60243488.000016056
       ]
     }
   },
   "agreement": {
-    "numba_vs_numpy_fft_max_abs_nats": 0.0
+    "numba_vs_numpy_fft_max_abs_nats": 7.450580596923828e-09
   },
-  "log_likelihood": -60243488.00001606,
+  "log_likelihood": -60243488.000016056,
   "parity_candidate": {
-    "log_likelihood": -60242863.54108324,
+    "log_likelihood": -60242863.54108343,
     "quantity": "log_likelihood_function (the cell's figure of merit, the log evidence) at the standard cell's iid draw 0, vs the visibility-chunked eager NumPy dense reference",
     "variant": "rectangular",
     "instrument": "alma_high",

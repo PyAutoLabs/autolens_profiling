@@ -3,35 +3,35 @@
   "device": {
     "backend": "cpu",
     "device": "cpu:0",
-    "hostname": "euclid-ral-compute-1",
-    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "hostname": "euclid-ral-compute-10-3",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_cpu_multi_thread_eigen=false --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
     "omp_num_threads": "1",
-    "cpu_count": 252,
-    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2a/output/jax_cache/p2b_413183_1",
+    "cpu_count": 236,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2b_rerun/output/jax_cache/p2b_quiet_413410_1",
     "autotune_cache_entries_at_start": 0,
     "cache_fresh": true,
     "provenance": {
       "provenance_schema": 1,
-      "captured_at": "2026-10-28T14:08:06Z",
-      "host": "euclid-ral-compute-1",
+      "captured_at": "2026-10-30T10:32:24Z",
+      "host": "euclid-ral-compute-10-3",
       "slurm": {
-        "job_id": "413183",
-        "array_job_id": "413160",
+        "job_id": "413410",
+        "array_job_id": "413323",
         "array_task_id": "1"
       },
       "loadavg_at_import": [
-        55.86,
-        56.36,
-        52.01
+        1.01,
+        1.27,
+        1.28
       ],
       "loadavg_at_write": [
-        62.99,
-        64.04,
-        59.4
+        1.41,
+        1.43,
+        1.41
       ],
-      "profiling_revision": "80bbb028284ad8eb36d34692a414319f881b1d1e",
+      "profiling_revision": "7c682ccbca9eb2bcad63b659e5d6328644a99617",
       "library_revisions": {
-        "autolens_profiling": "80bbb028284ad8eb36d34692a414319f881b1d1e",
+        "autolens_profiling": "7c682ccbca9eb2bcad63b659e5d6328644a99617",
         "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
         "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
         "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
@@ -46,8 +46,8 @@
         "PyAutoLens": "2026.8.17.1"
       },
       "dependency_versions": {
-        "jax": "0.10.2",
-        "jaxlib": "0.10.2",
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
         "numpy": "2.2.6",
         "scipy": "1.17.1",
         "numba": "0.65.1",
@@ -63,7 +63,7 @@
     "cpus_per_eval": 8,
     "cpus_per_eval_basis": "jax cpu: NPROC threads in XLA's CPU intra-op pool",
     "devices_per_eval": 0,
-    "peak_rss_gb": 23.024173,
+    "peak_rss_gb": 22.081016,
     "peak_rss_basis": "in_process_ru_maxrss",
     "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
   },
@@ -185,42 +185,42 @@
     "inversion_class": "InversionInterferometerSparse",
     "sparse_operator_method": "nufft",
     "sparse_batch_size": 128,
-    "operator_build_s": 58.91916583199054,
+    "operator_build_s": 72.66422696702648,
     "n_repeats": 3,
     "host_load_avg_start": [
-      55.86,
-      56.36,
-      52.01
+      1.01,
+      1.27,
+      1.28
     ],
     "host_load_avg_end": [
-      62.99,
-      64.04,
-      59.4
+      1.41,
+      1.43,
+      1.41
     ]
   },
   "log_evidence_jit": -301473358.03780377,
-  "full_pipeline_single_jit": 34.83168947799519,
+  "full_pipeline_single_jit": 50.32852957766348,
   "vmap": {
     "batch_size": 3,
     "batch_size_resolved": 3,
     "batch_size_source": "table",
-    "batch_time": 102.62762228399515,
-    "per_call": 34.209207427998386,
-    "speedup_vs_single_jit": 1.02,
+    "batch_time": 154.3054316553365,
+    "per_call": 51.43514388511216,
+    "speedup_vs_single_jit": 0.98,
     "instances": "draw 0 broadcast to the batch (the runtime cells' convention)",
     "attempts": []
   },
   "jit_phases": {
     "full_pipeline": {
-      "lower_s": 0.5212520959903486,
-      "compile_s": 1.8315513330162503,
-      "first_call_s": 35.163598282961175,
-      "steady_per_call_s": 34.83168947799519
+      "lower_s": 0.4353563269833103,
+      "compile_s": 2.6702717769658193,
+      "first_call_s": 49.27192209905479,
+      "steady_per_call_s": 50.32852957766348
     },
     "full_pipeline_vmap3": {
-      "first_call_s": 107.19678970403038,
-      "batch_per_call_s": 102.62762228399515,
-      "steady_per_call_s": 34.209207427998386
+      "first_call_s": 156.03130753699224,
+      "batch_per_call_s": 154.3054316553365,
+      "steady_per_call_s": 51.43514388511216
     }
   },
   "parity_candidate": {

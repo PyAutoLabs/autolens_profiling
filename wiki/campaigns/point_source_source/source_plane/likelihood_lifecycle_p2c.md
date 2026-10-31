@@ -267,6 +267,20 @@ presentation points, not defects in the rows:
 
 ## Journal
 
+### 2026-10-31 — quiet-node rerun of the two solved RAL CPU runtime cells (autolens_profiling#493)
+
+Both solved RAL CPU runtime cells ran on loaded nodes (load 33), so they were rerun on an
+`--exclusive` quiet node (RAL 413319; 2/2 COMPLETED 0:0, `QUIET:` at load 1.9) on jax/jaxlib
+0.11.2 with `--xla_cpu_multi_thread_eigen=false` (human ruling Q7, 2026-10-30). Witnesses
+`match`. The prior rows are in `history/2026.10.25.1_2026-10-28/`.
+
+| cell (`jax_cpu_na_fp64`, `hpc_ral_cpu`) | `vmap.per_call` before (ms) | after (ms) | after/before |
+|---|---|---|---|
+| image plane, simple | 1.10 | 0.95 | 0.87 |
+| source plane, simple | 0.06 | 0.06 | 1.07 |
+
+Neither moves a verdict on this page.
+
 ### 2026-10-29 — ruled: solved runtime cell; planner fix merged
 
 Human ruling "Switch 2c to Solved": on the five runtime setups the solved rows (with their

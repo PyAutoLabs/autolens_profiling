@@ -52,6 +52,7 @@ BATCH0_REFS = f"{CPU}batch0_references_ral_cpu_fp64"
 BATCH0 = [BATCH0_RAL, BATCH0_A100, BATCH0_REFS]
 MATRIXFREE = f"{CPU}matrixfree_ral_cpu_fp64"
 ALL = BATCH1 + BATCH0 + [MATRIXFREE]
+QUIET = [f"{CPU}quiet_ral_cpu_{i}_fp64" for i in p2b.INSTRUMENTS]
 
 
 def planned_interferometer_cells():
@@ -178,7 +179,7 @@ def test_every_batch1_limitation_names_a_leg_with_no_committed_row():
 
 def test_submits_are_what_the_generator_renders():
     assert p2b.main(["--check"]) == 0
-    assert set(p2b.submits()) == set(ALL)
+    assert set(p2b.submits()) == set(ALL + QUIET)
 
 
 def test_phase_2a_submits_stay_byte_identical_on_the_shared_machinery():
@@ -349,3 +350,47 @@ def test_mem_measured_bounds_by_the_next_measured_instrument():
     assert p2b.peak_rss_gib("alma", table) == 60
     assert p2b.mem_gb_measured(["sma"], table=table) == 32
     assert p2b.mem_gb_measured(["jvla"], table=table) == 128
+
+
+# ------------------------------------------------------------------------------- quiet rerun
+
+
+def test_quiet_rerun_repeats_the_38_batch1_ral_legs_one_per_exclusive_node():
+    """Human 2026-10-29: the batch-1 RAL CPU legs ran at load 45-72 and are refused as trend
+    points; the rerun repeats exactly those legs (not the references or matrix-free experiment),
+    each holding its node, behind the quiet-node gate, into its own scratch tree."""
+    for quiet, batch1 in zip(QUIET, RAL1):
+        text, names = legs(quiet)
+        old = (ROOT / batch1).read_text()
+        for k in ("CELLNAMES", "CELLS", "INSTS", "FLAGS", "PLATFORMS", "OUTS"):
+            assert bash_array(text, k) == bash_array(old, k), (quiet, k)
+        assert sbatch(text, "partition") == "ral"
+        assert sbatch(text, "array") == f"0-{len(names) - 1}%2"
+        assert sbatch(text, "cpus-per-task") == "8"
+        assert "#SBATCH --exclusive" in text and "#SBATCH --exclusive" not in old
+        assert sbatch(text, "nodelist") is None and "#SBATCH -w" not in text
+        assert 'RESULTS_ROOT="$AP_ROOT/output/p2b_quiet"' in text
+        assert (
+            "output/p2b_quiet_logs/walls.tsv" in text
+            and "p2b_batch1" not in text.split("#SBATCH -J")[1]
+        )
+        assert "taskset -cp" in text and "    quiet_wait\n    local T0" in text
+        assert "export P2B_PIN=2026.10.25.1" in text and "not tag {pin}" in text
+        assert check_submits.check_text(text) == [], quiet
+    assert sum(len(legs(q)[1]) for q in QUIET) == 38
+    ran = [n for q in QUIET for n in legs(q)[1]]
+    assert not any("dense_reference" in n or "matrixfree" in n for n in ran)
+
+
+def test_quiet_rerun_time_is_batch1_elapsed_plus_the_quiet_wait():
+    for instrument, quiet in zip(p2b.INSTRUMENTS, QUIET):
+        text = (ROOT / quiet).read_text()
+        job, walls = p2b.BATCH1_RAL_ELAPSED_S[instrument]
+        assert len(walls) == len(p2b.batch1_ral_cpu(instrument))
+        need = p2b.WALL_HEADROOM * (max(walls) + p2b.QUIET.wait_s) + p2b.WALL_MIN_SLACK_S
+        budget = check_submits.parse_slurm_time(sbatch(text, "time"))
+        assert need <= budget < need + p2b.WALL_ROUND_S
+        for row in check_submits.parse_basis_rows(text):
+            assert row["source"] == "measured-wall" and row["ref"].startswith(f"{job}_")
+    times = {i: sbatch((ROOT / q).read_text(), "time") for i, q in zip(p2b.INSTRUMENTS, QUIET)}
+    assert times == {"sma": "1:00:00", "alma": "1:00:00", "alma_high": "1:00:00", "jvla": "4:00:00"}

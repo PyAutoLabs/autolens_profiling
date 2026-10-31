@@ -297,6 +297,61 @@ numbers. Presentation points, none affecting a measurement:
 
 ## Journal
 
+### 2026-10-31: quiet-node rerun of the RAL CPU legs (autolens_profiling#493)
+
+The 38 batch-1 RAL CPU legs ran on loaded nodes (load 45-59), so they were rerun one per
+`--exclusive` node behind the quiet gate (RAL 413320-413323; 38/38 COMPLETED 0:0, every leg
+`QUIET:`, all on euclid-ral-compute-10-3 at load 0.9-1.7). The rerun also moved to jax/jaxlib
+0.11.2 with `--xla_cpu_multi_thread_eigen=false`, the day-zero environment (human ruling Q7,
+2026-10-30), so each before/after ratio mixes load with the jax version and the flag. The new
+rows replace the old ones; each prior row, its figures and witness are in
+`history/2026.10.25.1_2026-10-28/`.
+
+| cell (sma, `hpc_ral_cpu`) | statistic | before (ms) | after (ms) | after/before |
+|---|---|---|---|---|
+| delaunay `jax_cpu_dense_fp64_nufft` | `vmap.per_call` | 5701.81 | 5822.22 | 1.02 |
+| delaunay `jax_cpu_sparse_fp64_wtilde` | `vmap.per_call` | 859.23 | 784.58 | 0.91 |
+| delaunay `numba_cpu_sparse_fp64_wtilde` | `warm_iid_median_s` | 335.06 | 279.34 | 0.83 |
+| mge `jax_cpu_dense_fp64_nufft` | `vmap.per_call` | 112.47 | 83.29 | 0.74 |
+| rectangular `jax_cpu_dense_fp64_nufft` | `vmap.per_call` | 3488.11 | 5380.33 | **1.54** |
+| rectangular `jax_cpu_sparse_fp64_wtilde` | `vmap.per_call` | 757.71 | 643.92 | 0.85 |
+| rectangular `numba_cpu_sparse_fp64_wtilde` | `warm_iid_median_s` | 287.30 | 230.86 | 0.80 |
+
+Every row but the two JAX CPU dense NUFFT rows got faster. The rectangular dense row is 1.54x
+slower on a quiet node. That is consistent with the eigen flag (it turns off XLA:CPU's
+multi-threaded Eigen kernels, which dense NUFFT leans on), but this rerun cannot separate the
+flag from the jax version. A flag-off/on pair on one quiet node would. The dense routes were
+never a CPU contender at sma (the W~ sparse rows are 7-8x faster), so no verdict on this page
+moves.
+
+The 24 rows above sma (alma, alma_high, jvla) followed once their witnesses were finalised
+against references computed in the rerun checkout: RAL 413675, then finalise 413682, which
+replaced 413676 (an `afterok` that could never be satisfied after a false "no row" on a missing
+`output/p2b_batch1/`). 12/12 cells are `match`.
+
+| cell (`hpc_ral_cpu`) | statistic | before (ms) | after (ms) | after/before |
+|---|---|---|---|---|
+| delaunay alma `jax_cpu_sparse_fp64_wtilde` | `vmap.per_call` | 2711.55 | 2120.71 | 0.78 |
+| delaunay alma `numba_cpu_sparse_fp64_wtilde` | `warm_iid_median_s` | 823.60 | 764.95 | 0.93 |
+| delaunay alma_high `jax_cpu_sparse_fp64_wtilde` | `vmap.per_call` | 8500.40 | 7601.44 | 0.89 |
+| delaunay alma_high `numba_cpu_sparse_fp64_wtilde` | `warm_iid_median_s` | 11301.31 | 9328.69 | 0.83 |
+| delaunay jvla `jax_cpu_sparse_fp64_wtilde` | `vmap.per_call` | 34209.21 | 51435.14 | 1.50 |
+| delaunay jvla `numba_cpu_sparse_fp64_wtilde` | `warm_iid_median_s` | 73491.57 | 63799.15 | 0.87 |
+| rectangular alma `jax_cpu_sparse_fp64_wtilde` | `vmap.per_call` | 2796.37 | 1928.96 | 0.69 |
+| rectangular alma `numba_cpu_sparse_fp64_wtilde` | `warm_iid_median_s` | 897.85 | 888.77 | 0.99 |
+| rectangular alma_high `jax_cpu_sparse_fp64_wtilde` | `vmap.per_call` | 9808.54 | 7429.59 | 0.76 |
+| rectangular alma_high `numba_cpu_sparse_fp64_wtilde` | `warm_iid_median_s` | 17723.04 | 8919.04 | 0.50 |
+| rectangular jvla `jax_cpu_sparse_fp64_wtilde` | `vmap.per_call` | 58633.22 | 48481.20 | 0.83 |
+| rectangular jvla `numba_cpu_sparse_fp64_wtilde` | `warm_iid_median_s` | 71933.46 | 61436.05 | 0.85 |
+
+Above sma, numba got faster everywhere on a quiet node (0.50-0.99), and most JAX CPU W~ rows did
+too. The exception is delaunay jvla JAX CPU, which is **1.50x slower** (34.2 s -> 51.4 s). That
+is the pattern the eigen flag left on the RAL imaging JAX CPU rows (phase 3, #495), and it
+narrows JAX's per-call lead over numba on jvla Delaunay from 2.1x (34.2 s against 73.5 s) to
+1.24x (51.4 s against 63.8 s). Per call the ordering holds; the per-node projection is
+re-derived from these rows in the catalogue. The phase-3 designation draft's interferometer/delaunay jvla `cpu_many_core`
+hold and its alma_high per-call call are re-checked on these rows.
+
 ### 2026-10-29: batch 1 committed (PR B)
 
 72 of 73 legs landed; 60/60 cells current with 30/30 `match` witnesses; the matrix-free alma
