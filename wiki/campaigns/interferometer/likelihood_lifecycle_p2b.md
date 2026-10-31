@@ -297,6 +297,31 @@ numbers. Presentation points, none affecting a measurement:
 
 ## Journal
 
+### 2026-10-31: phase 3, the A100 JAX legs on jax 0.11.2 (autolens_profiling#495)
+
+All 11 A100 cells were re-measured on jax/jaxlib 0.11.2, the day-zero environment (human Q7;
+A100 413622-413625). The alma, alma_high and jvla witnesses were finalised by the reference
+array 413669. Every witness is `match`. Only the jax version changed on these legs (GPU, no
+eigen flag, same node class), so the ratios isolate it. Prior rows are in
+`history/2026.10.25.1_2026-10-28/`.
+
+| cell (`hpc_a100`) | `vmap.per_call` before (ms) | after (ms) | after/before |
+|---|---|---|---|
+| delaunay alma `jax_gpu_sparse_fp64_wtilde` | 22.65 | 20.83 | 0.92 |
+| delaunay alma_high `jax_gpu_sparse_fp64_wtilde` | 68.81 | 63.71 | 0.93 |
+| delaunay jvla `jax_gpu_sparse_fp64_wtilde` | 459.42 | 465.18 | 1.01 |
+| delaunay sma `jax_gpu_dense_fp64_nufft` | 55.77 | 57.35 | 1.03 |
+| delaunay sma `jax_gpu_sparse_fp64_wtilde` | 12.09 | 11.36 | 0.94 |
+| mge sma `jax_gpu_dense_fp64_nufft` | 0.57 | 0.60 | 1.05 |
+| rectangular alma `jax_gpu_sparse_fp64_wtilde` | 51.22 | 48.97 | 0.96 |
+| rectangular alma_high `jax_gpu_sparse_fp64_wtilde` | 86.62 | 81.06 | 0.94 |
+| rectangular jvla `jax_gpu_sparse_fp64_wtilde` | 450.56 | 456.28 | 1.01 |
+| rectangular sma `jax_gpu_dense_fp64_nufft` | 50.13 | 51.98 | 1.04 |
+| rectangular sma `jax_gpu_sparse_fp64_wtilde` | 7.19 | 6.75 | 0.94 |
+
+The jax upgrade is neutral to slightly faster on the A100 (0.92-1.05). No verdict on this page
+moves.
+
 ### 2026-10-31: quiet-node rerun of the RAL CPU legs (autolens_profiling#493)
 
 The 38 batch-1 RAL CPU legs ran on loaded nodes (load 45-59), so they were rerun one per
