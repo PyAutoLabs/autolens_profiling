@@ -58,9 +58,9 @@ Results are framed by **astronomy instrument** (HST, Euclid, JWST, …) rather t
 | `imaging/rectangular/hst` | 13.72 s | 14.78 s | — | — | — | — | 5.79 s | 5.25 s | 5.25 s |
 | `imaging/rectangular/jwst` | 21.78 s | 43.58 s | — | — | — | — | 9.57 s | 9.42 s | 9.42 s |
 | `interferometer/delaunay/alma` | _did not finish (inconclusive)_ | 6.51 s | — | — | — | — | — | — | 6.51 s |
-| `interferometer/delaunay/sma` | 2.58 s | 3.34 s | 6.41 s | 55.9 ms _(median)_ | 27.5 ms _(median)_ | 1.17 s _(median)_ | — | — | 3.34 s |
+| `interferometer/delaunay/sma` | 2.58 s | 3.34 s | 5.85 s | 55.9 ms _(median)_ | 27.5 ms _(median)_ | 718.1 ms _(median)_ | — | — | 3.34 s |
 | `interferometer/mge/sma` | 230.7 ms | 231.5 ms | — | — | — | — | — | — | 231.5 ms |
-| `interferometer/rectangular/sma` | 2.04 s | 2.39 s | 3.78 s | 50.1 ms _(median)_ | 22.9 ms _(median)_ | 856.0 ms _(median)_ | — | — | 2.39 s |
+| `interferometer/rectangular/sma` | 2.04 s | 2.39 s | 5.39 s | 50.1 ms _(median)_ | 22.9 ms _(median)_ | 588.9 ms _(median)_ | — | — | 2.39 s |
 | `point_source_source/source_plane_solved` | — | — | 147 μs _(median)_ | 233 μs _(median)_ | — | — | — | — | — |
 
 _(median)_: the steady median (>= 5 warm calls, median of individually timed calls) the row records beside its legacy single-jit value (a block mean in most cells), the same headline the dashboard uses; _(median of N runs)_: the median of N independent runs' headlines. Unlabelled values are the legacy headline (the single-jit block mean, or the step-sum where no single-jit value exists).
