@@ -828,6 +828,11 @@ iteration counts, budgets in iterations, geometry or formatting, not a measured 
   generator's copies of the same two multipliers, applied to batch 0's walls and MaxRSS since it
   ran 2026-10-29. `scripts/misc/campaigns/test/test_cluster_p2e.py::test_batch1_walls_are_measured_by_batch0_and_batch0_never_guards`
   checks them and batch 0's 3x floor on its declared guess. S1 is still the gate.
+- `scripts/misc/campaigns/gradient_p6.py::GUESS_HEADROOM` (autolens_profiling#507): the phase-6
+  gradient generator's 3x floor on its declared, unmeasured wall guesses (4x the cell's phase-2
+  runtime wall, at least 1200 s); `scripts/misc/campaigns/test/test_gradient_p6.py::test_a_gradient_leg_keeps_its_runtime_legs_flags_and_cell`
+  checks the guess floor and `test_the_submits_are_current_and_pass_check_submits` runs S1 over
+  the submits. S1 is still the gate.
 - `scripts/misc/tooling/build_readme.py::_format_time` and
   `scripts/misc/tooling/build_readme.py::_render_runtime_table`: unit formatting.
 

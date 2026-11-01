@@ -86,7 +86,9 @@ def fd_directions(f_flat, theta, grad, *, seed: int = gw.FD_SEED) -> list[dict]:
     return out
 
 
-def measure(f, params, *, n_repeats: int = 10, vmap_batch: int | None = 8) -> dict:
+def measure(
+    f, params, *, n_repeats: int = 10, vmap_batch: int | None = 8, point: str = "prior_medians"
+) -> dict:
     """Timings, the gradient's health, the FD check, grad/forward and the hazard for ``f``."""
     import jax
     import jax.numpy as jnp
@@ -144,7 +146,7 @@ def measure(f, params, *, n_repeats: int = 10, vmap_batch: int | None = 8) -> di
         fd["max_rel_error"] = max((d["rel_error"] for d in fd["directions"]), default=None)
     ratio = vg_single / fwd_single
     return {
-        "point": "prior_medians",
+        "point": point,
         "n_parameters": int(theta.size),
         "precision": str(theta.dtype),
         "log_likelihood": float(log_l),
@@ -253,3 +255,83 @@ def summary(doc: dict) -> str:
         f"  hazard           {'; '.join(doc['hazard']['reasons']) or 'none'}",
     ]
     return "\n".join(lines)
+
+
+# ---- the --gradient hook (phase 6b, autolens_profiling#507) ---------------------------------
+
+
+def gradient_requested(argv=None) -> bool:
+    """Whether the run was asked for the gradient witness instead of its timing row."""
+    return "--gradient" in (sys.argv if argv is None else argv)
+
+
+def run_gradient(
+    f,
+    params,
+    *,
+    dataset_type: str,
+    variant: str,
+    instrument: str,
+    setup_id: str,
+    host: str | None = None,
+    path: Path | None = None,
+    configuration: dict | None = None,
+    n_repeats: int = 10,
+    vmap_batch: int | None = 8,
+    point: str = "prior_medians",
+) -> Path | None:
+    """Measure ``f(params)`` and write the cell's ``gradient.json``; the construction site's
+    ``--gradient`` branch calls this with its own fused likelihood and returns.
+
+    ``path``: the witness path (a campaign submit's ``--output-path``); else the mirrored cell
+    of ``host`` (default: this run's host by the day-zero host rule). fp64 only.
+    """
+    import autolens as al
+    import jax
+
+    root = _MISC.parents[1]
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
+    from _profile_cli import device_info_dict, resources_dict
+
+    if not jax.config.x64_enabled:
+        raise SystemExit("--gradient measures fp64 only: export JAX_ENABLE_X64=True")
+    if "_mixed" in setup_id:
+        raise SystemExit("--gradient measures fp64 only (phase 6); drop --use-mixed-precision")
+    print(f"\n--- Gradient cost and correctness [{dataset_type}/{variant}, {instrument}] ---")
+    measured = measure(f, params, n_repeats=n_repeats, vmap_batch=vmap_batch, point=point)
+    device = device_info_dict()
+    if path is not None:
+        path = Path(path)
+        if path.name != "gradient.json":
+            path = path.with_name("gradient.json")
+        host = path.parent.name if host is None else host
+    host = host or host_class(device)
+    doc = witness(
+        measured,
+        dataset_type=dataset_type,
+        variant=variant,
+        instrument=instrument,
+        setup_id=setup_id,
+        host=host,
+        autolens_version=al.__version__,
+        device=device,
+        resources=resources_dict("jax"),
+        configuration=configuration,
+    )
+    print(summary(doc))
+    cell = (
+        path.parent
+        if path is not None
+        else cell_dir(
+            root,
+            dataset_type=dataset_type,
+            variant=variant,
+            instrument=instrument,
+            setup_id=setup_id,
+            host=host,
+        )
+    )
+    written = write_witness(cell, doc)
+    print(f"  gradient.json: {written}")
+    return written

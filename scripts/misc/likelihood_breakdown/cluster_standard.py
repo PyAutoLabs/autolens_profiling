@@ -319,6 +319,7 @@ def run_runtime(likelihood: str, cli, *, profiling_root: Path) -> Path:
     import jax.numpy as jnp
     import numpy as np
     from autofit.jax import register_model
+    from gradient import harness as gradient_harness
 
     from _profile_cli import (
         device_info_dict,
@@ -381,6 +382,19 @@ def run_runtime(likelihood: str, cli, *, profiling_root: Path) -> Path:
             ]
 
         full = _summed(analyses(cell, likelihood, arm, solver, use_jax=True))
+        if arm == HEADLINE_ARM and gradient_harness.gradient_requested():
+            # Phase 6 (#507): the headline (solved) class's own fused likelihood.
+            device = "gpu" if jax.default_backend() == "gpu" else "cpu"
+            return gradient_harness.run_gradient(
+                full,
+                params,
+                dataset_type="cluster",
+                variant=likelihood,
+                instrument=INSTRUMENT,
+                setup_id=f"jax_{device}_na_fp64",
+                path=getattr(cli, "output_path", None),
+                configuration={"arm": arm, "fit_positions_cls": FIT_CLASS_NAMES[likelihood][arm]},
+            )
         compiled, result = timing.jit_profile(
             full,
             f"full_pipeline_{arm}",

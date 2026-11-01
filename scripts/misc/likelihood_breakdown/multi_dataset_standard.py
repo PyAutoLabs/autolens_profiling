@@ -317,6 +317,7 @@ def run_jax(cli, *, script_file: str, profiling_root: Path) -> Path:
     import jax
     import jax.numpy as jnp
     from autofit.jax import register_model
+    from gradient import harness as gradient_harness
 
     import _production_config as pc
     from _profile_cli import device_info_dict, resolve_output_paths, resources_dict
@@ -361,6 +362,20 @@ def run_jax(cli, *, script_file: str, profiling_root: Path) -> Path:
 
     def full(params):
         return summed_log_likelihood(graph, n, params)
+
+    if gradient_harness.gradient_requested():
+        # Phase 6 (#507): the summed multi-dataset likelihood, at the runtime row's point.
+        device = "gpu" if jax.default_backend() == "gpu" else "cpu"
+        return gradient_harness.run_gradient(
+            full,
+            params_tree,
+            dataset_type="multi_dataset",
+            variant=VARIANT,
+            instrument=INSTRUMENT,
+            setup_id=f"jax_{device}_{'sparse' if sparse else 'dense'}_fp64",
+            path=getattr(cli, "output_path", None),
+            configuration=configuration(base, scales),
+        )
 
     print("\n--- Full pipeline: jax.jit(FactorGraphModel.log_likelihood_function) ---")
     compiled, result = timing.jit_profile(

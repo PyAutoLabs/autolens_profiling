@@ -394,6 +394,7 @@ def run_jax(cli, *, script_file: str, profiling_root: Path) -> Path:
     import jax
     import jax.numpy as jnp
     from autofit.jax import register_model
+    from gradient import harness as gradient_harness
 
     from _profile_cli import device_info_dict, resolve_output_paths, resources_dict
 
@@ -466,6 +467,23 @@ def run_jax(cli, *, script_file: str, profiling_root: Path) -> Path:
 
     def full_cube(params):
         return cube_log_likelihood(graph, n, params)
+
+    if gradient_harness.gradient_requested():
+        # Phase 6 (#507): the full cube's own fused likelihood, at the runtime row's point.
+        device = "gpu" if jax.default_backend() == "gpu" else "cpu"
+        route = "sparse_fp64_wtilde" if sparse else "dense_fp64_nufft"
+        return gradient_harness.run_gradient(
+            full_cube,
+            params_tree,
+            dataset_type="datacube",
+            variant=VARIANT,
+            instrument=instrument,
+            setup_id=f"jax_{device}_{route}",
+            path=getattr(cli, "output_path", None),
+            configuration=cube_configuration(ds, cell, scales),
+            n_repeats=n_repeats,
+            vmap_batch=2,
+        )
 
     print("\n--- Full cube: jax.jit(FactorGraphModel.log_likelihood_function) ---")
     compiled, result = timing.jit_profile(

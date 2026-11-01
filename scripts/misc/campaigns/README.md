@@ -616,3 +616,28 @@ Then fill `BATCH0_WALLS` and `BATCH0_PEAK_RSS_KIB`, set `WALL_BASIS_STATUS = "me
 (`P2E_ALLOW_PROVISIONAL_WALL=1` overrides it). The campaign is small, so an alternative is to skip
 batch 0 and run batch 1 with the override under its conservative provisional walls; the human
 chose batch 0 (D5). Done 2026-10-30 from batch 0 (RAL 413273, A100 413295; both witnesses `match`).
+
+## Phase 6 gradient (autolens_profiling#507)
+
+`gradient_p6.py` derives the gradient legs from the phase-2 runtime legs: for every Pulse
+designation, the JAX optimal setup on its reference host; for a numba optimal (which JAX cannot
+differentiate), the JAX CPU secondary; for the held datacube A100 group, its provisional JAX
+optimal (74 legs; human ruling 2026-11-01, #505). Each leg runs the likelihood's
+`gradient_breakdown.py` with the runtime leg's own flags; that wrapper runs the runtime script with
+`--gradient`, whose construction site hands its fused likelihood to
+`scripts/misc/gradient/harness.py`, which writes `gradient.json`.
+
+```bash
+python scripts/misc/campaigns/gradient_p6.py --list    # the 74 legs and their source campaign
+python scripts/misc/campaigns/gradient_p6.py --write   # render hpc/batch_{cpu,gpu}/submit_campaign_p6_gradient_*
+python scripts/misc/campaigns/gradient_p6.py --check   # exit 1 if a submit is stale
+```
+
+One RAL CPU array and one A100 array per phase-2 source campaign (14 submits), each reusing the
+source campaign's `prepare_dataset`, all on the day-zero tag `2026.10.25.1` in fp64 so the records
+can carry the `day_zero` stamp. Nothing is measured yet: every WALL-BASIS row is `unmeasured`,
+`probe-first: yes`, with a declared guess of 4x the cell's measured phase-2 runtime wall (at
+least 1200 s). Output lands in the gitignored `output/p6_gradient/`; walls in
+`output/p6_gradient_logs/walls.tsv`. A run needs the human's go and a session that can reach RAL
+(phase 6c); the rows are then copied into `results/` and ingested by `build_catalogue.py`
+(phase 6d).

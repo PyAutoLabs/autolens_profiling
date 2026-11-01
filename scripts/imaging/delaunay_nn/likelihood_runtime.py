@@ -570,6 +570,30 @@ def full_pipeline_from_params(params_tree):
     return analysis.log_likelihood_function(instance=params_tree)
 
 
+# Phase 6 (#507): ``--gradient`` measures this cell's own fused likelihood (same dataset, size,
+# model and instance as the runtime row) and writes ``gradient.json`` instead of the row.
+from gradient import harness as _gradient_harness  # noqa: E402
+
+if _gradient_harness.gradient_requested():
+    _gradient_harness.run_gradient(
+        full_pipeline_from_params,
+        params_tree,
+        dataset_type="imaging",
+        variant="delaunay_nn",
+        instrument=instrument,
+        setup_id=(
+            f"jax_{'gpu' if jax.default_backend() in ('gpu', 'cuda') else 'cpu'}_"
+            f"{'sparse' if _cli.use_sparse_operator else 'dense'}_fp64"
+        ),
+        path=getattr(_cli, "output_path", None),
+        configuration={
+            "source_pixels": int(n_source_pixels),
+            "source_pixels_requested": _requested_pixels,
+            "standard_size": bool(_cli.standard_size),
+        },
+    )
+    sys.exit(0)
+
 full_compiled, full_result = jit_profile(full_pipeline_from_params, "full_pipeline", params_tree)
 full_pipeline_per_call = timer.records[-1][1] / 10
 # Timing-noise audit P8 (#362): ``full_pipeline_single_jit`` above stays the legacy block mean;

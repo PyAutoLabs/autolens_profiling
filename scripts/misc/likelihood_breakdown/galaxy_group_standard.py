@@ -314,6 +314,7 @@ def run_jax_runtime(dataset_type, variant, cli, args, *, script_file, root) -> P
     import jax
     import jax.numpy as jnp
     from autofit.jax import register_model
+    from gradient import harness as gradient_harness
 
     from _profile_cli import device_info_dict, resources_dict
 
@@ -337,6 +338,29 @@ def run_jax_runtime(dataset_type, variant, cli, args, *, script_file, root) -> P
     def full_pipeline(params):
         return analysis.log_likelihood_function(
             instance=jax.tree_util.tree_unflatten(treedef, params)
+        )
+
+    if gradient_harness.gradient_requested():
+        # Phase 6 (#507): this cell's own fused likelihood, at the runtime row's point.
+        return gradient_harness.run_gradient(
+            full_pipeline,
+            params_tree,
+            dataset_type=dataset_type,
+            variant=variant,
+            instrument=cell["spec"].instrument,
+            setup_id=_setup_id("jax", cli),
+            path=output_path(
+                cli,
+                dataset_type=dataset_type,
+                variant=variant,
+                instrument=cell["spec"].instrument,
+                engine="jax",
+                measurement="gradient",
+                root=root,
+            ),
+            configuration=_configuration(cell),
+            n_repeats=n_repeats,
+            point="iid draw 0 of the seeded sequence",
         )
 
     print("\n--- Full pipeline: jax.jit(AnalysisImaging.log_likelihood_function) ---")
