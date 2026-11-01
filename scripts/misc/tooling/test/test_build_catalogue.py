@@ -1085,3 +1085,86 @@ def test_size_variant_folders_are_declared_per_likelihood():
     # Not declared for Delaunay: the folder stays an ordinary model variant there.
     other = lc.mirrored(f"{A100}/source_pixels_784/runtime.json")
     assert (other["model_variant"], other["size_variant"]) == ("source_pixels_784", None)
+
+
+def _day_zero_cell(tree, version="2026.10.25.1", status="match", figure=True):
+    write(
+        tree,
+        f"{A100}/runtime.json",
+        row(autolens_version=version, configuration={"delaunay_vertices": 1250}),
+    )
+    write(
+        tree,
+        f"{A100}/parity.json",
+        parity(
+            autolens_version=version,
+            source_pixels=1250,
+            status=status,
+            log_likelihood=-100.0 if status == "match" else -90.0,
+        ),
+    )
+    if figure:
+        (tree / A100 / "fit.png").write_bytes(b"\x89PNG fixture")
+    return {(r["evidence"]["path"], r["measurement"]): r for r in lifecycle(tree)["records"]}
+
+
+def test_a_cell_meeting_the_day_zero_rule_is_stamped_whole(tree):
+    """autolens_profiling#499 (report section 3.6): a current optimal/secondary cell on the
+    day-zero tag, at the standard size on a reference host, with a parity match and a fit
+    figure: every current record of the cell carries the tag."""
+    tag = cat.lc.DAY_ZERO["tag"]
+    records = _day_zero_cell(tree)
+    runtime = records[(f"{A100}/runtime.json", "runtime")]
+    witness = records[(f"{A100}/parity.json", "parity")]
+    for record in (runtime, witness):
+        assert (record["status"], record["release_pin"], record["day_zero"]) == (
+            "current",
+            tag,
+            tag,
+        )
+        assert record["validation"]["reason"].startswith(f"Day-zero baseline {tag}")
+    assert runtime["class"] == "optimal" and runtime["decision_id"]
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"version": "2026.10.23.2"},  # off the tag
+        {"status": "diverged"},  # no parity match
+        {"figure": False},  # no fit figure
+    ],
+)
+def test_a_cell_off_the_day_zero_rule_is_not_stamped(tree, change):
+    records = _day_zero_cell(tree, **change)
+    assert all(r["day_zero"] is None for r in records.values())
+
+
+def test_a_stamp_off_the_rule_is_refused(tree):
+    records = _day_zero_cell(tree)
+    doc = {"records": list(records.values())}
+    runtime = records[(f"{A100}/runtime.json", "runtime")]
+    runtime["class"] = "experimental"
+    with pytest.raises(ValueError, match="day_zero stamp off"):
+        cat.validate_lifecycle(tree, doc)
+
+
+def test_the_catalogue_stamps_the_day_zero_baseline():
+    """Witness: 480 current records over 116 cells, every one of the 39 designations with a
+    stamped current optimal, the held datacube A100 group included (human 2026-11-01)."""
+    doc = json.loads((TOOLING.parents[2] / "dashboard" / "catalogue.json").read_text())
+    tag = cat.lc.DAY_ZERO["tag"]
+    stamped = [r for r in doc["records"] if r["day_zero"] is not None]
+    assert {r["day_zero"] for r in stamped} == {tag}
+    assert len(stamped) == 480
+    assert len({cat.lc.day_zero_cell(r) for r in stamped}) == 116
+    assert all(r["status"] == "current" and r["class"] != "experimental" for r in stamped)
+    designations = json.loads(cat.lc.DESIGNATIONS_PATH.read_text())["designations"]
+    assert {r["decision_id"] for r in stamped if r["class"] == "optimal"} == {
+        d["id"] for d in designations
+    }
+    held = [
+        r
+        for r in stamped
+        if r["likelihood"]["dataset_type"] == "datacube" and r["host_class"] == "hpc_a100"
+    ]
+    assert len(held) == 20 and all(r["decision_id"] is None for r in held)

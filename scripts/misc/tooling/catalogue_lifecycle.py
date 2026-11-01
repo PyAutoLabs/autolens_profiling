@@ -377,6 +377,63 @@ def size_note(variant: str, pixels: int | None) -> str:
     )
 
 
+# ---- day zero (lifecycle report §3.6): catalogue/day_zero.json ----
+
+#: The frozen baseline: the released tag and the rule a current record meets to carry
+#: ``day_zero: <tag>`` (autolens_profiling#499). Pulse freezes the stamped records as its
+#: ``day_zero`` snapshot.
+DAY_ZERO_PATH = Path(__file__).resolve().parents[3] / "catalogue" / "day_zero.json"
+
+
+def load_day_zero(doc: dict) -> dict:
+    if doc.get("schema") != "day-zero" or doc.get("version") != 1:
+        raise ValueError(f"{DAY_ZERO_PATH.name}: unsupported schema/version")
+    for key in ("tag", "hosts", "regime", "classes"):
+        if not doc.get(key):
+            raise ValueError(f"{DAY_ZERO_PATH.name}: {key} is required")
+    return doc
+
+
+DAY_ZERO = load_day_zero(json.loads(DAY_ZERO_PATH.read_text()))
+
+
+def day_zero_cell(record: dict) -> tuple:
+    """The cell a record belongs to: its lifecycle key without the measurement."""
+    return (
+        record["likelihood"]["dataset_type"],
+        record["likelihood"]["variant"],
+        record["instrument"],
+        record["setup_id"],
+        record["host_class"],
+        record["model_variant"],
+        record["regime"],
+    )
+
+
+def day_zero_cells(records: list[dict], day_zero: dict = DAY_ZERO) -> set[tuple]:
+    """Cells whose current records meet the §3.6 rule: class optimal/secondary, the standard
+    regime, a reference host, every current record on the day-zero tag, a current parity
+    record with status match, and a fit figure on a current record."""
+    by_cell = {}
+    for record in records:
+        if record["status"] == "current":
+            by_cell.setdefault(day_zero_cell(record), []).append(record)
+    cells = set()
+    for cell, items in by_cell.items():
+        if (
+            cell[4] in day_zero["hosts"]
+            and cell[6] == day_zero["regime"]
+            and all(r["class"] in day_zero["classes"] for r in items)
+            and all(r["release_pin"] == day_zero["tag"] for r in items)
+            and any(
+                r["measurement"] == "parity" and r["parity"]["status"] == "match" for r in items
+            )
+            and any(r["figures"] for r in items)
+        ):
+            cells.add(cell)
+    return cells
+
+
 # ---- designations: the Pulse records (catalogue/pulse_designations.json) and the holds ----
 
 #: The machine mirror of PyAutoPulse ``decisions.yaml`` ``kind: designation`` rows, written by

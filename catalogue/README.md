@@ -43,6 +43,12 @@ The rules live in [`catalogue_lifecycle.py`](../scripts/misc/tooling/catalogue_l
   regime-only routes, the instrument-scoped dense NUFFT rule). `planned_cells` are the designated
   optimal and secondary setups (a held group's provisional ones); mixed precision is
   `experimental`.
+- **Day zero** ([day_zero.json](day_zero.json), autolens_profiling#499; report §3.6): a current
+  record carries `day_zero: "2026.10.25.1"` when its class is optimal or secondary, its regime is
+  `standard`, it is on a reference host, its `release_pin` is the tag, and its cell has a current
+  parity match and a fit figure; a passing cell is stamped whole (480 records over 116 cells,
+  the held datacube/delaunay A100 group included). `validate_lifecycle` refuses a stamp off the
+  rule. PyAutoPulse freezes the stamped records as `snapshots/day_zero/lens.json`.
 - **Parity**: a cell's `parity.json` witness becomes a `measurement: parity` record; see
   [results/README.md](../results/README.md#parity-witness).
 - **Coverage**: `coverage_matrix.py` renders [`dashboard/coverage.md`](../dashboard/coverage.md)
