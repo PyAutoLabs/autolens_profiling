@@ -410,13 +410,18 @@ def day_zero_cell(record: dict) -> tuple:
     )
 
 
+#: Measurements that are not part of the day-zero baseline: phase 6 gradient records are
+#: measured after the freeze, so they neither decide whether a cell is stamped nor carry the stamp.
+DAY_ZERO_EXCLUDED = ("gradient",)
+
+
 def day_zero_cells(records: list[dict], day_zero: dict = DAY_ZERO) -> set[tuple]:
     """Cells whose current records meet the §3.6 rule: class optimal/secondary, the standard
     regime, a reference host, every current record on the day-zero tag, a current parity
     record with status match, and a fit figure on a current record."""
     by_cell = {}
     for record in records:
-        if record["status"] == "current":
+        if record["status"] == "current" and record["measurement"] not in DAY_ZERO_EXCLUDED:
             by_cell.setdefault(day_zero_cell(record), []).append(record)
     cells = set()
     for cell, items in by_cell.items():

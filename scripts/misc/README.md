@@ -23,6 +23,7 @@ to `results/misc/<folder>/` unless its README says otherwise.
 | [`numba_interferometer/`](numba_interferometer/README.md) | The old numba interferometer likelihood, for comparison | see its README |
 | [`quick_update/`](quick_update/README.md) | Notes for the fast re-profiling scripts | `results/misc/quick_update/` |
 | [`cell_builders/`](cell_builders/README.md) | Model and dataset setup shared by cells | nothing |
+| [`gradient/`](gradient/README.md) | Gradient cost and finite-difference check of one likelihood (phase 6) | the cell's `gradient.json` |
 | [`cells/`](cells/README.md) | Tests for cells that have no helper folder here | nothing |
 | [`campaigns/`](campaigns/README.md) | Campaign work lists and the HPC submits made from them | `results/` (via the submits) |
 | [`tooling/`](tooling/README.md) | Builders and checks for the catalogue, dashboard, READMEs and wiki | `dashboard/`, `catalogue/`, READMEs |

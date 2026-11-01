@@ -1168,3 +1168,110 @@ def test_the_catalogue_stamps_the_day_zero_baseline():
         if r["likelihood"]["dataset_type"] == "datacube" and r["host_class"] == "hpc_a100"
     ]
     assert len(held) == 20 and all(r["decision_id"] is None for r in held)
+
+
+def gradient_doc(version="2026.10.25.1", ratio=2.0, wrong=False):
+    """A synthetic gradient.json witness (gradient_witness.py): fixture numbers, no JAX."""
+    gw = cat.gradient_witness
+    directions = []
+    for analytic in (1.5, -0.25, 3.0):
+        fd = analytic * (1.5 if wrong else 1.0 + 1e-7)
+        directions.append(
+            {
+                "step": gw.FD_STEP,
+                "fd_h": fd,
+                "fd_half": fd,
+                "fd": fd,
+                "analytic": analytic,
+                "rel_error": gw.fd_relative_error(fd, analytic),
+            }
+        )
+    status = gw.fd_status(directions)
+    forward = 0.01
+    doc = {
+        "schema": gw.SCHEMA,
+        "version": gw.VERSION,
+        "likelihood": {"dataset_type": "imaging", "variant": "delaunay"},
+        "instrument": "hst",
+        "setup_id": "jax_gpu_dense_fp64",
+        "host_class": "hpc_a100",
+        "autolens_version": version,
+        "measured_at": "2026-11-02T03:04:05Z",
+        "device": {"backend": "gpu"},
+        "resources": {"cpus_per_eval": 8, "devices_per_eval": 1, "peak_rss_gb": 2.0},
+        "configuration": {"source_pixels_requested": 1250},
+        "point": "prior_medians",
+        "n_parameters": 12,
+        "precision": "float64",
+        "log_likelihood": -100.0,
+        "repeats": 10,
+        "statistic": "median",
+        "timings": {
+            "forward.single_call_s": forward,
+            "forward.first_call_s": 2.0,
+            "forward.vmap_per_call_s": None,
+            "value_and_grad.single_call_s": forward * ratio,
+            "value_and_grad.first_call_s": 5.0,
+            "value_and_grad.vmap_per_call_s": None,
+        },
+        "grad_over_forward": ratio,
+        "gradient": {"finite": True, "l2_norm": 4.2, "nonzero": True},
+        "fd": {
+            "status": status,
+            "directions": directions,
+            "max_rel_error": max(d["rel_error"] for d in directions),
+        },
+    }
+    doc["hazard"] = gw.hazard(ratio, status)
+    assert gw.validate(doc) == [], gw.validate(doc)
+    return doc
+
+
+def test_a_gradient_witness_becomes_a_pulse_valid_gradient_record(tree):
+    write(tree, f"{A100}/gradient.json", gradient_doc())
+    doc = lifecycle(tree)
+    [record] = [r for r in doc["records"] if r["measurement"] == "gradient"]
+    assert record["status"] == "current" and record["unit"] == "s"
+    assert record["metric"] == "value_and_grad.single_call_s"
+    assert record["values"]["value_and_grad.single_call_s"] == pytest.approx(0.02)
+    assert "forward.vmap_per_call_s" not in record["values"]  # null timings are left out
+    assert record["gradient"]["fd_status"] == "pass" and record["gradient"]["hazard"] is False
+    assert (
+        record["class"] == "optimal"
+        and record["decision_id"] == "imaging-delaunay-standard-gpu-a100"
+    )
+    assert record["day_zero"] is None
+    assert pulse_classify()(json.loads(json.dumps(doc)), ("profiling-summary", 3)) == ("ok", [])
+    [source] = [s for s in build(tree)["inventory"] if s["path"] == f"{A100}/gradient.json"]
+    assert source["record_count"] == 0 and "Gradient witness" in source["reasons"][0]
+
+
+@pytest.mark.parametrize(
+    "ratio, wrong, reason", [(4.5, False, "4.50x"), (2.0, True, "finite-difference")]
+)
+def test_a_gradient_hazard_is_carried_into_the_record(tree, ratio, wrong, reason):
+    write(tree, f"{A100}/gradient.json", gradient_doc(ratio=ratio, wrong=wrong))
+    [record] = [r for r in lifecycle(tree)["records"] if r["measurement"] == "gradient"]
+    assert record["gradient"]["hazard"] is True
+    assert any(n.startswith("gradient_hazard:") and reason in n for n in record["limitations"])
+
+
+def test_an_invalid_gradient_witness_is_refused(tree):
+    bad = gradient_doc()
+    bad["fd"]["status"] = "fail"
+    write(tree, f"{A100}/gradient.json", bad)
+    with pytest.raises(ValueError, match="Invalid gradient witness"):
+        lifecycle(tree)
+
+
+def test_a_gradient_record_leaves_the_day_zero_cell_stamped(tree):
+    """Phase 6 gradients are measured after the freeze: they never decide or carry the stamp."""
+    _day_zero_cell(tree)
+    write(tree, f"{A100}/gradient.json", gradient_doc(version="2026.11.9.1"))
+    records = {
+        r["measurement"]: r
+        for r in lifecycle(tree)["records"]
+        if r["evidence"]["path"].startswith(A100)
+    }
+    assert records["runtime"]["day_zero"] == cat.lc.DAY_ZERO["tag"]
+    assert records["gradient"]["day_zero"] is None and records["gradient"]["status"] == "current"
