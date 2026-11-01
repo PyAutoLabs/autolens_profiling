@@ -745,6 +745,9 @@ what-if ratio across two separate processes (no shared rounds to pair; labelled)
 The lister over-reports on purpose. These keys matched its token heuristic but compare
 iteration counts, budgets in iterations, geometry or formatting, not a measured time:
 
+- `scripts/misc/tooling/build_day_zero_pages.py::_duration`: picks the display unit (ms below
+  one second, s above) for a recorded per-call time on the day-zero rule pages (#501); it
+  formats, it never accepts or rejects a measurement.
 - `scripts/imaging/pixelized/fixed_light.py::<module>`: `PASS_BUDGET` / `SAFE_BUDGET` are
   active-set iteration budgets.
 - `scripts/imaging/pixelized/fixed_light_cpu_kernels.py::<module>`,
