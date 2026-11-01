@@ -120,6 +120,14 @@ jobs:
           # fails here. Pure stdlib.
           python scripts/misc/tooling/coverage_matrix.py --check
 
+      - name: build_day_zero_pages.py --check (day-zero rule pages drift)
+        working-directory: autolens_profiling
+        run: |
+          # wiki/day_zero.md and wiki/campaigns/<dataset_type>/<variant>/day_zero.md are rendered
+          # from catalogue/pulse_designations.json, designation_holds.json, day_zero.json and
+          # dashboard/catalogue.json (#501); a hand edit or a stale render fails here. Pure stdlib.
+          python scripts/misc/tooling/build_day_zero_pages.py --check
+
       - name: check_wiki.py --check (research wiki drift)
         working-directory: autolens_profiling
         run: |
