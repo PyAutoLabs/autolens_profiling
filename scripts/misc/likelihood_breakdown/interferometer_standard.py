@@ -185,6 +185,7 @@ def run_jax(variant: str, cli, *, script_file: str, profiling_root: Path) -> Pat
     import jax.numpy as jnp
     import numpy as np
     from autofit.jax import register_model
+    from gradient import harness as gradient_harness
     from vram import resolve_vmap_batch
 
     import _production_config as pc
@@ -270,6 +271,23 @@ def run_jax(variant: str, cli, *, script_file: str, profiling_root: Path) -> Pat
 
     def full_pipeline(params):
         return analysis.log_likelihood_function(instance=params)
+
+    if gradient_harness.gradient_requested():
+        # Phase 6 (#507): the cell's own fused likelihood, at the runtime row's point.
+        device = "gpu" if jax.default_backend() == "gpu" else "cpu"
+        route = "sparse_fp64_wtilde" if sparse else "dense_fp64_nufft"
+        return gradient_harness.run_gradient(
+            full_pipeline,
+            params_tree,
+            dataset_type="interferometer",
+            variant=variant,
+            instrument=instrument,
+            setup_id=f"jax_{device}_{route}",
+            path=getattr(cli, "output_path", None),
+            configuration=_configuration(ds, cell),
+            n_repeats=n_repeats,
+            vmap_batch=2 if ds.n_vis > LARGE_VIS else 8,
+        )
 
     print("\n--- Full pipeline: jax.jit(AnalysisInterferometer.log_likelihood_function) ---")
     compiled, full_result = timing.jit_profile(

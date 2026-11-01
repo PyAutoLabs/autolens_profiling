@@ -117,6 +117,26 @@ def full_pipeline_from_params(params):
     return analysis_jax.log_likelihood_function(instance=params)
 
 
+# Phase 6 (#507): ``--gradient`` measures this cell's own fused likelihood (same catalogue,
+# model and instance as the runtime row) and writes ``gradient.json`` instead of the row.
+from gradient import harness as _gradient_harness  # noqa: E402
+
+if _gradient_harness.gradient_requested():
+    _gradient_harness.run_gradient(
+        full_pipeline_from_params,
+        params_tree,
+        dataset_type="weak",
+        variant=ws.VARIANT,
+        instrument=instrument,
+        setup_id=ws.setup_id(jax.default_backend(), _cli.use_mixed_precision),
+        path=_cli.output_path
+        or ws.default_output_path(
+            "gradient", instrument, jax.default_backend(), _cli.use_mixed_precision
+        ),
+        configuration=configuration,
+    )
+    sys.exit(0)
+
 full_compiled, full_result = jit_profile(
     full_pipeline_from_params, "full_pipeline", params_tree, timer=timer, jit_records=jit_records
 )

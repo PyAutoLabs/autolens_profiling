@@ -239,6 +239,25 @@ jobs:
           # import-graph breakage without running the full profile.
           python scripts/imaging/mge/likelihood_runtime.py
           python scripts/imaging/mge/gradient_breakdown.py
+          python scripts/cluster/image_plane/gradient_breakdown.py
+          python scripts/cluster/source_plane/gradient_breakdown.py
+          python scripts/datacube/delaunay/gradient_breakdown.py
+          python scripts/group/delaunay/gradient_breakdown.py
+          python scripts/group/mge/gradient_breakdown.py
+          python scripts/group/rectangular/gradient_breakdown.py
+          python scripts/imaging/delaunay/gradient_breakdown.py
+          python scripts/imaging/delaunay_nn/gradient_breakdown.py
+          python scripts/imaging/rectangular/gradient_breakdown.py
+          python scripts/interferometer/delaunay/gradient_breakdown.py
+          python scripts/interferometer/mge/gradient_breakdown.py
+          python scripts/interferometer/rectangular/gradient_breakdown.py
+          python scripts/multi_dataset/delaunay/gradient_breakdown.py
+          python scripts/multi_galaxy/delaunay/gradient_breakdown.py
+          python scripts/multi_galaxy/mge/gradient_breakdown.py
+          python scripts/multi_galaxy/rectangular/gradient_breakdown.py
+          python scripts/point_source_image/image_plane/gradient_breakdown.py
+          python scripts/point_source_source/source_plane/gradient_breakdown.py
+          python scripts/weak/isothermal/gradient_breakdown.py
           python scripts/imaging/mge/likelihood_breakdown.py
           python scripts/imaging/rectangular/hazards.py
           python scripts/misc/simulators/imaging.py
