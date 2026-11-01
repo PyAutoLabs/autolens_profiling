@@ -24,16 +24,23 @@ so its record can carry the ``day_zero`` stamp (ruling on #506)::
 The submits (``hpc/batch_cpu/submit_campaign_p6_gradient_<source>_ral_cpu_fp64`` and
 ``hpc/batch_gpu/submit_campaign_p6_gradient_<source>_a100_fp64``, one pair per phase-2 source
 campaign, whose ``prepare_dataset`` they reuse) write ``gradient.json`` into the gitignored
-``output/p6_gradient/`` scratch tree. Nothing has been measured for a gradient leg yet: every
-WALL-BASIS row is ``unmeasured`` with ``probe-first: yes`` and a declared guess (4x the cell's
-measured phase-2 runtime wall, at least 1200 s; 3x floor). Nothing here submits anything; phase
-6c runs them on the human's go, from a session that can reach RAL.
+``output/p6_gradient/`` scratch tree. Nothing here submits anything; a run needs the human's go,
+from a session that can reach RAL.
+
+Walls (6c, autolens_profiling#509): the first run (2026-11-01, witness version 1, RAL 413707-413722)
+measured 69 of the 74 legs; ``P6_WALLS`` holds them and their rows are ``measured-wall``. Version 2
+adds the FD step sweep (``gradient_witness.SWEEP_STEPS``, ``SWEEP_CALLS`` more forward calls per
+leg), so each measured wall gains ``SWEEP_CALLS`` x the cell's measured single-call forward time.
+The five imaging RAL CPU legs killed at 64 GB (``P6_OOM``) measured nothing: their rows stay
+``unmeasured`` (``probe-first: yes``, the 4x runtime-wall guess, 3x floor) and the imaging RAL CPU
+submit asks ``GRADIENT_MEM_GB``.
 """
 
 from __future__ import annotations
 
 import argparse
 import importlib
+import math
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -46,11 +53,12 @@ for _path in (ROOT, HERE, ROOT / "scripts" / "misc" / "tooling"):
 
 import _common  # noqa: E402
 import catalogue_lifecycle as lc  # noqa: E402
+import gradient_witness as gw  # noqa: E402
 
 PIN = "2026.10.25.1"
 PRIVATE_BASE = f"/mnt/ral/jnightin/profiling/PyAuto_{PIN}"
 HPC_BASE = "/mnt/ral/jnightin/PyAuto"
-ISSUE = "autolens_profiling#507"
+ISSUE = "autolens_profiling#507, #509"
 RESULTS = "$AP_ROOT/output/p6_gradient"
 #: The phase-2 source campaigns, whose runtime legs the gradient legs follow.
 SOURCES = (
@@ -68,6 +76,364 @@ GUESS_FACTOR = 4
 GUESS_FLOOR_S = 1200
 GUESS_HEADROOM = 3.0
 WALL_ROUND_S = 1800
+#: A measured row's headroom and slack (as the phase-2 batch-1 rows).
+WALL_HEADROOM = 1.25
+WALL_MIN_SLACK_S = 900
+#: Forward calls the version-2 FD step sweep adds per leg (two per step per direction).
+SWEEP_CALLS = 2 * len(gw.SWEEP_STEPS) * gw.FD_DIRECTIONS
+#: --mem (GB) over the source campaign's value: the five imaging RAL CPU legs below were killed at
+#: 64 GB inside the gradient measurement (their measured siblings peaked at 38-48 GB, sacct
+#: MaxRSS); RAL CPU nodes hold 921-976 GB.
+GRADIENT_MEM_GB = {("imaging_p2a", "ral_cpu"): 192}
+
+#: The first run's measured legs (2026-11-01, RAL 413707-413722, jax 0.11.2, 2026.10.25.1):
+#: cell -> (walls.tsv WALL s, sacct Elapsed s, array task, forward single-call s from the leg's
+#: gradient.json). Every leg wrote a valid witness; the eight imaging/mge legs exited 4 only
+#: because the 6a pilot wrote outside --output-path (fixed in #509; the witnesses were moved).
+P6_WALLS = {
+    "cluster/image_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [gradient]": (
+        561,
+        566,
+        "413713_0",
+        0.0054,
+    ),
+    "cluster/image_plane/simple jax_gpu_na_fp64@hpc_a100 [gradient]": (
+        734,
+        743,
+        "413714_0",
+        0.002676,
+    ),
+    "cluster/source_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [gradient]": (
+        77,
+        85,
+        "413713_1",
+        0.0002732,
+    ),
+    "cluster/source_plane/simple jax_gpu_na_fp64@hpc_a100 [gradient]": (
+        156,
+        168,
+        "413714_1",
+        0.0005694,
+    ),
+    "datacube/delaunay/alma jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [gradient]": (
+        685,
+        691,
+        "413721_0",
+        13.85,
+    ),
+    "datacube/delaunay/alma jax_gpu_sparse_fp64_wtilde@hpc_a100 [gradient]": (
+        282,
+        284,
+        "413722_0",
+        0.6244,
+    ),
+    "datacube/delaunay/alma_high jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [gradient]": (
+        1089,
+        1095,
+        "413721_1",
+        20.33,
+    ),
+    "datacube/delaunay/alma_high jax_gpu_sparse_fp64_wtilde@hpc_a100 [gradient]": (
+        366,
+        368,
+        "413722_1",
+        0.7342,
+    ),
+    "datacube/delaunay/sma jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [gradient]": (
+        1068,
+        1074,
+        "413721_2",
+        11.22,
+    ),
+    "datacube/delaunay/sma jax_gpu_sparse_fp64_wtilde@hpc_a100 [gradient]": (
+        218,
+        222,
+        "413722_2",
+        0.5723,
+    ),
+    "group/delaunay/euclid jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (
+        2109,
+        2113,
+        "413715_0",
+        5.418,
+    ),
+    "group/delaunay/euclid jax_gpu_dense_fp64@hpc_a100 [gradient]": (173, 183, "413716_0", 0.05486),
+    "group/mge/euclid jax_cpu_dense_fp64@hpc_ral_cpu [gradient]": (130, 134, "413715_1", 0.04043),
+    "group/mge/euclid jax_gpu_dense_fp64@hpc_a100 [gradient]": (200, 210, "413716_1", 0.007131),
+    "group/rectangular/euclid jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (
+        2106,
+        2110,
+        "413715_2",
+        4.859,
+    ),
+    "group/rectangular/euclid jax_gpu_dense_fp64@hpc_a100 [gradient]": (
+        158,
+        160,
+        "413716_2",
+        0.04361,
+    ),
+    "imaging/delaunay/ao jax_gpu_dense_fp64@hpc_a100 [gradient]": (236, 246, "413718_0", 0.3467),
+    "imaging/delaunay/euclid jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (
+        525,
+        529,
+        "413717_1",
+        1.283,
+    ),
+    "imaging/delaunay/euclid jax_gpu_dense_fp64@hpc_a100 [gradient]": (
+        164,
+        168,
+        "413718_1",
+        0.04116,
+    ),
+    "imaging/delaunay/hst jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (
+        1249,
+        1253,
+        "413717_2",
+        3.076,
+    ),
+    "imaging/delaunay/hst jax_gpu_dense_fp64@hpc_a100 [gradient]": (232, 235, "413718_2", 0.05553),
+    "imaging/delaunay/jwst jax_gpu_dense_fp64@hpc_a100 [gradient]": (228, 231, "413718_3", 0.08294),
+    "imaging/delaunay_nn/hst jax_gpu_dense_fp64@hpc_a100 [gradient]": (
+        258,
+        260,
+        "413718_4",
+        0.08581,
+    ),
+    "imaging/mge/ao jax_cpu_dense_fp64@hpc_ral_cpu [gradient]": (315, 322, "413717_5", 0.4458),
+    "imaging/mge/ao jax_gpu_dense_fp64@hpc_a100 [gradient]": (142, 144, "413718_5", 0.01533),
+    "imaging/mge/euclid jax_cpu_dense_fp64@hpc_ral_cpu [gradient]": (59, 65, "413717_6", 0.008209),
+    "imaging/mge/euclid jax_gpu_dense_fp64@hpc_a100 [gradient]": (104, 107, "413718_6", 0.004991),
+    "imaging/mge/hst jax_cpu_dense_fp64@hpc_ral_cpu [gradient]": (73, 79, "413717_7", 0.02054),
+    "imaging/mge/hst jax_gpu_dense_fp64@hpc_a100 [gradient]": (115, 118, "413718_7", 0.00567),
+    "imaging/mge/jwst jax_cpu_dense_fp64@hpc_ral_cpu [gradient]": (80, 87, "413717_8", 0.0478),
+    "imaging/mge/jwst jax_gpu_dense_fp64@hpc_a100 [gradient]": (107, 109, "413718_8", 0.006279),
+    "imaging/rectangular/ao jax_gpu_dense_fp64@hpc_a100 [gradient]": (200, 202, "413718_9", 0.2966),
+    "imaging/rectangular/euclid jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (
+        466,
+        468,
+        "413717_10",
+        0.9634,
+    ),
+    "imaging/rectangular/euclid jax_gpu_dense_fp64@hpc_a100 [gradient]": (
+        144,
+        147,
+        "413718_10",
+        0.0283,
+    ),
+    "imaging/rectangular/hst jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (
+        1225,
+        1228,
+        "413717_11",
+        2.725,
+    ),
+    "imaging/rectangular/hst jax_gpu_dense_fp64@hpc_a100 [gradient]": (
+        215,
+        217,
+        "413718_11",
+        0.03851,
+    ),
+    "imaging/rectangular/jwst jax_gpu_dense_fp64@hpc_a100 [gradient]": (
+        217,
+        219,
+        "413718_12",
+        0.06334,
+    ),
+    "interferometer/delaunay/alma jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [gradient]": (
+        158,
+        164,
+        "413719_0",
+        2.283,
+    ),
+    "interferometer/delaunay/alma jax_gpu_sparse_fp64_wtilde@hpc_a100 [gradient]": (
+        63,
+        66,
+        "413720_0",
+        0.03826,
+    ),
+    "interferometer/delaunay/alma_high jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [gradient]": (
+        486,
+        492,
+        "413719_1",
+        8.134,
+    ),
+    "interferometer/delaunay/alma_high jax_gpu_sparse_fp64_wtilde@hpc_a100 [gradient]": (
+        92,
+        95,
+        "413720_1",
+        0.07713,
+    ),
+    "interferometer/delaunay/jvla jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [gradient]": (
+        2871,
+        2877,
+        "413719_2",
+        50.17,
+    ),
+    "interferometer/delaunay/jvla jax_gpu_sparse_fp64_wtilde@hpc_a100 [gradient]": (
+        268,
+        271,
+        "413720_2",
+        0.4358,
+    ),
+    "interferometer/delaunay/sma jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [gradient]": (
+        310,
+        316,
+        "413719_3",
+        0.7976,
+    ),
+    "interferometer/delaunay/sma jax_gpu_sparse_fp64_wtilde@hpc_a100 [gradient]": (
+        44,
+        46,
+        "413720_3",
+        0.02694,
+    ),
+    "interferometer/mge/sma jax_cpu_dense_fp64_nufft@hpc_ral_cpu [gradient]": (
+        59,
+        65,
+        "413719_4",
+        0.0827,
+    ),
+    "interferometer/mge/sma jax_gpu_dense_fp64_nufft@hpc_a100 [gradient]": (
+        39,
+        42,
+        "413720_4",
+        0.003552,
+    ),
+    "interferometer/rectangular/alma jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [gradient]": (
+        136,
+        142,
+        "413719_5",
+        2.055,
+    ),
+    "interferometer/rectangular/alma jax_gpu_sparse_fp64_wtilde@hpc_a100 [gradient]": (
+        40,
+        43,
+        "413720_5",
+        0.03412,
+    ),
+    "interferometer/rectangular/alma_high jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [gradient]": (
+        461,
+        467,
+        "413719_6",
+        7.501,
+    ),
+    "interferometer/rectangular/alma_high jax_gpu_sparse_fp64_wtilde@hpc_a100 [gradient]": (
+        72,
+        74,
+        "413720_6",
+        0.06822,
+    ),
+    "interferometer/rectangular/jvla jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [gradient]": (
+        2923,
+        2929,
+        "413719_7",
+        49.52,
+    ),
+    "interferometer/rectangular/jvla jax_gpu_sparse_fp64_wtilde@hpc_a100 [gradient]": (
+        244,
+        246,
+        "413720_7",
+        0.4346,
+    ),
+    "interferometer/rectangular/sma jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [gradient]": (
+        242,
+        249,
+        "413719_8",
+        0.637,
+    ),
+    "interferometer/rectangular/sma jax_gpu_sparse_fp64_wtilde@hpc_a100 [gradient]": (
+        32,
+        34,
+        "413720_8",
+        0.02251,
+    ),
+    "multi_dataset/delaunay/hst jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (
+        2233,
+        2239,
+        "413721_3",
+        5.942,
+    ),
+    "multi_dataset/delaunay/hst jax_gpu_dense_fp64@hpc_a100 [gradient]": (
+        402,
+        406,
+        "413722_3",
+        0.1086,
+    ),
+    "multi_galaxy/delaunay/hst jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (
+        1503,
+        1507,
+        "413715_3",
+        3.846,
+    ),
+    "multi_galaxy/delaunay/hst jax_gpu_dense_fp64@hpc_a100 [gradient]": (
+        176,
+        179,
+        "413716_3",
+        0.04898,
+    ),
+    "multi_galaxy/mge/hst jax_cpu_dense_fp64@hpc_ral_cpu [gradient]": (
+        116,
+        122,
+        "413715_4",
+        0.02637,
+    ),
+    "multi_galaxy/mge/hst jax_gpu_dense_fp64@hpc_a100 [gradient]": (196, 203, "413716_4", 0.006891),
+    "multi_galaxy/rectangular/hst jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (
+        1466,
+        1469,
+        "413715_5",
+        3.444,
+    ),
+    "multi_galaxy/rectangular/hst jax_gpu_dense_fp64@hpc_a100 [gradient]": (
+        158,
+        161,
+        "413716_5",
+        0.03706,
+    ),
+    "point_source_image/image_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [gradient]": (
+        49,
+        52,
+        "413709_0",
+        0.001609,
+    ),
+    "point_source_image/image_plane/simple jax_gpu_na_fp64@hpc_a100 [gradient]": (
+        75,
+        86,
+        "413711_0",
+        0.0008786,
+    ),
+    "point_source_source/source_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [gradient]": (
+        15,
+        17,
+        "413709_1",
+        0.0001714,
+    ),
+    "point_source_source/source_plane/simple jax_gpu_na_fp64@hpc_a100 [gradient]": (
+        31,
+        41,
+        "413711_1",
+        0.0002468,
+    ),
+    "weak/isothermal/simple jax_cpu_dense_fp64@hpc_ral_cpu [gradient]": (
+        13,
+        24,
+        "413707_0",
+        0.0001476,
+    ),
+    "weak/isothermal/simple jax_gpu_dense_fp64@hpc_a100 [gradient]": (
+        16,
+        26,
+        "413708_0",
+        0.0002463,
+    ),
+}
+#: Killed at --mem=64gb (OUT_OF_MEMORY) inside the gradient measurement: cell -> (Elapsed s, task).
+P6_OOM = {
+    "imaging/delaunay/ao jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (1054, "413717_0"),
+    "imaging/delaunay/jwst jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (1055, "413717_3"),
+    "imaging/delaunay_nn/hst jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (1475, "413717_4"),
+    "imaging/rectangular/ao jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (907, "413717_9"),
+    "imaging/rectangular/jwst jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (971, "413717_12"),
+}
 
 
 def _module(name: str):
@@ -180,7 +546,24 @@ def planned_tasks() -> list[GradientTask]:
     return sorted(set(tasks))
 
 
+def measured_wall(task: GradientTask) -> tuple[int, str]:
+    """The first run's wall for ``task`` plus the version-2 sweep's extra forward calls."""
+    wall, elapsed, ref, forward_s = P6_WALLS[task.cell]
+    return max(wall, elapsed) + math.ceil(SWEEP_CALLS * forward_s), ref
+
+
+WALL_BASIS = _common.WallBasis(
+    measured_wall=measured_wall,
+    basis_leg=lambda task: task,
+    limitations={},
+    walls={cell: row[:3] for cell, row in P6_WALLS.items()},
+    headroom=WALL_HEADROOM,
+)
+
+
 def _mem(source: str, kind: str, tasks) -> int:
+    if (source, kind) in GRADIENT_MEM_GB:
+        return GRADIENT_MEM_GB[(source, kind)]
     module = _module(source)
     value = getattr(module, "RAL_MEM_GB" if kind == "ral_cpu" else "A100_MEM_GB", 64)
     if isinstance(value, dict):
@@ -204,9 +587,26 @@ def _campaign(source: str) -> _common.Campaign:
 def render(name: str, source: str, tasks: list[GradientTask], *, kind: str) -> str:
     """One submit: an array of gradient legs (one leg per task)."""
     device = "ral_cpu" if kind == "ral_cpu" else "a100"
-    guess = max(t.guess_s for t in tasks)
-    time = _common.slurm_time(guess, headroom=GUESS_HEADROOM, slack_s=0, round_s=WALL_ROUND_S)
+    measured = [t for t in tasks if t.cell in P6_WALLS]
+    unmeasured = [t for t in tasks if t.cell not in P6_WALLS]
+    guess = max((t.guess_s for t in unmeasured), default=None)
+    budgets = []
+    if measured:
+        wall = _common.batch_wall_s(measured, WALL_BASIS, sequential=False)
+        budgets.append(
+            _common.slurm_time(
+                wall, headroom=WALL_HEADROOM, slack_s=WALL_MIN_SLACK_S, round_s=WALL_ROUND_S
+            )
+        )
+    if unmeasured:
+        budgets.append(
+            _common.slurm_time(guess, headroom=GUESS_HEADROOM, slack_s=0, round_s=WALL_ROUND_S)
+        )
+    time = max(budgets, key=_slurm_seconds)
     mem = _mem(source, kind, tasks)
+    source_mem = "the phase-2 source campaign's declared value for these cells"
+    if (source, kind) in GRADIENT_MEM_GB:
+        source_mem = "raised over the source campaign's value (legs killed at 64 GB in 6c)"
     header = [
         "#!/bin/bash -l",
         "#",
@@ -224,18 +624,27 @@ def render(name: str, source: str, tasks: list[GradientTask], *, kind: str) -> s
         "# CELLS. Each leg runs the likelihood's gradient_breakdown.py with the flags of the cell's",
         "# phase-2 runtime leg: the runtime script builds its own fused likelihood and, with",
         "# --gradient, hands it to scripts/misc/gradient/harness.py (forward vs value_and_grad, the",
-        "# pre-registered finite-difference check) instead of timing it. It writes gradient.json",
+        "# pre-registered finite-difference check and FD step sweep) instead of timing it. It writes",
+        "# gradient.json (witness version 2)",
         "# into the mirrored cell named by --output-path under the gitignored output/p6_gradient/",
         "# scratch tree, never in place over committed rows. fp64 only.",
         "#",
-        f"# MEMORY. --mem={mem}gb, the phase-2 source campaign's declared value for these cells.",
+        f"# MEMORY. --mem={mem}gb, {source_mem}.",
         "#",
-        "# WALL-BASIS: nothing measured for a gradient leg yet. Each row's wall is a declared guess,",
-        f"# {GUESS_FACTOR}x the slowest covered cell's measured phase-2 runtime wall (at least "
-        f"{GUESS_FLOOR_S} s),",
-        "# with the 3x floor; the legs' walls land in output/p6_gradient_logs/walls.tsv.",
+        "# WALL-BASIS: a measured row cites the first run's wall of its legs (the slowest; array",
+        f"# tasks) plus {SWEEP_CALLS} forward calls of the FD step sweep at the cell's measured",
+        "# forward time. An unmeasured row is a leg the first run did not finish: a declared guess,",
+        f"# {GUESS_FACTOR}x the cell's measured phase-2 runtime wall (at least {GUESS_FLOOR_S} s),",
+        "# with the 3x floor. The legs' walls land in output/p6_gradient_logs/walls.tsv.",
     ]
-    header += _common.wall_rows(tasks, device, guess, measured=False, sequential=False, basis=None)
+    if measured:
+        header += _common.wall_rows(
+            measured, device, None, measured=True, sequential=False, basis=WALL_BASIS
+        )
+    if unmeasured:
+        header += _common.wall_rows(
+            unmeasured, device, guess, measured=False, sequential=False, basis=None
+        )
     job = "p6_" + name.split("submit_campaign_p6_gradient_", 1)[1].removesuffix("_fp64")
     sbatch = _common.sbatch_block(
         job,
@@ -253,6 +662,11 @@ def render(name: str, source: str, tasks: list[GradientTask], *, kind: str) -> s
         _common.manifest_arrays(tasks, RESULTS, module="gradient_p6"),
         _common.run_block("ral_cpu" if kind == "ral_cpu" else "a100_array"),
     )
+
+
+def _slurm_seconds(value: str) -> int:
+    h, m, sec = (int(x) for x in value.split(":"))
+    return h * 3600 + m * 60 + sec
 
 
 def submits() -> dict[str, str]:

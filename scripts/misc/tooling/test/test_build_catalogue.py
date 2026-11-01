@@ -1192,6 +1192,17 @@ def gradient_doc(version="2026.10.25.1", ratio=2.0, wrong=False):
             }
         )
     status = gw.fd_status(directions)
+    sweep_dirs = []
+    for d in directions:
+        centrals = [d["fd"]] * len(gw.SWEEP_STEPS)
+        sweep_dirs.append(
+            {
+                "analytic": d["analytic"],
+                "steps": [{"step": h, "central": c} for h, c in zip(gw.SWEEP_STEPS, centrals)],
+                "class": gw.sweep_class(d["analytic"], centrals),
+            }
+        )
+    classes = [d["class"] for d in sweep_dirs]
     forward = 0.01
     doc = {
         "schema": gw.SCHEMA,
@@ -1226,8 +1237,9 @@ def gradient_doc(version="2026.10.25.1", ratio=2.0, wrong=False):
             "directions": directions,
             "max_rel_error": max(d["rel_error"] for d in directions),
         },
+        "fd_sweep": {"status": gw.sweep_status(classes), "directions": sweep_dirs},
     }
-    doc["hazard"] = gw.hazard(ratio, status)
+    doc["hazard"] = gw.hazard(ratio, doc["fd_sweep"]["status"], classes)
     assert gw.validate(doc) == [], gw.validate(doc)
     return doc
 
@@ -1241,6 +1253,8 @@ def test_a_gradient_witness_becomes_a_pulse_valid_gradient_record(tree):
     assert record["values"]["value_and_grad.single_call_s"] == pytest.approx(0.02)
     assert "forward.vmap_per_call_s" not in record["values"]  # null timings are left out
     assert record["gradient"]["fd_status"] == "pass" and record["gradient"]["hazard"] is False
+    assert record["gradient"]["fd_rule"] == "step_sweep"
+    assert record["gradient"]["fd_sweep_classes"] == ["agree"] * 3
     assert (
         record["class"] == "optimal"
         and record["decision_id"] == "imaging-delaunay-standard-gpu-a100"
@@ -1252,7 +1266,7 @@ def test_a_gradient_witness_becomes_a_pulse_valid_gradient_record(tree):
 
 
 @pytest.mark.parametrize(
-    "ratio, wrong, reason", [(4.5, False, "4.50x"), (2.0, True, "finite-difference")]
+    "ratio, wrong, reason", [(4.5, False, "4.50x"), (2.0, True, "step sweep mismatch")]
 )
 def test_a_gradient_hazard_is_carried_into_the_record(tree, ratio, wrong, reason):
     write(tree, f"{A100}/gradient.json", gradient_doc(ratio=ratio, wrong=wrong))

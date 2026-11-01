@@ -1231,10 +1231,13 @@ def gradient_candidate(root, path, doc, releases=None, carries=None):
     size_rank, size_notes = size_variant_rank(cell, pixels, path)
     timings = {k: v for k, v in doc["timings"].items() if v is not None}
     fd, hazard = doc["fd"], doc["hazard"]
+    # Version 2 (#509): the step sweep decides the FD verdict; version 1: the h/h2 check.
+    sweep = doc.get("fd_sweep")
+    verdict = gradient_witness.fd_verdict(doc)
     if hazard["flag"]:
         notes = notes + ["gradient_hazard: " + "; ".join(hazard["reasons"])]
-    if fd["status"] == "not_assessed":
-        notes = notes + [f"gradient_fd_not_assessed: {fd['reason']}"]
+    if verdict == "not_assessed":
+        notes = notes + [f"gradient_fd_not_assessed: {(sweep or fd)['reason']}"]
     record = {
         "id": "lifecycle/" + digest([path, "", "gradient"]),
         "run_id": "gradient/" + digest([path]),
@@ -1271,7 +1274,8 @@ def gradient_candidate(root, path, doc, releases=None, carries=None):
         "provenance": prov,
         "validation": {
             "status": "unreviewed",
-            "reason": f"Gradient witness: FD check {fd['status']}, value_and_grad "
+            "reason": f"Gradient witness: FD {'step sweep' if sweep else 'check'} {verdict}, "
+            "value_and_grad "
             f"{doc['grad_over_forward']:.3g}x the forward call (single call); "
             "not an accepted baseline.",
         },
@@ -1279,7 +1283,12 @@ def gradient_candidate(root, path, doc, releases=None, carries=None):
         "gradient": {
             "grad_over_forward": doc["grad_over_forward"],
             "grad_over_forward_vmap": doc.get("grad_over_forward_vmap"),
-            "fd_status": fd["status"],
+            "fd_status": verdict,
+            "fd_rule": "step_sweep" if sweep else "h_h2_richardson",
+            "fd_sweep_classes": [d["class"] for d in (sweep or {}).get("directions", [])]
+            if sweep
+            else None,
+            "fd_h_h2_status": fd["status"],
             "fd_max_rel_error": fd.get("max_rel_error"),
             "fd_tolerance": gradient_witness.FD_TOLERANCE,
             "finite": doc["gradient"]["finite"],

@@ -5,6 +5,7 @@ current and pass check_submits."""
 from __future__ import annotations
 
 import importlib.util
+import math
 import re
 import sys
 from collections import Counter
@@ -73,7 +74,8 @@ def test_every_leg_runs_a_hooked_construction_site():
         assert script.is_file(), t.script
         text = script.read_text()
         if t.dataset_type == "imaging" and t.variant == "mge":
-            assert "harness.measure" in text  # the 6a pilot builds the cell itself
+            # The 6a pilot builds the cell itself and, since #509, honours --output-path.
+            assert "harness.run_gradient" in text and "output_path" in text
             continue
         runtime = re.search(r'with_name\("([a-z_]+\.py)"\)', text).group(1)
         runtime_path = script.with_name(runtime)
@@ -106,3 +108,27 @@ def test_the_submits_are_current_and_pass_check_submits():
         assert ("--gres=gpu:1" in text) == ("batch_gpu" in rel)
         assert check_submits.parse_basis_rows(text), rel
         assert check_submits.check_text(text) == [], rel
+
+
+def test_every_leg_has_a_measured_wall_or_is_a_recorded_oom():
+    """6c (#509): the first run measured 69 legs; the 5 killed at 64 GB stay unmeasured."""
+    cells = {t.cell for t in p6.planned_tasks()}
+    assert cells == set(p6.P6_WALLS) | set(p6.P6_OOM)
+    assert not set(p6.P6_WALLS) & set(p6.P6_OOM)
+    assert len(p6.P6_WALLS) == 69 and len(p6.P6_OOM) == 5
+    assert p6.SWEEP_CALLS == 78
+
+
+def test_measured_rows_carry_the_sweep_allowance_and_oom_legs_stay_probe_first():
+    tasks = {t.cell: t for t in p6.planned_tasks()}
+    cell = "weak/isothermal/simple jax_cpu_dense_fp64@hpc_ral_cpu [gradient]"
+    wall, elapsed, ref, forward_s = p6.P6_WALLS[cell]
+    assert p6.measured_wall(tasks[cell]) == (
+        max(wall, elapsed) + math.ceil(p6.SWEEP_CALLS * forward_s),
+        ref,
+    )
+    text = p6.submits()["hpc/batch_cpu/submit_campaign_p6_gradient_imaging_ral_cpu_fp64"]
+    assert "#SBATCH --mem=192gb" in text
+    assert "source: measured-wall" in text and "source: unmeasured  probe-first: yes" in text
+    weak = p6.submits()["hpc/batch_cpu/submit_campaign_p6_gradient_weak_ral_cpu_fp64"]
+    assert "source: unmeasured" not in weak and "ref: 413707_0" in weak
