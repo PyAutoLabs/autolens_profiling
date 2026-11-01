@@ -180,6 +180,7 @@ T1, T3, P1 and P2, which are as of the fix phase 1 branch.
 | C10 | campaign gate | `scripts/point_source_image/image_plane/solver_config_sweep.py` `_fastest` via `scripts/misc/likelihood_breakdown/ab_verdict.py::tie_set` | `best_admissible` (a resolved leader, else `None`) and `best_admissible_tie_set` | tie set at the family-wise level since fix phase 9 (`scripts/misc/likelihood_breakdown/family_gates.py` `sweep_tie_set` (273) → `scripts/misc/likelihood_breakdown/ab_verdict.py` `holm_tie_set` (702)): a `best` only when the leader's paired round-bootstrap speed-up interval separates from every other candidate's at the Holm-adjusted level; the unadjusted 90 % tie set recorded beside it; no `best` below 5 rounds | SOUND-with-caveats |
 | C11 | campaign gate | `scripts/misc/numba_interferometer/bakeoff.py::main` (858) via `scripts/misc/likelihood_breakdown/family_gates.py` `kill_gate_family` (354); the old point rule kept as `scripts/misc/likelihood_breakdown/family_gates.py::kill_gate_point` (330) | numba-vs-rfft2 kill gate `passed` / `tripped` / INCONCLUSIVE | rfft2 / kernel > 1.3 on a paired round-bootstrap interval per pinned kernel × sma / alma cell, one Holm family at family-wise 90 %: `passed` if any member resolves above, `tripped` only if every member resolves below; ≥ 5 timed rounds (the default `--reps 5` times 4, so INCONCLUSIVE by construction) | SOUND-with-caveats |
 | C12 | campaign gate | `scripts/point_source_image/image_plane/gpu_bottleneck_map.py` `_mdi` (396) via `scripts/misc/likelihood_breakdown/family_gates.py` `round_split_half_mdi` (483) | minimum detectable improvement (split-half noise floor) for a human go/no-go | 90 % CI half-width; since fix phase 9 of a paired round bootstrap of each round's first half of calls over its last half (NaN below 5 rounds) | SOUND |
+| C13 | campaign gate | `scripts/misc/tooling/gradient_witness.py::hazard` (from `scripts/misc/gradient/harness.py::measure`) | likelihood lifecycle phase 6 gradient hazard: flags a cell for human review and its own optimisation prompt; it accepts or rejects no measurement, and the ratio, its two medians and the FD errors are recorded beside it (#505) | `scripts/misc/tooling/gradient_witness.py::HAZARD_GRAD_OVER_FORWARD` 4.0 on the single-call `value_and_grad` / forward ratio of steady medians (10 calls after the first), or a failed pre-registered FD check | SOUND-with-caveats (a point ratio without an interval: a cell near 4x can flip between runs, which only changes whether it is flagged for review) |
 | S1 | submit basis | `scripts/misc/wall/check_submits.py::RATE_TOLERANCE` (109), `HEADROOM_FLOOR` (113), `budget < needed` (494); since fix phase 10 `scripts/misc/wall/check_submits.py::median_runs` with `scripts/misc/wall/rates.py::headline_median_extra_wall_s` (mirrors `scripts/misc/wall/rates.py::HEADLINE_MEDIAN_MIN_STEADY_WARM`, `scripts/misc/wall/rates.py::HEADLINE_MEDIAN_BUDGET_S`) | `--time` ≥ estimated wall × headroom; the wall of a headline-median cell gains 50 s per invocation unless the row says `median: included` | 5 % rate match; headroom 1.25 / 1.5 / 3.0 | SOUND |
 | R1 | resource guard | `scripts/imaging/pixelized/fixed_light.py::measure_system` (773), `scripts/imaging/pixelized/fixed_light.py::COND_BUDGET_S` 5 s | skip the second `cond()` | 5 s | SOUND |
 | R2 | resource guard | `scripts/misc/numba_interferometer/bakeoff.py::run_cell` (430), `scripts/misc/numba_interferometer/bakeoff.py::ALMA_HIGH_PAIR_LOOP_BUDGET_S` 180 s | skip an extrapolated alma_high kernel | 180 s | SOUND |
@@ -190,12 +191,12 @@ T1, T3, P1 and P2, which are as of the fix phase 1 branch.
 |---|---|---|---|---|
 | CI test | 13 | 13 | 0 | 0 |
 | Production qualification / protocol / estimator | 9 | 9 | 0 | 0 |
-| Campaign gate (incl. P2 promotion) | 13 | 10 | 3 | 0 |
+| Campaign gate (incl. P2 promotion) | 14 | 11 | 3 | 0 |
 | Submit basis | 1 | 1 | 0 | 0 |
 | Resource guard | 2 | 2 | 0 | 0 |
-| **Total** | **38** | **35** | **3** | **0** |
+| **Total** | **39** | **36** | **3** | **0** |
 
-Counts after fix phase 10, which added the CI-test row T13 and moved no verdict (P7, P8 and S1
+Counts after the phase-6a gradient hazard row C13 (#505, SOUND-with-caveats). Before it, counts after fix phase 10, which added the CI-test row T13 and moved no verdict (P7, P8 and S1
 keep theirs; their caveats shrink). After fix phase 9 the totals were 34 / 3 / 0 over 37 rows: it
 added the CI-test row T12 and moved P2 and C11 from FRAGILE to
 SOUND-with-caveats (counted as SOUND, like T1, P1, P3, P5–P9, C1, C3–C7 and C10). After fix phase

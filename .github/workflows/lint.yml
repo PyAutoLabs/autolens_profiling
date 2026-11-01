@@ -111,6 +111,10 @@ jobs:
         working-directory: autolens_profiling
         run: python scripts/misc/tooling/parity_witness.py --check
 
+      - name: gradient_witness.py --check (gradient.json convention)
+        working-directory: autolens_profiling
+        run: python scripts/misc/tooling/gradient_witness.py --check
+
       - name: coverage_matrix.py --check (lifecycle coverage drift)
         working-directory: autolens_profiling
         run: |
@@ -234,6 +238,7 @@ jobs:
           # exits 0 immediately after the import + setup section. Catches
           # import-graph breakage without running the full profile.
           python scripts/imaging/mge/likelihood_runtime.py
+          python scripts/imaging/mge/gradient_breakdown.py
           python scripts/imaging/mge/likelihood_breakdown.py
           python scripts/imaging/rectangular/hazards.py
           python scripts/misc/simulators/imaging.py

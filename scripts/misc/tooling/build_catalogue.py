@@ -26,6 +26,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import catalogue_lifecycle as lc
+import gradient_witness
 import parity_witness
 from catalogue_adapters import metrics, number, pointer, rows
 
@@ -452,7 +453,8 @@ def build(root, generated, revision):
             source["reasons"].append(
                 "Findings retained separately until explicit versioned setup bindings exist."
             )
-        for payload, base, context in rows(doc, adapter):
+        gradient_file = (lc.mirrored(path) or {}).get("file_measurement") == "gradient"
+        for payload, base, context in [] if gradient_file else rows(doc, adapter):
             dataset, model, instrument = route(path, payload, reg)
             dataset, model = override.get("dataset", dataset), override.get("model", model)
             config = settings(payload, context)
@@ -558,6 +560,11 @@ def build(root, generated, revision):
         if cell is not None and cell["file_measurement"] == "parity":
             source["reasons"].append(
                 "Parity witness: read into the v3 lifecycle catalogue as measurement parity, "
+                "not a v2 timing."
+            )
+        if gradient_file:
+            source["reasons"].append(
+                "Gradient witness: read into the v3 lifecycle catalogue as measurement gradient, "
                 "not a v2 timing."
             )
         if not source["record_count"] and not source["reasons"]:
@@ -910,7 +917,9 @@ V3_LIMITATIONS = [
     "a current record carries day_zero 2026.10.25.1 when its class is optimal or secondary, its "
     "regime is standard, it is on a reference host (hpc_ral_cpu, hpc_a100), its release_pin is "
     "the tag, and its cell has a current parity match and a fit figure; a passing cell is "
-    "stamped whole. Experimental rows, size variants and rows off the tag are not stamped. "
+    "stamped whole. A phase-6 gradient record never decides a cell but carries its stamp when "
+    "it is measured on the tag and its finite-difference check passed (human ruling "
+    "2026-11-01, #506). Experimental rows, size variants and rows off the tag are not stamped. "
     "PyAutoPulse freezes the stamped records as its day_zero snapshot.",
     "Classes come from the PyAutoPulse designation records (decisions.yaml kind: designation, "
     "mirrored in catalogue/pulse_designations.json; autolens_profiling#497): the designated "
@@ -1202,6 +1211,93 @@ def parity_candidate(root, path, doc, releases=None, carries=None):
     return [record], entry
 
 
+def gradient_candidate(root, path, doc, releases=None, carries=None):
+    """The v3 record for one mirrored ``gradient.json`` (``gradient_witness.py``, phase 6)."""
+    cell = lc.mirrored(path)
+    errors = gradient_witness.validate(doc)
+    if errors:
+        raise ValueError(f"Invalid gradient witness {path}: " + "; ".join(errors))
+    ident, prov = identity(doc, path, releases, carries=carries)
+    prov = {**prov, "measured_at": doc["measured_at"]}
+    prov["unknowns"] = {k: v for k, v in prov["unknowns"].items() if k != "measured_at"}
+    pixels = lc.size_pixels(cell["variant"], doc)
+    cls, decision_id, notes = lc.record_class(
+        cell["dataset_type"],
+        cell["variant"],
+        cell["host_class"],
+        cell["setup_id"],
+        lc.regime(cell["variant"], pixels),
+    )
+    size_rank, size_notes = size_variant_rank(cell, pixels, path)
+    timings = {k: v for k, v in doc["timings"].items() if v is not None}
+    fd, hazard = doc["fd"], doc["hazard"]
+    if hazard["flag"]:
+        notes = notes + ["gradient_hazard: " + "; ".join(hazard["reasons"])]
+    if fd["status"] == "not_assessed":
+        notes = notes + [f"gradient_fd_not_assessed: {fd['reason']}"]
+    record = {
+        "id": "lifecycle/" + digest([path, "", "gradient"]),
+        "run_id": "gradient/" + digest([path]),
+        "likelihood": {"dataset_type": cell["dataset_type"], "variant": cell["variant"]},
+        "instrument": cell["instrument"],
+        "regime": lc.regime(cell["variant"], pixels),
+        "setup": {**cell["setup"], "threads": None},
+        "setup_id": cell["setup_id"],
+        "host_class": cell["host_class"],
+        "model_variant": cell["model_variant"],
+        "measurement": "gradient",
+        "metric": gradient_witness.HEADLINE,
+        "unit": "s",
+        "values": dict(sorted(timings.items())),
+        "class": cls,
+        "status": None,
+        "superseded_by": None,
+        "day_zero": None,
+        "figures": [],
+        "decision_id": decision_id,
+        "release_pin": ident["library_version"],
+        **measured_pin(ident),
+        "measured_at": doc["measured_at"],
+        "identity": ident,
+        "method": {
+            "id": "gradient-witness",
+            "statistic": doc.get("statistic"),
+            "repetitions": doc.get("repeats"),
+            "warmup": "first call (compile) excluded from the steady median",
+            "synchronization": "block_until_ready on every output leaf",
+            "cache_state": "warm",
+            "unknowns": {},
+        },
+        "provenance": prov,
+        "validation": {
+            "status": "unreviewed",
+            "reason": f"Gradient witness: FD check {fd['status']}, value_and_grad "
+            f"{doc['grad_over_forward']:.3g}x the forward call (single call); "
+            "not an accepted baseline.",
+        },
+        "evidence": {"path": path, "fragment": None},
+        "gradient": {
+            "grad_over_forward": doc["grad_over_forward"],
+            "grad_over_forward_vmap": doc.get("grad_over_forward_vmap"),
+            "fd_status": fd["status"],
+            "fd_max_rel_error": fd.get("max_rel_error"),
+            "fd_tolerance": gradient_witness.FD_TOLERANCE,
+            "finite": doc["gradient"]["finite"],
+            "n_parameters": doc.get("n_parameters"),
+            "hazard": hazard["flag"],
+            "hazard_reasons": hazard["reasons"],
+        },
+        "pointers": {k: f"/timings/{k}" for k in sorted(timings)},
+        "location": cell["location"],
+        "limitations": list(notes) + size_notes,
+        "_rank": (size_rank, lc.FILE_ORDER["gradient"]),
+        "_pixels": pixels,
+    }
+    if doc.get("resources"):
+        record["resources"] = lc.row_resources(doc, path, "", {})
+    return [record]
+
+
 def label_lifecycle(records, planned, refs):
     """Assign status/superseded_by by the day-zero rule; return (kept, excluded entries)."""
     by_key = {}
@@ -1347,6 +1443,8 @@ def build_lifecycle(root, generated, revision, dates=None):
             if cell is not None and cell["file_measurement"] == "parity":
                 found, witness = parity_candidate(root, path, doc, releases, carries)
                 witnesses.append(witness)
+            elif cell is not None and cell["file_measurement"] == "gradient":
+                found = gradient_candidate(root, path, doc, releases, carries)
             else:
                 found, _reasons = lifecycle_candidates(
                     root, reg, path, doc, adapter, dates, undated, releases, nodes, carries
@@ -1357,13 +1455,25 @@ def build_lifecycle(root, generated, revision, dates=None):
     records, excluded = label_lifecycle(candidates, planned, refs)
     stamped = lc.day_zero_cells(records)
     for record in records:
-        if record["status"] == "current" and lc.day_zero_cell(record) in stamped:
+        if (
+            record["status"] == "current"
+            and record["measurement"] not in lc.DAY_ZERO_EXCLUDED
+            and lc.day_zero_cell(record) in stamped
+        ):
             record["day_zero"] = lc.DAY_ZERO["tag"]
             record["validation"] = {
                 **record["validation"],
                 "reason": f"Day-zero baseline {lc.DAY_ZERO['tag']} (catalogue/day_zero.json): "
                 "measured on the released tag on a reference host, cell parity match and fit "
                 "figure; no scientific re-review beyond that rule.",
+            }
+        elif lc.day_zero_follower(record, stamped):
+            record["day_zero"] = lc.DAY_ZERO["tag"]
+            record["validation"] = {
+                **record["validation"],
+                "reason": f"Day-zero gradient {lc.DAY_ZERO['tag']} (catalogue/day_zero.json): "
+                "measured on the released tag in a day-zero cell, FD check pass; no scientific "
+                "re-review beyond that rule.",
             }
     planned_cells = []
     for dataset_type, variant, instrument in sorted(planned):
@@ -1441,6 +1551,11 @@ def validate_lifecycle(root, doc):
                 or record["class"] not in lc.DAY_ZERO["classes"]
             ):
                 raise ValueError(f"{record['id']}: day_zero stamp off the section 3.6 rule")
+            if (
+                record["measurement"] in lc.DAY_ZERO_EXCLUDED
+                and (record.get("gradient") or {}).get("fd_status") != "pass"
+            ):
+                raise ValueError(f"{record['id']}: day_zero gradient stamp without an FD pass")
             cell = lc.day_zero_cell(record)
             if not any(
                 lc.day_zero_cell(r) == cell

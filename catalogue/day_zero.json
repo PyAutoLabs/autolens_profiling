@@ -17,5 +17,6 @@
     "autolens_profiling_note": "main after #498 (classes from the Pulse designations); the stamp PR branches from it and re-measures nothing",
     "PyAutoPulse_designations": "bcaf6b86 (PyAutoLabs/PyAutoPulse#84, the 39 day-zero designations; mirrored in catalogue/pulse_designations.json)"
   },
-  "decision": "Human 2026-11-01 (AskUserQuestion, autolens_profiling#499): stamp the tag only; include the held datacube/delaunay hpc_a100 group; size variants and experimental rows stay unstamped. Pulse freezes the stamped records as snapshots/day_zero/lens.json."
+  "decision": "Human 2026-11-01 (AskUserQuestion, autolens_profiling#499): stamp the tag only; include the held datacube/delaunay hpc_a100 group; size variants and experimental rows stay unstamped. Pulse freezes the stamped records as snapshots/day_zero/lens.json.",
+  "gradient_rule": "A phase-6 gradient record (measurement gradient, gradient.json) never decides whether a cell is stamped, so one measured on another release cannot un-stamp the baseline. It carries its cell's day_zero stamp when the cell is stamped, the record is current, its release_pin is the tag and its finite-difference check passed (human ruling 2026-11-01, autolens_profiling#506)."
 }
