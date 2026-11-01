@@ -1153,7 +1153,12 @@ def test_the_catalogue_stamps_the_day_zero_baseline():
     stamped current optimal, the held datacube A100 group included (human 2026-11-01)."""
     doc = json.loads((TOOLING.parents[2] / "dashboard" / "catalogue.json").read_text())
     tag = cat.lc.DAY_ZERO["tag"]
-    stamped = [r for r in doc["records"] if r["day_zero"] is not None]
+    # The frozen baseline itself; phase-6 gradient records that carry the stamp follow it.
+    stamped = [
+        r
+        for r in doc["records"]
+        if r["day_zero"] is not None and r["measurement"] not in cat.lc.DAY_ZERO_EXCLUDED
+    ]
     assert {r["day_zero"] for r in stamped} == {tag}
     assert len(stamped) == 480
     assert len({cat.lc.day_zero_cell(r) for r in stamped}) == 116
@@ -1264,8 +1269,8 @@ def test_an_invalid_gradient_witness_is_refused(tree):
         lifecycle(tree)
 
 
-def test_a_gradient_record_leaves_the_day_zero_cell_stamped(tree):
-    """Phase 6 gradients are measured after the freeze: they never decide or carry the stamp."""
+def test_a_gradient_record_never_decides_the_day_zero_stamp(tree):
+    """A gradient measured on another release leaves the cell stamped and stays unstamped."""
     _day_zero_cell(tree)
     write(tree, f"{A100}/gradient.json", gradient_doc(version="2026.11.9.1"))
     records = {
@@ -1275,3 +1280,20 @@ def test_a_gradient_record_leaves_the_day_zero_cell_stamped(tree):
     }
     assert records["runtime"]["day_zero"] == cat.lc.DAY_ZERO["tag"]
     assert records["gradient"]["day_zero"] is None and records["gradient"]["status"] == "current"
+
+
+@pytest.mark.parametrize("wrong, stamped", [(False, True), (True, False)])
+def test_a_gradient_on_the_tag_with_an_fd_pass_carries_the_day_zero_stamp(tree, wrong, stamped):
+    """Human ruling 2026-11-01 (#506): gradients are day zero too, when they qualify."""
+    _day_zero_cell(tree)
+    write(tree, f"{A100}/gradient.json", gradient_doc(wrong=wrong))
+    records = {
+        r["measurement"]: r
+        for r in lifecycle(tree)["records"]
+        if r["evidence"]["path"].startswith(A100)
+    }
+    tag = cat.lc.DAY_ZERO["tag"]
+    assert records["runtime"]["day_zero"] == tag
+    assert records["gradient"]["day_zero"] == (tag if stamped else None)
+    if stamped:
+        assert records["gradient"]["validation"]["reason"].startswith(f"Day-zero gradient {tag}")

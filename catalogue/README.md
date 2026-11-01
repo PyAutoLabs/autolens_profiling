@@ -49,6 +49,8 @@ The rules live in [`catalogue_lifecycle.py`](../scripts/misc/tooling/catalogue_l
   parity match and a fit figure; a passing cell is stamped whole (480 records over 116 cells,
   the held datacube/delaunay A100 group included). `validate_lifecycle` refuses a stamp off the
   rule. PyAutoPulse freezes the stamped records as `snapshots/day_zero/lens.json`.
+  A phase-6 gradient record never decides a cell's stamp but carries it when measured on the tag
+  with a passing finite-difference check (#506).
 - **Parity**: a cell's `parity.json` witness becomes a `measurement: parity` record; see
   [results/README.md](../results/README.md#parity-witness).
 - **Coverage**: `coverage_matrix.py` renders [`dashboard/coverage.md`](../dashboard/coverage.md)

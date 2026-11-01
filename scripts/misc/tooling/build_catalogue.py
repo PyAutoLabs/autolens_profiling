@@ -917,7 +917,9 @@ V3_LIMITATIONS = [
     "a current record carries day_zero 2026.10.25.1 when its class is optimal or secondary, its "
     "regime is standard, it is on a reference host (hpc_ral_cpu, hpc_a100), its release_pin is "
     "the tag, and its cell has a current parity match and a fit figure; a passing cell is "
-    "stamped whole. Experimental rows, size variants and rows off the tag are not stamped. "
+    "stamped whole. A phase-6 gradient record never decides a cell but carries its stamp when "
+    "it is measured on the tag and its finite-difference check passed (human ruling "
+    "2026-11-01, #506). Experimental rows, size variants and rows off the tag are not stamped. "
     "PyAutoPulse freezes the stamped records as its day_zero snapshot.",
     "Classes come from the PyAutoPulse designation records (decisions.yaml kind: designation, "
     "mirrored in catalogue/pulse_designations.json; autolens_profiling#497): the designated "
@@ -1465,6 +1467,14 @@ def build_lifecycle(root, generated, revision, dates=None):
                 "measured on the released tag on a reference host, cell parity match and fit "
                 "figure; no scientific re-review beyond that rule.",
             }
+        elif lc.day_zero_follower(record, stamped):
+            record["day_zero"] = lc.DAY_ZERO["tag"]
+            record["validation"] = {
+                **record["validation"],
+                "reason": f"Day-zero gradient {lc.DAY_ZERO['tag']} (catalogue/day_zero.json): "
+                "measured on the released tag in a day-zero cell, FD check pass; no scientific "
+                "re-review beyond that rule.",
+            }
     planned_cells = []
     for dataset_type, variant, instrument in sorted(planned):
         for host_class in ("hpc_a100", "hpc_ral_cpu"):
@@ -1541,6 +1551,11 @@ def validate_lifecycle(root, doc):
                 or record["class"] not in lc.DAY_ZERO["classes"]
             ):
                 raise ValueError(f"{record['id']}: day_zero stamp off the section 3.6 rule")
+            if (
+                record["measurement"] in lc.DAY_ZERO_EXCLUDED
+                and (record.get("gradient") or {}).get("fd_status") != "pass"
+            ):
+                raise ValueError(f"{record['id']}: day_zero gradient stamp without an FD pass")
             cell = lc.day_zero_cell(record)
             if not any(
                 lc.day_zero_cell(r) == cell

@@ -410,9 +410,24 @@ def day_zero_cell(record: dict) -> tuple:
     )
 
 
-#: Measurements that are not part of the day-zero baseline: phase 6 gradient records are
-#: measured after the freeze, so they neither decide whether a cell is stamped nor carry the stamp.
+#: Measurements that follow a day-zero cell rather than decide it: phase 6 gradient records are
+#: measured after the freeze, so a gradient row on another release never un-stamps the baseline.
+#: A gradient record still carries the stamp when it qualifies itself (human ruling 2026-11-01,
+#: autolens_profiling#506): see :func:`day_zero_follower`.
 DAY_ZERO_EXCLUDED = ("gradient",)
+
+
+def day_zero_follower(record: dict, cells: set, day_zero: dict = DAY_ZERO) -> bool:
+    """Whether a gradient record carries its day-zero cell's stamp: the cell is stamped, the
+    record is current, measured on the day-zero tag, and its FD check passed (the gradient's
+    correctness witness, as the parity match is the forward call's)."""
+    return (
+        record["measurement"] in DAY_ZERO_EXCLUDED
+        and record["status"] == "current"
+        and day_zero_cell(record) in cells
+        and record["release_pin"] == day_zero["tag"]
+        and (record.get("gradient") or {}).get("fd_status") == "pass"
+    )
 
 
 def day_zero_cells(records: list[dict], day_zero: dict = DAY_ZERO) -> set[tuple]:
