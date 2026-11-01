@@ -39,6 +39,23 @@ def _wrong_bwd(x, g):
 wrong.defvjp(_wrong_fwd, _wrong_bwd)
 
 
+@jax.custom_vjp
+def stepped(x):
+    """A piecewise-constant likelihood (rounded to 0.01) with a straight-through gradient."""
+    return jnp.sum(jnp.round(x * 100.0) / 100.0)
+
+
+def _stepped_fwd(x):
+    return stepped(x), None
+
+
+def _stepped_bwd(_, g):
+    return (g * jnp.ones_like(PARAMS["x"]),)
+
+
+stepped.defvjp(_stepped_fwd, _stepped_bwd)
+
+
 def _doc(measured):
     return harness.witness(
         measured,
@@ -69,7 +86,13 @@ def test_a_correct_gradient_passes_the_fd_rule_and_writes_a_valid_witness(tmp_pa
     assert measured["grad_over_forward"] == pytest.approx(
         t["value_and_grad.single_call_s"] / t["forward.single_call_s"]
     )
+    sweep = measured["fd_sweep"]
+    assert sweep["status"] == "pass"
+    assert [d["class"] for d in sweep["directions"]] == ["agree"] * gw.FD_DIRECTIONS
+    assert [r["step"] for r in sweep["directions"][0]["steps"]] == list(gw.SWEEP_STEPS)
+    assert measured["hazard"]["flag"] is False
     doc = _doc(measured)
+    assert doc["version"] == 2 and gw.fd_verdict(doc) == "pass"
     assert gw.validate(doc) == []
     cell = harness.cell_dir(
         tmp_path,
@@ -92,8 +115,62 @@ def test_a_wrong_gradient_fails_the_fd_rule_and_is_a_hazard():
     # The backward pass returns 3x where the truth is 2x: |2 - 3| / 3 in every direction.
     assert measured["fd"]["max_rel_error"] == pytest.approx(1 / 3, rel=1e-6)
     assert measured["hazard"]["flag"] is True
-    assert "finite-difference check failed" in measured["hazard"]["reasons"]
+    # Version 2: the sweep decides the FD reason and names the mechanism.
+    assert measured["fd_sweep"]["status"] == "fail"
+    assert [d["class"] for d in measured["fd_sweep"]["directions"]] == ["mismatch"] * 3
+    assert any("sweep mismatch in 3/3" in r for r in measured["hazard"]["reasons"])
     assert gw.validate(_doc(measured)) == []
+
+
+def test_a_piecewise_constant_likelihood_is_classed_zero_by_the_sweep():
+    measured = harness.measure(
+        lambda p: stepped(p["x"]), {"x": PARAMS["x"]}, n_repeats=2, vmap_batch=None
+    )
+    assert [d["class"] for d in measured["fd_sweep"]["directions"]] == ["zero"] * 3
+    assert any("sweep zero in 3/3" in r for r in measured["hazard"]["reasons"])
+    assert gw.validate(_doc(measured)) == []
+
+
+@pytest.mark.parametrize(
+    "centrals, expected",
+    [
+        (
+            [
+                2.0 + 1e-2,
+                2.0 + 1e-3,
+                2.0 + 1e-5,
+                2.0 + 1e-6,
+                2.0,
+                2.0,
+                2.0,
+                2.0,
+                2.0,
+                2.0,
+                2.0,
+                2.1,
+                2.5,
+            ],
+            "agree",
+        ),
+        ([2.5, 2.4, 2.4, 2.2] + [2.2] * 9, "mismatch"),
+        ([1.0, 0.5, 0.2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "zero"),
+        ([1.0, -3.0, 7.0, 0.5, 2.0, -1.0, 9.0, 2.0, 4.0, -2.0, 2.0, 30.0, -50.0], "no_plateau"),
+    ],
+)
+def test_the_sweep_classes_a_direction_by_its_central_differences(centrals, expected):
+    assert len(centrals) == len(gw.SWEEP_STEPS)
+    assert gw.sweep_class(2.0, centrals) == expected
+
+
+def test_a_version_1_witness_stays_valid_and_its_h_h2_check_decides():
+    doc = _doc(harness.measure(gaussian, PARAMS, n_repeats=2, vmap_batch=None))
+    v1 = {k: v for k, v in doc.items() if k != "fd_sweep"}
+    v1["version"] = 1
+    v1["hazard"] = gw.hazard(v1["grad_over_forward"], v1["fd"]["status"])
+    assert gw.validate(v1) == [] and gw.fd_verdict(v1) == doc["fd"]["status"]
+    bad = json.loads(json.dumps(doc))
+    del bad["fd_sweep"]
+    assert any("fd_sweep" in e for e in gw.validate(bad))
 
 
 def test_an_expensive_gradient_is_a_hazard_by_the_ratio():
@@ -119,6 +196,12 @@ def test_the_validator_refuses_a_witness_off_the_rules():
     bad = json.loads(json.dumps(doc))
     bad["fd"]["directions"][0]["rel_error"] = 0.5
     assert any("rel_error disagrees" in e for e in gw.validate(bad))
+    bad = json.loads(json.dumps(doc))
+    bad["fd_sweep"]["directions"][0]["class"] = "mismatch"
+    assert any("classes disagree" in e for e in gw.validate(bad))
+    bad = json.loads(json.dumps(doc))
+    bad["fd_sweep"]["status"] = "fail"
+    assert any("fd_sweep.status" in e for e in gw.validate(bad))
 
 
 def test_richardson_cancels_the_leading_error():

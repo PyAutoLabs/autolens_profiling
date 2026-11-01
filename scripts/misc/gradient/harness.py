@@ -49,6 +49,16 @@ def _timed(fn, *args, n_repeats: int) -> tuple[float, float, object]:
     return first, statistics.median(times), out
 
 
+def unit_directions(theta, seed: int):
+    """The rule's seeded unit directions: a standard-normal draw scaled by ``max(|theta_i|, 1)``."""
+    import numpy as np
+
+    rng = np.random.default_rng(seed)
+    for _ in range(gw.FD_DIRECTIONS):
+        v = rng.standard_normal(theta.shape) * np.maximum(np.abs(theta), 1.0)
+        yield v / np.linalg.norm(v)
+
+
 def fd_directions(f_flat, theta, grad, *, seed: int = gw.FD_SEED) -> list[dict]:
     """The pre-registered FD rule along ``gw.FD_DIRECTIONS`` seeded random unit directions.
 
@@ -61,11 +71,8 @@ def fd_directions(f_flat, theta, grad, *, seed: int = gw.FD_SEED) -> list[dict]:
 
     theta = np.asarray(theta, dtype=np.float64)
     grad = np.asarray(grad, dtype=np.float64)
-    rng = np.random.default_rng(seed)
     out = []
-    for _ in range(gw.FD_DIRECTIONS):
-        v = rng.standard_normal(theta.shape) * np.maximum(np.abs(theta), 1.0)
-        v /= np.linalg.norm(v)
+    for v in unit_directions(theta, seed):
         diffs = []
         for h in (gw.FD_STEP, gw.FD_STEP / 2):
             plus = float(f_flat(theta + h * v))
@@ -81,6 +88,32 @@ def fd_directions(f_flat, theta, grad, *, seed: int = gw.FD_SEED) -> list[dict]:
                 "fd": fd,
                 "analytic": analytic,
                 "rel_error": gw.fd_relative_error(fd, analytic),
+            }
+        )
+    return out
+
+
+def fd_sweep_directions(f_flat, theta, grad, *, seed: int = gw.FD_SEED) -> list[dict]:
+    """The FD step sweep (witness version 2) along the rule's seeded directions: the central
+    difference at every step in ``gw.SWEEP_STEPS``, beside ``grad . v``, and the direction's
+    ``gw.sweep_class``."""
+    import numpy as np
+
+    theta = np.asarray(theta, dtype=np.float64)
+    grad = np.asarray(grad, dtype=np.float64)
+    out = []
+    for v in unit_directions(theta, seed):
+        steps = []
+        for h in gw.SWEEP_STEPS:
+            plus = float(f_flat(theta + h * v))
+            minus = float(f_flat(theta - h * v))
+            steps.append({"step": h, "central": (plus - minus) / (2 * h)})
+        analytic = float(grad @ v)
+        out.append(
+            {
+                "analytic": analytic,
+                "steps": steps,
+                "class": gw.sweep_class(analytic, [r["central"] for r in steps]),
             }
         )
     return out
@@ -129,11 +162,25 @@ def measure(
     l2 = float(np.linalg.norm(grad)) if finite else None
     if theta.dtype != jnp.float64:
         fd = {"status": "not_assessed", "reason": f"parameters are {theta.dtype}, not fp64"}
+        sweep = dict(fd)
     elif not finite:
         fd = {"status": "fail", "reason": "non-finite gradient", "directions": []}
+        sweep = dict(fd)
     else:
         directions = fd_directions(lambda x: forward(jnp.asarray(x)), theta, grad)
         fd = {"status": gw.fd_status(directions), "directions": directions}
+        sweep_dirs = fd_sweep_directions(lambda x: forward(jnp.asarray(x)), theta, grad)
+        classes = [d["class"] for d in sweep_dirs]
+        sweep = {"status": gw.sweep_status(classes), "directions": sweep_dirs}
+    if sweep["status"] != "not_assessed":
+        sweep["rule"] = {
+            "directions": gw.FD_DIRECTIONS,
+            "steps": list(gw.SWEEP_STEPS),
+            "run": gw.SWEEP_RUN,
+            "tolerance": gw.FD_TOLERANCE,
+            "tiny": gw.FD_TINY,
+            "seed": gw.FD_SEED,
+        }
     if fd["status"] != "not_assessed":
         fd["rule"] = {
             "directions": gw.FD_DIRECTIONS,
@@ -164,7 +211,14 @@ def measure(
         ),
         "gradient": {"finite": finite, "l2_norm": l2, "nonzero": bool(l2) if finite else False},
         "fd": fd,
-        "hazard": gw.hazard(ratio, fd["status"]),
+        "fd_sweep": sweep,
+        "hazard": gw.hazard(
+            ratio,
+            sweep["status"],
+            [d["class"] for d in sweep.get("directions", [])]
+            if sweep["status"] != "not_assessed"
+            else [],
+        ),
     }
 
 
@@ -252,7 +306,16 @@ def summary(doc: dict) -> str:
         f"  grad / forward   {doc['grad_over_forward']:10.2f}x",
         f"  FD check         {fd['status']}"
         + (f" (max rel error {fd['max_rel_error']:.2e})" if fd.get("max_rel_error") else ""),
-        f"  hazard           {'; '.join(doc['hazard']['reasons']) or 'none'}",
+    ]
+    sweep = doc.get("fd_sweep")
+    if sweep:
+        classes = [d["class"] for d in sweep.get("directions", [])]
+        lines.append(
+            f"  FD step sweep    {sweep['status']}"
+            + (f" ({', '.join(classes)})" if classes else "")
+        )
+    lines += [
+        f"  hazard          {'; '.join(doc['hazard']['reasons']) or 'none'}",
     ]
     return "\n".join(lines)
 

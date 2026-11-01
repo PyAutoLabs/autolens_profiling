@@ -833,6 +833,11 @@ iteration counts, budgets in iterations, geometry or formatting, not a measured 
   runtime wall, at least 1200 s); `scripts/misc/campaigns/test/test_gradient_p6.py::test_a_gradient_leg_keeps_its_runtime_legs_flags_and_cell`
   checks the guess floor and `test_the_submits_are_current_and_pass_check_submits` runs S1 over
   the submits. S1 is still the gate.
+- `scripts/misc/campaigns/gradient_p6.py::WALL_HEADROOM` (autolens_profiling#509): the phase-6
+  generator's copy of the same 1.25x `--time` multiplier, applied since 6c to the first run's
+  measured walls plus the FD step sweep's extra forward calls;
+  `scripts/misc/campaigns/test/test_gradient_p6.py::test_measured_rows_carry_the_sweep_allowance_and_oom_legs_stay_probe_first`
+  checks the allowance. S1 is still the gate.
 - `scripts/misc/tooling/build_readme.py::_format_time` and
   `scripts/misc/tooling/build_readme.py::_render_runtime_table`: unit formatting.
 

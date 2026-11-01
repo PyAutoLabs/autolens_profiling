@@ -14,8 +14,8 @@ point (the prior medians), and hands it to ``scripts/misc/gradient/harness.py``,
   extrapolation of steps h and h/2, relative error <= 1e-4);
 * flags a hazard when value_and_grad costs more than 4x the forward call or the FD check
   fails;
-* writes ``results/imaging/mge/<instrument>/jax_<cpu|gpu>_dense_fp64/<host_class>/gradient.json``
-  (``scripts/misc/tooling/gradient_witness.py``), which ``build_catalogue.py`` reads as a
+* writes ``results/imaging/mge/<instrument>/jax_<cpu|gpu>_dense_fp64/<host_class>/gradient.json``,
+  or the ``--output-path`` a campaign submit gives (``scripts/misc/tooling/gradient_witness.py``), which ``build_catalogue.py`` reads as a
   ``measurement: gradient`` record.
 
 Gradients are taken with respect to the flattened free parameters (``ravel_pytree`` of the
@@ -53,12 +53,7 @@ from cell_builders.imaging_mge import build_analysis, build_model, prepare_datas
 from gradient import harness  # noqa: E402
 from simulators.imaging import INSTRUMENTS  # noqa: E402
 
-from _profile_cli import (  # noqa: E402
-    auto_simulate_if_missing,
-    device_info_dict,
-    parse_profile_cli,
-    resources_dict,
-)
+from _profile_cli import auto_simulate_if_missing, parse_profile_cli  # noqa: E402
 
 if _os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
@@ -98,31 +93,15 @@ def log_likelihood(params_tree):
 
 
 # --- measure and write ------------------------------------------------------------------------
-print(f"\n--- Gradient cost and correctness [imaging/mge, {instrument}] ---")
-measured = harness.measure(log_likelihood, params, n_repeats=10, vmap_batch=8)
-device = device_info_dict()
+# ``harness.run_gradient`` as at the phase-6b construction sites, so a campaign submit's
+# ``--output-path`` is honoured (#509: the pilot used to write into ``results/`` regardless).
 operator = "sparse" if _cli.use_sparse_operator else "dense"
-setup_id = f"jax_{'gpu' if jax.default_backend() in ('gpu', 'cuda') else 'cpu'}_{operator}_fp64"
-host = harness.host_class(device)
-doc = harness.witness(
-    measured,
+harness.run_gradient(
+    log_likelihood,
+    params,
     dataset_type="imaging",
     variant="mge",
     instrument=instrument,
-    setup_id=setup_id,
-    host=host,
-    autolens_version=al.__version__,
-    device=device,
-    resources=resources_dict("jax"),
+    setup_id=f"jax_{'gpu' if jax.default_backend() in ('gpu', 'cuda') else 'cpu'}_{operator}_fp64",
+    path=getattr(_cli, "output_path", None),
 )
-print(harness.summary(doc))
-cell = harness.cell_dir(
-    _root,
-    dataset_type="imaging",
-    variant="mge",
-    instrument=instrument,
-    setup_id=setup_id,
-    host=host,
-)
-path = harness.write_witness(cell, doc)
-print(f"  gradient.json: {path}")
