@@ -120,6 +120,13 @@ jobs:
           # fails here. Pure stdlib.
           python scripts/misc/tooling/coverage_matrix.py --check
 
+      - name: export_runtime_estimates.py --check (phase 5E runtime estimates drift)
+        working-directory: autolens_profiling
+        run: |
+          # catalogue/runtime_estimates.yaml is exported from PyAutoPulse
+          # snapshots/day_zero/lens.json (#503); a stale export or a tampered snapshot fails.
+          python scripts/misc/tooling/export_runtime_estimates.py --pulse ../PyAutoPulse --check
+
       - name: build_day_zero_pages.py --check (day-zero rule pages drift)
         working-directory: autolens_profiling
         run: |

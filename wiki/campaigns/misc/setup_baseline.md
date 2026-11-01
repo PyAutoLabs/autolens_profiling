@@ -1,15 +1,15 @@
 # Setup baseline readiness
 
-**Status:** draft
+**Status:** complete
 **Question:** Which fresh, fully specified setup measurements can support a later baseline decision?
-**Pre-registered rule:** Draft only; resolve and freeze the [campaign specification](../../../baseline/campaign.json), then obtain separate compute authorization. Structural screening never accepts a baseline.
-**Verdict:** None; no measurements collected or scientifically accepted.
-**Headline:** 1,044 proposed slots; 58 CPU device-memory slots not applicable; no measured headline.
+**Pre-registered rule:** Draft only; resolve and freeze the [campaign specification](../../../baseline/superseded/campaign_draft_v1.json), then obtain separate compute authorization. Structural screening never accepts a baseline.
+**Verdict:** Closed 2026-11-01 without collection (ruling R10, autolens_profiling#503): superseded by the day-zero baseline, which answers the draft's six unknowns ([closure manifest](../../../baseline/campaign.json)).
+**Headline:** Day zero `2026.10.25.1`: 480 stamped records over 116 cells, 39 designations, 232/232 planned cells current, 0 optimal cells not measured (the draft proposed 1,044 slots and ran none).
 **Library PRs:** None; no library API changes.
-**Profiling PRs:** Implementation tracked in [issue #384](https://github.com/PyAutoLabs/autolens_profiling/issues/384).
-**Ledger:** No measurement ledger yet; [readiness contract](../../../baseline/README.md) only.
-**Mind contract:** `profiling-baseline-readiness`; parent `draft/feature/pyautopulse/profiling_setup_browser.md`, Phase 6.
-**Next:** Resolve setup/hardware/revision decisions and capability gaps through the [Pulse campaign task](https://github.com/PyAutoLabs/PyAutoPulse/issues/17); collection requires a later human authorization.
+**Profiling PRs:** [issue #384](https://github.com/PyAutoLabs/autolens_profiling/issues/384) (draft); closure #503.
+**Ledger:** [closure manifest](../../../baseline/campaign.json); [day-zero rule pages](../../day_zero.md); draft [readiness contract](../../../baseline/superseded/README_draft_v1.md).
+**Mind contract:** epic `likelihood-lifecycle` phase 3 (R10); `complete/2026/11/likelihood-lifecycle-p3-setup-baseline-close.md` (was `profiling-baseline-readiness`).
+**Next:** none (closed).
 
 ## Why this campaign
 
@@ -36,7 +36,7 @@ cannot fill missing cells. Reports screen submitted declarations and hashes;
 they do not prove physical execution or grant scientific acceptance.
 
 No results, baseline pins or time-series metadata change. Temporal charts stay
-deferred. The [readiness guide](../../../baseline/README.md) defines the proposed
+deferred. The [readiness guide](../../../baseline/superseded/README_draft_v1.md) defined the proposed
 matrix, protocols, receipt format and later decision boundaries.
 
 ## Journal
@@ -46,3 +46,15 @@ matrix, protocols, receipt format and later decision boundaries.
 Recorded a proposed matrix and explicit unknowns, plus dry-run enumeration and
 acceptance-report generation without execution or promotion. Pulse owns the
 pending campaign intent; this project owns the specification and evidence rules.
+
+### 2026-11-01 — Closed: superseded by day zero (R10)
+
+The likelihood lifecycle epic replaced this protocol rather than resuming it (ruling R10). The
+day-zero baseline (tag `2026.10.25.1`, autolens_profiling#500, frozen as PyAutoPulse
+`snapshots/day_zero/lens.json` in PyAutoPulse#85) answers the six unknowns: the released tag
+pins the revisions; reference hosts `hpc_ral_cpu` and `hpc_a100` only; each cell's script, dataset,
+parity witness and fit figure are its settings and correctness evidence; compile is not a class
+axis; mixed precision is experimental. Coverage: 232/232 planned cells current, no optimal cell
+not measured. `baseline/campaign.json` is now the closure manifest; the 1,044-slot draft and its
+readiness contract moved to `baseline/superseded/`; `baseline_readiness.py` was retired
+(autolens_profiling#503). Runtime estimates for phase 5E: `catalogue/runtime_estimates.yaml`.

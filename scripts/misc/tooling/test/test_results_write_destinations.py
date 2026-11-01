@@ -41,9 +41,7 @@ Principled exclusions (keep this list explicit and small; prefer fixing a script
 - Assignments to a ``LEGACY_*`` constant (:data:`LEGACY_NAME`): a reader's legacy folder,
   passed only to those helpers (e.g. ``size_sweep_table.LEGACY_ROWS_DIR``).
 - ``scripts/misc/<group>/test/``: fixtures build legacy layouts on purpose.
-- :data:`EXCLUDED_FILES`: the migration tooling that reasons about the legacy layout itself,
-  and ``baseline_readiness.py``, which validates the ``results/campaigns/`` evidence root that
-  ``baseline/README.md`` reserves for a future producer.
+- :data:`EXCLUDED_FILES`: the migration tooling that reasons about the legacy layout itself.
 """
 
 from __future__ import annotations
@@ -78,9 +76,6 @@ EXCLUDED_FILES = {
     "scripts/misc/tooling/check_results_layout.py",
     "scripts/misc/tooling/check_wiki.py",
     "scripts/misc/tooling/build_series_id_map.py",
-    # Reads the baseline campaign evidence root ``results/campaigns/<id>/`` that
-    # ``baseline/README.md`` fixes for a future producer; no script writes there yet.
-    "scripts/misc/tooling/baseline_readiness.py",
 }
 _PY_STRING = re.compile(r"(?:^/?|[\s\"'`(=]|\}/|\)/)results/([A-Za-z0-9_]+)(?:/([A-Za-z0-9_]+))?")
 #: (dataset_type, variant) pairs ``scripts/`` has; a results/<dataset_type>/ path must name one.
