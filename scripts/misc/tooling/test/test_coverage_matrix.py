@@ -229,6 +229,7 @@ def test_editing_the_mirror_changes_catalogue_lifecycle(tmp_path):
     (tmp_path / "catalogue").mkdir()
     (tmp_path / cm.DESIGNATIONS).write_text(json.dumps(doc))
     (tmp_path / cm.HOLDS).write_text(json.dumps(HOLDS))
+    (tmp_path / "catalogue" / "day_zero.json").write_text(lc.DAY_ZERO_PATH.read_text())
     copy = tmp_path / "scripts" / "misc" / "tooling" / "catalogue_lifecycle.py"
     copy.parent.mkdir(parents=True)
     copy.write_text((TOOLING / "catalogue_lifecycle.py").read_text())

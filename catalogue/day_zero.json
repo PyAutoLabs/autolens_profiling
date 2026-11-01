@@ -1,0 +1,21 @@
+{
+  "schema": "day-zero",
+  "version": 1,
+  "tag": "2026.10.25.1",
+  "rule": "Lifecycle report section 3.6: a current record carries day_zero <tag> when its class is optimal or secondary, its regime is standard, its host_class is a reference host (hpc_ral_cpu, hpc_a100), its release_pin is <tag>, and its cell (likelihood, instrument, setup_id, host_class, model_variant, regime) has a current parity record with status match and a fit figure. A passing cell is stamped whole (runtime, breakdown, compile, memory_host, parity).",
+  "hosts": [
+    "hpc_a100",
+    "hpc_ral_cpu"
+  ],
+  "regime": "standard",
+  "classes": [
+    "optimal",
+    "secondary"
+  ],
+  "frozen_against": {
+    "autolens_profiling": "8c40e7def731307dcedbab6df565b1839eb45cf6",
+    "autolens_profiling_note": "main after #498 (classes from the Pulse designations); the stamp PR branches from it and re-measures nothing",
+    "PyAutoPulse_designations": "bcaf6b86 (PyAutoLabs/PyAutoPulse#84, the 39 day-zero designations; mirrored in catalogue/pulse_designations.json)"
+  },
+  "decision": "Human 2026-11-01 (AskUserQuestion, autolens_profiling#499): stamp the tag only; include the held datacube/delaunay hpc_a100 group; size variants and experimental rows stay unstamped. Pulse freezes the stamped records as snapshots/day_zero/lens.json."
+}

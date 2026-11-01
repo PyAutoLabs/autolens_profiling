@@ -905,8 +905,13 @@ class UndatedRows(ValueError):
 
 V3_LIMITATIONS = [
     "Phase-0 labels (autolens_profiling#442): nothing was re-measured. A current record is the "
-    "canonical cell row on a reference host class for a planned baseline cell; it is not an "
-    "accepted baseline and carries no day_zero stamp.",
+    "canonical cell row on a reference host class for a planned baseline cell.",
+    "Day zero (catalogue/day_zero.json, autolens_profiling#499; lifecycle report section 3.6): "
+    "a current record carries day_zero 2026.10.25.1 when its class is optimal or secondary, its "
+    "regime is standard, it is on a reference host (hpc_ral_cpu, hpc_a100), its release_pin is "
+    "the tag, and its cell has a current parity match and a fit figure; a passing cell is "
+    "stamped whole. Experimental rows, size variants and rows off the tag are not stamped. "
+    "PyAutoPulse freezes the stamped records as its day_zero snapshot.",
     "Classes come from the PyAutoPulse designation records (decisions.yaml kind: designation, "
     "mirrored in catalogue/pulse_designations.json; autolens_profiling#497): the designated "
     "optimal setup on its likelihood x standard regime x hardware class (hpc_ral_cpu = "
@@ -1350,6 +1355,16 @@ def build_lifecycle(root, generated, revision, dates=None):
     if undated:
         raise UndatedRows(undated)
     records, excluded = label_lifecycle(candidates, planned, refs)
+    stamped = lc.day_zero_cells(records)
+    for record in records:
+        if record["status"] == "current" and lc.day_zero_cell(record) in stamped:
+            record["day_zero"] = lc.DAY_ZERO["tag"]
+            record["validation"] = {
+                **record["validation"],
+                "reason": f"Day-zero baseline {lc.DAY_ZERO['tag']} (catalogue/day_zero.json): "
+                "measured on the released tag on a reference host, cell parity match and fit "
+                "figure; no scientific re-review beyond that rule.",
+            }
     planned_cells = []
     for dataset_type, variant, instrument in sorted(planned):
         for host_class in ("hpc_a100", "hpc_ral_cpu"):
@@ -1415,6 +1430,26 @@ def validate_lifecycle(root, doc):
             current[lc_key(record)] = record["id"]
         elif record["status"] != "superseded" or record["superseded_by"] not in ids:
             raise ValueError(f"Superseded record without a target: {record['id']}")
+        if record["day_zero"] is not None:
+            tag = lc.DAY_ZERO["tag"]
+            if (
+                record["day_zero"] != tag
+                or record["status"] != "current"
+                or record["release_pin"] != tag
+                or record["host_class"] not in lc.DAY_ZERO["hosts"]
+                or record["regime"] != lc.DAY_ZERO["regime"]
+                or record["class"] not in lc.DAY_ZERO["classes"]
+            ):
+                raise ValueError(f"{record['id']}: day_zero stamp off the section 3.6 rule")
+            cell = lc.day_zero_cell(record)
+            if not any(
+                lc.day_zero_cell(r) == cell
+                and r["status"] == "current"
+                and r["measurement"] == "parity"
+                and r["parity"]["status"] == "match"
+                for r in doc["records"]
+            ):
+                raise ValueError(f"{record['id']}: day_zero stamp without a parity match")
         if record["class"] == "optimal" and not text(record["decision_id"]):
             raise ValueError("class optimal needs a designation decision_id")
         if record["decision_id"] is not None:
