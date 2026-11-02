@@ -21,23 +21,23 @@
 #
 # MEMORY. --mem=64gb, the phase-2 source campaign's declared value for these cells.
 #
-# WALL-BASIS: a measured row cites the first run's wall of its legs (the slowest; array
-# tasks) plus 78 forward calls of the FD step sweep at the cell's measured
-# forward time. An unmeasured row is a leg the first run did not finish: a declared guess,
+# WALL-BASIS: a measured row cites the version-2 run's wall of its legs (the slowest; array
+# tasks; the FD step sweep included). An unmeasured row is a leg that run did not finish: a
+# declared guess,
 # 4x the cell's measured phase-2 runtime wall (at least 1200 s),
 # with the 3x floor. The legs' walls land in output/p6_gradient_logs/walls.tsv.
 #   3 leg(s): delaunay jax_gpu_dense_fp64 gradient, mge jax_gpu_dense_fp64 gradient, rectangular jax_gpu_dense_fp64 gradient
 #   cell: imaging/gradient_breakdown/ao  device: a100  precision: fp64
-#   source: measured-wall  wall: 274  ref: 413718_0,413718_5,413718_9  measured-on: ao  headroom: 1.25  median: included
+#   source: measured-wall  wall: 276  ref: 413825_0,413825_5,413825_9  measured-on: ao  headroom: 1.25  median: included
 #   3 leg(s): delaunay jax_gpu_dense_fp64 gradient, mge jax_gpu_dense_fp64 gradient, rectangular jax_gpu_dense_fp64 gradient
 #   cell: imaging/gradient_breakdown/euclid  device: a100  precision: fp64
-#   source: measured-wall  wall: 172  ref: 413718_1,413718_10,413718_6  measured-on: euclid  headroom: 1.25  median: included
+#   source: measured-wall  wall: 182  ref: 413825_1,413825_10,413825_6  measured-on: euclid  headroom: 1.25  median: included
 #   4 leg(s): delaunay jax_gpu_dense_fp64 gradient, delaunay_nn jax_gpu_dense_fp64 gradient, mge jax_gpu_dense_fp64 gradient, rectangular jax_gpu_dense_fp64 gradient
 #   cell: imaging/gradient_breakdown/hst  device: a100  precision: fp64
-#   source: measured-wall  wall: 267  ref: 413718_11,413718_2,413718_4,413718_7  measured-on: hst  headroom: 1.25  median: included
+#   source: measured-wall  wall: 264  ref: 413825_11,413825_2,413825_4,413825_7  measured-on: hst  headroom: 1.25  median: included
 #   3 leg(s): delaunay jax_gpu_dense_fp64 gradient, mge jax_gpu_dense_fp64 gradient, rectangular jax_gpu_dense_fp64 gradient
 #   cell: imaging/gradient_breakdown/jwst  device: a100  precision: fp64
-#   source: measured-wall  wall: 238  ref: 413718_12,413718_3,413718_8  measured-on: jwst  headroom: 1.25  median: included
+#   source: measured-wall  wall: 239  ref: 413825_12,413825_3,413825_8  measured-on: jwst  headroom: 1.25  median: included
 
 #SBATCH -J p6_imaging_a100
 #SBATCH --partition=gpu

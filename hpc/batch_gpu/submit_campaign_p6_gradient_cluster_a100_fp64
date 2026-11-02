@@ -21,14 +21,14 @@
 #
 # MEMORY. --mem=32gb, the phase-2 source campaign's declared value for these cells.
 #
-# WALL-BASIS: a measured row cites the first run's wall of its legs (the slowest; array
-# tasks) plus 78 forward calls of the FD step sweep at the cell's measured
-# forward time. An unmeasured row is a leg the first run did not finish: a declared guess,
+# WALL-BASIS: a measured row cites the version-2 run's wall of its legs (the slowest; array
+# tasks; the FD step sweep included). An unmeasured row is a leg that run did not finish: a
+# declared guess,
 # 4x the cell's measured phase-2 runtime wall (at least 1200 s),
 # with the 3x floor. The legs' walls land in output/p6_gradient_logs/walls.tsv.
 #   2 leg(s): image_plane jax_gpu_na_fp64 gradient, source_plane jax_gpu_na_fp64 gradient
 #   cell: cluster/gradient_breakdown/simple  device: a100  precision: fp64
-#   source: measured-wall  wall: 744  ref: 413714_0,413714_1  measured-on: simple  headroom: 1.25  median: included
+#   source: measured-wall  wall: 755  ref: 413824_0,413824_1  measured-on: simple  headroom: 1.25  median: included
 
 #SBATCH -J p6_cluster_a100
 #SBATCH --partition=gpu

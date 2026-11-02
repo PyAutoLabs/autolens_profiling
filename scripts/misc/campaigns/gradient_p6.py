@@ -27,13 +27,12 @@ campaign, whose ``prepare_dataset`` they reuse) write ``gradient.json`` into the
 ``output/p6_gradient/`` scratch tree. Nothing here submits anything; a run needs the human's go,
 from a session that can reach RAL.
 
-Walls (6c, autolens_profiling#509): the first run (2026-11-01, witness version 1, RAL 413707-413722)
-measured 69 of the 74 legs; ``P6_WALLS`` holds them and their rows are ``measured-wall``. Version 2
-adds the FD step sweep (``gradient_witness.SWEEP_STEPS``, ``SWEEP_CALLS`` more forward calls per
-leg), so each measured wall gains ``SWEEP_CALLS`` x the cell's measured single-call forward time.
-The five imaging RAL CPU legs killed at 64 GB (``P6_OOM``) measured nothing: their rows stay
-``unmeasured`` (``probe-first: yes``, the 4x runtime-wall guess, 3x floor) and the imaging RAL CPU
-submit asks ``GRADIENT_MEM_GB``.
+Walls (6c, autolens_profiling#509): the version-2 run (2026-11-01, RAL 413791-413830, FD step
+sweep included) measured 72 of the 74 legs; ``P6_WALLS`` holds them and their rows are
+``measured-wall``. (The version-1 run, RAL 413707-413722, measured 69 without the sweep; it is
+superseded.) The two imaging RAL CPU legs killed at 192 GB (``P6_OOM``) measured nothing: their rows
+stay ``unmeasured`` (``probe-first: yes``, the 4x runtime-wall guess, 3x floor) and the imaging RAL
+CPU submit asks ``GRADIENT_MEM_GB``.
 """
 
 from __future__ import annotations
@@ -79,360 +78,210 @@ WALL_ROUND_S = 1800
 #: A measured row's headroom and slack (as the phase-2 batch-1 rows).
 WALL_HEADROOM = 1.25
 WALL_MIN_SLACK_S = 900
-#: Forward calls the version-2 FD step sweep adds per leg (two per step per direction).
-SWEEP_CALLS = 2 * len(gw.SWEEP_STEPS) * gw.FD_DIRECTIONS
 #: --mem (GB) over the source campaign's value: the five imaging RAL CPU legs below were killed at
 #: 64 GB inside the gradient measurement (their measured siblings peaked at 38-48 GB, sacct
 #: MaxRSS); RAL CPU nodes hold 921-976 GB.
 GRADIENT_MEM_GB = {("imaging_p2a", "ral_cpu"): 192}
 
-#: The first run's measured legs (2026-11-01, RAL 413707-413722, jax 0.11.2, 2026.10.25.1):
-#: cell -> (walls.tsv WALL s, sacct Elapsed s, array task, forward single-call s from the leg's
-#: gradient.json). Every leg wrote a valid witness; the eight imaging/mge legs exited 4 only
-#: because the 6a pilot wrote outside --output-path (fixed in #509; the witnesses were moved).
+#: The version-2 run's measured legs (2026-11-01, RAL 413791-413830, jax 0.11.2, 2026.10.25.1, FD
+#: step sweep included): cell -> (walls.tsv WALL s, sacct Elapsed s, array task). Every leg wrote a
+#: witness valid under gradient_witness.py --check.
 P6_WALLS = {
-    "cluster/image_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [gradient]": (
-        561,
-        566,
-        "413713_0",
-        0.0054,
-    ),
-    "cluster/image_plane/simple jax_gpu_na_fp64@hpc_a100 [gradient]": (
-        734,
-        743,
-        "413714_0",
-        0.002676,
-    ),
-    "cluster/source_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [gradient]": (
-        77,
-        85,
-        "413713_1",
-        0.0002732,
-    ),
-    "cluster/source_plane/simple jax_gpu_na_fp64@hpc_a100 [gradient]": (
-        156,
-        168,
-        "413714_1",
-        0.0005694,
-    ),
+    "cluster/image_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [gradient]": (511, 521, "413791_0"),
+    "cluster/image_plane/simple jax_gpu_na_fp64@hpc_a100 [gradient]": (743, 755, "413824_0"),
+    "cluster/source_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [gradient]": (76, 85, "413791_1"),
+    "cluster/source_plane/simple jax_gpu_na_fp64@hpc_a100 [gradient]": (155, 168, "413824_1"),
     "datacube/delaunay/alma jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [gradient]": (
-        685,
-        691,
-        "413721_0",
-        13.85,
+        1776,
+        1783,
+        "413811_0",
     ),
-    "datacube/delaunay/alma jax_gpu_sparse_fp64_wtilde@hpc_a100 [gradient]": (
-        282,
-        284,
-        "413722_0",
-        0.6244,
-    ),
+    "datacube/delaunay/alma jax_gpu_sparse_fp64_wtilde@hpc_a100 [gradient]": (333, 343, "413827_0"),
     "datacube/delaunay/alma_high jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [gradient]": (
-        1089,
-        1095,
-        "413721_1",
-        20.33,
+        2697,
+        2704,
+        "413811_1",
     ),
     "datacube/delaunay/alma_high jax_gpu_sparse_fp64_wtilde@hpc_a100 [gradient]": (
-        366,
-        368,
-        "413722_1",
-        0.7342,
+        421,
+        432,
+        "413827_1",
     ),
     "datacube/delaunay/sma jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [gradient]": (
-        1068,
-        1074,
-        "413721_2",
-        11.22,
+        2020,
+        2028,
+        "413811_2",
     ),
-    "datacube/delaunay/sma jax_gpu_sparse_fp64_wtilde@hpc_a100 [gradient]": (
-        218,
-        222,
-        "413722_2",
-        0.5723,
-    ),
-    "group/delaunay/euclid jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (
-        2109,
-        2113,
-        "413715_0",
-        5.418,
-    ),
-    "group/delaunay/euclid jax_gpu_dense_fp64@hpc_a100 [gradient]": (173, 183, "413716_0", 0.05486),
-    "group/mge/euclid jax_cpu_dense_fp64@hpc_ral_cpu [gradient]": (130, 134, "413715_1", 0.04043),
-    "group/mge/euclid jax_gpu_dense_fp64@hpc_a100 [gradient]": (200, 210, "413716_1", 0.007131),
-    "group/rectangular/euclid jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (
-        2106,
-        2110,
-        "413715_2",
-        4.859,
-    ),
-    "group/rectangular/euclid jax_gpu_dense_fp64@hpc_a100 [gradient]": (
-        158,
-        160,
-        "413716_2",
-        0.04361,
-    ),
-    "imaging/delaunay/ao jax_gpu_dense_fp64@hpc_a100 [gradient]": (236, 246, "413718_0", 0.3467),
-    "imaging/delaunay/euclid jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (
-        525,
-        529,
-        "413717_1",
-        1.283,
-    ),
-    "imaging/delaunay/euclid jax_gpu_dense_fp64@hpc_a100 [gradient]": (
-        164,
-        168,
-        "413718_1",
-        0.04116,
-    ),
-    "imaging/delaunay/hst jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (
-        1249,
-        1253,
-        "413717_2",
-        3.076,
-    ),
-    "imaging/delaunay/hst jax_gpu_dense_fp64@hpc_a100 [gradient]": (232, 235, "413718_2", 0.05553),
-    "imaging/delaunay/jwst jax_gpu_dense_fp64@hpc_a100 [gradient]": (228, 231, "413718_3", 0.08294),
-    "imaging/delaunay_nn/hst jax_gpu_dense_fp64@hpc_a100 [gradient]": (
-        258,
-        260,
-        "413718_4",
-        0.08581,
-    ),
-    "imaging/mge/ao jax_cpu_dense_fp64@hpc_ral_cpu [gradient]": (315, 322, "413717_5", 0.4458),
-    "imaging/mge/ao jax_gpu_dense_fp64@hpc_a100 [gradient]": (142, 144, "413718_5", 0.01533),
-    "imaging/mge/euclid jax_cpu_dense_fp64@hpc_ral_cpu [gradient]": (59, 65, "413717_6", 0.008209),
-    "imaging/mge/euclid jax_gpu_dense_fp64@hpc_a100 [gradient]": (104, 107, "413718_6", 0.004991),
-    "imaging/mge/hst jax_cpu_dense_fp64@hpc_ral_cpu [gradient]": (73, 79, "413717_7", 0.02054),
-    "imaging/mge/hst jax_gpu_dense_fp64@hpc_a100 [gradient]": (115, 118, "413718_7", 0.00567),
-    "imaging/mge/jwst jax_cpu_dense_fp64@hpc_ral_cpu [gradient]": (80, 87, "413717_8", 0.0478),
-    "imaging/mge/jwst jax_gpu_dense_fp64@hpc_a100 [gradient]": (107, 109, "413718_8", 0.006279),
-    "imaging/rectangular/ao jax_gpu_dense_fp64@hpc_a100 [gradient]": (200, 202, "413718_9", 0.2966),
+    "datacube/delaunay/sma jax_gpu_sparse_fp64_wtilde@hpc_a100 [gradient]": (263, 267, "413827_2"),
+    "group/delaunay/euclid jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (2447, 2454, "413812_0"),
+    "group/delaunay/euclid jax_gpu_dense_fp64@hpc_a100 [gradient]": (176, 178, "413828_0"),
+    "group/mge/euclid jax_cpu_dense_fp64@hpc_ral_cpu [gradient]": (136, 143, "413812_1"),
+    "group/mge/euclid jax_gpu_dense_fp64@hpc_a100 [gradient]": (194, 198, "413828_1"),
+    "group/rectangular/euclid jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (2389, 2397, "413812_2"),
+    "group/rectangular/euclid jax_gpu_dense_fp64@hpc_a100 [gradient]": (161, 164, "413828_2"),
+    "imaging/delaunay/ao jax_gpu_dense_fp64@hpc_a100 [gradient]": (265, 276, "413825_0"),
+    "imaging/delaunay/euclid jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (576, 584, "413792_1"),
+    "imaging/delaunay/euclid jax_gpu_dense_fp64@hpc_a100 [gradient]": (172, 182, "413825_1"),
+    "imaging/delaunay/hst jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (1352, 1361, "413792_2"),
+    "imaging/delaunay/hst jax_gpu_dense_fp64@hpc_a100 [gradient]": (231, 233, "413825_2"),
+    "imaging/delaunay/jwst jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (2940, 2948, "413792_3"),
+    "imaging/delaunay/jwst jax_gpu_dense_fp64@hpc_a100 [gradient]": (237, 239, "413825_3"),
+    "imaging/delaunay_nn/hst jax_gpu_dense_fp64@hpc_a100 [gradient]": (260, 264, "413825_4"),
+    "imaging/mge/ao jax_cpu_dense_fp64@hpc_ral_cpu [gradient]": (350, 358, "413792_5"),
+    "imaging/mge/ao jax_gpu_dense_fp64@hpc_a100 [gradient]": (146, 149, "413825_5"),
+    "imaging/mge/euclid jax_cpu_dense_fp64@hpc_ral_cpu [gradient]": (59, 67, "413792_6"),
+    "imaging/mge/euclid jax_gpu_dense_fp64@hpc_a100 [gradient]": (107, 111, "413825_6"),
+    "imaging/mge/hst jax_cpu_dense_fp64@hpc_ral_cpu [gradient]": (73, 82, "413792_7"),
+    "imaging/mge/hst jax_gpu_dense_fp64@hpc_a100 [gradient]": (113, 115, "413825_7"),
+    "imaging/mge/jwst jax_cpu_dense_fp64@hpc_ral_cpu [gradient]": (83, 86, "413792_8"),
+    "imaging/mge/jwst jax_gpu_dense_fp64@hpc_a100 [gradient]": (109, 112, "413825_8"),
+    "imaging/rectangular/ao jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (15664, 15667, "413792_9"),
+    "imaging/rectangular/ao jax_gpu_dense_fp64@hpc_a100 [gradient]": (223, 226, "413825_9"),
     "imaging/rectangular/euclid jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (
-        466,
-        468,
-        "413717_10",
-        0.9634,
+        497,
+        499,
+        "413792_10",
     ),
-    "imaging/rectangular/euclid jax_gpu_dense_fp64@hpc_a100 [gradient]": (
-        144,
-        147,
-        "413718_10",
-        0.0283,
+    "imaging/rectangular/euclid jax_gpu_dense_fp64@hpc_a100 [gradient]": (147, 150, "413825_10"),
+    "imaging/rectangular/hst jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (1290, 1293, "413792_11"),
+    "imaging/rectangular/hst jax_gpu_dense_fp64@hpc_a100 [gradient]": (217, 220, "413825_11"),
+    "imaging/rectangular/jwst jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (
+        2902,
+        2904,
+        "413792_12",
     ),
-    "imaging/rectangular/hst jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (
-        1225,
-        1228,
-        "413717_11",
-        2.725,
-    ),
-    "imaging/rectangular/hst jax_gpu_dense_fp64@hpc_a100 [gradient]": (
-        215,
-        217,
-        "413718_11",
-        0.03851,
-    ),
-    "imaging/rectangular/jwst jax_gpu_dense_fp64@hpc_a100 [gradient]": (
-        217,
-        219,
-        "413718_12",
-        0.06334,
-    ),
+    "imaging/rectangular/jwst jax_gpu_dense_fp64@hpc_a100 [gradient]": (220, 223, "413825_12"),
     "interferometer/delaunay/alma jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [gradient]": (
-        158,
-        164,
-        "413719_0",
-        2.283,
+        339,
+        347,
+        "413793_0",
     ),
     "interferometer/delaunay/alma jax_gpu_sparse_fp64_wtilde@hpc_a100 [gradient]": (
-        63,
-        66,
-        "413720_0",
-        0.03826,
+        71,
+        81,
+        "413826_0",
     ),
     "interferometer/delaunay/alma_high jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [gradient]": (
-        486,
-        492,
-        "413719_1",
-        8.134,
+        1106,
+        1115,
+        "413793_1",
     ),
     "interferometer/delaunay/alma_high jax_gpu_sparse_fp64_wtilde@hpc_a100 [gradient]": (
-        92,
-        95,
-        "413720_1",
-        0.07713,
+        102,
+        113,
+        "413826_1",
     ),
     "interferometer/delaunay/jvla jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [gradient]": (
-        2871,
-        2877,
-        "413719_2",
-        50.17,
+        6874,
+        6882,
+        "413793_2",
     ),
     "interferometer/delaunay/jvla jax_gpu_sparse_fp64_wtilde@hpc_a100 [gradient]": (
-        268,
-        271,
-        "413720_2",
-        0.4358,
+        299,
+        302,
+        "413826_2",
     ),
     "interferometer/delaunay/sma jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [gradient]": (
-        310,
-        316,
-        "413719_3",
-        0.7976,
+        377,
+        385,
+        "413793_3",
     ),
     "interferometer/delaunay/sma jax_gpu_sparse_fp64_wtilde@hpc_a100 [gradient]": (
-        44,
         46,
-        "413720_3",
-        0.02694,
+        48,
+        "413826_3",
     ),
-    "interferometer/mge/sma jax_cpu_dense_fp64_nufft@hpc_ral_cpu [gradient]": (
-        59,
-        65,
-        "413719_4",
-        0.0827,
-    ),
-    "interferometer/mge/sma jax_gpu_dense_fp64_nufft@hpc_a100 [gradient]": (
-        39,
-        42,
-        "413720_4",
-        0.003552,
-    ),
+    "interferometer/mge/sma jax_cpu_dense_fp64_nufft@hpc_ral_cpu [gradient]": (66, 74, "413793_4"),
+    "interferometer/mge/sma jax_gpu_dense_fp64_nufft@hpc_a100 [gradient]": (41, 44, "413826_4"),
     "interferometer/rectangular/alma jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [gradient]": (
-        136,
-        142,
-        "413719_5",
-        2.055,
+        303,
+        311,
+        "413793_5",
     ),
     "interferometer/rectangular/alma jax_gpu_sparse_fp64_wtilde@hpc_a100 [gradient]": (
-        40,
-        43,
-        "413720_5",
-        0.03412,
+        42,
+        44,
+        "413826_5",
     ),
     "interferometer/rectangular/alma_high jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [gradient]": (
-        461,
-        467,
-        "413719_6",
-        7.501,
+        1050,
+        1058,
+        "413793_6",
     ),
     "interferometer/rectangular/alma_high jax_gpu_sparse_fp64_wtilde@hpc_a100 [gradient]": (
-        72,
-        74,
-        "413720_6",
-        0.06822,
+        78,
+        80,
+        "413826_6",
     ),
     "interferometer/rectangular/jvla jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [gradient]": (
-        2923,
-        2929,
-        "413719_7",
-        49.52,
+        6844,
+        6852,
+        "413793_7",
     ),
     "interferometer/rectangular/jvla jax_gpu_sparse_fp64_wtilde@hpc_a100 [gradient]": (
-        244,
-        246,
-        "413720_7",
-        0.4346,
+        281,
+        283,
+        "413826_7",
     ),
     "interferometer/rectangular/sma jax_cpu_sparse_fp64_wtilde@hpc_ral_cpu [gradient]": (
-        242,
-        249,
-        "413719_8",
-        0.637,
+        307,
+        309,
+        "413793_8",
     ),
     "interferometer/rectangular/sma jax_gpu_sparse_fp64_wtilde@hpc_a100 [gradient]": (
-        32,
-        34,
-        "413720_8",
-        0.02251,
+        33,
+        37,
+        "413826_8",
     ),
     "multi_dataset/delaunay/hst jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (
-        2233,
-        2239,
-        "413721_3",
-        5.942,
+        2797,
+        2804,
+        "413811_3",
     ),
-    "multi_dataset/delaunay/hst jax_gpu_dense_fp64@hpc_a100 [gradient]": (
-        402,
-        406,
-        "413722_3",
-        0.1086,
-    ),
+    "multi_dataset/delaunay/hst jax_gpu_dense_fp64@hpc_a100 [gradient]": (406, 409, "413827_3"),
     "multi_galaxy/delaunay/hst jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (
-        1503,
-        1507,
-        "413715_3",
-        3.846,
+        1713,
+        1720,
+        "413812_3",
     ),
-    "multi_galaxy/delaunay/hst jax_gpu_dense_fp64@hpc_a100 [gradient]": (
-        176,
-        179,
-        "413716_3",
-        0.04898,
-    ),
-    "multi_galaxy/mge/hst jax_cpu_dense_fp64@hpc_ral_cpu [gradient]": (
-        116,
-        122,
-        "413715_4",
-        0.02637,
-    ),
-    "multi_galaxy/mge/hst jax_gpu_dense_fp64@hpc_a100 [gradient]": (196, 203, "413716_4", 0.006891),
+    "multi_galaxy/delaunay/hst jax_gpu_dense_fp64@hpc_a100 [gradient]": (180, 184, "413828_3"),
+    "multi_galaxy/mge/hst jax_cpu_dense_fp64@hpc_ral_cpu [gradient]": (121, 128, "413812_4"),
+    "multi_galaxy/mge/hst jax_gpu_dense_fp64@hpc_a100 [gradient]": (195, 198, "413828_4"),
     "multi_galaxy/rectangular/hst jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (
-        1466,
-        1469,
-        "413715_5",
-        3.444,
+        1655,
+        1662,
+        "413812_5",
     ),
-    "multi_galaxy/rectangular/hst jax_gpu_dense_fp64@hpc_a100 [gradient]": (
-        158,
-        161,
-        "413716_5",
-        0.03706,
-    ),
+    "multi_galaxy/rectangular/hst jax_gpu_dense_fp64@hpc_a100 [gradient]": (160, 163, "413828_5"),
     "point_source_image/image_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [gradient]": (
-        49,
-        52,
-        "413709_0",
-        0.001609,
+        46,
+        54,
+        "413813_0",
     ),
     "point_source_image/image_plane/simple jax_gpu_na_fp64@hpc_a100 [gradient]": (
-        75,
-        86,
-        "413711_0",
-        0.0008786,
+        71,
+        74,
+        "413829_0",
     ),
     "point_source_source/source_plane/simple jax_cpu_na_fp64@hpc_ral_cpu [gradient]": (
-        15,
-        17,
-        "413709_1",
-        0.0001714,
+        19,
+        26,
+        "413813_1",
     ),
     "point_source_source/source_plane/simple jax_gpu_na_fp64@hpc_a100 [gradient]": (
-        31,
-        41,
-        "413711_1",
-        0.0002468,
-    ),
-    "weak/isothermal/simple jax_cpu_dense_fp64@hpc_ral_cpu [gradient]": (
-        13,
-        24,
-        "413707_0",
-        0.0001476,
-    ),
-    "weak/isothermal/simple jax_gpu_dense_fp64@hpc_a100 [gradient]": (
-        16,
         26,
-        "413708_0",
-        0.0002463,
+        30,
+        "413829_1",
     ),
+    "weak/isothermal/simple jax_cpu_dense_fp64@hpc_ral_cpu [gradient]": (14, 21, "413814_0"),
+    "weak/isothermal/simple jax_gpu_dense_fp64@hpc_a100 [gradient]": (10, 14, "413830_0"),
 }
-#: Killed at --mem=64gb (OUT_OF_MEMORY) inside the gradient measurement: cell -> (Elapsed s, task).
+
+#: Killed at --mem=192gb (OUT_OF_MEMORY) inside the gradient measurement in the version-2 run (at
+#: 64 GB in version 1, 413717_0 / 413717_4): cell -> (Elapsed s, task).
 P6_OOM = {
-    "imaging/delaunay/ao jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (1054, "413717_0"),
-    "imaging/delaunay/jwst jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (1055, "413717_3"),
-    "imaging/delaunay_nn/hst jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (1475, "413717_4"),
-    "imaging/rectangular/ao jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (907, "413717_9"),
-    "imaging/rectangular/jwst jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (971, "413717_12"),
+    "imaging/delaunay/ao jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (9502, "413792_0"),
+    "imaging/delaunay_nn/hst jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (1261, "413792_4"),
 }
 
 
@@ -547,16 +396,16 @@ def planned_tasks() -> list[GradientTask]:
 
 
 def measured_wall(task: GradientTask) -> tuple[int, str]:
-    """The first run's wall for ``task`` plus the version-2 sweep's extra forward calls."""
-    wall, elapsed, ref, forward_s = P6_WALLS[task.cell]
-    return max(wall, elapsed) + math.ceil(SWEEP_CALLS * forward_s), ref
+    """The version-2 run's wall for ``task`` (the FD step sweep included)."""
+    wall, elapsed, ref = P6_WALLS[task.cell]
+    return max(wall, elapsed), ref
 
 
 WALL_BASIS = _common.WallBasis(
     measured_wall=measured_wall,
     basis_leg=lambda task: task,
     limitations={},
-    walls={cell: row[:3] for cell, row in P6_WALLS.items()},
+    walls=P6_WALLS,
     headroom=WALL_HEADROOM,
 )
 
@@ -631,9 +480,9 @@ def render(name: str, source: str, tasks: list[GradientTask], *, kind: str) -> s
         "#",
         f"# MEMORY. --mem={mem}gb, {source_mem}.",
         "#",
-        "# WALL-BASIS: a measured row cites the first run's wall of its legs (the slowest; array",
-        f"# tasks) plus {SWEEP_CALLS} forward calls of the FD step sweep at the cell's measured",
-        "# forward time. An unmeasured row is a leg the first run did not finish: a declared guess,",
+        "# WALL-BASIS: a measured row cites the version-2 run's wall of its legs (the slowest; array",
+        "# tasks; the FD step sweep included). An unmeasured row is a leg that run did not finish: a",
+        "# declared guess,",
         f"# {GUESS_FACTOR}x the cell's measured phase-2 runtime wall (at least {GUESS_FLOOR_S} s),",
         "# with the 3x floor. The legs' walls land in output/p6_gradient_logs/walls.tsv.",
     ]

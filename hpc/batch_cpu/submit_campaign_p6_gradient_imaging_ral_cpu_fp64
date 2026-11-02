@@ -21,31 +21,28 @@
 #
 # MEMORY. --mem=192gb, raised over the source campaign's value (legs killed at 64 GB in 6c).
 #
-# WALL-BASIS: a measured row cites the first run's wall of its legs (the slowest; array
-# tasks) plus 78 forward calls of the FD step sweep at the cell's measured
-# forward time. An unmeasured row is a leg the first run did not finish: a declared guess,
+# WALL-BASIS: a measured row cites the version-2 run's wall of its legs (the slowest; array
+# tasks; the FD step sweep included). An unmeasured row is a leg that run did not finish: a
+# declared guess,
 # 4x the cell's measured phase-2 runtime wall (at least 1200 s),
 # with the 3x floor. The legs' walls land in output/p6_gradient_logs/walls.tsv.
-#   1 leg(s): mge jax_cpu_dense_fp64 gradient
+#   2 leg(s): mge jax_cpu_dense_fp64 gradient, rectangular jax_cpu_sparse_fp64 gradient
 #   cell: imaging/gradient_breakdown/ao  device: ral_cpu  precision: fp64
-#   source: measured-wall  wall: 357  ref: 413717_5  measured-on: ao  headroom: 1.25  median: included
+#   source: measured-wall  wall: 15667  ref: 413792_5,413792_9  measured-on: ao  headroom: 1.25  median: included
 #   3 leg(s): delaunay jax_cpu_sparse_fp64 gradient, mge jax_cpu_dense_fp64 gradient, rectangular jax_cpu_sparse_fp64 gradient
 #   cell: imaging/gradient_breakdown/euclid  device: ral_cpu  precision: fp64
-#   source: measured-wall  wall: 630  ref: 413717_1,413717_10,413717_6  measured-on: euclid  headroom: 1.25  median: included
+#   source: measured-wall  wall: 584  ref: 413792_1,413792_10,413792_6  measured-on: euclid  headroom: 1.25  median: included
 #   3 leg(s): delaunay jax_cpu_sparse_fp64 gradient, mge jax_cpu_dense_fp64 gradient, rectangular jax_cpu_sparse_fp64 gradient
 #   cell: imaging/gradient_breakdown/hst  device: ral_cpu  precision: fp64
-#   source: measured-wall  wall: 1493  ref: 413717_11,413717_2,413717_7  measured-on: hst  headroom: 1.25  median: included
-#   1 leg(s): mge jax_cpu_dense_fp64 gradient
+#   source: measured-wall  wall: 1361  ref: 413792_11,413792_2,413792_7  measured-on: hst  headroom: 1.25  median: included
+#   3 leg(s): delaunay jax_cpu_sparse_fp64 gradient, mge jax_cpu_dense_fp64 gradient, rectangular jax_cpu_sparse_fp64 gradient
 #   cell: imaging/gradient_breakdown/jwst  device: ral_cpu  precision: fp64
-#   source: measured-wall  wall: 91  ref: 413717_8  measured-on: jwst  headroom: 1.25  median: included
-#   2 leg(s): delaunay jax_cpu_sparse_fp64 gradient, rectangular jax_cpu_sparse_fp64 gradient
+#   source: measured-wall  wall: 2948  ref: 413792_12,413792_3,413792_8  measured-on: jwst  headroom: 1.25  median: included
+#   1 leg(s): delaunay jax_cpu_sparse_fp64 gradient
 #   cell: imaging/gradient_breakdown/ao  device: ral_cpu  precision: fp64
 #   source: unmeasured  probe-first: yes  wall: 5712  headroom: 3.0
 #   1 leg(s): delaunay_nn jax_cpu_sparse_fp64 gradient
 #   cell: imaging/gradient_breakdown/hst  device: ral_cpu  precision: fp64
-#   source: unmeasured  probe-first: yes  wall: 5712  headroom: 3.0
-#   2 leg(s): delaunay jax_cpu_sparse_fp64 gradient, rectangular jax_cpu_sparse_fp64 gradient
-#   cell: imaging/gradient_breakdown/jwst  device: ral_cpu  precision: fp64
 #   source: unmeasured  probe-first: yes  wall: 5712  headroom: 3.0
 
 #SBATCH -J p6_imaging_ral_cpu
@@ -54,7 +51,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=192gb
-#SBATCH --time=5:00:00
+#SBATCH --time=6:00:00
 #SBATCH -o output/output.%A_%a.out
 #SBATCH -e error/error.%A_%a.err
 
