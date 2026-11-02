@@ -111,11 +111,11 @@ def test_the_submits_are_current_and_pass_check_submits():
 
 
 def test_every_leg_has_a_measured_wall_or_is_a_recorded_oom():
-    """6c (#509): the version-2 run measured 72 legs; the 2 killed at 192 GB stay unmeasured."""
+    """6c (#509): 72 v2 legs + the 512 GB rerun measured; the 1 killed at 512 GB stays unmeasured."""
     cells = {t.cell for t in p6.planned_tasks()}
     assert cells == set(p6.P6_WALLS) | set(p6.P6_OOM)
     assert not set(p6.P6_WALLS) & set(p6.P6_OOM)
-    assert len(p6.P6_WALLS) == 72 and len(p6.P6_OOM) == 2
+    assert len(p6.P6_WALLS) == 73 and len(p6.P6_OOM) == 1
 
 
 def test_measured_rows_cite_the_version_2_wall_and_oom_legs_stay_probe_first():
@@ -124,7 +124,7 @@ def test_measured_rows_cite_the_version_2_wall_and_oom_legs_stay_probe_first():
     wall, elapsed, ref = p6.P6_WALLS[cell]
     assert p6.measured_wall(tasks[cell]) == (max(wall, elapsed), ref)
     text = p6.submits()["hpc/batch_cpu/submit_campaign_p6_gradient_imaging_ral_cpu_fp64"]
-    assert "#SBATCH --mem=192gb" in text
+    assert "#SBATCH --mem=512gb" in text
     assert "source: measured-wall" in text and "source: unmeasured  probe-first: yes" in text
     weak = p6.submits()["hpc/batch_cpu/submit_campaign_p6_gradient_weak_ral_cpu_fp64"]
     assert "source: unmeasured" not in weak and "ref: 413814_0" in weak

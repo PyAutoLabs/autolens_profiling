@@ -19,7 +19,7 @@
 # into the mirrored cell named by --output-path under the gitignored output/p6_gradient/
 # scratch tree, never in place over committed rows. fp64 only.
 #
-# MEMORY. --mem=192gb, raised over the source campaign's value (legs killed at 64 GB in 6c).
+# MEMORY. --mem=512gb, raised over the source campaign's value (legs killed at 64 and 192 GB in 6c).
 #
 # WALL-BASIS: a measured row cites the version-2 run's wall of its legs (the slowest; array
 # tasks; the FD step sweep included). An unmeasured row is a leg that run did not finish: a
@@ -32,17 +32,14 @@
 #   3 leg(s): delaunay jax_cpu_sparse_fp64 gradient, mge jax_cpu_dense_fp64 gradient, rectangular jax_cpu_sparse_fp64 gradient
 #   cell: imaging/gradient_breakdown/euclid  device: ral_cpu  precision: fp64
 #   source: measured-wall  wall: 584  ref: 413792_1,413792_10,413792_6  measured-on: euclid  headroom: 1.25  median: included
-#   3 leg(s): delaunay jax_cpu_sparse_fp64 gradient, mge jax_cpu_dense_fp64 gradient, rectangular jax_cpu_sparse_fp64 gradient
+#   4 leg(s): delaunay jax_cpu_sparse_fp64 gradient, delaunay_nn jax_cpu_sparse_fp64 gradient, mge jax_cpu_dense_fp64 gradient, rectangular jax_cpu_sparse_fp64 gradient
 #   cell: imaging/gradient_breakdown/hst  device: ral_cpu  precision: fp64
-#   source: measured-wall  wall: 1361  ref: 413792_11,413792_2,413792_7  measured-on: hst  headroom: 1.25  median: included
+#   source: measured-wall  wall: 4729  ref: 413792_11,413792_2,413792_7,413890_4  measured-on: hst  headroom: 1.25  median: included
 #   3 leg(s): delaunay jax_cpu_sparse_fp64 gradient, mge jax_cpu_dense_fp64 gradient, rectangular jax_cpu_sparse_fp64 gradient
 #   cell: imaging/gradient_breakdown/jwst  device: ral_cpu  precision: fp64
 #   source: measured-wall  wall: 2948  ref: 413792_12,413792_3,413792_8  measured-on: jwst  headroom: 1.25  median: included
 #   1 leg(s): delaunay jax_cpu_sparse_fp64 gradient
 #   cell: imaging/gradient_breakdown/ao  device: ral_cpu  precision: fp64
-#   source: unmeasured  probe-first: yes  wall: 5712  headroom: 3.0
-#   1 leg(s): delaunay_nn jax_cpu_sparse_fp64 gradient
-#   cell: imaging/gradient_breakdown/hst  device: ral_cpu  precision: fp64
 #   source: unmeasured  probe-first: yes  wall: 5712  headroom: 3.0
 
 #SBATCH -J p6_imaging_ral_cpu
@@ -50,7 +47,7 @@
 #SBATCH --array=0-12%8
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=192gb
+#SBATCH --mem=512gb
 #SBATCH --time=6:00:00
 #SBATCH -o output/output.%A_%a.out
 #SBATCH -e error/error.%A_%a.err
