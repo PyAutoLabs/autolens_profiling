@@ -1,0 +1,359 @@
+{
+  "schema": "gradient-witness",
+  "version": 2,
+  "likelihood": {
+    "dataset_type": "cluster",
+    "variant": "image_plane"
+  },
+  "instrument": "simple",
+  "setup_id": "jax_gpu_na_fp64",
+  "host_class": "hpc_a100",
+  "autolens_version": "2026.8.17.1",
+  "measured_at": "2026-11-01T21:32:01Z",
+  "hostname": "euclid-ral-gpu-1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "hostname": "euclid-ral-gpu-1",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 124,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2dg/output/jax_cache/p6_413831_0",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-11-01T21:32:00Z",
+      "host": "euclid-ral-gpu-1",
+      "slurm": {
+        "job_id": "413831",
+        "array_job_id": "413824",
+        "array_task_id": "0"
+      },
+      "loadavg_at_import": [
+        0.89,
+        0.2,
+        0.06
+      ],
+      "loadavg_at_write": [
+        9.29,
+        7.37,
+        4.24
+      ],
+      "profiling_revision": "d7b70a3fc29ae568af91108423d90d76bbe016b4",
+      "library_revisions": {
+        "autolens_profiling": "d7b70a3fc29ae568af91108423d90d76bbe016b4",
+        "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+        "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+        "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+        "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+        "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.65.1",
+        "nufftax": "0.6.1",
+        "finufft": "2.5.1"
+      }
+    },
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 671 MiB, 81920 MiB"
+  },
+  "resources": {
+    "resources_schema": 1,
+    "engine": "jax",
+    "device": "gpu",
+    "cpus_per_eval": 8,
+    "cpus_per_eval_basis": "jax gpu: one device; cpus_per_eval = NPROC host threads",
+    "devices_per_eval": 1,
+    "peak_rss_gb": 6.509126,
+    "peak_rss_basis": "in_process_ru_maxrss",
+    "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
+  },
+  "configuration": {
+    "arm": "solved",
+    "fit_positions_cls": "FitPositionsImagePairRepeatSolved"
+  },
+  "point": "prior_medians",
+  "n_parameters": 62,
+  "precision": "float64",
+  "log_likelihood": 26.243720916726826,
+  "value_and_grad_log_likelihood": 26.243720916726826,
+  "repeats": 10,
+  "statistic": "median",
+  "vmap_batch": 8,
+  "vmap_note": null,
+  "timings": {
+    "forward.single_call_s": 0.002422090503387153,
+    "forward.first_call_s": 105.46893384994473,
+    "forward.vmap_per_call_s": 0.0004713087546406314,
+    "value_and_grad.single_call_s": 0.006450516986660659,
+    "value_and_grad.first_call_s": 218.06648638797924,
+    "value_and_grad.vmap_per_call_s": 0.0011042423793696798
+  },
+  "grad_over_forward": 2.663202294728453,
+  "grad_over_forward_vmap": 2.34292779095872,
+  "gradient": {
+    "finite": true,
+    "l2_norm": 116.46763442258019,
+    "nonzero": true
+  },
+  "fd": {
+    "status": "fail",
+    "directions": [
+      {
+        "step": 0.001,
+        "fd_h": 0.0,
+        "fd_half": 0.0,
+        "fd": 0.0,
+        "analytic": -7.601376160927689,
+        "rel_error": 1.0
+      },
+      {
+        "step": 0.001,
+        "fd_h": 0.0,
+        "fd_half": 0.0,
+        "fd": 0.0,
+        "analytic": -4.074141467400716,
+        "rel_error": 1.0
+      },
+      {
+        "step": 0.001,
+        "fd_h": 0.0,
+        "fd_half": 0.0,
+        "fd": 0.0,
+        "analytic": -0.8505646701883823,
+        "rel_error": 1.0
+      }
+    ],
+    "rule": {
+      "directions": 3,
+      "steps": [
+        0.001,
+        0.0005
+      ],
+      "richardson": true,
+      "tolerance": 0.0001,
+      "tiny": 1e-08,
+      "seed": 20261101
+    },
+    "max_rel_error": 1.0
+  },
+  "fd_sweep": {
+    "status": "fail",
+    "directions": [
+      {
+        "analytic": -7.601376160927689,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": 3.3569335937321387
+          },
+          {
+            "step": 0.03,
+            "central": -1.9497341579767755
+          },
+          {
+            "step": 0.01,
+            "central": -5.340576171887079
+          },
+          {
+            "step": 0.003,
+            "central": -0.847710503482683
+          },
+          {
+            "step": 0.001,
+            "central": 0.0
+          },
+          {
+            "step": 0.0003,
+            "central": 0.0
+          },
+          {
+            "step": 0.0001,
+            "central": 0.0
+          },
+          {
+            "step": 3e-05,
+            "central": 0.0
+          },
+          {
+            "step": 1e-05,
+            "central": 0.0
+          },
+          {
+            "step": 3e-06,
+            "central": 0.0
+          },
+          {
+            "step": 1e-06,
+            "central": 0.0
+          },
+          {
+            "step": 1e-07,
+            "central": 0.0
+          },
+          {
+            "step": 1e-08,
+            "central": 0.0
+          }
+        ],
+        "class": "zero"
+      },
+      {
+        "analytic": -4.074141467400716,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": -4.247029622398486
+          },
+          {
+            "step": 0.03,
+            "central": -3.2212999132004447
+          },
+          {
+            "step": 0.01,
+            "central": 0.25431315104107455
+          },
+          {
+            "step": 0.003,
+            "central": -4.238552517366638
+          },
+          {
+            "step": 0.001,
+            "central": 0.0
+          },
+          {
+            "step": 0.0003,
+            "central": 0.0
+          },
+          {
+            "step": 0.0001,
+            "central": 0.0
+          },
+          {
+            "step": 3e-05,
+            "central": 0.0
+          },
+          {
+            "step": 1e-05,
+            "central": 0.0
+          },
+          {
+            "step": 3e-06,
+            "central": 0.0
+          },
+          {
+            "step": 1e-06,
+            "central": 0.0
+          },
+          {
+            "step": 1e-07,
+            "central": 0.0
+          },
+          {
+            "step": 1e-08,
+            "central": 0.0
+          }
+        ],
+        "class": "zero"
+      },
+      {
+        "analytic": -0.8505646701883823,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": -0.3814697265591782
+          },
+          {
+            "step": 0.03,
+            "central": 3.4756130642254135
+          },
+          {
+            "step": 0.01,
+            "central": -5.08626302083055
+          },
+          {
+            "step": 0.003,
+            "central": -2.5431315104261407
+          },
+          {
+            "step": 0.001,
+            "central": 0.0
+          },
+          {
+            "step": 0.0003,
+            "central": 0.0
+          },
+          {
+            "step": 0.0001,
+            "central": 0.0
+          },
+          {
+            "step": 3e-05,
+            "central": 0.0
+          },
+          {
+            "step": 1e-05,
+            "central": 0.0
+          },
+          {
+            "step": 3e-06,
+            "central": 0.0
+          },
+          {
+            "step": 1e-06,
+            "central": 0.0
+          },
+          {
+            "step": 1e-07,
+            "central": 0.0
+          },
+          {
+            "step": 1e-08,
+            "central": 0.0
+          }
+        ],
+        "class": "zero"
+      }
+    ],
+    "rule": {
+      "directions": 3,
+      "steps": [
+        0.1,
+        0.03,
+        0.01,
+        0.003,
+        0.001,
+        0.0003,
+        0.0001,
+        3e-05,
+        1e-05,
+        3e-06,
+        1e-06,
+        1e-07,
+        1e-08
+      ],
+      "run": 3,
+      "tolerance": 0.0001,
+      "tiny": 1e-08,
+      "seed": 20261101
+    }
+  },
+  "hazard": {
+    "flag": true,
+    "reasons": [
+      "FD step sweep zero in 3/3 direction(s): the likelihood is flat at small steps (piecewise constant)"
+    ],
+    "threshold_grad_over_forward": 4.0
+  }
+}

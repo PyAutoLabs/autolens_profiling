@@ -34,6 +34,10 @@ DAY_ZERO = "catalogue/day_zero.json"
 CATALOGUE = "dashboard/catalogue.json"
 INDEX = "wiki/day_zero.md"
 SNAPSHOT_URL = "https://github.com/PyAutoLabs/PyAutoPulse/blob/main/snapshots/day_zero/lens.json"
+#: Phase-6 gradient stamps are frozen apart (``freeze --measurement gradient``, #512).
+GRADIENT_SNAPSHOT_URL = (
+    "https://github.com/PyAutoLabs/PyAutoPulse/blob/main/snapshots/day_zero_gradient/lens.json"
+)
 HARDWARE = {
     "cpu_many_core": ("hpc_ral_cpu", "Many-core CPU node, no GPU"),
     "gpu_a100": ("hpc_a100", "A100 GPU node"),
@@ -248,13 +252,21 @@ def render(root: Path = ROOT) -> dict[str, str]:
         mine = by_likelihood.get(likelihood, [])
         reference = [r for r in mine if r["host_class"] in HOST_HARDWARE]
         stamped = sum(1 for r in mine if r["day_zero"] is not None)
+        gradient = sum(
+            1 for r in mine if r["day_zero"] is not None and r.get("measurement") == "gradient"
+        )
+        frozen = f"frozen in the [PyAutoPulse day_zero snapshot]({SNAPSHOT_URL})"
+        if gradient:
+            frozen = (
+                f"{stamped - gradient} {frozen} and {gradient} gradient record(s) in the "
+                f"[day_zero_gradient snapshot]({GRADIENT_SNAPSHOT_URL})"
+            )
         lines = [
             STAMP,
             f"# Day zero: {likelihood}",
             "",
             f"Baseline tag `{tag}` ([day_zero.json]({_rel(page, DAY_ZERO)})); "
-            f"{stamped} stamped records, frozen in the "
-            f"[PyAutoPulse day_zero snapshot]({SNAPSHOT_URL}). "
+            f"{stamped} stamped records, {frozen}. "
             f"[All likelihoods]({_rel(page, INDEX)}).",
             "",
         ]
@@ -285,7 +297,8 @@ def render(root: Path = ROOT) -> dict[str, str]:
                 "rule in dataset-property terms per hardware class, links its PyAutoPulse "
                 "designation record(s), lists the stamped evidence and names the untested "
                 f"branches. The stamped records are frozen in the [PyAutoPulse day_zero "
-                f"snapshot]({SNAPSHOT_URL}).",
+                f"snapshot]({SNAPSHOT_URL}); the phase-6 gradient stamps in the "
+                f"[day_zero_gradient snapshot]({GRADIENT_SNAPSHOT_URL}).",
                 "",
                 "| likelihood | many-core CPU (`cpu_many_core`) | A100 (`gpu_a100`) | stamped records |",
                 "|---|---|---|---|",

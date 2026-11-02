@@ -1,0 +1,526 @@
+{
+  "schema": "gradient-witness",
+  "version": 2,
+  "likelihood": {
+    "dataset_type": "group",
+    "variant": "delaunay"
+  },
+  "instrument": "euclid",
+  "setup_id": "jax_gpu_dense_fp64",
+  "host_class": "hpc_a100",
+  "autolens_version": "2026.8.17.1",
+  "measured_at": "2026-11-01T21:25:14Z",
+  "hostname": "euclid-ral-gpu-1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "hostname": "euclid-ral-gpu-1",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 124,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2dg/output/jax_cache/p6_413844_0",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-11-01T21:25:14Z",
+      "host": "euclid-ral-gpu-1",
+      "slurm": {
+        "job_id": "413844",
+        "array_job_id": "413828",
+        "array_task_id": "0"
+      },
+      "loadavg_at_import": [
+        6.16,
+        2.76,
+        1.06
+      ],
+      "loadavg_at_write": [
+        8.21,
+        4.99,
+        2.2
+      ],
+      "profiling_revision": "d7b70a3fc29ae568af91108423d90d76bbe016b4",
+      "library_revisions": {
+        "autolens_profiling": "d7b70a3fc29ae568af91108423d90d76bbe016b4",
+        "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+        "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+        "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+        "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+        "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.65.1",
+        "nufftax": "0.6.1",
+        "finufft": "2.5.1"
+      }
+    },
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 56139 MiB, 81920 MiB"
+  },
+  "resources": {
+    "resources_schema": 1,
+    "engine": "jax",
+    "device": "gpu",
+    "cpus_per_eval": 8,
+    "cpus_per_eval_basis": "jax gpu: one device; cpus_per_eval = NPROC host threads",
+    "devices_per_eval": 1,
+    "peak_rss_gb": 4.477506,
+    "peak_rss_basis": "in_process_ru_maxrss",
+    "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
+  },
+  "configuration": {
+    "dataset_type": "group",
+    "pixel_scale_arcsec": 0.1,
+    "mask_radius_arcsec": 7.5,
+    "image_pixels_masked": 17692,
+    "over_sampled_pixels": 71920,
+    "source_pixels": 1280,
+    "source_pixels_requested": 1250,
+    "standard_size": true,
+    "galaxy_group_cell": {
+      "dataset_type": "group",
+      "instrument": "euclid",
+      "dataset": "autolens_workspace scripts/group/simulator.py (grid 250x250 at 0.1\", galaxies, exposure 300 s, sky 0.1) and modeling.py (7.5\" mask, radial-bin over-sampling on every galaxy); autolens_visualization true_models/group.py; PSF from instruments/imaging.py euclid (21x21, sigma 0.1\")",
+      "mask_radius_arcsec": 7.5,
+      "noise_scaled_region": null,
+      "lens_light": "workspace MGE: 20 linear Gaussians per main lens, 10 per extra galaxy (centre fixed)",
+      "main_lenses": 1,
+      "extra_galaxies": 2,
+      "ruling": "likelihood-lifecycle 2d draft (#473), decisions D1-D9 on the campaign page",
+      "production_preset": {
+        "preset": "hst_source_pix_2_standard_group",
+        "variant": "production",
+        "provenance": "subhalo_validation/scripts/imaging.py + scripts/pipelines/delaunay_adapt_split.py (source_pix[2], job 342311): mesh :41,:61-63, image mesh :37-38,:125-129, regularization :151, adapt S/N cap pipelines/spec.py:9,:31, over-sampling :213,:216-255, sparse operator :252-253,:807, no positions penalty :384-388, MGE :273-278, threads hpc/batch_cpu/submit_source_pix:5,51-55 \u2014 production data (human ruling 2026-10-24): subtracted S/N adapt image, uncapped over-sampling cut \u2014 likelihood-lifecycle 2d (#473, decision D5): the hst_source_pix_2_standard preset (hst, standard size) on the group dataset at euclid; light-profile over-sampling [4, 2, 2] at [0.3, 0.6] on every galaxy centre (workspace modeling.py); lens light = the workspace MGE (not the preset's); no positions penalty",
+        "mesh_kind": "delaunay",
+        "adapt_snr_cap": 3.0,
+        "over_sample_size_lp_rule": {
+          "sub_size_list": [
+            4,
+            2,
+            2
+          ],
+          "radial_list": [
+            0.3,
+            0.6
+          ],
+          "centre": [
+            0.0,
+            0.0
+          ]
+        },
+        "over_sample_size_pixelization_rule": {
+          "source_snr_cut": 3.0,
+          "sub_size_above": 4,
+          "sub_size_below": 2
+        },
+        "regularization": {
+          "scheme": "adapt_split",
+          "free": true,
+          "priors": {
+            "inner_coefficient": {
+              "type": "LogUniform",
+              "lower": 1e-06,
+              "upper": 1000000.0
+            },
+            "outer_coefficient": {
+              "type": "LogUniform",
+              "lower": 1e-06,
+              "upper": 1000000.0
+            },
+            "signal_scale": {
+              "type": "Uniform",
+              "lower": 0.0,
+              "upper": 1.0
+            }
+          }
+        },
+        "positions_penalty": null,
+        "lens_light": "mge_60_linear_2_basis",
+        "mge_total_gaussians": 30,
+        "mge_gaussian_per_basis": 2,
+        "sequence": {
+          "kind": "iid",
+          "unit_low": 0.4,
+          "unit_high": 0.6,
+          "seed": 235
+        },
+        "memo": "off",
+        "size_override": "production data (human ruling 2026-10-24): subtracted S/N adapt image, uncapped over-sampling cut; likelihood-lifecycle 2d (#473, decision D5): the hst_source_pix_2_standard preset (hst, standard size) on the group dataset at euclid; light-profile over-sampling [4, 2, 2] at [0.3, 0.6] on every galaxy centre (workspace modeling.py); lens light = the workspace MGE (not the preset's); no positions penalty",
+        "mesh": {
+          "kind": "delaunay",
+          "hilbert_pixels": 1250,
+          "edge_pixels": 30,
+          "zeroed_pixels": 30,
+          "vertices": 1280,
+          "hilbert_weight_power": 3.5,
+          "hilbert_weight_floor": 0.01
+        },
+        "production_data": {
+          "enabled": true,
+          "lens_light_source": "truth"
+        },
+        "production_source": {
+          "adapt_image": "PyAutoGalaxy@7472211 autogalaxy/analysis/adapt_images/adapt_images.py:138 galaxy_name_image_dict_via_result_from: the source's subtracted S/N map (data minus the other galaxies' model images, over the noise map), floored at adapt_minimum_percent (0.01, subhalo_validation config/general.yaml:28) x max",
+          "mesh_and_regularization_adapt_image": "subhalo_validation scripts/pipelines/spec.py:9-36 capped_galaxy_name_image_dict_from (S/N capped at 3.0); used by delaunay_adapt_split.py:123,:165 and rectangular_adapt.py:109",
+          "over_sampling": "subhalo_validation scripts/imaging.py:213-255 apply_adaptive_pixelization_over_sampling: sub-size 4 where the UNCAPPED source S/N > 3.0, else 2; light-profile bins :175-184",
+          "rectangular_mesh": "subhalo_validation scripts/pipelines/rectangular_adapt.py:74-96 (source_pix[2]): af.Model(al.mesh.RectangularBilinearAdaptImage, shape) with al.reg.Adapt; weight priors config/priors/mesh/rectangular.yaml:43-61",
+          "model_stand_in": "no previous-stage fit exists in a profiling cell: the dataset's truth tracer (tracer.json) stands in for the maximum-likelihood model whose lens light is subtracted"
+        }
+      },
+      "production_data_record": {
+        "over_sampling_preset": "hst_source_pix_2_standard_group",
+        "over_sample_size_lp_rule": {
+          "sub_size_list": [
+            4,
+            2,
+            2
+          ],
+          "radial_list": [
+            0.3,
+            0.6
+          ],
+          "centres": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              3.5,
+              2.5
+            ],
+            [
+              -4.4,
+              -5.0
+            ]
+          ]
+        },
+        "over_sample_size_pixelization_rule": {
+          "source_snr_cut": 3.0,
+          "sub_size_above": 4,
+          "sub_size_below": 2,
+          "threshold_map": "uncapped subtracted S/N (production)",
+          "pixels_above": 4515,
+          "pixels_below": 13177
+        },
+        "adapt_image": "subtracted S/N (truth tracer, every lens-plane galaxy removed), floored",
+        "lens_light_source": "truth",
+        "adapt_minimum_percent": 0.01,
+        "mesh_adapt_snr_cap": 3.0
+      }
+    },
+    "memo_provenance": {
+      "requested": "off",
+      "settings_nnls_warm_start_memo": false,
+      "env_AUTOARRAY_NNLS_WARM_START": "0",
+      "env_before": null,
+      "note": "Both gates are set for memo=off: the Settings flag and the AUTOARRAY_NNLS_WARM_START env kill-switch (autoarray/inversion/inversion/nnls_memo.py:63). settings_nnls_warm_start_memo is read back off the constructed Settings, so it records what took effect. The library default is true and both production projects leave it unset."
+    },
+    "instance": "iid draw 0 of the seeded sequence",
+    "instance_unit_vector": [
+      0.499784489007424,
+      0.41402443684610074,
+      0.41327450881714656,
+      0.4200167345680767,
+      0.5789514047288555,
+      0.4702516857248635,
+      0.567334291975647,
+      0.47173759315010344,
+      0.5239626288064884,
+      0.5543072472409505,
+      0.5399346262699198,
+      0.5099305691842051,
+      0.5974626164364525,
+      0.4381789532715836,
+      0.5552315204832754,
+      0.5058238713539893,
+      0.45735024341537395,
+      0.5870995335054062,
+      0.509803788830344,
+      0.41707028300618887
+    ]
+  },
+  "point": "iid draw 0 of the seeded sequence",
+  "n_parameters": 172,
+  "precision": "float64",
+  "log_likelihood": 31387.60400039025,
+  "value_and_grad_log_likelihood": 31387.60400039044,
+  "repeats": 10,
+  "statistic": "median",
+  "vmap_batch": 8,
+  "vmap_note": null,
+  "timings": {
+    "forward.single_call_s": 0.05472082050982863,
+    "forward.first_call_s": 14.848058431991376,
+    "forward.vmap_per_call_s": 0.047200516128214076,
+    "value_and_grad.single_call_s": 0.08585037448210642,
+    "value_and_grad.first_call_s": 53.57399198494386,
+    "value_and_grad.vmap_per_call_s": 0.0716509948761086
+  },
+  "grad_over_forward": 1.568879517562908,
+  "grad_over_forward_vmap": 1.518012953110046,
+  "gradient": {
+    "finite": true,
+    "l2_norm": 324065.1947735701,
+    "nonzero": true
+  },
+  "fd": {
+    "status": "fail",
+    "directions": [
+      {
+        "step": 0.001,
+        "fd_h": -86.74463863644633,
+        "fd_half": 68.12928478393587,
+        "fd": 119.75392592406327,
+        "analytic": -162.7437471659239,
+        "rel_error": 1.7358434840631343
+      },
+      {
+        "step": 0.001,
+        "fd_h": -483.37453413478215,
+        "fd_half": -592.0152148573834,
+        "fd": -628.2287750982505,
+        "analytic": -369.3162966948035,
+        "rel_error": 0.7010589045774163
+      },
+      {
+        "step": 0.001,
+        "fd_h": -974.2048663574678,
+        "fd_half": -1130.0205292172905,
+        "fd": -1181.959083503898,
+        "analytic": -896.84479292412,
+        "rel_error": 0.3179081741113491
+      }
+    ],
+    "rule": {
+      "directions": 3,
+      "steps": [
+        0.001,
+        0.0005
+      ],
+      "richardson": true,
+      "tolerance": 0.0001,
+      "tiny": 1e-08,
+      "seed": 20261101
+    },
+    "max_rel_error": 1.7358434840631343
+  },
+  "fd_sweep": {
+    "status": "fail",
+    "directions": [
+      {
+        "analytic": -162.7437471659239,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": -978.4546348667027
+          },
+          {
+            "step": 0.03,
+            "central": -206.85983248616444
+          },
+          {
+            "step": 0.01,
+            "central": 1778.8697542351656
+          },
+          {
+            "step": 0.003,
+            "central": -182.21605439854707
+          },
+          {
+            "step": 0.001,
+            "central": -86.7446386073425
+          },
+          {
+            "step": 0.0003,
+            "central": 154.987976608633
+          },
+          {
+            "step": 0.0001,
+            "central": 1268.038611542579
+          },
+          {
+            "step": 3e-05,
+            "central": -246.63021686137654
+          },
+          {
+            "step": 1e-05,
+            "central": -526.4093855657848
+          },
+          {
+            "step": 3e-06,
+            "central": -410.49664711560274
+          },
+          {
+            "step": 1e-06,
+            "central": -162.74435620289296
+          },
+          {
+            "step": 1e-07,
+            "central": -162.74059817078523
+          },
+          {
+            "step": 1e-08,
+            "central": -162.7737219678238
+          }
+        ],
+        "class": "no_plateau"
+      },
+      {
+        "analytic": -369.3162966948035,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": -399.9966700808727
+          },
+          {
+            "step": 0.03,
+            "central": -370.1598920428296
+          },
+          {
+            "step": 0.01,
+            "central": -367.7379401642611
+          },
+          {
+            "step": 0.003,
+            "central": -421.06584867481916
+          },
+          {
+            "step": 0.001,
+            "central": -483.3745343112241
+          },
+          {
+            "step": 0.0003,
+            "central": -375.0193273238741
+          },
+          {
+            "step": 0.0001,
+            "central": -370.9332177641045
+          },
+          {
+            "step": 3e-05,
+            "central": -365.19067264938104
+          },
+          {
+            "step": 1e-05,
+            "central": -369.3163049319991
+          },
+          {
+            "step": 3e-06,
+            "central": -369.31620343239047
+          },
+          {
+            "step": 1e-06,
+            "central": -369.3167745950632
+          },
+          {
+            "step": 1e-07,
+            "central": -369.31398426531814
+          },
+          {
+            "step": 1e-08,
+            "central": -369.3479811772704
+          }
+        ],
+        "class": "agree"
+      },
+      {
+        "analytic": -896.84479292412,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": -526.1843178771232
+          },
+          {
+            "step": 0.03,
+            "central": -833.3074832507313
+          },
+          {
+            "step": 0.01,
+            "central": -853.9184603661852
+          },
+          {
+            "step": 0.003,
+            "central": -925.8737557872033
+          },
+          {
+            "step": 0.001,
+            "central": -974.204866510263
+          },
+          {
+            "step": 0.0003,
+            "central": -897.4662652508415
+          },
+          {
+            "step": 0.0001,
+            "central": -871.901046102721
+          },
+          {
+            "step": 3e-05,
+            "central": -892.7164615670335
+          },
+          {
+            "step": 1e-05,
+            "central": -884.482736364589
+          },
+          {
+            "step": 3e-06,
+            "central": -896.8449619715102
+          },
+          {
+            "step": 1e-06,
+            "central": -896.844456292456
+          },
+          {
+            "step": 1e-07,
+            "central": -896.8428664957173
+          },
+          {
+            "step": 1e-08,
+            "central": -896.8710972112603
+          }
+        ],
+        "class": "agree"
+      }
+    ],
+    "rule": {
+      "directions": 3,
+      "steps": [
+        0.1,
+        0.03,
+        0.01,
+        0.003,
+        0.001,
+        0.0003,
+        0.0001,
+        3e-05,
+        1e-05,
+        3e-06,
+        1e-06,
+        1e-07,
+        1e-08
+      ],
+      "run": 3,
+      "tolerance": 0.0001,
+      "tiny": 1e-08,
+      "seed": 20261101
+    }
+  },
+  "hazard": {
+    "flag": true,
+    "reasons": [
+      "FD step sweep no_plateau in 1/3 direction(s): no step agrees (likelihood not smooth or too noisy)"
+    ],
+    "threshold_grad_over_forward": 4.0
+  }
+}

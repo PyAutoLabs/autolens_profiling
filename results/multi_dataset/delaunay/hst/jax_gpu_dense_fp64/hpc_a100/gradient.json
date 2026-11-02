@@ -1,0 +1,510 @@
+{
+  "schema": "gradient-witness",
+  "version": 2,
+  "likelihood": {
+    "dataset_type": "multi_dataset",
+    "variant": "delaunay"
+  },
+  "instrument": "hst",
+  "setup_id": "jax_gpu_dense_fp64",
+  "host_class": "hpc_a100",
+  "autolens_version": "2026.8.17.1",
+  "measured_at": "2026-11-01T21:33:28Z",
+  "hostname": "euclid-ral-gpu-2",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "hostname": "euclid-ral-gpu-2",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 124,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2dg/output/jax_cache/p6_413827_3",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-11-01T21:33:28Z",
+      "host": "euclid-ral-gpu-2",
+      "slurm": {
+        "job_id": "413827",
+        "array_job_id": "413827",
+        "array_task_id": "3"
+      },
+      "loadavg_at_import": [
+        4.62,
+        4.12,
+        2.07
+      ],
+      "loadavg_at_write": [
+        3.18,
+        4.73,
+        3.24
+      ],
+      "profiling_revision": "d7b70a3fc29ae568af91108423d90d76bbe016b4",
+      "library_revisions": {
+        "autolens_profiling": "d7b70a3fc29ae568af91108423d90d76bbe016b4",
+        "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+        "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+        "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+        "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+        "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.65.1",
+        "nufftax": "0.6.1",
+        "finufft": "2.5.1"
+      }
+    },
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 56731 MiB, 81920 MiB"
+  },
+  "resources": {
+    "resources_schema": 1,
+    "engine": "jax",
+    "device": "gpu",
+    "cpus_per_eval": 8,
+    "cpus_per_eval_basis": "jax gpu: one device; cpus_per_eval = NPROC host threads",
+    "devices_per_eval": 1,
+    "peak_rss_gb": 6.275842,
+    "peak_rss_basis": "in_process_ru_maxrss",
+    "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
+  },
+  "configuration": {
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.5,
+    "image_pixels_masked": 15361,
+    "over_sampled_pixels": 61600,
+    "source_pixels": 1280,
+    "source_pixels_requested": 1250,
+    "standard_size": true,
+    "production_preset": {
+      "preset": "hst_source_pix_2_standard",
+      "variant": "production",
+      "provenance": "subhalo_validation/scripts/imaging.py + scripts/pipelines/delaunay_adapt_split.py (source_pix[2], job 342311): mesh :41,:61-63, image mesh :37-38,:125-129, regularization :151, adapt S/N cap pipelines/spec.py:9,:31, over-sampling :213,:216-255, sparse operator :252-253,:807, no positions penalty :384-388, MGE :273-278, threads hpc/batch_cpu/submit_source_pix:5,51-55 \u2014 production data (human ruling 2026-10-24): subtracted S/N adapt image, uncapped over-sampling cut",
+      "mesh_kind": "delaunay",
+      "adapt_snr_cap": 3.0,
+      "over_sample_size_lp_rule": {
+        "sub_size_list": [
+          4,
+          2,
+          2
+        ],
+        "radial_list": [
+          0.1,
+          0.3
+        ],
+        "centre": [
+          0.0,
+          0.0
+        ]
+      },
+      "over_sample_size_pixelization_rule": {
+        "source_snr_cut": 3.0,
+        "sub_size_above": 4,
+        "sub_size_below": 2
+      },
+      "regularization": {
+        "scheme": "adapt_split",
+        "free": true,
+        "priors": {
+          "inner_coefficient": {
+            "type": "LogUniform",
+            "lower": 1e-06,
+            "upper": 1000000.0
+          },
+          "outer_coefficient": {
+            "type": "LogUniform",
+            "lower": 1e-06,
+            "upper": 1000000.0
+          },
+          "signal_scale": {
+            "type": "Uniform",
+            "lower": 0.0,
+            "upper": 1.0
+          }
+        }
+      },
+      "positions_penalty": null,
+      "lens_light": "mge_60_linear_2_basis",
+      "mge_total_gaussians": 30,
+      "mge_gaussian_per_basis": 2,
+      "sequence": {
+        "kind": "iid",
+        "unit_low": 0.4,
+        "unit_high": 0.6,
+        "seed": 235
+      },
+      "memo": "off",
+      "size_override": "production data (human ruling 2026-10-24): subtracted S/N adapt image, uncapped over-sampling cut",
+      "mesh": {
+        "kind": "delaunay",
+        "hilbert_pixels": 1250,
+        "edge_pixels": 30,
+        "zeroed_pixels": 30,
+        "vertices": 1280,
+        "hilbert_weight_power": 3.5,
+        "hilbert_weight_floor": 0.01
+      },
+      "production_data": {
+        "enabled": true,
+        "lens_light_source": "truth"
+      },
+      "production_source": {
+        "adapt_image": "PyAutoGalaxy@7472211 autogalaxy/analysis/adapt_images/adapt_images.py:138 galaxy_name_image_dict_via_result_from: the source's subtracted S/N map (data minus the other galaxies' model images, over the noise map), floored at adapt_minimum_percent (0.01, subhalo_validation config/general.yaml:28) x max",
+        "mesh_and_regularization_adapt_image": "subhalo_validation scripts/pipelines/spec.py:9-36 capped_galaxy_name_image_dict_from (S/N capped at 3.0); used by delaunay_adapt_split.py:123,:165 and rectangular_adapt.py:109",
+        "over_sampling": "subhalo_validation scripts/imaging.py:213-255 apply_adaptive_pixelization_over_sampling: sub-size 4 where the UNCAPPED source S/N > 3.0, else 2; light-profile bins :175-184",
+        "rectangular_mesh": "subhalo_validation scripts/pipelines/rectangular_adapt.py:74-96 (source_pix[2]): af.Model(al.mesh.RectangularBilinearAdaptImage, shape) with al.reg.Adapt; weight priors config/priors/mesh/rectangular.yaml:43-61",
+        "model_stand_in": "no previous-stage fit exists in a profiling cell: the dataset's truth tracer (tracer.json) stands in for the maximum-likelihood model whose lens light is subtracted"
+      },
+      "instance": "iid draw 0 of the preset sequence (seeded)"
+    },
+    "production_data_record": {
+      "over_sampling_preset": "hst_source_pix_2_standard",
+      "over_sample_size_lp_rule": {
+        "sub_size_list": [
+          4,
+          2,
+          2
+        ],
+        "radial_list": [
+          0.1,
+          0.3
+        ],
+        "centre": [
+          0.0,
+          0.0
+        ]
+      },
+      "over_sample_size_pixelization_rule": {
+        "source_snr_cut": 3.0,
+        "sub_size_above": 4,
+        "sub_size_below": 2,
+        "threshold_map": "uncapped subtracted S/N (production)",
+        "pixels_above": 2068,
+        "pixels_below": 13293
+      },
+      "adapt_image": "subtracted S/N (truth tracer), floored",
+      "lens_light_source": "truth",
+      "adapt_minimum_percent": 0.01,
+      "mesh_adapt_snr_cap": 3.0
+    },
+    "regularization": {
+      "scheme": "adapt_split",
+      "free": true,
+      "priors": {
+        "inner_coefficient": {
+          "type": "LogUniform",
+          "lower": 1e-06,
+          "upper": 1000000.0
+        },
+        "outer_coefficient": {
+          "type": "LogUniform",
+          "lower": 1e-06,
+          "upper": 1000000.0
+        },
+        "signal_scale": {
+          "type": "Uniform",
+          "lower": 0.0,
+          "upper": 1.0
+        }
+      }
+    },
+    "memo_provenance": {
+      "requested": "off",
+      "settings_nnls_warm_start_memo": false,
+      "env_AUTOARRAY_NNLS_WARM_START": "0",
+      "env_before": null,
+      "note": "Both gates are set for memo=off: the Settings flag and the AUTOARRAY_NNLS_WARM_START env kill-switch (autoarray/inversion/inversion/nnls_memo.py:63). settings_nnls_warm_start_memo is read back off the constructed Settings, so it records what took effect. The library default is true and both production projects leave it unset."
+    },
+    "n_datasets": 2,
+    "dataset_scales": [
+      1.0,
+      0.5
+    ],
+    "shared_preloads": false,
+    "multi_dataset_definition": "decision D6: 2a's hst imaging standard cell in every dataset (shared mask, PSF, over-sampling, adapt image, mesh and lens model), dataset e's data and noise map times s_e (same S/N); FactorGraphModel of AnalysisImaging (shared_preloads=False)"
+  },
+  "point": "prior_medians",
+  "n_parameters": 250,
+  "precision": "float64",
+  "log_likelihood": 67622.97697173452,
+  "value_and_grad_log_likelihood": 67622.97697169207,
+  "repeats": 10,
+  "statistic": "median",
+  "vmap_batch": 8,
+  "vmap_note": null,
+  "timings": {
+    "forward.single_call_s": 0.10811909550102428,
+    "forward.first_call_s": 33.373784148017876,
+    "forward.vmap_per_call_s": 0.09333142919058446,
+    "value_and_grad.single_call_s": 0.1656333719729446,
+    "value_and_grad.first_call_s": 126.7935699140653,
+    "value_and_grad.vmap_per_call_s": 0.13271924669243162
+  },
+  "grad_over_forward": 1.5319529931821845,
+  "grad_over_forward_vmap": 1.4220209402495758,
+  "gradient": {
+    "finite": true,
+    "l2_norm": 4030817.575731514,
+    "nonzero": true
+  },
+  "fd": {
+    "status": "fail",
+    "directions": [
+      {
+        "step": 0.001,
+        "fd_h": -95381.65576104075,
+        "fd_half": -97070.71832343354,
+        "fd": -97633.73917756446,
+        "analytic": -95952.3321843883,
+        "rel_error": 0.01752335722226178
+      },
+      {
+        "step": 0.001,
+        "fd_h": -168395.87717530958,
+        "fd_half": -266155.9490325453,
+        "fd": -298742.6396516239,
+        "analytic": -268932.3085971027,
+        "rel_error": 0.11084696818328788
+      },
+      {
+        "step": 0.001,
+        "fd_h": -25270.42576126405,
+        "fd_half": -15376.442171895178,
+        "fd": -12078.447642105553,
+        "analytic": -15271.774059456304,
+        "rel_error": 0.2090998992598007
+      }
+    ],
+    "rule": {
+      "directions": 3,
+      "steps": [
+        0.001,
+        0.0005
+      ],
+      "richardson": true,
+      "tolerance": 0.0001,
+      "tiny": 1e-08,
+      "seed": 20261101
+    },
+    "max_rel_error": 0.2090998992598007
+  },
+  "fd_sweep": {
+    "status": "fail",
+    "directions": [
+      {
+        "analytic": -95952.3321843883,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": -2036.9258826311852
+          },
+          {
+            "step": 0.03,
+            "central": -461.5251110318544
+          },
+          {
+            "step": 0.01,
+            "central": -15084.08504522231
+          },
+          {
+            "step": 0.003,
+            "central": -15445.26750507066
+          },
+          {
+            "step": 0.001,
+            "central": -95381.6557520986
+          },
+          {
+            "step": 0.0003,
+            "central": -96423.1040278052
+          },
+          {
+            "step": 0.0001,
+            "central": -96787.56050278025
+          },
+          {
+            "step": 3e-05,
+            "central": -97810.54060658789
+          },
+          {
+            "step": 1e-05,
+            "central": -97663.14627559039
+          },
+          {
+            "step": 3e-06,
+            "central": -98101.26140655484
+          },
+          {
+            "step": 1e-06,
+            "central": -102387.54509191494
+          },
+          {
+            "step": 1e-07,
+            "central": -95951.78315066732
+          },
+          {
+            "step": 1e-08,
+            "central": -95952.19453331083
+          }
+        ],
+        "class": "no_plateau"
+      },
+      {
+        "analytic": -268932.3085971027,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": 8162.442893846164
+          },
+          {
+            "step": 0.03,
+            "central": 131.49239887594985
+          },
+          {
+            "step": 0.01,
+            "central": 7439.170738998655
+          },
+          {
+            "step": 0.003,
+            "central": -25696.754735472496
+          },
+          {
+            "step": 0.001,
+            "central": -168395.87717178074
+          },
+          {
+            "step": 0.0003,
+            "central": -267608.34737566864
+          },
+          {
+            "step": 0.0001,
+            "central": -268768.7572440336
+          },
+          {
+            "step": 3e-05,
+            "central": -266833.0491183345
+          },
+          {
+            "step": 1e-05,
+            "central": -275313.4636863251
+          },
+          {
+            "step": 3e-06,
+            "central": -267765.8598549897
+          },
+          {
+            "step": 1e-06,
+            "central": -271569.92579693906
+          },
+          {
+            "step": 1e-07,
+            "central": -268932.85459664185
+          },
+          {
+            "step": 1e-08,
+            "central": -268934.469204396
+          }
+        ],
+        "class": "no_plateau"
+      },
+      {
+        "analytic": -15271.774059456304,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": -443.6533894856984
+          },
+          {
+            "step": 0.03,
+            "central": 104.2901267692893
+          },
+          {
+            "step": 0.01,
+            "central": 15435.631920640299
+          },
+          {
+            "step": 0.003,
+            "central": 30237.94611703973
+          },
+          {
+            "step": 0.001,
+            "central": -25270.42576110398
+          },
+          {
+            "step": 0.0003,
+            "central": -15018.88420454634
+          },
+          {
+            "step": 0.0001,
+            "central": -14335.39111414575
+          },
+          {
+            "step": 3e-05,
+            "central": -12213.750365238713
+          },
+          {
+            "step": 1e-05,
+            "central": -21503.3734748431
+          },
+          {
+            "step": 3e-06,
+            "central": -14917.052666229816
+          },
+          {
+            "step": 1e-06,
+            "central": -8839.70199356554
+          },
+          {
+            "step": 1e-07,
+            "central": -15271.315933205187
+          },
+          {
+            "step": 1e-08,
+            "central": -15272.022574208677
+          }
+        ],
+        "class": "no_plateau"
+      }
+    ],
+    "rule": {
+      "directions": 3,
+      "steps": [
+        0.1,
+        0.03,
+        0.01,
+        0.003,
+        0.001,
+        0.0003,
+        0.0001,
+        3e-05,
+        1e-05,
+        3e-06,
+        1e-06,
+        1e-07,
+        1e-08
+      ],
+      "run": 3,
+      "tolerance": 0.0001,
+      "tiny": 1e-08,
+      "seed": 20261101
+    }
+  },
+  "hazard": {
+    "flag": true,
+    "reasons": [
+      "FD step sweep no_plateau in 3/3 direction(s): no step agrees (likelihood not smooth or too noisy)"
+    ],
+    "threshold_grad_over_forward": 4.0
+  }
+}
