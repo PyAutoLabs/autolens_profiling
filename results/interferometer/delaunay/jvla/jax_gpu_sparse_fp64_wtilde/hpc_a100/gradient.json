@@ -190,7 +190,7 @@
     "transformer_chunk_size_preset": 1000000,
     "lens_light": null
   },
-  "point": "prior_medians",
+  "point": "iid draw 0 of the seeded sequence",
   "n_parameters": 10,
   "precision": "float64",
   "log_likelihood": -301473358.03780365,

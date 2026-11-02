@@ -279,6 +279,7 @@ def run_jax(variant: str, cli, *, script_file: str, profiling_root: Path) -> Pat
         return gradient_harness.run_gradient(
             full_pipeline,
             params_tree,
+            point=gradient_harness.POINT_IID_DRAW_0,
             dataset_type="interferometer",
             variant=variant,
             instrument=instrument,

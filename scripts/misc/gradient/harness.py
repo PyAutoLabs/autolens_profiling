@@ -22,6 +22,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 _MISC = Path(__file__).resolve().parents[1]
+
+#: The ``point`` labels a ``gradient.json`` records for where the gradient was taken.
+POINT_PRIOR_MEDIANS = "prior_medians"
+POINT_IID_DRAW_0 = "iid draw 0 of the seeded sequence"
 if str(_MISC / "tooling") not in sys.path:
     sys.path.insert(0, str(_MISC / "tooling"))
 
@@ -341,10 +345,14 @@ def run_gradient(
     configuration: dict | None = None,
     n_repeats: int = 10,
     vmap_batch: int | None = 8,
-    point: str = "prior_medians",
+    point: str,
 ) -> Path | None:
     """Measure ``f(params)`` and write the cell's ``gradient.json``; the construction site's
     ``--gradient`` branch calls this with its own fused likelihood and returns.
+
+    ``point``: where ``params`` sits — ``POINT_PRIOR_MEDIANS``, ``POINT_IID_DRAW_0`` or the
+    caller's own description. Required: a defaulted label once wrote ``prior_medians`` for
+    cells evaluated at iid draw 0 (autolens_profiling#517 item 10).
 
     ``path``: the witness path (a campaign submit's ``--output-path``); else the mirrored cell
     of ``host`` (default: this run's host by the day-zero host rule). fp64 only.

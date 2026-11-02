@@ -125,6 +125,7 @@ if _gradient_harness.gradient_requested():
     _gradient_harness.run_gradient(
         full_pipeline_from_params,
         params_tree,
+        point="simulator truth (truth_vector)",
         dataset_type="weak",
         variant=ws.VARIANT,
         instrument=instrument,

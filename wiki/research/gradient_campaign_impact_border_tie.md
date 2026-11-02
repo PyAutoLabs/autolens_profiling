@@ -40,13 +40,13 @@ PyAutoArray#671 started from a gradient of |g| ≈ 2e9 on the `imaging/rectangul
 | `group/delaunay/euclid`, `imaging/delaunay/jwst`, `imaging/delaunay_nn/hst`, `interferometer/delaunay/jvla` | CPU-sparse disagrees at small steps, GPU-dense agrees | unexplained CPU-sparse vs GPU-dense gradient difference; not the border relocator (the evaluation point has no ties) |
 | `imaging/mge/{ao, euclid, hst, jwst}` | constant 0.1–0.4 % gap at every step, CPU = GPU | unexplained; no pixelization and no mass gradient, so outside both defects |
 | `interferometer/mge/sma` | 70 % gap in one direction | unexplained (NUFFT MGE) |
-| `point_source_image/image_plane`, `cluster/image_plane` | autodiff exactly zero | image-plane solver blocks the gradient (known class) |
+| `point_source_image/image_plane`, `cluster/image_plane` | FD exactly zero at fine steps (cluster h ≤ 1e-4, point_source_image h ≤ 1e-8); autodiff nonzero (cluster −7.6 / −4.07 / −0.85, point_source_image 415 / −622 / 1.4e3) | the point solver's discrete image matching makes log L piecewise constant, so FD sees a flat step and autodiff the smooth piece (mechanism E; *corrected in autolens_profiling#517: an earlier version of this row said autodiff was zero*) |
 
 The pixelized `no_plateau` verdicts come from FD alone. #672 leaves values unchanged, so it cannot move them; the human's 2026-11-02 ruling that the Delaunay roughness is intrinsic stands.
 
 ## Side finding: the recorded evaluation point is mislabelled
 
-Every standard driver except `galaxy_group_standard.py` calls `harness.run_gradient(...)` without a `point=` argument, so the imaging, interferometer, datacube and multi_dataset `gradient.json` files say `"point": "prior_medians"` although they evaluate at iid draw 0. The group and multi-galaxy cells pass it and are labelled correctly. The label is what made the #671 defects look like a campaign risk; a follow-up should pass the real point and correct the stored labels.
+Every standard driver except `galaxy_group_standard.py` calls `harness.run_gradient(...)` without a `point=` argument, so the imaging, interferometer, datacube and multi_dataset `gradient.json` files say `"point": "prior_medians"` although they evaluate at iid draw 0. The group and multi-galaxy cells pass it and are labelled correctly. The label is what made the #671 defects look like a campaign risk. *Fixed in autolens_profiling#517: `run_gradient` now requires `point=`, every driver passes its real point, and the 43 stored records with the wrong label were corrected in place (label only; values unchanged).*
 
 ## Where the work is
 

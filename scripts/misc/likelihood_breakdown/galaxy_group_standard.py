@@ -360,7 +360,7 @@ def run_jax_runtime(dataset_type, variant, cli, args, *, script_file, root) -> P
             ),
             configuration=_configuration(cell),
             n_repeats=n_repeats,
-            point="iid draw 0 of the seeded sequence",
+            point=gradient_harness.POINT_IID_DRAW_0,
         )
 
     print("\n--- Full pipeline: jax.jit(AnalysisImaging.log_likelihood_function) ---")

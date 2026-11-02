@@ -369,6 +369,7 @@ def run_jax(cli, *, script_file: str, profiling_root: Path) -> Path:
         return gradient_harness.run_gradient(
             full,
             params_tree,
+            point=gradient_harness.POINT_IID_DRAW_0,
             dataset_type="multi_dataset",
             variant=VARIANT,
             instrument=INSTRUMENT,

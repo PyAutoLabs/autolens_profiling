@@ -84,7 +84,7 @@
     "source_pixels_requested": 1250,
     "standard_size": true
   },
-  "point": "prior_medians",
+  "point": "iid draw 0 of the seeded sequence",
   "n_parameters": 247,
   "precision": "float64",
   "log_likelihood": 28751.55357116209,
