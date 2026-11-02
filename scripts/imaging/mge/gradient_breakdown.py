@@ -99,6 +99,7 @@ operator = "sparse" if _cli.use_sparse_operator else "dense"
 harness.run_gradient(
     log_likelihood,
     params,
+    point=harness.POINT_PRIOR_MEDIANS,
     dataset_type="imaging",
     variant="mge",
     instrument=instrument,

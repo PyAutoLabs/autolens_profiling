@@ -388,6 +388,7 @@ def run_runtime(likelihood: str, cli, *, profiling_root: Path) -> Path:
             return gradient_harness.run_gradient(
                 full,
                 params,
+                point=gradient_harness.POINT_PRIOR_MEDIANS,
                 dataset_type="cluster",
                 variant=likelihood,
                 instrument=INSTRUMENT,

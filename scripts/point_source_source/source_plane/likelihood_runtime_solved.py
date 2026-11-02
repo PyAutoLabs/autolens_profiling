@@ -345,6 +345,7 @@ if _gradient_harness.gradient_requested():
     _gradient_harness.run_gradient(
         full_pipeline_from_params,
         params_tree,
+        point=_gradient_harness.POINT_PRIOR_MEDIANS,
         dataset_type="point_source_source",
         variant="source_plane",
         instrument=instrument,

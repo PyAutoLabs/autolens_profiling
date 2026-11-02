@@ -233,7 +233,7 @@
     "shared_preloads": false,
     "multi_dataset_definition": "decision D6: 2a's hst imaging standard cell in every dataset (shared mask, PSF, over-sampling, adapt image, mesh and lens model), dataset e's data and noise map times s_e (same S/N); FactorGraphModel of AnalysisImaging (shared_preloads=False)"
   },
-  "point": "prior_medians",
+  "point": "iid draw 0 of the seeded sequence",
   "n_parameters": 250,
   "precision": "float64",
   "log_likelihood": 67622.97697157369,

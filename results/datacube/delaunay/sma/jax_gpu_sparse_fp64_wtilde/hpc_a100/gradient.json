@@ -230,7 +230,7 @@
     "shared_preloads": true,
     "cube_definition": "decision D2: the 2b interferometer standard cell's dataset in every channel (shared uv_wavelengths, noise map, mask and lens model), channel c's visibilities scaled by a_c (Gaussian emission line, a_0 = 1); FactorGraphModel of AnalysisInterferometer(shared_preloads=True)"
   },
-  "point": "prior_medians",
+  "point": "iid draw 0 of the seeded sequence",
   "n_parameters": 10,
   "precision": "float64",
   "log_likelihood": -104234.31138930963,

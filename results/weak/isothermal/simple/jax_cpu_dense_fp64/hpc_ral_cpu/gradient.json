@@ -96,7 +96,7 @@
     "free_parameters": 5,
     "instance": "simulator truth (truth_vector)"
   },
-  "point": "prior_medians",
+  "point": "simulator truth (truth_vector)",
   "n_parameters": 5,
   "precision": "float64",
   "log_likelihood": -84.87191962324596,
