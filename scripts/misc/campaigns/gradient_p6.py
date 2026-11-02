@@ -30,9 +30,12 @@ from a session that can reach RAL.
 Walls (6c, autolens_profiling#509): the version-2 run (2026-11-01, RAL 413791-413830, FD step
 sweep included) measured 72 of the 74 legs; ``P6_WALLS`` holds them and their rows are
 ``measured-wall``. (The version-1 run, RAL 413707-413722, measured 69 without the sweep; it is
-superseded.) The two imaging RAL CPU legs killed at 192 GB (``P6_OOM``) measured nothing: their rows
-stay ``unmeasured`` (``probe-first: yes``, the 4x runtime-wall guess, 3x floor) and the imaging RAL
-CPU submit asks ``GRADIENT_MEM_GB``.
+superseded.) The two imaging RAL CPU legs killed at 192 GB were rerun at 512 GB (RAL 413890,
+2026-11-02): imaging/delaunay_nn/hst measured (peak ~338 GiB) and joins ``P6_WALLS``;
+imaging/delaunay/ao was killed again at 512 GB at the same point (~2h40 both times) and is recorded as
+an out-of-memory result (``P6_OOM``; human ruling 2026-11-02, "Record OOM as result"). Its row stays
+``unmeasured`` (``probe-first: yes``, the 4x runtime-wall guess, 3x floor) and the imaging RAL CPU
+submit asks ``GRADIENT_MEM_GB``.
 """
 
 from __future__ import annotations
@@ -78,10 +81,11 @@ WALL_ROUND_S = 1800
 #: A measured row's headroom and slack (as the phase-2 batch-1 rows).
 WALL_HEADROOM = 1.25
 WALL_MIN_SLACK_S = 900
-#: --mem (GB) over the source campaign's value: the five imaging RAL CPU legs below were killed at
-#: 64 GB inside the gradient measurement (their measured siblings peaked at 38-48 GB, sacct
-#: MaxRSS); RAL CPU nodes hold 921-976 GB.
-GRADIENT_MEM_GB = {("imaging_p2a", "ral_cpu"): 192}
+#: --mem (GB) over the source campaign's value: five imaging RAL CPU legs were killed at 64 GB in
+#: version 1 (their measured siblings peaked at 38-48 GB, sacct MaxRSS), two again at 192 GB in
+#: version 2; imaging/delaunay_nn/hst then peaked at ~338 GiB (sacct MaxRSS, RAL 413890_4), so the
+#: submit asks 512 GB. RAL CPU nodes hold 921-976 GB.
+GRADIENT_MEM_GB = {("imaging_p2a", "ral_cpu"): 512}
 
 #: The version-2 run's measured legs (2026-11-01, RAL 413791-413830, jax 0.11.2, 2026.10.25.1, FD
 #: step sweep included): cell -> (walls.tsv WALL s, sacct Elapsed s, array task). Every leg wrote a
@@ -127,6 +131,8 @@ P6_WALLS = {
     "imaging/delaunay/jwst jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (2940, 2948, "413792_3"),
     "imaging/delaunay/jwst jax_gpu_dense_fp64@hpc_a100 [gradient]": (237, 239, "413825_3"),
     "imaging/delaunay_nn/hst jax_gpu_dense_fp64@hpc_a100 [gradient]": (260, 264, "413825_4"),
+    # The 512 GB rerun (RAL 413890, 2026-11-02) of the leg killed at 192 GB.
+    "imaging/delaunay_nn/hst jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (4720, 4729, "413890_4"),
     "imaging/mge/ao jax_cpu_dense_fp64@hpc_ral_cpu [gradient]": (350, 358, "413792_5"),
     "imaging/mge/ao jax_gpu_dense_fp64@hpc_a100 [gradient]": (146, 149, "413825_5"),
     "imaging/mge/euclid jax_cpu_dense_fp64@hpc_ral_cpu [gradient]": (59, 67, "413792_6"),
@@ -277,11 +283,11 @@ P6_WALLS = {
     "weak/isothermal/simple jax_gpu_dense_fp64@hpc_a100 [gradient]": (10, 14, "413830_0"),
 }
 
-#: Killed at --mem=192gb (OUT_OF_MEMORY) inside the gradient measurement in the version-2 run (at
-#: 64 GB in version 1, 413717_0 / 413717_4): cell -> (Elapsed s, task).
+#: Killed (OUT_OF_MEMORY) inside the gradient measurement: at 64 GB in version 1 (413717_0), 192 GB
+#: in version 2 (413792_0) and 512 GB in the rerun (413890_0, peak > 510 GiB), each time about
+#: 2h40 in. Recorded as a result (human ruling 2026-11-02): cell -> (Elapsed s, task).
 P6_OOM = {
-    "imaging/delaunay/ao jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (9502, "413792_0"),
-    "imaging/delaunay_nn/hst jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (1261, "413792_4"),
+    "imaging/delaunay/ao jax_cpu_sparse_fp64@hpc_ral_cpu [gradient]": (9648, "413890_0"),
 }
 
 
@@ -455,7 +461,7 @@ def render(name: str, source: str, tasks: list[GradientTask], *, kind: str) -> s
     mem = _mem(source, kind, tasks)
     source_mem = "the phase-2 source campaign's declared value for these cells"
     if (source, kind) in GRADIENT_MEM_GB:
-        source_mem = "raised over the source campaign's value (legs killed at 64 GB in 6c)"
+        source_mem = "raised over the source campaign's value (legs killed at 64 and 192 GB in 6c)"
     header = [
         "#!/bin/bash -l",
         "#",
