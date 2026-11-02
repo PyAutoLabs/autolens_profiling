@@ -15,7 +15,8 @@ links to it.
 - [`research/`](research/) — focused research notes that a campaign phase produced for a later
   decision (question, method, evidence, supported explanation, decision table), linked from their
   campaign page: [Jacobi PDIP batched vs unbatched on the A100](research/jacobi_a100_batched_divergence.md)
-  (linear-solver phase 4a).
+  (linear-solver phase 4a); [Did the PyAutoArray#671 gradient defects touch the phase-6 gradient campaign?](research/gradient_campaign_impact_border_tie.md)
+  (likelihood-lifecycle phase 6, #515).
 
 ## Header contract
 
