@@ -1,0 +1,360 @@
+{
+  "schema": "gradient-witness",
+  "version": 2,
+  "likelihood": {
+    "dataset_type": "imaging",
+    "variant": "delaunay"
+  },
+  "instrument": "hst",
+  "setup_id": "jax_gpu_dense_fp64",
+  "host_class": "hpc_a100",
+  "autolens_version": "2026.8.17.1",
+  "measured_at": "2026-11-01T21:26:23Z",
+  "hostname": "euclid-ral-gpu-1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "hostname": "euclid-ral-gpu-1",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 124,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2dg/output/jax_cache/p6_413845_2",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-11-01T21:26:23Z",
+      "host": "euclid-ral-gpu-1",
+      "slurm": {
+        "job_id": "413845",
+        "array_job_id": "413825",
+        "array_task_id": "2"
+      },
+      "loadavg_at_import": [
+        6.47,
+        3.0,
+        1.17
+      ],
+      "loadavg_at_write": [
+        6.56,
+        5.23,
+        2.5
+      ],
+      "profiling_revision": "d7b70a3fc29ae568af91108423d90d76bbe016b4",
+      "library_revisions": {
+        "autolens_profiling": "d7b70a3fc29ae568af91108423d90d76bbe016b4",
+        "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+        "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+        "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+        "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+        "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.65.1",
+        "nufftax": "0.6.1",
+        "finufft": "2.5.1"
+      }
+    },
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 28733 MiB, 81920 MiB"
+  },
+  "resources": {
+    "resources_schema": 1,
+    "engine": "jax",
+    "device": "gpu",
+    "cpus_per_eval": 8,
+    "cpus_per_eval_basis": "jax gpu: one device; cpus_per_eval = NPROC host threads",
+    "devices_per_eval": 1,
+    "peak_rss_gb": 4.719374,
+    "peak_rss_basis": "in_process_ru_maxrss",
+    "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
+  },
+  "configuration": {
+    "source_pixels": 1280,
+    "source_pixels_requested": 1250,
+    "standard_size": true
+  },
+  "point": "prior_medians",
+  "n_parameters": 247,
+  "precision": "float64",
+  "log_likelihood": 28611.570092172664,
+  "value_and_grad_log_likelihood": 28611.570092169193,
+  "repeats": 10,
+  "statistic": "median",
+  "vmap_batch": 8,
+  "vmap_note": null,
+  "timings": {
+    "forward.single_call_s": 0.05533127748640254,
+    "forward.first_call_s": 19.824302852037363,
+    "forward.vmap_per_call_s": 0.046146768872858956,
+    "value_and_grad.single_call_s": 0.08649965154472739,
+    "value_and_grad.first_call_s": 71.92256790096872,
+    "value_and_grad.vmap_per_call_s": 0.06543782224616734
+  },
+  "grad_over_forward": 1.5633047974716354,
+  "grad_over_forward_vmap": 1.4180369253253253,
+  "gradient": {
+    "finite": true,
+    "l2_norm": 1530558.1325972173,
+    "nonzero": true
+  },
+  "fd": {
+    "status": "fail",
+    "directions": [
+      {
+        "step": 0.001,
+        "fd_h": 1243.1740198426269,
+        "fd_half": 914.1421878848632,
+        "fd": 804.4649105656086,
+        "analytic": 838.3573775842005,
+        "rel_error": 0.04042723058781445
+      },
+      {
+        "step": 0.001,
+        "fd_h": -25861.987929461975,
+        "fd_half": 89232.28037173249,
+        "fd": 127597.03647213064,
+        "analytic": 120755.88541922114,
+        "rel_error": 0.056652733977805486
+      },
+      {
+        "step": 0.001,
+        "fd_h": 53469.75978042428,
+        "fd_half": 87069.44849568026,
+        "fd": 98269.34473409892,
+        "analytic": 89264.0375720722,
+        "rel_error": 0.10088393273445426
+      }
+    ],
+    "rule": {
+      "directions": 3,
+      "steps": [
+        0.001,
+        0.0005
+      ],
+      "richardson": true,
+      "tolerance": 0.0001,
+      "tiny": 1e-08,
+      "seed": 20261101
+    },
+    "max_rel_error": 0.10088393273445426
+  },
+  "fd_sweep": {
+    "status": "fail",
+    "directions": [
+      {
+        "analytic": 838.3573775842005,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": 810.3486766592687
+          },
+          {
+            "step": 0.03,
+            "central": -547.2503436611078
+          },
+          {
+            "step": 0.01,
+            "central": -4090.887414176177
+          },
+          {
+            "step": 0.003,
+            "central": -6015.5187452789205
+          },
+          {
+            "step": 0.001,
+            "central": 1243.1740195424936
+          },
+          {
+            "step": 0.0003,
+            "central": 551.3498583422916
+          },
+          {
+            "step": 0.0001,
+            "central": 586.5480883221608
+          },
+          {
+            "step": 3e-05,
+            "central": 87.5491529465459
+          },
+          {
+            "step": 1e-05,
+            "central": 151.45006000238936
+          },
+          {
+            "step": 3e-06,
+            "central": -427.1805058427465
+          },
+          {
+            "step": 1e-06,
+            "central": -5415.024292233284
+          },
+          {
+            "step": 1e-07,
+            "central": 838.209489302244
+          },
+          {
+            "step": 1e-08,
+            "central": 842.9897206951864
+          }
+        ],
+        "class": "no_plateau"
+      },
+      {
+        "analytic": 120755.88541922114,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": -11155.384739185793
+          },
+          {
+            "step": 0.03,
+            "central": -13841.114173259242
+          },
+          {
+            "step": 0.01,
+            "central": -9362.803351900948
+          },
+          {
+            "step": 0.003,
+            "central": -21579.37460955206
+          },
+          {
+            "step": 0.001,
+            "central": -25861.987943357235
+          },
+          {
+            "step": 0.0003,
+            "central": 121014.58597850676
+          },
+          {
+            "step": 0.0001,
+            "central": 121294.12107226017
+          },
+          {
+            "step": 3e-05,
+            "central": 122985.85724480895
+          },
+          {
+            "step": 1e-05,
+            "central": 125697.03367153123
+          },
+          {
+            "step": 3e-06,
+            "central": 124062.28823359318
+          },
+          {
+            "step": 1e-06,
+            "central": 124554.79005802772
+          },
+          {
+            "step": 1e-07,
+            "central": 120755.97120201564
+          },
+          {
+            "step": 1e-08,
+            "central": 120756.19815732352
+          }
+        ],
+        "class": "no_plateau"
+      },
+      {
+        "analytic": 89264.0375720722,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": -6894.728964490496
+          },
+          {
+            "step": 0.03,
+            "central": -7092.372884912584
+          },
+          {
+            "step": 0.01,
+            "central": -2964.4212074797906
+          },
+          {
+            "step": 0.003,
+            "central": 5474.034414872828
+          },
+          {
+            "step": 0.001,
+            "central": 53469.75976443537
+          },
+          {
+            "step": 0.0003,
+            "central": 88658.80916819152
+          },
+          {
+            "step": 0.0001,
+            "central": 89697.06198840868
+          },
+          {
+            "step": 3e-05,
+            "central": 91326.9384687131
+          },
+          {
+            "step": 1e-05,
+            "central": 92217.2283682812
+          },
+          {
+            "step": 3e-06,
+            "central": 92827.49447932777
+          },
+          {
+            "step": 1e-06,
+            "central": 93567.70570775552
+          },
+          {
+            "step": 1e-07,
+            "central": 89263.75914597884
+          },
+          {
+            "step": 1e-08,
+            "central": 89263.93820729572
+          }
+        ],
+        "class": "no_plateau"
+      }
+    ],
+    "rule": {
+      "directions": 3,
+      "steps": [
+        0.1,
+        0.03,
+        0.01,
+        0.003,
+        0.001,
+        0.0003,
+        0.0001,
+        3e-05,
+        1e-05,
+        3e-06,
+        1e-06,
+        1e-07,
+        1e-08
+      ],
+      "run": 3,
+      "tolerance": 0.0001,
+      "tiny": 1e-08,
+      "seed": 20261101
+    }
+  },
+  "hazard": {
+    "flag": true,
+    "reasons": [
+      "FD step sweep no_plateau in 3/3 direction(s): no step agrees (likelihood not smooth or too noisy)"
+    ],
+    "threshold_grad_over_forward": 4.0
+  }
+}

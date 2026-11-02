@@ -1,0 +1,359 @@
+{
+  "schema": "gradient-witness",
+  "version": 2,
+  "likelihood": {
+    "dataset_type": "imaging",
+    "variant": "rectangular"
+  },
+  "instrument": "ao",
+  "setup_id": "jax_cpu_sparse_fp64",
+  "host_class": "hpc_ral_cpu",
+  "autolens_version": "2026.8.17.1",
+  "measured_at": "2026-11-02T01:41:54Z",
+  "hostname": "euclid-ral-compute-10-2",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "hostname": "euclid-ral-compute-10-2",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_cpu_multi_thread_eigen=false --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 236,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2dg/output/jax_cache/p6_413839_9",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-11-02T01:41:54Z",
+      "host": "euclid-ral-compute-10-2",
+      "slurm": {
+        "job_id": "413839",
+        "array_job_id": "413792",
+        "array_task_id": "9"
+      },
+      "loadavg_at_import": [
+        8.39,
+        2.52,
+        0.88
+      ],
+      "loadavg_at_write": [
+        1.25,
+        1.25,
+        1.26
+      ],
+      "profiling_revision": "d7b70a3fc29ae568af91108423d90d76bbe016b4",
+      "library_revisions": {
+        "autolens_profiling": "d7b70a3fc29ae568af91108423d90d76bbe016b4",
+        "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+        "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+        "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+        "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+        "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.65.1",
+        "nufftax": "0.6.1",
+        "finufft": "2.5.1"
+      }
+    }
+  },
+  "resources": {
+    "resources_schema": 1,
+    "engine": "jax",
+    "device": "cpu",
+    "cpus_per_eval": 8,
+    "cpus_per_eval_basis": "jax cpu: NPROC threads in XLA's CPU intra-op pool",
+    "devices_per_eval": 0,
+    "peak_rss_gb": 146.47509,
+    "peak_rss_basis": "in_process_ru_maxrss",
+    "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
+  },
+  "configuration": {
+    "source_pixels": 1225,
+    "source_pixels_requested": 1225,
+    "standard_size": true
+  },
+  "point": "prior_medians",
+  "n_parameters": 247,
+  "precision": "float64",
+  "log_likelihood": 579354.4256571585,
+  "value_and_grad_log_likelihood": 579354.4256571572,
+  "repeats": 10,
+  "statistic": "median",
+  "vmap_batch": 8,
+  "vmap_note": "vmap batch 8 failed: JaxRuntimeError: RESOURCE_EXHAUSTED: Out of memory allocating 1118320840720 bytes.",
+  "timings": {
+    "forward.single_call_s": 71.42645105352858,
+    "forward.first_call_s": 89.89096012408845,
+    "forward.vmap_per_call_s": 74.20703217256232,
+    "value_and_grad.single_call_s": 189.55497078999178,
+    "value_and_grad.first_call_s": 236.88001271302346,
+    "value_and_grad.vmap_per_call_s": null
+  },
+  "grad_over_forward": 2.6538483712138383,
+  "grad_over_forward_vmap": null,
+  "gradient": {
+    "finite": true,
+    "l2_norm": 7567513.872527893,
+    "nonzero": true
+  },
+  "fd": {
+    "status": "fail",
+    "directions": [
+      {
+        "step": 0.001,
+        "fd_h": 500574.9720580643,
+        "fd_half": 485892.8723516874,
+        "fd": 480998.83911622845,
+        "analytic": 645139.1030089161,
+        "rel_error": 0.25442615883480124
+      },
+      {
+        "step": 0.001,
+        "fd_h": -840085.3253885871,
+        "fd_half": -810202.8927388601,
+        "fd": -800242.0818556178,
+        "analytic": -512647.36516770895,
+        "rel_error": 0.560999112116424
+      },
+      {
+        "step": 0.001,
+        "fd_h": -511732.89985832525,
+        "fd_half": -438391.79494814016,
+        "fd": -413944.7599780785,
+        "analytic": -280246.09451766,
+        "rel_error": 0.47707592746486377
+      }
+    ],
+    "rule": {
+      "directions": 3,
+      "steps": [
+        0.001,
+        0.0005
+      ],
+      "richardson": true,
+      "tolerance": 0.0001,
+      "tiny": 1e-08,
+      "seed": 20261101
+    },
+    "max_rel_error": 0.560999112116424
+  },
+  "fd_sweep": {
+    "status": "fail",
+    "directions": [
+      {
+        "analytic": 645139.1030089161,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": 489721.5586740058
+          },
+          {
+            "step": 0.03,
+            "central": 516870.2514542558
+          },
+          {
+            "step": 0.01,
+            "central": 499913.64979312057
+          },
+          {
+            "step": 0.003,
+            "central": 490053.1404725043
+          },
+          {
+            "step": 0.001,
+            "central": 500574.9720580643
+          },
+          {
+            "step": 0.0003,
+            "central": 502021.4899675921
+          },
+          {
+            "step": 0.0001,
+            "central": 624560.2800452616
+          },
+          {
+            "step": 3e-05,
+            "central": 623312.4724763911
+          },
+          {
+            "step": 1e-05,
+            "central": 629300.3383558244
+          },
+          {
+            "step": 3e-06,
+            "central": 622569.1860308871
+          },
+          {
+            "step": 1e-06,
+            "central": 626396.6234400868
+          },
+          {
+            "step": 1e-07,
+            "central": 612101.1928189546
+          },
+          {
+            "step": 1e-08,
+            "central": 648928.276496008
+          }
+        ],
+        "class": "no_plateau"
+      },
+      {
+        "analytic": -512647.36516770895,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": -672652.419040344
+          },
+          {
+            "step": 0.03,
+            "central": -719927.3369853443
+          },
+          {
+            "step": 0.01,
+            "central": -754790.0891845406
+          },
+          {
+            "step": 0.003,
+            "central": -816781.5130676026
+          },
+          {
+            "step": 0.001,
+            "central": -840085.3253885871
+          },
+          {
+            "step": 0.0003,
+            "central": -745413.4812112899
+          },
+          {
+            "step": 0.0001,
+            "central": -529542.4693584209
+          },
+          {
+            "step": 3e-05,
+            "central": -481797.33437718824
+          },
+          {
+            "step": 1e-05,
+            "central": -493366.52045603836
+          },
+          {
+            "step": 3e-06,
+            "central": -489080.2305502196
+          },
+          {
+            "step": 1e-06,
+            "central": -488935.7535284944
+          },
+          {
+            "step": 1e-07,
+            "central": -471893.0716626346
+          },
+          {
+            "step": 1e-08,
+            "central": -546861.8182931095
+          }
+        ],
+        "class": "no_plateau"
+      },
+      {
+        "analytic": -280246.09451766,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": -477760.72564125963
+          },
+          {
+            "step": 0.03,
+            "central": -474759.7201662895
+          },
+          {
+            "step": 0.01,
+            "central": -526349.5808244683
+          },
+          {
+            "step": 0.003,
+            "central": -530786.3323193548
+          },
+          {
+            "step": 0.001,
+            "central": -511732.89985832525
+          },
+          {
+            "step": 0.0003,
+            "central": -346034.0419879261
+          },
+          {
+            "step": 0.0001,
+            "central": -260734.62944012135
+          },
+          {
+            "step": 3e-05,
+            "central": -274599.93562855135
+          },
+          {
+            "step": 1e-05,
+            "central": -281604.77082128637
+          },
+          {
+            "step": 3e-06,
+            "central": -300831.9206613426
+          },
+          {
+            "step": 1e-06,
+            "central": -272943.24338436127
+          },
+          {
+            "step": 1e-07,
+            "central": -256800.38321297616
+          },
+          {
+            "step": 1e-08,
+            "central": -333592.9708555341
+          }
+        ],
+        "class": "no_plateau"
+      }
+    ],
+    "rule": {
+      "directions": 3,
+      "steps": [
+        0.1,
+        0.03,
+        0.01,
+        0.003,
+        0.001,
+        0.0003,
+        0.0001,
+        3e-05,
+        1e-05,
+        3e-06,
+        1e-06,
+        1e-07,
+        1e-08
+      ],
+      "run": 3,
+      "tolerance": 0.0001,
+      "tiny": 1e-08,
+      "seed": 20261101
+    }
+  },
+  "hazard": {
+    "flag": true,
+    "reasons": [
+      "FD step sweep no_plateau in 3/3 direction(s): no step agrees (likelihood not smooth or too noisy)"
+    ],
+    "threshold_grad_over_forward": 4.0
+  }
+}

@@ -1,0 +1,359 @@
+{
+  "schema": "gradient-witness",
+  "version": 2,
+  "likelihood": {
+    "dataset_type": "imaging",
+    "variant": "delaunay"
+  },
+  "instrument": "jwst",
+  "setup_id": "jax_cpu_sparse_fp64",
+  "host_class": "hpc_ral_cpu",
+  "autolens_version": "2026.8.17.1",
+  "measured_at": "2026-11-01T22:08:32Z",
+  "hostname": "euclid-ral-compute-10-1",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "hostname": "euclid-ral-compute-10-1",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_cpu_multi_thread_eigen=false --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 236,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2dg/output/jax_cache/p6_413798_3",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-11-01T22:08:32Z",
+      "host": "euclid-ral-compute-10-1",
+      "slurm": {
+        "job_id": "413798",
+        "array_job_id": "413792",
+        "array_task_id": "3"
+      },
+      "loadavg_at_import": [
+        0.85,
+        0.18,
+        0.06
+      ],
+      "loadavg_at_write": [
+        4.19,
+        4.33,
+        4.63
+      ],
+      "profiling_revision": "d7b70a3fc29ae568af91108423d90d76bbe016b4",
+      "library_revisions": {
+        "autolens_profiling": "d7b70a3fc29ae568af91108423d90d76bbe016b4",
+        "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+        "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+        "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+        "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+        "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.65.1",
+        "nufftax": "0.6.1",
+        "finufft": "2.5.1"
+      }
+    }
+  },
+  "resources": {
+    "resources_schema": 1,
+    "engine": "jax",
+    "device": "cpu",
+    "cpus_per_eval": 8,
+    "cpus_per_eval_basis": "jax cpu: NPROC threads in XLA's CPU intra-op pool",
+    "devices_per_eval": 0,
+    "peak_rss_gb": 100.395626,
+    "peak_rss_basis": "in_process_ru_maxrss",
+    "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
+  },
+  "configuration": {
+    "source_pixels": 1280,
+    "source_pixels_requested": 1250,
+    "standard_size": true
+  },
+  "point": "prior_medians",
+  "n_parameters": 247,
+  "precision": "float64",
+  "log_likelihood": 76983.22892388517,
+  "value_and_grad_log_likelihood": 76983.22892390058,
+  "repeats": 10,
+  "statistic": "median",
+  "vmap_batch": 8,
+  "vmap_note": null,
+  "timings": {
+    "forward.single_call_s": 6.295043138030451,
+    "forward.first_call_s": 15.70644788001664,
+    "forward.vmap_per_call_s": 6.4233182182506425,
+    "value_and_grad.single_call_s": 15.83975655346876,
+    "value_and_grad.first_call_s": 49.74487386201508,
+    "value_and_grad.vmap_per_call_s": 16.831301340316713
+  },
+  "grad_over_forward": 2.5162268480378662,
+  "grad_over_forward_vmap": 2.6203436866157053,
+  "gradient": {
+    "finite": true,
+    "l2_norm": 938316.6930267727,
+    "nonzero": true
+  },
+  "fd": {
+    "status": "fail",
+    "directions": [
+      {
+        "step": 0.001,
+        "fd_h": -41976.26708210737,
+        "fd_half": -75326.53136998124,
+        "fd": -86443.28613260586,
+        "analytic": -12342.177978449417,
+        "rel_error": 6.003892366772204
+      },
+      {
+        "step": 0.001,
+        "fd_h": -2941.789116623113,
+        "fd_half": 19707.022254311596,
+        "fd": 27256.626044623164,
+        "analytic": -188.55736246419278,
+        "rel_error": 145.553496550946
+      },
+      {
+        "step": 0.001,
+        "fd_h": 72692.87837430602,
+        "fd_half": 57228.286187397316,
+        "fd": 52073.42212509442,
+        "analytic": -8348.246144209965,
+        "rel_error": 7.237648150948522
+      }
+    ],
+    "rule": {
+      "directions": 3,
+      "steps": [
+        0.001,
+        0.0005
+      ],
+      "richardson": true,
+      "tolerance": 0.0001,
+      "tiny": 1e-08,
+      "seed": 20261101
+    },
+    "max_rel_error": 145.553496550946
+  },
+  "fd_sweep": {
+    "status": "fail",
+    "directions": [
+      {
+        "analytic": -12342.177978449417,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": 4124.648735348819
+          },
+          {
+            "step": 0.03,
+            "central": 7454.903194058716
+          },
+          {
+            "step": 0.01,
+            "central": -4908.7862120664795
+          },
+          {
+            "step": 0.003,
+            "central": 2772.6443773135543
+          },
+          {
+            "step": 0.001,
+            "central": -41976.26708210737
+          },
+          {
+            "step": 0.0003,
+            "central": -120195.08473817648
+          },
+          {
+            "step": 0.0001,
+            "central": -6816.971715161344
+          },
+          {
+            "step": 3e-05,
+            "central": -15014.199012997171
+          },
+          {
+            "step": 1e-05,
+            "central": -13013.371650595216
+          },
+          {
+            "step": 3e-06,
+            "central": -13675.25366610304
+          },
+          {
+            "step": 1e-06,
+            "central": -12312.837199715432
+          },
+          {
+            "step": 1e-07,
+            "central": -12399.953993735835
+          },
+          {
+            "step": 1e-08,
+            "central": -12300.506205065176
+          }
+        ],
+        "class": "no_plateau"
+      },
+      {
+        "analytic": -188.55736246419278,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": -39386.97790643011
+          },
+          {
+            "step": 0.03,
+            "central": -46282.18962217337
+          },
+          {
+            "step": 0.01,
+            "central": -54780.01153640653
+          },
+          {
+            "step": 0.003,
+            "central": -102127.82293204509
+          },
+          {
+            "step": 0.001,
+            "central": -2941.789116623113
+          },
+          {
+            "step": 0.0003,
+            "central": 17558.793218098195
+          },
+          {
+            "step": 0.0001,
+            "central": 340465.76236971305
+          },
+          {
+            "step": 3e-05,
+            "central": 4802.024282495647
+          },
+          {
+            "step": 1e-05,
+            "central": 3950.438383617438
+          },
+          {
+            "step": 3e-06,
+            "central": 553.9067666783618
+          },
+          {
+            "step": 1e-06,
+            "central": 6093.359254009556
+          },
+          {
+            "step": 1e-07,
+            "central": -142.17606803867966
+          },
+          {
+            "step": 1e-08,
+            "central": -238.35018509998918
+          }
+        ],
+        "class": "no_plateau"
+      },
+      {
+        "analytic": -8348.246144209965,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": -21597.322712229143
+          },
+          {
+            "step": 0.03,
+            "central": -24738.71829370134
+          },
+          {
+            "step": 0.01,
+            "central": -13924.083559498104
+          },
+          {
+            "step": 0.003,
+            "central": 6078.256901309942
+          },
+          {
+            "step": 0.001,
+            "central": 72692.87837430602
+          },
+          {
+            "step": 0.0003,
+            "central": 102274.02849251425
+          },
+          {
+            "step": 0.0001,
+            "central": -5222.03092390555
+          },
+          {
+            "step": 3e-05,
+            "central": -7014.191304187989
+          },
+          {
+            "step": 1e-05,
+            "central": -8072.2677521407595
+          },
+          {
+            "step": 3e-06,
+            "central": -7878.311870930095
+          },
+          {
+            "step": 1e-06,
+            "central": -9984.179567254614
+          },
+          {
+            "step": 1e-07,
+            "central": -8336.127866641618
+          },
+          {
+            "step": 1e-08,
+            "central": -8434.386836597696
+          }
+        ],
+        "class": "no_plateau"
+      }
+    ],
+    "rule": {
+      "directions": 3,
+      "steps": [
+        0.1,
+        0.03,
+        0.01,
+        0.003,
+        0.001,
+        0.0003,
+        0.0001,
+        3e-05,
+        1e-05,
+        3e-06,
+        1e-06,
+        1e-07,
+        1e-08
+      ],
+      "run": 3,
+      "tolerance": 0.0001,
+      "tiny": 1e-08,
+      "seed": 20261101
+    }
+  },
+  "hazard": {
+    "flag": true,
+    "reasons": [
+      "FD step sweep no_plateau in 3/3 direction(s): no step agrees (likelihood not smooth or too noisy)"
+    ],
+    "threshold_grad_over_forward": 4.0
+  }
+}

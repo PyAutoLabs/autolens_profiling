@@ -1,0 +1,360 @@
+{
+  "schema": "gradient-witness",
+  "version": 2,
+  "likelihood": {
+    "dataset_type": "imaging",
+    "variant": "rectangular"
+  },
+  "instrument": "jwst",
+  "setup_id": "jax_gpu_dense_fp64",
+  "host_class": "hpc_a100",
+  "autolens_version": "2026.8.17.1",
+  "measured_at": "2026-11-01T21:40:30Z",
+  "hostname": "euclid-ral-gpu-1",
+  "device": {
+    "backend": "gpu",
+    "device": "cuda:0",
+    "hostname": "euclid-ral-gpu-1",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 124,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2dg/output/jax_cache/p6_413825_12",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-11-01T21:40:30Z",
+      "host": "euclid-ral-gpu-1",
+      "slurm": {
+        "job_id": "413825",
+        "array_job_id": "413825",
+        "array_task_id": "12"
+      },
+      "loadavg_at_import": [
+        3.6,
+        5.3,
+        4.22
+      ],
+      "loadavg_at_write": [
+        3.51,
+        4.54,
+        4.14
+      ],
+      "profiling_revision": "d7b70a3fc29ae568af91108423d90d76bbe016b4",
+      "library_revisions": {
+        "autolens_profiling": "d7b70a3fc29ae568af91108423d90d76bbe016b4",
+        "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+        "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+        "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+        "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+        "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.65.1",
+        "nufftax": "0.6.1",
+        "finufft": "2.5.1"
+      }
+    },
+    "nvidia_smi": "NVIDIA A100 80GB PCIe, 42803 MiB, 81920 MiB"
+  },
+  "resources": {
+    "resources_schema": 1,
+    "engine": "jax",
+    "device": "gpu",
+    "cpus_per_eval": 8,
+    "cpus_per_eval_basis": "jax gpu: one device; cpus_per_eval = NPROC host threads",
+    "devices_per_eval": 1,
+    "peak_rss_gb": 5.889905,
+    "peak_rss_basis": "in_process_ru_maxrss",
+    "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
+  },
+  "configuration": {
+    "source_pixels": 1225,
+    "source_pixels_requested": 1225,
+    "standard_size": true
+  },
+  "point": "prior_medians",
+  "n_parameters": 247,
+  "precision": "float64",
+  "log_likelihood": 69855.81804463625,
+  "value_and_grad_log_likelihood": 69855.81804463346,
+  "repeats": 10,
+  "statistic": "median",
+  "vmap_batch": 8,
+  "vmap_note": "vmap batch 8 failed: JaxRuntimeError: RESOURCE_EXHAUSTED: Out of memory while trying to allocate 29.11GiB with allocator GPU_0_bfc on device 0. [executable_name='jit_f_flat'] [tf-allocator-allocation-error='']",
+  "timings": {
+    "forward.single_call_s": 0.06334952649194747,
+    "forward.first_call_s": 17.350611087982543,
+    "forward.vmap_per_call_s": 0.060748577561753336,
+    "value_and_grad.single_call_s": 0.1112736604991369,
+    "value_and_grad.first_call_s": 64.14778185391333,
+    "value_and_grad.vmap_per_call_s": null
+  },
+  "grad_over_forward": 1.7565034288501145,
+  "grad_over_forward_vmap": null,
+  "gradient": {
+    "finite": true,
+    "l2_norm": 613389.7415406159,
+    "nonzero": true
+  },
+  "fd": {
+    "status": "fail",
+    "directions": [
+      {
+        "step": 0.001,
+        "fd_h": 31362.898100094753,
+        "fd_half": 30560.899033531314,
+        "fd": 30293.5660113435,
+        "analytic": 46916.088451256466,
+        "rel_error": 0.35430324625598225
+      },
+      {
+        "step": 0.001,
+        "fd_h": -58704.452499529,
+        "fd_half": -59160.03831854323,
+        "fd": -59311.90025821464,
+        "analytic": -42665.196110546945,
+        "rel_error": 0.39017057614209794
+      },
+      {
+        "step": 0.001,
+        "fd_h": -47943.99868771143,
+        "fd_half": -47317.34790490009,
+        "fd": -47108.46431062964,
+        "analytic": -25575.233285874812,
+        "rel_error": 0.8419563874182772
+      }
+    ],
+    "rule": {
+      "directions": 3,
+      "steps": [
+        0.001,
+        0.0005
+      ],
+      "richardson": true,
+      "tolerance": 0.0001,
+      "tiny": 1e-08,
+      "seed": 20261101
+    },
+    "max_rel_error": 0.8419563874182772
+  },
+  "fd_sweep": {
+    "status": "fail",
+    "directions": [
+      {
+        "analytic": 46916.088451256466,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": 34358.18786704709
+          },
+          {
+            "step": 0.03,
+            "central": 33630.51180066444
+          },
+          {
+            "step": 0.01,
+            "central": 32055.85250356162
+          },
+          {
+            "step": 0.003,
+            "central": 32174.772658356233
+          },
+          {
+            "step": 0.001,
+            "central": 31362.898101928295
+          },
+          {
+            "step": 0.0003,
+            "central": 29631.20166673131
+          },
+          {
+            "step": 0.0001,
+            "central": 32325.363298295997
+          },
+          {
+            "step": 3e-05,
+            "central": 40734.539520538725
+          },
+          {
+            "step": 1e-05,
+            "central": 45435.420560534105
+          },
+          {
+            "step": 3e-06,
+            "central": 43818.61510288824
+          },
+          {
+            "step": 1e-06,
+            "central": 45692.83869932406
+          },
+          {
+            "step": 1e-07,
+            "central": -22271.48594101891
+          },
+          {
+            "step": 1e-08,
+            "central": 47636.06266351417
+          }
+        ],
+        "class": "no_plateau"
+      },
+      {
+        "analytic": -42665.196110546945,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": -50522.51683641247
+          },
+          {
+            "step": 0.03,
+            "central": -49041.55969962206
+          },
+          {
+            "step": 0.01,
+            "central": -50912.98803477475
+          },
+          {
+            "step": 0.003,
+            "central": -57441.86874167159
+          },
+          {
+            "step": 0.001,
+            "central": -58704.4525004967
+          },
+          {
+            "step": 0.0003,
+            "central": -60709.54302626585
+          },
+          {
+            "step": 0.0001,
+            "central": -60897.64267504506
+          },
+          {
+            "step": 3e-05,
+            "central": -49437.182043038774
+          },
+          {
+            "step": 1e-05,
+            "central": -45507.66826287144
+          },
+          {
+            "step": 3e-06,
+            "central": -40788.92956507237
+          },
+          {
+            "step": 1e-06,
+            "central": -43961.4602655638
+          },
+          {
+            "step": 1e-07,
+            "central": -8338.038896908984
+          },
+          {
+            "step": 1e-08,
+            "central": -43363.01499279216
+          }
+        ],
+        "class": "no_plateau"
+      },
+      {
+        "analytic": -25575.233285874812,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": -36883.704753130514
+          },
+          {
+            "step": 0.03,
+            "central": -46027.040130312045
+          },
+          {
+            "step": 0.01,
+            "central": -46175.7093780252
+          },
+          {
+            "step": 0.003,
+            "central": -43797.14140435681
+          },
+          {
+            "step": 0.001,
+            "central": -47943.9986920479
+          },
+          {
+            "step": 0.0003,
+            "central": -45687.12292607719
+          },
+          {
+            "step": 0.0001,
+            "central": -38287.4430641823
+          },
+          {
+            "step": 3e-05,
+            "central": -28447.746964229736
+          },
+          {
+            "step": 1e-05,
+            "central": -28562.32809281209
+          },
+          {
+            "step": 3e-06,
+            "central": -21531.445090658963
+          },
+          {
+            "step": 1e-06,
+            "central": -21705.14571480453
+          },
+          {
+            "step": 1e-07,
+            "central": 43643.03960755933
+          },
+          {
+            "step": 1e-08,
+            "central": -26338.784664403647
+          }
+        ],
+        "class": "no_plateau"
+      }
+    ],
+    "rule": {
+      "directions": 3,
+      "steps": [
+        0.1,
+        0.03,
+        0.01,
+        0.003,
+        0.001,
+        0.0003,
+        0.0001,
+        3e-05,
+        1e-05,
+        3e-06,
+        1e-06,
+        1e-07,
+        1e-08
+      ],
+      "run": 3,
+      "tolerance": 0.0001,
+      "tiny": 1e-08,
+      "seed": 20261101
+    }
+  },
+  "hazard": {
+    "flag": true,
+    "reasons": [
+      "FD step sweep no_plateau in 3/3 direction(s): no step agrees (likelihood not smooth or too noisy)"
+    ],
+    "threshold_grad_over_forward": 4.0
+  }
+}

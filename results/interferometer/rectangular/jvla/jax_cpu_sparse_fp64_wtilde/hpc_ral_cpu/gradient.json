@@ -1,0 +1,447 @@
+{
+  "schema": "gradient-witness",
+  "version": 2,
+  "likelihood": {
+    "dataset_type": "interferometer",
+    "variant": "rectangular"
+  },
+  "instrument": "jvla",
+  "setup_id": "jax_cpu_sparse_fp64_wtilde",
+  "host_class": "hpc_ral_cpu",
+  "autolens_version": "2026.8.17.1",
+  "measured_at": "2026-11-01T23:13:37Z",
+  "hostname": "euclid-ral-compute-10-3",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "hostname": "euclid-ral-compute-10-3",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_cpu_multi_thread_eigen=false --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 236,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2dg/output/jax_cache/p6_413810_7",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-11-01T23:13:37Z",
+      "host": "euclid-ral-compute-10-3",
+      "slurm": {
+        "job_id": "413810",
+        "array_job_id": "413793",
+        "array_task_id": "7"
+      },
+      "loadavg_at_import": [
+        1.08,
+        0.23,
+        0.08
+      ],
+      "loadavg_at_write": [
+        2.87,
+        2.89,
+        2.76
+      ],
+      "profiling_revision": "d7b70a3fc29ae568af91108423d90d76bbe016b4",
+      "library_revisions": {
+        "autolens_profiling": "d7b70a3fc29ae568af91108423d90d76bbe016b4",
+        "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+        "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+        "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+        "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+        "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.65.1",
+        "nufftax": "0.6.1",
+        "finufft": "2.5.1"
+      }
+    }
+  },
+  "resources": {
+    "resources_schema": 1,
+    "engine": "jax",
+    "device": "cpu",
+    "cpus_per_eval": 8,
+    "cpus_per_eval_basis": "jax cpu: NPROC threads in XLA's CPU intra-op pool",
+    "devices_per_eval": 0,
+    "peak_rss_gb": 55.497638,
+    "peak_rss_basis": "in_process_ru_maxrss",
+    "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
+  },
+  "configuration": {
+    "pixel_scale_arcsec": 0.01,
+    "mask_radius_arcsec": 3.5,
+    "real_space_shape": [
+      800,
+      800
+    ],
+    "image_pixels_masked": 384852,
+    "visibilities": 25000000,
+    "source_pixels": 1225,
+    "source_pixels_requested": 1225,
+    "standard_size": true,
+    "production_preset": {
+      "preset": "interferometer_hst_rect_adapt_standard",
+      "variant": "production",
+      "provenance": "subhalo_validation/scripts/pipelines/rectangular_adapt.py (rect_adapt source_pix[2], job 342311): RectangularBilinearAdaptImage shape (32, 32) (MESH_PIXELS_YX :38), regularization Adapt; the rest of the stage (adapt S/N cap, over-sampling, MGE, threads) as hst_source_pix_2 \u2014 likelihood-lifecycle 2b ruling R3 (human 2026-10-25): the hst source_pix[2] mesh and regularization at the standard size, no lens light, the truth lensed-source adapt image with no S/N cap: RectangularBilinearAdaptImage 35x35, adapt regularization; borrows the hst preset's mesh and regularization only",
+      "mesh_kind": "rectangular",
+      "adapt_snr_cap": null,
+      "over_sample_size_lp_rule": null,
+      "over_sample_size_pixelization_rule": null,
+      "regularization": {
+        "scheme": "adapt",
+        "free": false,
+        "coefficient": 1.0
+      },
+      "positions_penalty": null,
+      "lens_light": null,
+      "mge_total_gaussians": 0,
+      "mge_gaussian_per_basis": 2,
+      "sequence": {
+        "kind": "iid",
+        "unit_low": 0.4,
+        "unit_high": 0.6,
+        "seed": 235
+      },
+      "memo": "off",
+      "size_override": "likelihood-lifecycle 2b ruling R3 (human 2026-10-25): the hst source_pix[2] mesh and regularization at the standard size, no lens light, the truth lensed-source adapt image with no S/N cap: RectangularBilinearAdaptImage 35x35, adapt regularization; borrows the hst preset's mesh and regularization only",
+      "mesh": {
+        "kind": "rectangular",
+        "shape": [
+          35,
+          35
+        ],
+        "source_pixels": 1225,
+        "class": "RectangularBilinearAdaptImage",
+        "free_weights": {
+          "weight_power": {
+            "type": "Uniform",
+            "lower": 0.0,
+            "upper": 10.0
+          },
+          "weight_floor": {
+            "type": "LogUniform",
+            "lower": 1e-05,
+            "upper": 1.0
+          }
+        }
+      },
+      "dataset_type": "interferometer",
+      "adapt_image": "truth lensed source (lensed_source.fits), no S/N cap",
+      "instance": "iid draw 0 of the preset sequence (seeded)",
+      "instance_unit_vector": [
+        0.499784489007424,
+        0.41402443684610074,
+        0.41327450881714656,
+        0.4200167345680767,
+        0.5789514047288555,
+        0.4702516857248635,
+        0.567334291975647,
+        0.47173759315010344,
+        0.5239626288064884,
+        0.5543072472409505,
+        0.5399346262699198,
+        0.5099305691842051
+      ],
+      "instrument": "jvla"
+    },
+    "regularization": {
+      "scheme": "adapt",
+      "free": false,
+      "coefficient": 1.0
+    },
+    "memo_provenance": {
+      "requested": "off",
+      "settings_nnls_warm_start_memo": false,
+      "env_AUTOARRAY_NNLS_WARM_START": "0",
+      "env_before": null,
+      "note": "Both gates are set for memo=off: the Settings flag and the AUTOARRAY_NNLS_WARM_START env kill-switch (autoarray/inversion/inversion/nnls_memo.py:63). settings_nnls_warm_start_memo is read back off the constructed Settings, so it records what took effect. The library default is true and both production projects leave it unset."
+    },
+    "transformer_chunk_size": 1000000,
+    "transformer_chunk_size_preset": 1000000,
+    "lens_light": null
+  },
+  "point": "prior_medians",
+  "n_parameters": 12,
+  "precision": "float64",
+  "log_likelihood": -301508571.3100951,
+  "value_and_grad_log_likelihood": -301508571.3100949,
+  "repeats": 3,
+  "statistic": "median",
+  "vmap_batch": 2,
+  "vmap_note": null,
+  "timings": {
+    "forward.single_call_s": 52.56491751305293,
+    "forward.first_call_s": 53.24161593511235,
+    "forward.vmap_per_call_s": 53.20017780450871,
+    "value_and_grad.single_call_s": 112.73475561896339,
+    "value_and_grad.first_call_s": 117.2732983919559,
+    "value_and_grad.vmap_per_call_s": 131.75128455349477
+  },
+  "grad_over_forward": 2.1446767340778012,
+  "grad_over_forward_vmap": 2.47651962814171,
+  "gradient": {
+    "finite": true,
+    "l2_norm": 12037604.036137506,
+    "nonzero": true
+  },
+  "fd": {
+    "status": "fail",
+    "directions": [
+      {
+        "step": 0.001,
+        "fd_h": -2370512.2071802616,
+        "fd_half": -2373976.610660553,
+        "fd": -2375131.41182065,
+        "analytic": -1000849.2061512576,
+        "rel_error": 1.3731161469909765
+      },
+      {
+        "step": 0.001,
+        "fd_h": -9589065.316140652,
+        "fd_half": -9615243.135273457,
+        "fd": -9623969.074984392,
+        "analytic": -1065920.9299281822,
+        "rel_error": 8.028783284734656
+      },
+      {
+        "step": 0.001,
+        "fd_h": 10679941.702187061,
+        "fd_half": 10708566.0430789,
+        "fd": 10718107.490042845,
+        "analytic": -1698076.9210551777,
+        "rel_error": 7.311909288174448
+      }
+    ],
+    "rule": {
+      "directions": 3,
+      "steps": [
+        0.001,
+        0.0005
+      ],
+      "richardson": true,
+      "tolerance": 0.0001,
+      "tiny": 1e-08,
+      "seed": 20261101
+    },
+    "max_rel_error": 8.028783284734656
+  },
+  "fd_sweep": {
+    "status": "fail",
+    "directions": [
+      {
+        "analytic": -1000849.2061512576,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": 106425964.6470508
+          },
+          {
+            "step": 0.03,
+            "central": 382324940.6791061
+          },
+          {
+            "step": 0.01,
+            "central": -2468955.9092760086
+          },
+          {
+            "step": 0.003,
+            "central": -2406601.4082829156
+          },
+          {
+            "step": 0.001,
+            "central": -2370512.2071802616
+          },
+          {
+            "step": 0.0003,
+            "central": -2383575.9069522223
+          },
+          {
+            "step": 0.0001,
+            "central": -2345967.4191474915
+          },
+          {
+            "step": 3e-05,
+            "central": -2384975.195924441
+          },
+          {
+            "step": 1e-05,
+            "central": -2523771.721124649
+          },
+          {
+            "step": 3e-06,
+            "central": -2636728.197336197
+          },
+          {
+            "step": 1e-06,
+            "central": -2256765.156984329
+          },
+          {
+            "step": 1e-07,
+            "central": -3611721.396446228
+          },
+          {
+            "step": 1e-08,
+            "central": 378599.76291656494
+          }
+        ],
+        "class": "no_plateau"
+      },
+      {
+        "analytic": -1065920.9299281822,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": 90245152.91752577
+          },
+          {
+            "step": 0.03,
+            "central": 373050551.557984
+          },
+          {
+            "step": 0.01,
+            "central": -10376013.040935993
+          },
+          {
+            "step": 0.003,
+            "central": -9681099.499921003
+          },
+          {
+            "step": 0.001,
+            "central": -9589065.316140652
+          },
+          {
+            "step": 0.0003,
+            "central": -9606805.41565021
+          },
+          {
+            "step": 0.0001,
+            "central": -9657774.566411972
+          },
+          {
+            "step": 3e-05,
+            "central": -9711217.519640923
+          },
+          {
+            "step": 1e-05,
+            "central": -9878746.700286865
+          },
+          {
+            "step": 3e-06,
+            "central": -10002005.58702151
+          },
+          {
+            "step": 1e-06,
+            "central": -10210642.874240875
+          },
+          {
+            "step": 1e-07,
+            "central": -10774151.384830475
+          },
+          {
+            "step": 1e-08,
+            "central": -5731731.653213501
+          }
+        ],
+        "class": "no_plateau"
+      },
+      {
+        "analytic": -1698076.9210551777,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": 104069475.92762262
+          },
+          {
+            "step": 0.03,
+            "central": 390177828.14920646
+          },
+          {
+            "step": 0.01,
+            "central": 1179207720.6980793
+          },
+          {
+            "step": 0.003,
+            "central": 10559189.89177545
+          },
+          {
+            "step": 0.001,
+            "central": 10679941.702187061
+          },
+          {
+            "step": 0.0003,
+            "central": 10736935.728092989
+          },
+          {
+            "step": 0.0001,
+            "central": 10835227.610468864
+          },
+          {
+            "step": 3e-05,
+            "central": 10885260.119040808
+          },
+          {
+            "step": 1e-05,
+            "central": 10988169.27075386
+          },
+          {
+            "step": 3e-06,
+            "central": 11294854.432344437
+          },
+          {
+            "step": 1e-06,
+            "central": 11615322.709083557
+          },
+          {
+            "step": 1e-07,
+            "central": 11140174.567699432
+          },
+          {
+            "step": 1e-08,
+            "central": 4411977.529525757
+          }
+        ],
+        "class": "no_plateau"
+      }
+    ],
+    "rule": {
+      "directions": 3,
+      "steps": [
+        0.1,
+        0.03,
+        0.01,
+        0.003,
+        0.001,
+        0.0003,
+        0.0001,
+        3e-05,
+        1e-05,
+        3e-06,
+        1e-06,
+        1e-07,
+        1e-08
+      ],
+      "run": 3,
+      "tolerance": 0.0001,
+      "tiny": 1e-08,
+      "seed": 20261101
+    }
+  },
+  "hazard": {
+    "flag": true,
+    "reasons": [
+      "FD step sweep no_plateau in 3/3 direction(s): no step agrees (likelihood not smooth or too noisy)"
+    ],
+    "threshold_grad_over_forward": 4.0
+  }
+}

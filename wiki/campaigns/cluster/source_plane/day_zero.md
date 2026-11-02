@@ -1,7 +1,7 @@
 <!-- generated: scripts/misc/tooling/build_day_zero_pages.py; do not edit -->
 # Day zero: cluster/source_plane
 
-Baseline tag `2026.10.25.1` ([day_zero.json](../../../../catalogue/day_zero.json)); 8 stamped records, frozen in the [PyAutoPulse day_zero snapshot](https://github.com/PyAutoLabs/PyAutoPulse/blob/main/snapshots/day_zero/lens.json). [All likelihoods](../../../day_zero.md).
+Baseline tag `2026.10.25.1` ([day_zero.json](../../../../catalogue/day_zero.json)); 10 stamped records, 8 frozen in the [PyAutoPulse day_zero snapshot](https://github.com/PyAutoLabs/PyAutoPulse/blob/main/snapshots/day_zero/lens.json) and 2 gradient record(s) in the [day_zero_gradient snapshot](https://github.com/PyAutoLabs/PyAutoPulse/blob/main/snapshots/day_zero_gradient/lens.json). [All likelihoods](../../../day_zero.md).
 
 ## Rule
 

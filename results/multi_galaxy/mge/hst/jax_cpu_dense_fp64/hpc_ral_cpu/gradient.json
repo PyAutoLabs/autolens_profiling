@@ -1,0 +1,418 @@
+{
+  "schema": "gradient-witness",
+  "version": 2,
+  "likelihood": {
+    "dataset_type": "multi_galaxy",
+    "variant": "mge"
+  },
+  "instrument": "hst",
+  "setup_id": "jax_cpu_dense_fp64",
+  "host_class": "hpc_ral_cpu",
+  "autolens_version": "2026.8.17.1",
+  "measured_at": "2026-11-01T21:21:34Z",
+  "hostname": "euclid-ral-compute-10-4",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "hostname": "euclid-ral-compute-10-4",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_cpu_multi_thread_eigen=false --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 236,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2dg/output/jax_cache/p6_413822_4",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-11-01T21:21:34Z",
+      "host": "euclid-ral-compute-10-4",
+      "slurm": {
+        "job_id": "413822",
+        "array_job_id": "413812",
+        "array_task_id": "4"
+      },
+      "loadavg_at_import": [
+        0.88,
+        0.18,
+        0.06
+      ],
+      "loadavg_at_write": [
+        14.95,
+        5.39,
+        1.96
+      ],
+      "profiling_revision": "d7b70a3fc29ae568af91108423d90d76bbe016b4",
+      "library_revisions": {
+        "autolens_profiling": "d7b70a3fc29ae568af91108423d90d76bbe016b4",
+        "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+        "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+        "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+        "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+        "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.65.1",
+        "nufftax": "0.6.1",
+        "finufft": "2.5.1"
+      }
+    }
+  },
+  "resources": {
+    "resources_schema": 1,
+    "engine": "jax",
+    "device": "cpu",
+    "cpus_per_eval": 8,
+    "cpus_per_eval_basis": "jax cpu: NPROC threads in XLA's CPU intra-op pool",
+    "devices_per_eval": 0,
+    "peak_rss_gb": 4.909281,
+    "peak_rss_basis": "in_process_ru_maxrss",
+    "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
+  },
+  "configuration": {
+    "dataset_type": "multi_galaxy",
+    "pixel_scale_arcsec": 0.05,
+    "mask_radius_arcsec": 3.0,
+    "image_pixels_masked": 11304,
+    "over_sampled_pixels": 47904,
+    "source_pixels": null,
+    "source_pixels_requested": null,
+    "standard_size": true,
+    "galaxy_group_cell": {
+      "dataset_type": "multi_galaxy",
+      "instrument": "hst",
+      "dataset": "autolens_workspace scripts/multi_galaxy/simulator.py (grid 200x200 at 0.05\", galaxies, exposure 900 s, sky 0.1, mask_extra_galaxies 3 x 0.3\") and modeling.py (3.0\" mask, noise scaling, radial-bin over-sampling on both lenses); autolens_visualization true_models/multi_galaxy.py; PSF from instruments/imaging.py hst (21x21, sigma 0.05\")",
+      "mask_radius_arcsec": 3.0,
+      "noise_scaled_region": {
+        "centre": [
+          2.2,
+          1.6
+        ],
+        "radius": 0.9
+      },
+      "lens_light": "workspace MGE: 20 linear Gaussians per main lens",
+      "main_lenses": 2,
+      "extra_galaxies": 0,
+      "ruling": "likelihood-lifecycle 2d draft (#473), decisions D1-D9 on the campaign page",
+      "source": "MGE, 20 linear Gaussians (one basis)",
+      "sequence": {
+        "kind": "iid",
+        "unit_low": 0.4,
+        "unit_high": 0.6,
+        "seed": 235
+      }
+    },
+    "memo_provenance": {
+      "requested": "off",
+      "settings_nnls_warm_start_memo": false,
+      "env_AUTOARRAY_NNLS_WARM_START": "0",
+      "env_before": null,
+      "note": "Both gates are set for memo=off: the Settings flag and the AUTOARRAY_NNLS_WARM_START env kill-switch (autoarray/inversion/inversion/nnls_memo.py:63). settings_nnls_warm_start_memo is read back off the constructed Settings, so it records what took effect. The library default is true and both production projects leave it unset."
+    },
+    "instance": "iid draw 0 of the seeded sequence",
+    "instance_unit_vector": [
+      0.499784489007424,
+      0.41402443684610074,
+      0.41327450881714656,
+      0.4200167345680767,
+      0.5789514047288555,
+      0.4702516857248635,
+      0.567334291975647,
+      0.47173759315010344,
+      0.5239626288064884,
+      0.5543072472409505,
+      0.5399346262699198,
+      0.5099305691842051,
+      0.5974626164364525,
+      0.4381789532715836,
+      0.5552315204832754,
+      0.5058238713539893,
+      0.45735024341537395,
+      0.5870995335054062,
+      0.509803788830344,
+      0.41707028300618887
+    ]
+  },
+  "point": "iid draw 0 of the seeded sequence",
+  "n_parameters": 248,
+  "precision": "float64",
+  "log_likelihood": -4601.379886889445,
+  "value_and_grad_log_likelihood": -4601.379886889477,
+  "repeats": 10,
+  "statistic": "median",
+  "vmap_batch": 8,
+  "vmap_note": null,
+  "timings": {
+    "forward.single_call_s": 0.024752769502811134,
+    "forward.first_call_s": 7.775457203038968,
+    "forward.vmap_per_call_s": 0.026931639687973075,
+    "value_and_grad.single_call_s": 0.10307166847633198,
+    "value_and_grad.first_call_s": 30.385026287054643,
+    "value_and_grad.vmap_per_call_s": 0.10645365793607198
+  },
+  "grad_over_forward": 4.164045904625997,
+  "grad_over_forward_vmap": 3.9527358589908372,
+  "gradient": {
+    "finite": true,
+    "l2_norm": 788140.8962563187,
+    "nonzero": true
+  },
+  "fd": {
+    "status": "fail",
+    "directions": [
+      {
+        "step": 0.001,
+        "fd_h": 67245.05186888564,
+        "fd_half": 66817.58928854106,
+        "fd": 66675.10176175954,
+        "analytic": 66471.54437612469,
+        "rel_error": 0.003062323698739925
+      },
+      {
+        "step": 0.001,
+        "fd_h": -792.3525567584875,
+        "fd_half": -392.20723066682694,
+        "fd": -258.8254553029401,
+        "analytic": 1152.2171784461138,
+        "rel_error": 1.2246325260069404
+      },
+      {
+        "step": 0.001,
+        "fd_h": 25115.5855232264,
+        "fd_half": 24911.296240239608,
+        "fd": 24843.199812577343,
+        "analytic": 24550.033057248515,
+        "rel_error": 0.011941603281966626
+      }
+    ],
+    "rule": {
+      "directions": 3,
+      "steps": [
+        0.001,
+        0.0005
+      ],
+      "richardson": true,
+      "tolerance": 0.0001,
+      "tiny": 1e-08,
+      "seed": 20261101
+    },
+    "max_rel_error": 1.2246325260069404
+  },
+  "fd_sweep": {
+    "status": "pass",
+    "directions": [
+      {
+        "analytic": 66471.54437612469,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": 61765.247318273556
+          },
+          {
+            "step": 0.03,
+            "central": 66234.62819910207
+          },
+          {
+            "step": 0.01,
+            "central": 66781.51988073587
+          },
+          {
+            "step": 0.003,
+            "central": 67281.11272226124
+          },
+          {
+            "step": 0.001,
+            "central": 67245.05186888564
+          },
+          {
+            "step": 0.0003,
+            "central": 66567.02253256906
+          },
+          {
+            "step": 0.0001,
+            "central": 66471.61768552905
+          },
+          {
+            "step": 3e-05,
+            "central": 66471.55097622696
+          },
+          {
+            "step": 1e-05,
+            "central": 66471.54510337714
+          },
+          {
+            "step": 3e-06,
+            "central": 66471.54447212718
+          },
+          {
+            "step": 1e-06,
+            "central": 66471.54447091452
+          },
+          {
+            "step": 1e-07,
+            "central": 66471.54474194394
+          },
+          {
+            "step": 1e-08,
+            "central": 66471.54223173857
+          }
+        ],
+        "class": "agree"
+      },
+      {
+        "analytic": 1152.2171784461138,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": 5584.211975836806
+          },
+          {
+            "step": 0.03,
+            "central": 2156.9352151776307
+          },
+          {
+            "step": 0.01,
+            "central": -1912.2754723348407
+          },
+          {
+            "step": 0.003,
+            "central": -1674.536287745165
+          },
+          {
+            "step": 0.001,
+            "central": -792.3525567584875
+          },
+          {
+            "step": 0.0003,
+            "central": 172.1550097681757
+          },
+          {
+            "step": 0.0001,
+            "central": 1013.6862548642966
+          },
+          {
+            "step": 3e-05,
+            "central": 1152.1927007076254
+          },
+          {
+            "step": 1e-05,
+            "central": 1152.214457943046
+          },
+          {
+            "step": 3e-06,
+            "central": 1152.2169491703
+          },
+          {
+            "step": 1e-06,
+            "central": 1152.2171189426444
+          },
+          {
+            "step": 1e-07,
+            "central": 1152.2167733346578
+          },
+          {
+            "step": 1e-08,
+            "central": 1152.2168279043399
+          }
+        ],
+        "class": "agree"
+      },
+      {
+        "analytic": 24550.033057248515,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": 28738.941197231616
+          },
+          {
+            "step": 0.03,
+            "central": 27695.115851888964
+          },
+          {
+            "step": 0.01,
+            "central": 23770.489674885357
+          },
+          {
+            "step": 0.003,
+            "central": 23826.598046372357
+          },
+          {
+            "step": 0.001,
+            "central": 25115.5855232264
+          },
+          {
+            "step": 0.0003,
+            "central": 24685.97769246117
+          },
+          {
+            "step": 0.0001,
+            "central": 24093.520488549984
+          },
+          {
+            "step": 3e-05,
+            "central": 24201.679992620484
+          },
+          {
+            "step": 1e-05,
+            "central": 24550.013420957835
+          },
+          {
+            "step": 3e-06,
+            "central": 24550.031306716846
+          },
+          {
+            "step": 1e-06,
+            "central": 24550.032858314808
+          },
+          {
+            "step": 1e-07,
+            "central": 24550.03294016933
+          },
+          {
+            "step": 1e-08,
+            "central": 24550.032139813993
+          }
+        ],
+        "class": "agree"
+      }
+    ],
+    "rule": {
+      "directions": 3,
+      "steps": [
+        0.1,
+        0.03,
+        0.01,
+        0.003,
+        0.001,
+        0.0003,
+        0.0001,
+        3e-05,
+        1e-05,
+        3e-06,
+        1e-06,
+        1e-07,
+        1e-08
+      ],
+      "run": 3,
+      "tolerance": 0.0001,
+      "tiny": 1e-08,
+      "seed": 20261101
+    }
+  },
+  "hazard": {
+    "flag": true,
+    "reasons": [
+      "value_and_grad costs 4.16x the forward call (threshold 4x)"
+    ],
+    "threshold_grad_over_forward": 4.0
+  }
+}

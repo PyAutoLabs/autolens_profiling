@@ -1,0 +1,411 @@
+{
+  "schema": "gradient-witness",
+  "version": 2,
+  "likelihood": {
+    "dataset_type": "group",
+    "variant": "mge"
+  },
+  "instrument": "euclid",
+  "setup_id": "jax_cpu_dense_fp64",
+  "host_class": "hpc_ral_cpu",
+  "autolens_version": "2026.8.17.1",
+  "measured_at": "2026-11-01T21:21:49Z",
+  "hostname": "euclid-ral-compute-10-4",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "hostname": "euclid-ral-compute-10-4",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_cpu_multi_thread_eigen=false --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 236,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2dg/output/jax_cache/p6_413819_1",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-11-01T21:21:49Z",
+      "host": "euclid-ral-compute-10-4",
+      "slurm": {
+        "job_id": "413819",
+        "array_job_id": "413812",
+        "array_task_id": "1"
+      },
+      "loadavg_at_import": [
+        0.88,
+        0.18,
+        0.06
+      ],
+      "loadavg_at_write": [
+        15.15,
+        5.89,
+        2.18
+      ],
+      "profiling_revision": "d7b70a3fc29ae568af91108423d90d76bbe016b4",
+      "library_revisions": {
+        "autolens_profiling": "d7b70a3fc29ae568af91108423d90d76bbe016b4",
+        "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+        "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+        "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+        "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+        "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.65.1",
+        "nufftax": "0.6.1",
+        "finufft": "2.5.1"
+      }
+    }
+  },
+  "resources": {
+    "resources_schema": 1,
+    "engine": "jax",
+    "device": "cpu",
+    "cpus_per_eval": 8,
+    "cpus_per_eval_basis": "jax cpu: NPROC threads in XLA's CPU intra-op pool",
+    "devices_per_eval": 0,
+    "peak_rss_gb": 6.069195,
+    "peak_rss_basis": "in_process_ru_maxrss",
+    "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
+  },
+  "configuration": {
+    "dataset_type": "group",
+    "pixel_scale_arcsec": 0.1,
+    "mask_radius_arcsec": 7.5,
+    "image_pixels_masked": 17692,
+    "over_sampled_pixels": 71920,
+    "source_pixels": null,
+    "source_pixels_requested": null,
+    "standard_size": true,
+    "galaxy_group_cell": {
+      "dataset_type": "group",
+      "instrument": "euclid",
+      "dataset": "autolens_workspace scripts/group/simulator.py (grid 250x250 at 0.1\", galaxies, exposure 300 s, sky 0.1) and modeling.py (7.5\" mask, radial-bin over-sampling on every galaxy); autolens_visualization true_models/group.py; PSF from instruments/imaging.py euclid (21x21, sigma 0.1\")",
+      "mask_radius_arcsec": 7.5,
+      "noise_scaled_region": null,
+      "lens_light": "workspace MGE: 20 linear Gaussians per main lens, 10 per extra galaxy (centre fixed)",
+      "main_lenses": 1,
+      "extra_galaxies": 2,
+      "ruling": "likelihood-lifecycle 2d draft (#473), decisions D1-D9 on the campaign page",
+      "source": "MGE, 20 linear Gaussians (one basis)",
+      "sequence": {
+        "kind": "iid",
+        "unit_low": 0.4,
+        "unit_high": 0.6,
+        "seed": 235
+      }
+    },
+    "memo_provenance": {
+      "requested": "off",
+      "settings_nnls_warm_start_memo": false,
+      "env_AUTOARRAY_NNLS_WARM_START": "0",
+      "env_before": null,
+      "note": "Both gates are set for memo=off: the Settings flag and the AUTOARRAY_NNLS_WARM_START env kill-switch (autoarray/inversion/inversion/nnls_memo.py:63). settings_nnls_warm_start_memo is read back off the constructed Settings, so it records what took effect. The library default is true and both production projects leave it unset."
+    },
+    "instance": "iid draw 0 of the seeded sequence",
+    "instance_unit_vector": [
+      0.499784489007424,
+      0.41402443684610074,
+      0.41327450881714656,
+      0.4200167345680767,
+      0.5789514047288555,
+      0.4702516857248635,
+      0.567334291975647,
+      0.47173759315010344,
+      0.5239626288064884,
+      0.5543072472409505,
+      0.5399346262699198,
+      0.5099305691842051,
+      0.5974626164364525,
+      0.4381789532715836,
+      0.5552315204832754,
+      0.5058238713539893,
+      0.45735024341537395,
+      0.5870995335054062,
+      0.509803788830344,
+      0.41707028300618887,
+      0.5825033050631517
+    ]
+  },
+  "point": "iid draw 0 of the seeded sequence",
+  "n_parameters": 249,
+  "precision": "float64",
+  "log_likelihood": 33363.82904369078,
+  "value_and_grad_log_likelihood": 33363.829043690785,
+  "repeats": 10,
+  "statistic": "median",
+  "vmap_batch": 8,
+  "vmap_note": null,
+  "timings": {
+    "forward.single_call_s": 0.03970506298355758,
+    "forward.first_call_s": 8.97158218594268,
+    "forward.vmap_per_call_s": 0.04167340986896306,
+    "value_and_grad.single_call_s": 0.1458073470275849,
+    "value_and_grad.first_call_s": 31.792666952940635,
+    "value_and_grad.vmap_per_call_s": 0.1645933997569955
+  },
+  "grad_over_forward": 3.6722608169130915,
+  "grad_over_forward_vmap": 3.949602402936052,
+  "gradient": {
+    "finite": true,
+    "l2_norm": 133581.62840538952,
+    "nonzero": true
+  },
+  "fd": {
+    "status": "pass",
+    "directions": [
+      {
+        "step": 0.001,
+        "fd_h": -807.1013732223946,
+        "fd_half": -807.0471125829499,
+        "fd": -807.0290257031351,
+        "analytic": -807.0289950394467,
+        "rel_error": 3.799577031758837e-08
+      },
+      {
+        "step": 0.001,
+        "fd_h": -146.509397050977,
+        "fd_half": -146.50801575771766,
+        "fd": -146.5075553266312,
+        "analytic": -146.5075553166903,
+        "rel_error": 6.785260444375716e-11
+      },
+      {
+        "step": 0.001,
+        "fd_h": -349.82664827475674,
+        "fd_half": -349.82681382098235,
+        "fd": -349.82686900305754,
+        "analytic": -349.8268689980964,
+        "rel_error": 1.4181652433168983e-11
+      }
+    ],
+    "rule": {
+      "directions": 3,
+      "steps": [
+        0.001,
+        0.0005
+      ],
+      "richardson": true,
+      "tolerance": 0.0001,
+      "tiny": 1e-08,
+      "seed": 20261101
+    },
+    "max_rel_error": 3.799577031758837e-08
+  },
+  "fd_sweep": {
+    "status": "pass",
+    "directions": [
+      {
+        "analytic": -807.0289950394467,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": -820.4476007037374
+          },
+          {
+            "step": 0.03,
+            "central": -849.28482744884
+          },
+          {
+            "step": 0.01,
+            "central": -830.9263782128255
+          },
+          {
+            "step": 0.003,
+            "central": -809.8658611731177
+          },
+          {
+            "step": 0.001,
+            "central": -807.1013732223946
+          },
+          {
+            "step": 0.0003,
+            "central": -807.0355191618244
+          },
+          {
+            "step": 0.0001,
+            "central": -807.0297199810739
+          },
+          {
+            "step": 3e-05,
+            "central": -807.0290607671874
+          },
+          {
+            "step": 1e-05,
+            "central": -807.0290019531966
+          },
+          {
+            "step": 3e-06,
+            "central": -807.0290083802926
+          },
+          {
+            "step": 1e-06,
+            "central": -807.0290205068886
+          },
+          {
+            "step": 1e-07,
+            "central": -807.028882263694
+          },
+          {
+            "step": 1e-08,
+            "central": -807.029937277548
+          }
+        ],
+        "class": "agree"
+      },
+      {
+        "analytic": -146.5075553166903,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": -149.8957283519485
+          },
+          {
+            "step": 0.03,
+            "central": -146.49753346760312
+          },
+          {
+            "step": 0.01,
+            "central": -146.69070977470255
+          },
+          {
+            "step": 0.003,
+            "central": -146.52412354674502
+          },
+          {
+            "step": 0.001,
+            "central": -146.509397050977
+          },
+          {
+            "step": 0.0003,
+            "central": -146.5077211832977
+          },
+          {
+            "step": 0.0001,
+            "central": -146.50757344497833
+          },
+          {
+            "step": 3e-05,
+            "central": -146.50755632222476
+          },
+          {
+            "step": 1e-05,
+            "central": -146.5075558371609
+          },
+          {
+            "step": 3e-06,
+            "central": -146.50755353310765
+          },
+          {
+            "step": 1e-06,
+            "central": -146.50755474576727
+          },
+          {
+            "step": 1e-07,
+            "central": -146.50770026491955
+          },
+          {
+            "step": 1e-08,
+            "central": -146.50722732767463
+          }
+        ],
+        "class": "agree"
+      },
+      {
+        "analytic": -349.8268689980964,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": -346.06793297076365
+          },
+          {
+            "step": 0.03,
+            "central": -348.8347681219845
+          },
+          {
+            "step": 0.01,
+            "central": -349.7855498648278
+          },
+          {
+            "step": 0.003,
+            "central": -349.8248829152241
+          },
+          {
+            "step": 0.001,
+            "central": -349.82664827475674
+          },
+          {
+            "step": 0.0003,
+            "central": -349.82684913605533
+          },
+          {
+            "step": 0.0001,
+            "central": -349.8268665134674
+          },
+          {
+            "step": 3e-05,
+            "central": -349.8268692055717
+          },
+          {
+            "step": 1e-05,
+            "central": -349.8268684779759
+          },
+          {
+            "step": 3e-06,
+            "central": -349.8268573215076
+          },
+          {
+            "step": 1e-06,
+            "central": -349.8268633848056
+          },
+          {
+            "step": 1e-07,
+            "central": -349.826950696297
+          },
+          {
+            "step": 1e-08,
+            "central": -349.8273144941777
+          }
+        ],
+        "class": "agree"
+      }
+    ],
+    "rule": {
+      "directions": 3,
+      "steps": [
+        0.1,
+        0.03,
+        0.01,
+        0.003,
+        0.001,
+        0.0003,
+        0.0001,
+        3e-05,
+        1e-05,
+        3e-06,
+        1e-06,
+        1e-07,
+        1e-08
+      ],
+      "run": 3,
+      "tolerance": 0.0001,
+      "tiny": 1e-08,
+      "seed": 20261101
+    }
+  },
+  "hazard": {
+    "flag": false,
+    "reasons": [],
+    "threshold_grad_over_forward": 4.0
+  }
+}

@@ -1,0 +1,355 @@
+{
+  "schema": "gradient-witness",
+  "version": 2,
+  "likelihood": {
+    "dataset_type": "imaging",
+    "variant": "mge"
+  },
+  "instrument": "ao",
+  "setup_id": "jax_cpu_dense_fp64",
+  "host_class": "hpc_ral_cpu",
+  "autolens_version": "2026.8.17.1",
+  "measured_at": "2026-11-01T21:25:23Z",
+  "hostname": "euclid-ral-compute-10-2",
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "hostname": "euclid-ral-compute-10-2",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_cpu_multi_thread_eigen=false --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 236,
+    "jax_compilation_cache_dir": "/mnt/ral/jnightin/profiling/autolens_profiling_p2dg/output/jax_cache/p6_413800_5",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-11-01T21:25:23Z",
+      "host": "euclid-ral-compute-10-2",
+      "slurm": {
+        "job_id": "413800",
+        "array_job_id": "413792",
+        "array_task_id": "5"
+      },
+      "loadavg_at_import": [
+        0.7,
+        0.15,
+        0.05
+      ],
+      "loadavg_at_write": [
+        14.08,
+        8.98,
+        4.02
+      ],
+      "profiling_revision": "d7b70a3fc29ae568af91108423d90d76bbe016b4",
+      "library_revisions": {
+        "autolens_profiling": "d7b70a3fc29ae568af91108423d90d76bbe016b4",
+        "PyAutoNerves": "ec8b5c1e5f17ac03ac5246b5fbc322624a6cd3f6",
+        "PyAutoFit": "8cb533a605f556d85012d5eb7ed8d4f3c2a4dcf6",
+        "PyAutoArray": "0f12fac7789c81d0fdaa324508ced5b4c434d42a",
+        "PyAutoGalaxy": "7472211470b9d2b3a76bb12dcacbac51ab4de06f",
+        "PyAutoLens": "c6927eeb33724c2de2f2e2c773ba3ebe651943a8"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.11.2",
+        "jaxlib": "0.11.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.65.1",
+        "nufftax": "0.6.1",
+        "finufft": "2.5.1"
+      }
+    }
+  },
+  "resources": {
+    "resources_schema": 1,
+    "engine": "jax",
+    "device": "cpu",
+    "cpus_per_eval": 8,
+    "cpus_per_eval_basis": "jax cpu: NPROC threads in XLA's CPU intra-op pool",
+    "devices_per_eval": 0,
+    "peak_rss_gb": 46.725243,
+    "peak_rss_basis": "in_process_ru_maxrss",
+    "peak_rss_note": "resource.getrusage(RUSAGE_SELF).ru_maxrss when the row was built: this process's peak resident set (children excluded), GB = 1e9 bytes"
+  },
+  "configuration": {},
+  "point": "prior_medians",
+  "n_parameters": 160,
+  "precision": "float64",
+  "log_likelihood": 659642.4600700189,
+  "value_and_grad_log_likelihood": 659642.4600700189,
+  "repeats": 10,
+  "statistic": "median",
+  "vmap_batch": 8,
+  "vmap_note": null,
+  "timings": {
+    "forward.single_call_s": 0.4334977595717646,
+    "forward.first_call_s": 12.971490091062151,
+    "forward.vmap_per_call_s": 0.4336182606857619,
+    "value_and_grad.single_call_s": 1.562273968476802,
+    "value_and_grad.first_call_s": 24.82748100394383,
+    "value_and_grad.vmap_per_call_s": 1.8026449602475623
+  },
+  "grad_over_forward": 3.6038801446635182,
+  "grad_over_forward_vmap": 4.1572164359423,
+  "gradient": {
+    "finite": true,
+    "l2_norm": 1563047.8066719882,
+    "nonzero": true
+  },
+  "fd": {
+    "status": "fail",
+    "directions": [
+      {
+        "step": 0.001,
+        "fd_h": -184211.37100143824,
+        "fd_half": -184231.48618161213,
+        "fd": -184238.19124167008,
+        "analytic": -184220.26657248512,
+        "rel_error": 9.730020218976299e-05
+      },
+      {
+        "step": 0.001,
+        "fd_h": 266544.1146658268,
+        "fd_half": 266731.76800785586,
+        "fd": 266794.31912186556,
+        "analytic": 265523.2072148577,
+        "rel_error": 0.004787197022591344
+      },
+      {
+        "step": 0.001,
+        "fd_h": 117715.7253807527,
+        "fd_half": 117715.4157909099,
+        "fd": 117715.31259429564,
+        "analytic": 117878.24119559363,
+        "rel_error": 0.0013821770637690585
+      }
+    ],
+    "rule": {
+      "directions": 3,
+      "steps": [
+        0.001,
+        0.0005
+      ],
+      "richardson": true,
+      "tolerance": 0.0001,
+      "tiny": 1e-08,
+      "seed": 20261101
+    },
+    "max_rel_error": 0.004787197022591344
+  },
+  "fd_sweep": {
+    "status": "fail",
+    "directions": [
+      {
+        "analytic": -184220.26657248512,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": -204364.61688191455
+          },
+          {
+            "step": 0.03,
+            "central": -185338.71031746775
+          },
+          {
+            "step": 0.01,
+            "central": -184240.27578988462
+          },
+          {
+            "step": 0.003,
+            "central": -184317.728590065
+          },
+          {
+            "step": 0.001,
+            "central": -184211.37100143824
+          },
+          {
+            "step": 0.0003,
+            "central": -184235.41781434327
+          },
+          {
+            "step": 0.0001,
+            "central": -184236.7602174636
+          },
+          {
+            "step": 3e-05,
+            "central": -184236.60323993923
+          },
+          {
+            "step": 1e-05,
+            "central": -184236.49827600454
+          },
+          {
+            "step": 3e-06,
+            "central": -184236.4552236783
+          },
+          {
+            "step": 1e-06,
+            "central": -184236.44232098013
+          },
+          {
+            "step": 1e-07,
+            "central": -184236.43545247614
+          },
+          {
+            "step": 1e-08,
+            "central": -184236.4319600165
+          }
+        ],
+        "class": "agree"
+      },
+      {
+        "analytic": 265523.2072148577,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": 245860.57249359263
+          },
+          {
+            "step": 0.03,
+            "central": 256661.0610934149
+          },
+          {
+            "step": 0.01,
+            "central": 263909.1173962923
+          },
+          {
+            "step": 0.003,
+            "central": 267092.3906845467
+          },
+          {
+            "step": 0.001,
+            "central": 266544.1146658268
+          },
+          {
+            "step": 0.0003,
+            "central": 266726.40209629515
+          },
+          {
+            "step": 0.0001,
+            "central": 266720.4202723224
+          },
+          {
+            "step": 3e-05,
+            "central": 266718.1794298813
+          },
+          {
+            "step": 1e-05,
+            "central": 266717.5250884611
+          },
+          {
+            "step": 3e-06,
+            "central": 266717.29459970567
+          },
+          {
+            "step": 1e-06,
+            "central": 266717.22857281566
+          },
+          {
+            "step": 1e-07,
+            "central": 266717.19970181584
+          },
+          {
+            "step": 1e-08,
+            "central": 266717.20552258193
+          }
+        ],
+        "class": "mismatch"
+      },
+      {
+        "analytic": 117878.24119559363,
+        "steps": [
+          {
+            "step": 0.1,
+            "central": 111663.78908563056
+          },
+          {
+            "step": 0.03,
+            "central": 117544.09216272761
+          },
+          {
+            "step": 0.01,
+            "central": 117250.72449914878
+          },
+          {
+            "step": 0.003,
+            "central": 117674.59258136417
+          },
+          {
+            "step": 0.001,
+            "central": 117715.7253807527
+          },
+          {
+            "step": 0.0003,
+            "central": 117715.29799889929
+          },
+          {
+            "step": 0.0001,
+            "central": 117715.25825606659
+          },
+          {
+            "step": 3e-05,
+            "central": 117715.26798256673
+          },
+          {
+            "step": 1e-05,
+            "central": 117715.27317469007
+          },
+          {
+            "step": 3e-06,
+            "central": 117715.27524494255
+          },
+          {
+            "step": 1e-06,
+            "central": 117715.27584642172
+          },
+          {
+            "step": 1e-07,
+            "central": 117715.27701057494
+          },
+          {
+            "step": 1e-08,
+            "central": 117715.29098041356
+          }
+        ],
+        "class": "mismatch"
+      }
+    ],
+    "rule": {
+      "directions": 3,
+      "steps": [
+        0.1,
+        0.03,
+        0.01,
+        0.003,
+        0.001,
+        0.0003,
+        0.0001,
+        3e-05,
+        1e-05,
+        3e-06,
+        1e-06,
+        1e-07,
+        1e-08
+      ],
+      "run": 3,
+      "tolerance": 0.0001,
+      "tiny": 1e-08,
+      "seed": 20261101
+    }
+  },
+  "hazard": {
+    "flag": true,
+    "reasons": [
+      "FD step sweep mismatch in 2/3 direction(s): the FD converges away from grad.v (wrong gradient)"
+    ],
+    "threshold_grad_over_forward": 4.0
+  }
+}
