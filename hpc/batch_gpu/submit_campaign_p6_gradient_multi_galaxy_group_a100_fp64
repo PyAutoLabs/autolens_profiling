@@ -21,17 +21,17 @@
 #
 # MEMORY. --mem=64gb, the phase-2 source campaign's declared value for these cells.
 #
-# WALL-BASIS: a measured row cites the first run's wall of its legs (the slowest; array
-# tasks) plus 78 forward calls of the FD step sweep at the cell's measured
-# forward time. An unmeasured row is a leg the first run did not finish: a declared guess,
+# WALL-BASIS: a measured row cites the version-2 run's wall of its legs (the slowest; array
+# tasks; the FD step sweep included). An unmeasured row is a leg that run did not finish: a
+# declared guess,
 # 4x the cell's measured phase-2 runtime wall (at least 1200 s),
 # with the 3x floor. The legs' walls land in output/p6_gradient_logs/walls.tsv.
 #   3 leg(s): delaunay jax_gpu_dense_fp64 gradient, mge jax_gpu_dense_fp64 gradient, rectangular jax_gpu_dense_fp64 gradient
 #   cell: group/gradient_breakdown/euclid  device: a100  precision: fp64
-#   source: measured-wall  wall: 211  ref: 413716_0,413716_1,413716_2  measured-on: euclid  headroom: 1.25  median: included
+#   source: measured-wall  wall: 198  ref: 413828_0,413828_1,413828_2  measured-on: euclid  headroom: 1.25  median: included
 #   3 leg(s): delaunay jax_gpu_dense_fp64 gradient, mge jax_gpu_dense_fp64 gradient, rectangular jax_gpu_dense_fp64 gradient
 #   cell: multi_galaxy/gradient_breakdown/hst  device: a100  precision: fp64
-#   source: measured-wall  wall: 204  ref: 413716_3,413716_4,413716_5  measured-on: hst  headroom: 1.25  median: included
+#   source: measured-wall  wall: 198  ref: 413828_3,413828_4,413828_5  measured-on: hst  headroom: 1.25  median: included
 
 #SBATCH -J p6_multi_galaxy_group_a100
 #SBATCH --partition=gpu

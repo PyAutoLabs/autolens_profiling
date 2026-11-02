@@ -21,23 +21,23 @@
 #
 # MEMORY. --mem=64gb, the phase-2 source campaign's declared value for these cells.
 #
-# WALL-BASIS: a measured row cites the first run's wall of its legs (the slowest; array
-# tasks) plus 78 forward calls of the FD step sweep at the cell's measured
-# forward time. An unmeasured row is a leg the first run did not finish: a declared guess,
+# WALL-BASIS: a measured row cites the version-2 run's wall of its legs (the slowest; array
+# tasks; the FD step sweep included). An unmeasured row is a leg that run did not finish: a
+# declared guess,
 # 4x the cell's measured phase-2 runtime wall (at least 1200 s),
 # with the 3x floor. The legs' walls land in output/p6_gradient_logs/walls.tsv.
 #   2 leg(s): delaunay jax_gpu_sparse_fp64_wtilde gradient, rectangular jax_gpu_sparse_fp64_wtilde gradient
 #   cell: interferometer/gradient_breakdown/alma  device: a100  precision: fp64
-#   source: measured-wall  wall: 69  ref: 413720_0,413720_5  measured-on: alma  headroom: 1.25  median: included
+#   source: measured-wall  wall: 81  ref: 413826_0,413826_5  measured-on: alma  headroom: 1.25  median: included
 #   2 leg(s): delaunay jax_gpu_sparse_fp64_wtilde gradient, rectangular jax_gpu_sparse_fp64_wtilde gradient
 #   cell: interferometer/gradient_breakdown/alma_high  device: a100  precision: fp64
-#   source: measured-wall  wall: 102  ref: 413720_1,413720_6  measured-on: alma_high  headroom: 1.25  median: included
+#   source: measured-wall  wall: 113  ref: 413826_1,413826_6  measured-on: alma_high  headroom: 1.25  median: included
 #   2 leg(s): delaunay jax_gpu_sparse_fp64_wtilde gradient, rectangular jax_gpu_sparse_fp64_wtilde gradient
 #   cell: interferometer/gradient_breakdown/jvla  device: a100  precision: fp64
-#   source: measured-wall  wall: 305  ref: 413720_2,413720_7  measured-on: jvla  headroom: 1.25  median: included
+#   source: measured-wall  wall: 302  ref: 413826_2,413826_7  measured-on: jvla  headroom: 1.25  median: included
 #   3 leg(s): delaunay jax_gpu_sparse_fp64_wtilde gradient, mge jax_gpu_dense_fp64_nufft gradient, rectangular jax_gpu_sparse_fp64_wtilde gradient
 #   cell: interferometer/gradient_breakdown/sma  device: a100  precision: fp64
-#   source: measured-wall  wall: 49  ref: 413720_3,413720_4,413720_8  measured-on: sma  headroom: 1.25  median: included
+#   source: measured-wall  wall: 48  ref: 413826_3,413826_4,413826_8  measured-on: sma  headroom: 1.25  median: included
 
 #SBATCH -J p6_interferometer_a100
 #SBATCH --partition=gpu
