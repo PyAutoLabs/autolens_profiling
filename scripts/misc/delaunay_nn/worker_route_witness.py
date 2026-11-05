@@ -36,7 +36,13 @@ PASS requires all of:
 1. every leg's outputs bit-identical;
 2. ``fork_worker`` and ``patched_serial`` both ran only the serial kernel, on one core
    (CPU/wall below 1.3);
-3. ``patched_serial`` median within ``--tolerance`` (default 10%) of ``fork_worker``.
+3. the ``paired_patch_worker`` ratio (patched parent / real forked worker, alternating call by
+   call) has its whole 90% paired round-bootstrap interval (``round_bootstrap.round_median_ratio``,
+   the autolens_profiling#362 house rule) inside 1 ± ``--tolerance`` (default 10%). An interval
+   wholly outside is FAIL; one straddling the bound is INCONCLUSIVE.
+
+``paired_kernels`` alternates the serial and ``prange`` kernels call by call in one process at
+one thread, isolating the difference between the two compilations of the same body.
 
 Inputs: the real HST source-plane DelaunayNN vertices in
 ``results/misc/delaunay_nn/mesh_points_hst.npy`` (1,500 points, see ``extract_mesh_points.py``),
@@ -454,7 +460,7 @@ def orchestrate(args):
         "library": _library_identity(),
         "summary": summary,
         "checks": checks,
-        "verdict": "PASS" if all(c["ok"] for c in checks.values()) else "FAIL",
+        "verdict": overall_verdict(checks),
         "rounds": rounds,
     }
 
@@ -473,8 +479,8 @@ def orchestrate(args):
         )
     for name, ratio in summary["paired_ratios"].items():
         print(
-            f"  ratio {name}: median {ratio['median']:.3f} "
-            f"[{ratio['min']:.3f}-{ratio['max']:.3f}] over rounds"
+            f"  ratio {name}: {ratio['ratio']:.3f} "
+            f"[90% CI {ratio['ci90_low']:.3f}-{ratio['ci90_high']:.3f}]"
         )
     print()
     for name, check in checks.items():
@@ -483,11 +489,37 @@ def orchestrate(args):
     return 0 if doc["verdict"] == "PASS" else 1
 
 
+def overall_verdict(checks):
+    """FAIL if a structural check fails; else the equivalence verdict (PASS / INCONCLUSIVE)."""
+    structural = [c for name, c in checks.items() if name != "patch_matches_worker"]
+    if not all(c["ok"] for c in structural):
+        return "FAIL"
+    return checks["patch_matches_worker"]["verdict"]
+
+
 def _stats(values):
     values = sorted(values)
     n = len(values)
     median = values[n // 2] if n % 2 else 0.5 * (values[n // 2 - 1] + values[n // 2])
     return {"median": median, "min": values[0], "max": values[-1], "per_round": values}
+
+
+def _round_ratio(rounds, numerator, denominator, seed):
+    """Paired whole-round bootstrap of median(numerator) / median(denominator) (#362 house rule).
+
+    ``numerator`` / ``denominator`` map one round's legs to that round's per-call walls; calls
+    from the same round stay together when rounds are resampled.
+    """
+    sys.path.insert(0, str(ROOT / "scripts" / "misc" / "likelihood_breakdown"))
+    from round_bootstrap import round_median_ratio
+
+    num, den = [numerator(r) for r in rounds], [denominator(r) for r in rounds]
+    n = min(min(len(x) for x in num), min(len(x) for x in den))
+    flat_num = [w for walls in num for w in walls[:n]]
+    flat_den = [w for walls in den for w in walls[:n]]
+    out = round_median_ratio(flat_num, flat_den, n_rounds=len(rounds), seed=seed)
+    out["per_round"] = [_stats(a)["median"] / _stats(b)["median"] for a, b in zip(num, den)]
+    return out
 
 
 def summarise(rounds):
@@ -499,7 +531,7 @@ def summarise(rounds):
             "median_ms": stats["median"],
             "min_ms": stats["min"],
             "max_ms": stats["max"],
-            "round_medians_ms": [r[leg]["median_s"] * 1e3 for r in rounds],
+            "round_medians_ms": medians,
             "cpu_per_wall": (
                 _stats([r[leg]["cpu_per_wall"] for r in rounds])["median"]
                 if all(r[leg]["cpu_per_wall"] is not None for r in rounds)
@@ -507,27 +539,44 @@ def summarise(rounds):
             ),
             "routes_called": sorted({x for r in rounds for x in r[leg]["routes_called"]}),
         }
+    walls = lambda leg: lambda r: r[leg]["walls_s"]  # noqa: E731
     paired = {
-        # Same round, back to back: drift between rounds cancels.
-        "patched_serial / fork_worker": _stats(
-            [r["patched_serial"]["median_s"] / r["fork_worker"]["median_s"] for r in rounds]
-        ),
-        # Same process, call by call: the two compilations of one body.
-        "serial / prange@1 (paired_kernels)": _stats(
-            [r["paired_kernels"]["serial_over_prange_t1"] for r in rounds]
-        ),
         # One parent, one persistent forked worker, call by call: the decisive comparison.
-        "patched / worker (paired_patch_worker)": _stats(
-            [r["paired_patch_worker"]["patched_over_worker"] for r in rounds]
+        "patched / worker (paired_patch_worker)": _round_ratio(
+            rounds,
+            lambda r: r["paired_patch_worker"]["patched_walls_s"],
+            lambda r: r["paired_patch_worker"]["worker_walls_s"],
+            seed=519,
         ),
-        "parallel_t1 / fork_worker": _stats(
-            [r["parallel_t1"]["median_s"] / r["fork_worker"]["median_s"] for r in rounds]
+        # Same process, call by call: the two compilations of one body at one thread.
+        "serial / prange@1 (paired_kernels)": _round_ratio(
+            rounds,
+            lambda r: r["paired_kernels"]["serial_walls_s"],
+            lambda r: r["paired_kernels"]["prange_t1_walls_s"],
+            seed=520,
         ),
-        "fork_worker / parallel_t8 (worker vs the day-zero condition)": _stats(
-            [r["fork_worker"]["median_s"] / r["parallel_t8"]["median_s"] for r in rounds]
+        # Separate processes in the same round: a NUMBA_NUM_THREADS=1-only pin vs a worker.
+        "parallel_t1 / fork_worker": _round_ratio(
+            rounds, walls("parallel_t1"), walls("fork_worker"), seed=521
+        ),
+        "patched_serial / fork_worker": _round_ratio(
+            rounds, walls("patched_serial"), walls("fork_worker"), seed=522
+        ),
+        # How much cheaper the day-zero condition (prange on the 8-CPU task) was than a worker.
+        "fork_worker / parallel_t8": _round_ratio(
+            rounds, walls("fork_worker"), walls("parallel_t8"), seed=523
         ),
     }
     return {"legs": legs, "paired_ratios": paired}
+
+
+def equivalence_verdict(low, high, tolerance):
+    """PASS when the whole interval is inside 1 ± tolerance, FAIL when it is wholly outside."""
+    if 1.0 - tolerance <= low and high <= 1.0 + tolerance:
+        return "PASS"
+    if high < 1.0 - tolerance or low > 1.0 + tolerance:
+        return "FAIL"
+    return "INCONCLUSIVE"
 
 
 def verdict(rounds, summary, tolerance):
@@ -537,16 +586,15 @@ def verdict(rounds, summary, tolerance):
         and all(r[leg]["cpu_per_wall"] < 1.3 for r in rounds)
         for leg in ("fork_worker", "patched_serial", "fork_workers_all")
     }
-    in_child = all(
-        r[leg].get("in_multiprocessing_child") for r in rounds for leg in ("fork_worker",)
-    )
-    ratio = summary["paired_ratios"]["patched / worker (paired_patch_worker)"]
+    in_child = all(r["fork_worker"].get("in_multiprocessing_child") for r in rounds)
     paired_routes_ok = all(
         r["paired_patch_worker"]["parent_routes_called"] == ["serial"]
         and r["paired_patch_worker"]["worker_routes_called"] == ["serial"]
         and r["paired_patch_worker"]["in_multiprocessing_child"]
         for r in rounds
     )
+    ratio = summary["paired_ratios"]["patched / worker (paired_patch_worker)"]
+    equivalence = equivalence_verdict(ratio["ci90_low"], ratio["ci90_high"], tolerance)
     return {
         "outputs_identical": {
             "ok": len(hashes) == 1,
@@ -571,10 +619,12 @@ def verdict(rounds, summary, tolerance):
             "detail": "patched parent and forked worker both took only the serial route",
         },
         "patch_matches_worker": {
-            "ok": abs(ratio["median"] - 1.0) <= tolerance,
+            "ok": equivalence == "PASS",
+            "verdict": equivalence,
             "detail": (
-                f"paired patched / worker median {ratio['median']:.3f} over rounds "
-                f"[{ratio['min']:.3f}-{ratio['max']:.3f}] (tolerance ±{tolerance:.0%})"
+                f"paired patched / worker {ratio['ratio']:.3f}, 90% round-bootstrap interval "
+                f"[{ratio['ci90_low']:.3f}, {ratio['ci90_high']:.3f}] over "
+                f"{ratio['effective_n']} rounds; {equivalence} against 1 ± {tolerance:.0%}"
             ),
         },
     }

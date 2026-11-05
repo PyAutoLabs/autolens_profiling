@@ -119,6 +119,84 @@ def observe_thread_env() -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
+# The Nautilus worker route for numba ``prange`` kernels (autolens_profiling#519)
+# ---------------------------------------------------------------------------
+#
+# Nautilus parallelises with a Python ``multiprocessing`` pool: PyAutoFit evaluates the
+# likelihood once in the parent, then forks one worker per core, and every sample is
+# evaluated in a worker. Since PyAutoArray#677, ``autoarray.numba_util.parallel_kernel_allowed``
+# is False in any multiprocessing child, so a worker runs the Sibson interpolator's SERIAL
+# compilation (``parallel=False``; no numba threading layer). A profiling cell is a single
+# MainProcess, so without help it takes the ``prange`` compilation instead, on as many threads
+# as numba sees. Pinning ``NUMBA_NUM_THREADS=1`` alone is not enough: it times the ``prange``
+# kernel on one thread, which ``scripts/misc/delaunay_nn/worker_route_witness.py`` measures as
+# ~18-30% cheaper than the serial build a worker runs (numba hoists the per-query scratch
+# allocations out of the loop only under ``parallel=True``). Forcing ``parallel_kernel_allowed``
+# False in-process matches a real forked worker call by call (1.002, witness).
+#
+# ``NUMBA_NUM_THREADS`` is deliberately NOT added to ``THREAD_ENV_VARS`` (that tuple is recorded
+# verbatim in every cell's ``configuration.thread_env``; see ``fixed_light_numba.py``). These
+# helpers record their own ``numba_worker_route`` block, for the cells that call them only.
+
+NUMBA_WORKER_ROUTE_NOTE = (
+    "Nautilus worker route (autolens_profiling#519): NUMBA_NUM_THREADS set to 1 before numba "
+    "import and autoarray.numba_util.parallel_kernel_allowed forced False, so numba prange "
+    "kernels (the Sibson interpolator) run the serial compilation a multiprocessing search "
+    "worker runs since PyAutoArray#677. routes_called records the Sibson route every call took."
+)
+
+
+def numba_worker_route_pin() -> dict[str, Any]:
+    """Pin ``NUMBA_NUM_THREADS=1``; call BEFORE numpy / numba are imported. Stdlib only.
+
+    Returns the record that :func:`apply_numba_worker_route` completes after the imports.
+    """
+    before = os.environ.get("NUMBA_NUM_THREADS")
+    os.environ["NUMBA_NUM_THREADS"] = "1"
+    return {
+        "numba_num_threads": "1",
+        "numba_num_threads_preexisting": before,
+        "parallel_kernel_allowed_forced": None,
+        "route": None,
+        "routes_called": [],
+        "note": NUMBA_WORKER_ROUTE_NOTE,
+    }
+
+
+def apply_numba_worker_route(record: dict[str, Any]) -> dict[str, Any]:
+    """Force the worker route and record the Sibson route each call takes; call AFTER imports.
+
+    On a PyAutoArray without ``parallel_kernel_allowed`` (before #677) there is no serial
+    route: the ``prange`` kernel runs on the one pinned thread, and the record says so.
+    """
+    import numba
+    from autoarray import numba_util
+    from autoarray.inversion.mesh.interpolator import sibson
+
+    record["numba_get_num_threads"] = int(numba.get_num_threads())
+    has_serial_route = hasattr(numba_util, "parallel_kernel_allowed")
+    if has_serial_route:
+        numba_util.parallel_kernel_allowed = lambda: False
+        record["parallel_kernel_allowed_forced"] = False
+        record["route"] = "serial (multiprocessing worker route)"
+    else:
+        record["route"] = "prange kernel @1 thread (PyAutoArray before #677: no serial route)"
+
+    original = sibson.sibson_numba_kernel
+    called = record["routes_called"]
+
+    def _recording_kernel(parallel: bool = True):
+        route = "prange" if parallel or not has_serial_route else "serial"
+        if route not in called:
+            called.append(route)
+        # Before #677 the kernel factory takes no argument (always prange).
+        return original(parallel=parallel) if has_serial_route else original()
+
+    sibson.sibson_numba_kernel = _recording_kernel
+    return record
+
+
+# ---------------------------------------------------------------------------
 # The preset
 # ---------------------------------------------------------------------------
 
