@@ -1,0 +1,2780 @@
+{
+  "measurement": "delaunay_nn_worker_route_witness",
+  "question": "Does forcing parallel_kernel_allowed() False in a single process reproduce the Sibson cost a Nautilus multiprocessing worker pays?",
+  "host": "DESKTOP-H143S82",
+  "cpu_count": 8,
+  "settings": {
+    "mesh_points": 1280,
+    "queries": 61600,
+    "rounds": 5,
+    "repeats": 10,
+    "warmup": 2,
+    "tolerance": 0.1
+  },
+  "library": {
+    "autoarray": {
+      "git_sha": "e2b05f0040b485b115ae7c146eee80d4896ff839"
+    }
+  },
+  "summary": {
+    "legs": {
+      "parallel_default": {
+        "median_ms": 14.248619499994675,
+        "min_ms": 13.667910499862046,
+        "max_ms": 18.71783149908879,
+        "round_medians_ms": [
+          13.667910499862046,
+          14.248619499994675,
+          18.71783149908879,
+          16.01015949927387,
+          13.737954001044272
+        ],
+        "cpu_per_wall": 7.316680711371014,
+        "routes_called": [
+          "prange"
+        ]
+      },
+      "parallel_t8": {
+        "median_ms": 14.081463499678648,
+        "min_ms": 12.88961349928286,
+        "max_ms": 23.046751999572734,
+        "round_medians_ms": [
+          13.174289500966552,
+          14.081463499678648,
+          23.046751999572734,
+          20.454277999306214,
+          12.88961349928286
+        ],
+        "cpu_per_wall": 7.227761172363112,
+        "routes_called": [
+          "prange"
+        ]
+      },
+      "parallel_t1": {
+        "median_ms": 56.4577780005493,
+        "min_ms": 45.104132001142716,
+        "max_ms": 100.59335850019124,
+        "round_medians_ms": [
+          100.59335850019124,
+          58.286112998757744,
+          49.558490500203334,
+          45.104132001142716,
+          56.4577780005493
+        ],
+        "cpu_per_wall": 1.0377382364534993,
+        "routes_called": [
+          "prange"
+        ]
+      },
+      "patched_serial": {
+        "median_ms": 73.4004960013408,
+        "min_ms": 48.243184999591904,
+        "max_ms": 104.11721900163684,
+        "round_medians_ms": [
+          85.8710050015361,
+          73.4004960013408,
+          53.44428100033838,
+          104.11721900163684,
+          48.243184999591904
+        ],
+        "cpu_per_wall": 1.037877463302086,
+        "routes_called": [
+          "serial"
+        ]
+      },
+      "fork_worker": {
+        "median_ms": 64.58409550214128,
+        "min_ms": 54.30994349990215,
+        "max_ms": 75.93456199901993,
+        "round_medians_ms": [
+          75.93456199901993,
+          64.58409550214128,
+          54.30994349990215,
+          72.91339599942148,
+          55.67601950133394
+        ],
+        "cpu_per_wall": 1.0384269266169883,
+        "routes_called": [
+          "serial"
+        ]
+      },
+      "fork_workers_all": {
+        "median_ms": 123.11033425066853,
+        "min_ms": 103.7849254989851,
+        "max_ms": 152.88567425068322,
+        "round_medians_ms": [
+          152.88567425068322,
+          103.7849254989851,
+          123.11033425066853,
+          142.40814324966777,
+          108.80691274905985
+        ],
+        "cpu_per_wall": 0.9922917790375783,
+        "routes_called": [
+          "serial"
+        ]
+      },
+      "paired_kernels": {
+        "median_ms": 52.0175774981908,
+        "min_ms": 50.83269549868419,
+        "max_ms": 86.58955700229853,
+        "round_medians_ms": [
+          86.58955700229853,
+          55.90375649990165,
+          52.0175774981908,
+          51.81657949833607,
+          50.83269549868419
+        ],
+        "cpu_per_wall": 1.0465415680400285,
+        "routes_called": [
+          "prange",
+          "serial"
+        ]
+      },
+      "paired_patch_worker": {
+        "median_ms": 68.21388700154785,
+        "min_ms": 51.6387460011174,
+        "max_ms": 78.03398850046506,
+        "round_medians_ms": [
+          69.78290150073008,
+          53.09923200002231,
+          68.21388700154785,
+          51.6387460011174,
+          78.03398850046506
+        ],
+        "cpu_per_wall": null,
+        "routes_called": [
+          "serial"
+        ]
+      }
+    },
+    "paired_ratios": {
+      "patched / worker (paired_patch_worker)": {
+        "ratio": 1.0239600120046488,
+        "ci90_low": 0.9999193003963414,
+        "ci90_high": 1.0327897727546536,
+        "bootstrap_samples": 2000,
+        "resampling": "paired whole rounds",
+        "effective_n": 5,
+        "per_round": [
+          0.9969845899241697,
+          0.9984377044217417,
+          1.0229517666318435,
+          1.0174783940276493,
+          1.0743419207375802
+        ]
+      },
+      "serial / prange@1 (paired_kernels)": {
+        "ratio": 1.2484420560275968,
+        "ci90_low": 1.2264565526443292,
+        "ci90_high": 1.2944925785357537,
+        "bootstrap_samples": 2000,
+        "resampling": "paired whole rounds",
+        "effective_n": 5,
+        "per_round": [
+          1.2922977281057306,
+          1.2813818084563549,
+          1.2587740631387934,
+          1.248479086623331,
+          1.2459357240056708
+        ]
+      },
+      "parallel_t1 / fork_worker": {
+        "ratio": 0.8741746332683012,
+        "ci90_low": 0.7181919702748607,
+        "ci90_high": 1.214790793750602,
+        "bootstrap_samples": 2000,
+        "resampling": "paired whole rounds",
+        "effective_n": 5,
+        "per_round": [
+          1.3247374561993204,
+          0.9024840023783451,
+          0.9125122824017047,
+          0.6185987003197683,
+          1.0140412067209048
+        ]
+      },
+      "patched_serial / fork_worker": {
+        "ratio": 1.1225201798863838,
+        "ci90_low": 0.889191663790088,
+        "ci90_high": 1.254844878537194,
+        "bootstrap_samples": 2000,
+        "resampling": "paired whole rounds",
+        "effective_n": 5,
+        "per_round": [
+          1.1308553409795716,
+          1.1365103967261911,
+          0.9840606996844817,
+          1.4279573399991263,
+          0.8664984571757334
+        ]
+      },
+      "fork_worker / parallel_t8": {
+        "ratio": 4.67020203430918,
+        "ci90_low": 2.786358006302838,
+        "ci90_high": 5.364545271318449,
+        "bootstrap_samples": 2000,
+        "resampling": "paired whole rounds",
+        "effective_n": 5,
+        "per_round": [
+          5.763844949167762,
+          4.586461876183193,
+          2.356511820013033,
+          3.564701526101025,
+          4.319448329806909
+        ]
+      }
+    }
+  },
+  "checks": {
+    "outputs_identical": {
+      "ok": true,
+      "detail": "all legs, all rounds bit-identical"
+    },
+    "fork_worker_ran_in_multiprocessing_child": {
+      "ok": true,
+      "detail": "multiprocessing.parent_process() set in every fork_worker round"
+    },
+    "worker_and_patch_serial_one_core": {
+      "ok": true,
+      "detail": "fork_worker: routes=['serial'] cpu/wall=1.04, patched_serial: routes=['serial'] cpu/wall=1.04, fork_workers_all: routes=['serial'] cpu/wall=0.99"
+    },
+    "paired_patch_worker_both_serial": {
+      "ok": true,
+      "detail": "patched parent and forked worker both took only the serial route"
+    },
+    "patch_matches_worker": {
+      "ok": true,
+      "verdict": "PASS",
+      "detail": "paired patched / worker 1.024, 90% round-bootstrap interval [1.000, 1.033] over 5 rounds; PASS against 1 \u00b1 10%"
+    }
+  },
+  "verdict": "PASS",
+  "rounds": [
+    {
+      "parallel_default": {
+        "routes_called": [
+          "prange"
+        ],
+        "n_calls_timed": 10,
+        "median_s": 0.013667910499862046,
+        "walls_s": [
+          0.012813231998734409,
+          0.012674854002398206,
+          0.013029575002292404,
+          0.012995679997402476,
+          0.013527245999284787,
+          0.013808575000439305,
+          0.01443986300000688,
+          0.014711761999933515,
+          0.01429691000157618,
+          0.014803919002588373
+        ],
+        "cpu_per_wall": 7.52521181052279,
+        "kernel_cache_keys": [
+          "True"
+        ],
+        "numba_get_num_threads": 8,
+        "numba_threading_layer": "omp",
+        "pid": 230502,
+        "n_workers": 0,
+        "leg": "parallel_default",
+        "numba_num_threads_env": null,
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "parallel_t8": {
+        "routes_called": [
+          "prange"
+        ],
+        "n_calls_timed": 10,
+        "median_s": 0.013174289500966552,
+        "walls_s": [
+          0.012639185002626618,
+          0.01273005500115687,
+          0.012735066000459483,
+          0.012926636001793668,
+          0.013417703001323389,
+          0.013123120999807725,
+          0.013607344997581095,
+          0.013459236000926467,
+          0.013225458002125379,
+          0.014272829997935332
+        ],
+        "cpu_per_wall": 7.5055551396245885,
+        "kernel_cache_keys": [
+          "True"
+        ],
+        "numba_get_num_threads": 8,
+        "numba_threading_layer": "omp",
+        "pid": 230517,
+        "n_workers": 0,
+        "leg": "parallel_t8",
+        "numba_num_threads_env": "8",
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "parallel_t1": {
+        "routes_called": [
+          "prange"
+        ],
+        "n_calls_timed": 10,
+        "median_s": 0.10059335850019124,
+        "walls_s": [
+          0.09608216500055278,
+          0.08844278299875441,
+          0.08836665600028937,
+          0.09230646300056833,
+          0.10230635799962329,
+          0.0988803590007592,
+          0.1023649460003071,
+          0.10496733100080746,
+          0.11558703199989395,
+          0.1317011690007348
+        ],
+        "cpu_per_wall": 1.0377382364534993,
+        "kernel_cache_keys": [
+          "True"
+        ],
+        "numba_get_num_threads": 1,
+        "numba_threading_layer": "omp",
+        "pid": 230541,
+        "n_workers": 0,
+        "leg": "parallel_t1",
+        "numba_num_threads_env": "1",
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "patched_serial": {
+        "routes_called": [
+          "serial"
+        ],
+        "n_calls_timed": 10,
+        "median_s": 0.0858710050015361,
+        "walls_s": [
+          0.07756150099885417,
+          0.07260049400065327,
+          0.07584729099835386,
+          0.0801688049978111,
+          0.08280395400288398,
+          0.08893805600018823,
+          0.09622838900031638,
+          0.09410708799987333,
+          0.09369286799847032,
+          0.09043065500009106
+        ],
+        "cpu_per_wall": 1.037849824056864,
+        "kernel_cache_keys": [
+          "False"
+        ],
+        "numba_get_num_threads": 1,
+        "numba_threading_layer": null,
+        "pid": 230578,
+        "n_workers": 0,
+        "leg": "patched_serial",
+        "numba_num_threads_env": "1",
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "fork_worker": {
+        "routes_called": [
+          "serial"
+        ],
+        "n_calls_timed": 10,
+        "median_s": 0.07593456199901993,
+        "walls_s": [
+          0.07706957399932435,
+          0.07532918799915933,
+          0.08218723599929945,
+          0.07190336900021066,
+          0.07104344999970635,
+          0.07079300600162242,
+          0.07280494999940856,
+          0.07653993599888054,
+          0.07904805699945427,
+          0.07724857100038207
+        ],
+        "cpu_per_wall": 1.0607443595433987,
+        "kernel_cache_keys": [
+          "False",
+          "True"
+        ],
+        "numba_get_num_threads": 8,
+        "numba_threading_layer": "omp",
+        "pid": 230622,
+        "in_multiprocessing_child": true,
+        "n_workers": 1,
+        "routes_called_all_workers": [
+          "serial"
+        ],
+        "leg": "fork_worker",
+        "numba_num_threads_env": null,
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "fork_workers_all": {
+        "routes_called": [
+          "serial"
+        ],
+        "n_calls_timed": 10,
+        "median_s": 0.15288567425068322,
+        "walls_s": [
+          0.1701909709991014,
+          0.1641394050020608,
+          0.1625386300001992,
+          0.14333470600104192,
+          0.1444390310025483,
+          0.1392177140005515,
+          0.14346867899803328,
+          0.11956328599990229,
+          0.15626629300095374,
+          0.15250017400103388
+        ],
+        "cpu_per_wall": 0.9622064649397273,
+        "kernel_cache_keys": [
+          "False",
+          "True"
+        ],
+        "numba_get_num_threads": 8,
+        "numba_threading_layer": "omp",
+        "pid": 230648,
+        "in_multiprocessing_child": true,
+        "n_workers": 8,
+        "per_worker_median_s": [
+          0.1484696025017911,
+          0.15275038149957254,
+          0.17007303799982765,
+          0.17515311950046453,
+          0.14453776399932394,
+          0.15557709300082934,
+          0.1530209670017939,
+          0.14709950399992522
+        ],
+        "routes_called_all_workers": [
+          "serial"
+        ],
+        "leg": "fork_workers_all",
+        "numba_num_threads_env": null,
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "paired_kernels": {
+        "routes_called": [
+          "prange",
+          "serial"
+        ],
+        "n_calls_timed": 1,
+        "median_s": 0.08658955700229853,
+        "walls_s": [
+          0.06251399499888066
+        ],
+        "cpu_per_wall": 1.0326743635750093,
+        "kernel_cache_keys": [
+          "False",
+          "True"
+        ],
+        "numba_get_num_threads": 1,
+        "numba_threading_layer": "omp",
+        "pid": 230675,
+        "serial_walls_s": [
+          0.09496878600111813,
+          0.10349695100012468,
+          0.09717263300262857,
+          0.0927923439994629,
+          0.09175927200340084,
+          0.0806337079993682,
+          0.08077170199976536,
+          0.07648031200005789,
+          0.07574976300020353,
+          0.08141984200119623
+        ],
+        "prange_t1_walls_s": [
+          0.07819144500172115,
+          0.07883106200097245,
+          0.07868396399862831,
+          0.07608598599836114,
+          0.06797800200001802,
+          0.06603067900141468,
+          0.06244862799940165,
+          0.06102481500056456,
+          0.06292332999873906,
+          0.06573144899812178
+        ],
+        "serial_over_prange_t1_per_pair": [
+          1.2145674760074798,
+          1.3128955563080953,
+          1.2349737870898645,
+          1.219572077326587,
+          1.349837731379285,
+          1.221155214800088,
+          1.2934103532352907,
+          1.253265773920828,
+          1.2038422474100068,
+          1.2386740782714638
+        ],
+        "prange_t1_median_s": 0.06700434050071635,
+        "serial_over_prange_t1": 1.236823932680664,
+        "n_workers": 0,
+        "leg": "paired_kernels",
+        "numba_num_threads_env": "1",
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "paired_patch_worker": {
+        "patched_walls_s": [
+          0.0699045470028068,
+          0.06962618399847997,
+          0.0731537510000635,
+          0.07238794099976076,
+          0.07050752099894453,
+          0.06966125599865336,
+          0.06875130199841806,
+          0.06892820500070229,
+          0.06938260400056606,
+          0.07974504599769716
+        ],
+        "worker_walls_s": [
+          0.06979393399888068,
+          0.07019398999909754,
+          0.07263633700131322,
+          0.07204347999868332,
+          0.06881219600109034,
+          0.06907639599739923,
+          0.06913141200129758,
+          0.06865359999937937,
+          0.07319855599780567,
+          0.0769777969981078
+        ],
+        "patched_over_worker_per_pair": [
+          1.0015848512555245,
+          0.9919109029045811,
+          1.0071233492782121,
+          1.004781293200769,
+          1.0246369843774108,
+          1.0084668574960998,
+          0.9945016311416816,
+          1.0039998631000473,
+          0.9478684798460505,
+          1.035948664517606
+        ],
+        "patched_over_worker": 1.004390578150408,
+        "median_s": 0.06978290150073008,
+        "worker_median_s": 0.06999396199898911,
+        "parent_routes_called": [
+          "serial"
+        ],
+        "worker_routes_called": [
+          "serial"
+        ],
+        "routes_called": [
+          "serial"
+        ],
+        "in_multiprocessing_child": true,
+        "cpu_per_wall": null,
+        "numba_get_num_threads": null,
+        "numba_threading_layer": null,
+        "n_workers": 1,
+        "leg": "paired_patch_worker",
+        "numba_num_threads_env": null,
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      }
+    },
+    {
+      "parallel_default": {
+        "routes_called": [
+          "prange"
+        ],
+        "n_calls_timed": 10,
+        "median_s": 0.014248619499994675,
+        "walls_s": [
+          0.010137860997929238,
+          0.02411546700022882,
+          0.014914908999344334,
+          0.028741284000716405,
+          0.012890024998341687,
+          0.009462994999921648,
+          0.012148737998359138,
+          0.013582330000645015,
+          0.016830589000164764,
+          0.016458944999612868
+        ],
+        "cpu_per_wall": 7.316680711371014,
+        "kernel_cache_keys": [
+          "True"
+        ],
+        "numba_get_num_threads": 8,
+        "numba_threading_layer": "omp",
+        "pid": 230929,
+        "n_workers": 0,
+        "leg": "parallel_default",
+        "numba_num_threads_env": null,
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "parallel_t8": {
+        "routes_called": [
+          "prange"
+        ],
+        "n_calls_timed": 10,
+        "median_s": 0.014081463499678648,
+        "walls_s": [
+          0.013031641999987187,
+          0.01369211899873335,
+          0.016097035000711912,
+          0.014075140999921132,
+          0.014087785999436164,
+          0.013965826001367532,
+          0.028790242999093607,
+          0.011346964998665499,
+          0.015085758997884113,
+          0.014793880000070203
+        ],
+        "cpu_per_wall": 7.227761172363112,
+        "kernel_cache_keys": [
+          "True"
+        ],
+        "numba_get_num_threads": 8,
+        "numba_threading_layer": "omp",
+        "pid": 230737,
+        "n_workers": 0,
+        "leg": "parallel_t8",
+        "numba_num_threads_env": "8",
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "parallel_t1": {
+        "routes_called": [
+          "prange"
+        ],
+        "n_calls_timed": 10,
+        "median_s": 0.058286112998757744,
+        "walls_s": [
+          0.06104852999851573,
+          0.05885125200074981,
+          0.05831110699728015,
+          0.05912305799938622,
+          0.05826111900023534,
+          0.06116073900193442,
+          0.05683139100074186,
+          0.05675395299840602,
+          0.056506610999349505,
+          0.05661284800225985
+        ],
+        "cpu_per_wall": 1.038246612873624,
+        "kernel_cache_keys": [
+          "True"
+        ],
+        "numba_get_num_threads": 1,
+        "numba_threading_layer": "omp",
+        "pid": 230770,
+        "n_workers": 0,
+        "leg": "parallel_t1",
+        "numba_num_threads_env": "1",
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "patched_serial": {
+        "routes_called": [
+          "serial"
+        ],
+        "n_calls_timed": 10,
+        "median_s": 0.0734004960013408,
+        "walls_s": [
+          0.0777288800018141,
+          0.07770335600071121,
+          0.0778187430005346,
+          0.07774005299870623,
+          0.07440758500160882,
+          0.07239340700107277,
+          0.0713324759999523,
+          0.06986460599728161,
+          0.06999396000173874,
+          0.07031999299942981
+        ],
+        "cpu_per_wall": 1.0382770511396453,
+        "kernel_cache_keys": [
+          "False"
+        ],
+        "numba_get_num_threads": 1,
+        "numba_threading_layer": null,
+        "pid": 230805,
+        "n_workers": 0,
+        "leg": "patched_serial",
+        "numba_num_threads_env": "1",
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "fork_worker": {
+        "routes_called": [
+          "serial"
+        ],
+        "n_calls_timed": 10,
+        "median_s": 0.06458409550214128,
+        "walls_s": [
+          0.06485196600260679,
+          0.06773964999956661,
+          0.06752710599903367,
+          0.06629720399723738,
+          0.06610016500053462,
+          0.06431622500167578,
+          0.060332406999805244,
+          0.061402251001709374,
+          0.062366448997636326,
+          0.06218337499740301
+        ],
+        "cpu_per_wall": 1.0384269266169883,
+        "kernel_cache_keys": [
+          "False",
+          "True"
+        ],
+        "numba_get_num_threads": 8,
+        "numba_threading_layer": "omp",
+        "pid": 230841,
+        "in_multiprocessing_child": true,
+        "n_workers": 1,
+        "routes_called_all_workers": [
+          "serial"
+        ],
+        "leg": "fork_worker",
+        "numba_num_threads_env": null,
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "fork_workers_all": {
+        "routes_called": [
+          "serial"
+        ],
+        "n_calls_timed": 10,
+        "median_s": 0.1037849254989851,
+        "walls_s": [
+          0.09714206099670264,
+          0.12259803800043301,
+          0.11225218999970821,
+          0.08703637400321895,
+          0.10937111900057062,
+          0.09353847900274559,
+          0.13189569700261927,
+          0.11061492699809605,
+          0.10069116999875405,
+          0.11051321199920494
+        ],
+        "cpu_per_wall": 1.0055107711134132,
+        "kernel_cache_keys": [
+          "False",
+          "True"
+        ],
+        "numba_get_num_threads": 8,
+        "numba_threading_layer": "omp",
+        "pid": 230876,
+        "in_multiprocessing_child": true,
+        "n_workers": 8,
+        "per_worker_median_s": [
+          0.10994216549988778,
+          0.11339269299969601,
+          0.10120311600076093,
+          0.09687365050012886,
+          0.10558589649917849,
+          0.10734893049993843,
+          0.10050114250043407,
+          0.10198395449879172
+        ],
+        "routes_called_all_workers": [
+          "serial"
+        ],
+        "leg": "fork_workers_all",
+        "numba_num_threads_env": null,
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "paired_kernels": {
+        "routes_called": [
+          "prange",
+          "serial"
+        ],
+        "n_calls_timed": 1,
+        "median_s": 0.05590375649990165,
+        "walls_s": [
+          0.04463167200083262
+        ],
+        "cpu_per_wall": 1.0465415680400285,
+        "kernel_cache_keys": [
+          "False",
+          "True"
+        ],
+        "numba_get_num_threads": 1,
+        "numba_threading_layer": "omp",
+        "pid": 230887,
+        "serial_walls_s": [
+          0.05534035699747619,
+          0.05518479199963622,
+          0.0553264059999492,
+          0.05560944399985601,
+          0.05539664000025368,
+          0.057260939000116196,
+          0.05619806899994728,
+          0.057151814999087946,
+          0.058696478001365904,
+          0.056935284002975095
+        ],
+        "prange_t1_walls_s": [
+          0.04322632899857126,
+          0.04306168599941884,
+          0.0436160059980466,
+          0.043514622000657255,
+          0.04338361400004942,
+          0.04363941799965687,
+          0.043847730001289165,
+          0.04375159999835887,
+          0.044611032000830164,
+          0.044562776001839666
+        ],
+        "serial_over_prange_t1_per_pair": [
+          1.2802465136307395,
+          1.2815288282112547,
+          1.2684885911476411,
+          1.277948456015913,
+          1.2769023807050879,
+          1.3121380079030025,
+          1.2816642731173313,
+          1.3062794275233756,
+          1.3157390754886285,
+          1.277642218712422
+        ],
+        "prange_t1_median_s": 0.04362771199885174,
+        "serial_over_prange_t1": 1.280887670920997,
+        "n_workers": 0,
+        "leg": "paired_kernels",
+        "numba_num_threads_env": "1",
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "paired_patch_worker": {
+        "patched_walls_s": [
+          0.05472402099985629,
+          0.05446917200242751,
+          0.0530847560003167,
+          0.05304490899652592,
+          0.05290683000202989,
+          0.05336148599963053,
+          0.05310252900017076,
+          0.05284930600100779,
+          0.05309593499987386,
+          0.054746190002333606
+        ],
+        "worker_walls_s": [
+          0.05447356799777481,
+          0.054667738997522974,
+          0.053008502000011504,
+          0.05300716399869998,
+          0.052991493001172785,
+          0.05315422499916167,
+          0.05311609800264705,
+          0.0532104120029544,
+          0.05539262700040126,
+          0.05437696100125322
+        ],
+        "patched_over_worker_per_pair": [
+          1.004597697769526,
+          0.9963677481685412,
+          1.0014385239617822,
+          1.000712073519475,
+          0.9984023284805164,
+          1.003899238498391,
+          0.9997445406762445,
+          0.9932136213881118,
+          0.9585379476494089,
+          1.0067901735272016
+        ],
+        "patched_over_worker": 1.0002283070978597,
+        "median_s": 0.05309923200002231,
+        "worker_median_s": 0.053182318501058035,
+        "parent_routes_called": [
+          "serial"
+        ],
+        "worker_routes_called": [
+          "serial"
+        ],
+        "routes_called": [
+          "serial"
+        ],
+        "in_multiprocessing_child": true,
+        "cpu_per_wall": null,
+        "numba_get_num_threads": null,
+        "numba_threading_layer": null,
+        "n_workers": 1,
+        "leg": "paired_patch_worker",
+        "numba_num_threads_env": null,
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      }
+    },
+    {
+      "parallel_default": {
+        "routes_called": [
+          "prange"
+        ],
+        "n_calls_timed": 10,
+        "median_s": 0.01871783149908879,
+        "walls_s": [
+          0.015962312998453854,
+          0.017685891998553416,
+          0.016632598999422044,
+          0.018196535998868058,
+          0.021481063002283918,
+          0.021723997000663076,
+          0.019071483999141492,
+          0.018364178999036085,
+          0.02340245899904403,
+          0.0257424359988363
+        ],
+        "cpu_per_wall": 8.133170796565736,
+        "kernel_cache_keys": [
+          "True"
+        ],
+        "numba_get_num_threads": 8,
+        "numba_threading_layer": "omp",
+        "pid": 231101,
+        "n_workers": 0,
+        "leg": "parallel_default",
+        "numba_num_threads_env": null,
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "parallel_t8": {
+        "routes_called": [
+          "prange"
+        ],
+        "n_calls_timed": 10,
+        "median_s": 0.023046751999572734,
+        "walls_s": [
+          0.019661017999169417,
+          0.023549503999674926,
+          0.02189398599875858,
+          0.02504254399900674,
+          0.020708059000753565,
+          0.02533310199942207,
+          0.02415818000008585,
+          0.02165220000097179,
+          0.022543999999470543,
+          0.0267196739987412
+        ],
+        "cpu_per_wall": 7.980310510540316,
+        "kernel_cache_keys": [
+          "True"
+        ],
+        "numba_get_num_threads": 8,
+        "numba_threading_layer": "omp",
+        "pid": 231216,
+        "n_workers": 0,
+        "leg": "parallel_t8",
+        "numba_num_threads_env": "8",
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "parallel_t1": {
+        "routes_called": [
+          "prange"
+        ],
+        "n_calls_timed": 10,
+        "median_s": 0.049558490500203334,
+        "walls_s": [
+          0.04964079600176774,
+          0.05008085999725154,
+          0.05177526899933582,
+          0.04941209300159244,
+          0.04854778399749193,
+          0.048323463000997435,
+          0.049448304998804815,
+          0.05014461199971265,
+          0.04947618499863893,
+          0.050218731001223205
+        ],
+        "cpu_per_wall": 1.048076716448891,
+        "kernel_cache_keys": [
+          "True"
+        ],
+        "numba_get_num_threads": 1,
+        "numba_threading_layer": "omp",
+        "pid": 230960,
+        "n_workers": 0,
+        "leg": "parallel_t1",
+        "numba_num_threads_env": "1",
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "patched_serial": {
+        "routes_called": [
+          "serial"
+        ],
+        "n_calls_timed": 10,
+        "median_s": 0.05344428100033838,
+        "walls_s": [
+          0.053460997998627136,
+          0.05342756400204962,
+          0.052139907002128894,
+          0.05257281900048838,
+          0.05408979500134592,
+          0.053569586998492014,
+          0.05327696499807644,
+          0.05233184099779464,
+          0.05377674599731108,
+          0.05379611299940734
+        ],
+        "cpu_per_wall": 1.037877463302086,
+        "kernel_cache_keys": [
+          "False"
+        ],
+        "numba_get_num_threads": 1,
+        "numba_threading_layer": null,
+        "pid": 230977,
+        "n_workers": 0,
+        "leg": "patched_serial",
+        "numba_num_threads_env": "1",
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "fork_worker": {
+        "routes_called": [
+          "serial"
+        ],
+        "n_calls_timed": 10,
+        "median_s": 0.05430994349990215,
+        "walls_s": [
+          0.05556917899957625,
+          0.05427468900234089,
+          0.0543451979974634,
+          0.053997445000277366,
+          0.05409690099986619,
+          0.05393221700069262,
+          0.05401348299710662,
+          0.05674064499908127,
+          0.06143902599797002,
+          0.06066763200215064
+        ],
+        "cpu_per_wall": 1.0225759568189854,
+        "kernel_cache_keys": [
+          "False",
+          "True"
+        ],
+        "numba_get_num_threads": 8,
+        "numba_threading_layer": "omp",
+        "pid": 231012,
+        "in_multiprocessing_child": true,
+        "n_workers": 1,
+        "routes_called_all_workers": [
+          "serial"
+        ],
+        "leg": "fork_worker",
+        "numba_num_threads_env": null,
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "fork_workers_all": {
+        "routes_called": [
+          "serial"
+        ],
+        "n_calls_timed": 10,
+        "median_s": 0.12311033425066853,
+        "walls_s": [
+          0.10809043400149676,
+          0.1057432970010268,
+          0.13031532899913145,
+          0.12779724900246947,
+          0.13080302299931645,
+          0.11670944500292535,
+          0.10978646299918182,
+          0.148532848998002,
+          0.13068459599890048,
+          0.1063502030010568
+        ],
+        "cpu_per_wall": 0.9915032593162804,
+        "kernel_cache_keys": [
+          "False",
+          "True"
+        ],
+        "numba_get_num_threads": 8,
+        "numba_threading_layer": "omp",
+        "pid": 231041,
+        "in_multiprocessing_child": true,
+        "n_workers": 8,
+        "per_worker_median_s": [
+          0.12225334700269741,
+          0.12209105899819406,
+          0.1374397654999484,
+          0.12613407850039948,
+          0.13095157199859386,
+          0.12396732149863965,
+          0.12006957449921174,
+          0.1112929199989594
+        ],
+        "routes_called_all_workers": [
+          "serial"
+        ],
+        "leg": "fork_workers_all",
+        "numba_num_threads_env": null,
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "paired_kernels": {
+        "routes_called": [
+          "prange",
+          "serial"
+        ],
+        "n_calls_timed": 1,
+        "median_s": 0.0520175774981908,
+        "walls_s": [
+          0.040346554000279866
+        ],
+        "cpu_per_wall": 1.0813562912881387,
+        "kernel_cache_keys": [
+          "False",
+          "True"
+        ],
+        "numba_get_num_threads": 1,
+        "numba_threading_layer": "omp",
+        "pid": 231052,
+        "serial_walls_s": [
+          0.06309838400193257,
+          0.05407964299956802,
+          0.05326010200224118,
+          0.051872796000679955,
+          0.05202801799896406,
+          0.05200713699741755,
+          0.05231305600318592,
+          0.05112338199978694,
+          0.0519808050012216,
+          0.05050285900142626
+        ],
+        "prange_t1_walls_s": [
+          0.04787413699887111,
+          0.04364430699934019,
+          0.04177220500059775,
+          0.04123594600241631,
+          0.041412050999497296,
+          0.04158168699723319,
+          0.041205733003153,
+          0.04031597199718817,
+          0.04074320500149042,
+          0.04004165199876297
+        ],
+        "serial_over_prange_t1_per_pair": [
+          1.3180056698133369,
+          1.239099592081634,
+          1.2750129422538035,
+          1.257950914904204,
+          1.2563497036067022,
+          1.2507221508564108,
+          1.269557709340664,
+          1.2680677028784655,
+          1.2758153169177557,
+          1.2612581269870302
+        ],
+        "prange_t1_median_s": 0.041323998500956804,
+        "serial_over_prange_t1": 1.2646629149327477,
+        "n_workers": 0,
+        "leg": "paired_kernels",
+        "numba_num_threads_env": "1",
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "paired_patch_worker": {
+        "patched_walls_s": [
+          0.06874912400235189,
+          0.06615213500117534,
+          0.0682783920019574,
+          0.06830506000187597,
+          0.06610322599954088,
+          0.06837919199824682,
+          0.06732882100186544,
+          0.06814938200113829,
+          0.06644394800241571,
+          0.07048994800061337
+        ],
+        "worker_walls_s": [
+          0.06674596499942709,
+          0.07312877799995476,
+          0.06697664199964493,
+          0.06662080599926412,
+          0.06541687500066473,
+          0.0666146449984808,
+          0.06467718599742511,
+          0.06679333300053258,
+          0.06476200600081938,
+          0.07244184899900574
+        ],
+        "patched_over_worker_per_pair": [
+          1.030011686892863,
+          0.9045978452041994,
+          1.0194358803822887,
+          1.0252812012305954,
+          1.010491956377757,
+          1.0264888749284224,
+          1.040997995870536,
+          1.0203021610045255,
+          1.0259711226606392,
+          0.9730556159821492
+        ],
+        "patched_over_worker": 1.0227916811175604,
+        "median_s": 0.06821388700154785,
+        "worker_median_s": 0.0666833854993456,
+        "parent_routes_called": [
+          "serial"
+        ],
+        "worker_routes_called": [
+          "serial"
+        ],
+        "routes_called": [
+          "serial"
+        ],
+        "in_multiprocessing_child": true,
+        "cpu_per_wall": null,
+        "numba_get_num_threads": null,
+        "numba_threading_layer": null,
+        "n_workers": 1,
+        "leg": "paired_patch_worker",
+        "numba_num_threads_env": null,
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      }
+    },
+    {
+      "parallel_default": {
+        "routes_called": [
+          "prange"
+        ],
+        "n_calls_timed": 10,
+        "median_s": 0.01601015949927387,
+        "walls_s": [
+          0.017631326998525765,
+          0.02564827999958652,
+          0.013160209000488976,
+          0.009944282999640564,
+          0.01592975200037472,
+          0.009497800998360617,
+          0.012275523997232085,
+          0.016526210001757136,
+          0.016090566998173017,
+          0.03068373299902305
+        ],
+        "cpu_per_wall": 6.448040031117278,
+        "kernel_cache_keys": [
+          "True"
+        ],
+        "numba_get_num_threads": 8,
+        "numba_threading_layer": "omp",
+        "pid": 231608,
+        "n_workers": 0,
+        "leg": "parallel_default",
+        "numba_num_threads_env": null,
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "parallel_t8": {
+        "routes_called": [
+          "prange"
+        ],
+        "n_calls_timed": 10,
+        "median_s": 0.020454277999306214,
+        "walls_s": [
+          0.013185533000068972,
+          0.013540076000936097,
+          0.01292578300126479,
+          0.018123825997463427,
+          0.021615267000015592,
+          0.019293288998596836,
+          0.032684178000636166,
+          0.0470701160011231,
+          0.032664567999745486,
+          0.04911874599929433
+        ],
+        "cpu_per_wall": 5.756780586173831,
+        "kernel_cache_keys": [
+          "True"
+        ],
+        "numba_get_num_threads": 8,
+        "numba_threading_layer": "omp",
+        "pid": 231690,
+        "n_workers": 0,
+        "leg": "parallel_t8",
+        "numba_num_threads_env": "8",
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "parallel_t1": {
+        "routes_called": [
+          "prange"
+        ],
+        "n_calls_timed": 10,
+        "median_s": 0.045104132001142716,
+        "walls_s": [
+          0.04515624700070475,
+          0.045420841001032386,
+          0.04505201700158068,
+          0.04412831900117453,
+          0.04374273400026141,
+          0.04378994099897682,
+          0.04390438600239577,
+          0.046058423999056686,
+          0.04857374900166178,
+          0.0488593670015689
+        ],
+        "cpu_per_wall": 1.0083536215820896,
+        "kernel_cache_keys": [
+          "True"
+        ],
+        "numba_get_num_threads": 1,
+        "numba_threading_layer": "omp",
+        "pid": 231755,
+        "n_workers": 0,
+        "leg": "parallel_t1",
+        "numba_num_threads_env": "1",
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "patched_serial": {
+        "routes_called": [
+          "serial"
+        ],
+        "n_calls_timed": 10,
+        "median_s": 0.10411721900163684,
+        "walls_s": [
+          0.10887181500220322,
+          0.10900457999741775,
+          0.13086656900122762,
+          0.1166266660002293,
+          0.10673603900067974,
+          0.10149839900259394,
+          0.0975469350014464,
+          0.09611510399918188,
+          0.0848693980005919,
+          0.08473983099975158
+        ],
+        "cpu_per_wall": 1.0249759668259113,
+        "kernel_cache_keys": [
+          "False"
+        ],
+        "numba_get_num_threads": 1,
+        "numba_threading_layer": null,
+        "pid": 231340,
+        "n_workers": 0,
+        "leg": "patched_serial",
+        "numba_num_threads_env": "1",
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "fork_worker": {
+        "routes_called": [
+          "serial"
+        ],
+        "n_calls_timed": 10,
+        "median_s": 0.07291339599942148,
+        "walls_s": [
+          0.08951893899939023,
+          0.07746588599911775,
+          0.07157353000002331,
+          0.0747292779997224,
+          0.07951436000075773,
+          0.0702356130022963,
+          0.06826773900320404,
+          0.07425326199881965,
+          0.06606055700103752,
+          0.06543774899910204
+        ],
+        "cpu_per_wall": 0.9230471731520088,
+        "kernel_cache_keys": [
+          "False",
+          "True"
+        ],
+        "numba_get_num_threads": 8,
+        "numba_threading_layer": "omp",
+        "pid": 231540,
+        "in_multiprocessing_child": true,
+        "n_workers": 1,
+        "routes_called_all_workers": [
+          "serial"
+        ],
+        "leg": "fork_worker",
+        "numba_num_threads_env": null,
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "fork_workers_all": {
+        "routes_called": [
+          "serial"
+        ],
+        "n_calls_timed": 10,
+        "median_s": 0.14240814324966777,
+        "walls_s": [
+          0.10127631800060044,
+          0.13190626399955363,
+          0.10654210700158728,
+          0.11920081100106472,
+          0.13353572999767493,
+          0.16088960299748578,
+          0.16260037699976237,
+          0.16381330900185276,
+          0.14912455699959537,
+          0.17966952899951139
+        ],
+        "cpu_per_wall": 1.0080019909984188,
+        "kernel_cache_keys": [
+          "False",
+          "True"
+        ],
+        "numba_get_num_threads": 8,
+        "numba_threading_layer": "omp",
+        "pid": 231570,
+        "in_multiprocessing_child": true,
+        "n_workers": 8,
+        "per_worker_median_s": [
+          0.14133014349863515,
+          0.13386000100035744,
+          0.1434861430007004,
+          0.15606679250049638,
+          0.15060671550054394,
+          0.1350142675000825,
+          0.13575704200047767,
+          0.15311618099985935
+        ],
+        "routes_called_all_workers": [
+          "serial"
+        ],
+        "leg": "fork_workers_all",
+        "numba_num_threads_env": null,
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "paired_kernels": {
+        "routes_called": [
+          "prange",
+          "serial"
+        ],
+        "n_calls_timed": 1,
+        "median_s": 0.05181657949833607,
+        "walls_s": [
+          0.04351561599833076
+        ],
+        "cpu_per_wall": 1.090950889947657,
+        "kernel_cache_keys": [
+          "False",
+          "True"
+        ],
+        "numba_get_num_threads": 1,
+        "numba_threading_layer": "omp",
+        "pid": 231581,
+        "serial_walls_s": [
+          0.05013697100002901,
+          0.051606754001113586,
+          0.05178587099726428,
+          0.05166184599875123,
+          0.05075933400075883,
+          0.051847287999407854,
+          0.05263158700108761,
+          0.052944628998375265,
+          0.053302220003388356,
+          0.055504511001345236
+        ],
+        "prange_t1_walls_s": [
+          0.040248708999570226,
+          0.0404276419976668,
+          0.041429741999309044,
+          0.04157778300213977,
+          0.040476408998074476,
+          0.04050913399987621,
+          0.042115683001611615,
+          0.04271701600009692,
+          0.04346034100308316,
+          0.04347464099919307
+        ],
+        "serial_over_prange_t1_per_pair": [
+          1.2456789856431014,
+          1.2765214949734631,
+          1.2499684646389533,
+          1.2425348892722947,
+          1.254047363815637,
+          1.2798912956165958,
+          1.2496909286517706,
+          1.239427140656434,
+          1.2264565526443292,
+          1.2767100481031104
+        ],
+        "prange_t1_median_s": 0.041503762500724406,
+        "serial_over_prange_t1": 1.249829696645362,
+        "n_workers": 0,
+        "leg": "paired_kernels",
+        "numba_num_threads_env": "1",
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "paired_patch_worker": {
+        "patched_walls_s": [
+          0.05367062799996347,
+          0.053633594998245826,
+          0.05320807899988722,
+          0.05148126199856051,
+          0.051371629000641406,
+          0.05163324599925545,
+          0.051486120999470586,
+          0.05186873699858552,
+          0.05146934599906672,
+          0.051644246002979344
+        ],
+        "worker_walls_s": [
+          0.05194427099922905,
+          0.051930795998487156,
+          0.05087103800178738,
+          0.051325337000889704,
+          0.05051729599654209,
+          0.05047861300045042,
+          0.05083895500138169,
+          0.050528388001112035,
+          0.05066442099996493,
+          0.05060997100008535
+        ],
+        "patched_over_worker_per_pair": [
+          1.0332347912007476,
+          1.0327897727546536,
+          1.0459405015092818,
+          1.0030379731879424,
+          1.0169116930596958,
+          1.0228737069062244,
+          1.0127297266057358,
+          1.0265266526500705,
+          1.0158873817802505,
+          1.0204361903881005
+        ],
+        "patched_over_worker": 1.0216549486471624,
+        "median_s": 0.0516387460011174,
+        "worker_median_s": 0.05075168800067331,
+        "parent_routes_called": [
+          "serial"
+        ],
+        "worker_routes_called": [
+          "serial"
+        ],
+        "routes_called": [
+          "serial"
+        ],
+        "in_multiprocessing_child": true,
+        "cpu_per_wall": null,
+        "numba_get_num_threads": null,
+        "numba_threading_layer": null,
+        "n_workers": 1,
+        "leg": "paired_patch_worker",
+        "numba_num_threads_env": null,
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      }
+    },
+    {
+      "parallel_default": {
+        "routes_called": [
+          "prange"
+        ],
+        "n_calls_timed": 10,
+        "median_s": 0.013737954001044272,
+        "walls_s": [
+          0.009266393000871176,
+          0.01238725200164481,
+          0.013264371998957358,
+          0.014211536003131187,
+          0.022890154999913648,
+          0.018628469999384833,
+          0.009607922002032865,
+          0.00930530500045279,
+          0.015365630999440327,
+          0.014778855998883955
+        ],
+        "cpu_per_wall": 6.80517755090765,
+        "kernel_cache_keys": [
+          "True"
+        ],
+        "numba_get_num_threads": 8,
+        "numba_threading_layer": "omp",
+        "pid": 231967,
+        "n_workers": 0,
+        "leg": "parallel_default",
+        "numba_num_threads_env": null,
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "parallel_t8": {
+        "routes_called": [
+          "prange"
+        ],
+        "n_calls_timed": 10,
+        "median_s": 0.01288961349928286,
+        "walls_s": [
+          0.007513436998124234,
+          0.00939144600124564,
+          0.012363861002086196,
+          0.0124916620006843,
+          0.0129962639985024,
+          0.012782963000063319,
+          0.013365465998504078,
+          0.013219365002441918,
+          0.013570667000749381,
+          0.013262066000606865
+        ],
+        "cpu_per_wall": 7.194788086717608,
+        "kernel_cache_keys": [
+          "True"
+        ],
+        "numba_get_num_threads": 8,
+        "numba_threading_layer": "omp",
+        "pid": 232011,
+        "n_workers": 0,
+        "leg": "parallel_t8",
+        "numba_num_threads_env": "8",
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "parallel_t1": {
+        "routes_called": [
+          "prange"
+        ],
+        "n_calls_timed": 10,
+        "median_s": 0.0564577780005493,
+        "walls_s": [
+          0.05485647000023164,
+          0.05455596899992088,
+          0.056349277998378966,
+          0.056603779001306975,
+          0.05698398100139457,
+          0.056448377999913646,
+          0.057230182999774115,
+          0.05646717800118495,
+          0.05699260399705963,
+          0.052691353997943224
+        ],
+        "cpu_per_wall": 1.0103992177700838,
+        "kernel_cache_keys": [
+          "True"
+        ],
+        "numba_get_num_threads": 1,
+        "numba_threading_layer": "omp",
+        "pid": 232052,
+        "n_workers": 0,
+        "leg": "parallel_t1",
+        "numba_num_threads_env": "1",
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "patched_serial": {
+        "routes_called": [
+          "serial"
+        ],
+        "n_calls_timed": 10,
+        "median_s": 0.048243184999591904,
+        "walls_s": [
+          0.050567163998493925,
+          0.05056917999900179,
+          0.05067459600104485,
+          0.04833838100239518,
+          0.047777472998859594,
+          0.04816668900093646,
+          0.048164763997192495,
+          0.04814963900207658,
+          0.048188048000156414,
+          0.048298321999027394
+        ],
+        "cpu_per_wall": 1.090934682613429,
+        "kernel_cache_keys": [
+          "False"
+        ],
+        "numba_get_num_threads": 1,
+        "numba_threading_layer": null,
+        "pid": 232095,
+        "n_workers": 0,
+        "leg": "patched_serial",
+        "numba_num_threads_env": "1",
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "fork_worker": {
+        "routes_called": [
+          "serial"
+        ],
+        "n_calls_timed": 10,
+        "median_s": 0.05567601950133394,
+        "walls_s": [
+          0.05778664299941738,
+          0.059195284000452375,
+          0.05682936899756896,
+          0.05634408600235474,
+          0.05500795300031314,
+          0.05435565299922018,
+          0.056609461000334704,
+          0.05358024499946623,
+          0.0535202040009608,
+          0.05388283700085594
+        ],
+        "cpu_per_wall": 1.0909619414119316,
+        "kernel_cache_keys": [
+          "False",
+          "True"
+        ],
+        "numba_get_num_threads": 8,
+        "numba_threading_layer": "omp",
+        "pid": 231831,
+        "in_multiprocessing_child": true,
+        "n_workers": 1,
+        "routes_called_all_workers": [
+          "serial"
+        ],
+        "leg": "fork_worker",
+        "numba_num_threads_env": null,
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "fork_workers_all": {
+        "routes_called": [
+          "serial"
+        ],
+        "n_calls_timed": 10,
+        "median_s": 0.10880691274905985,
+        "walls_s": [
+          0.0857123319983657,
+          0.12102598499768646,
+          0.09884724500079756,
+          0.12243031799880555,
+          0.10220829299942125,
+          0.1107224719999067,
+          0.1065371580007195,
+          0.13501687899770332,
+          0.14548484300030395,
+          0.10993615600091289
+        ],
+        "cpu_per_wall": 0.9922917790375783,
+        "kernel_cache_keys": [
+          "False",
+          "True"
+        ],
+        "numba_get_num_threads": 8,
+        "numba_threading_layer": "omp",
+        "pid": 231860,
+        "in_multiprocessing_child": true,
+        "n_workers": 8,
+        "per_worker_median_s": [
+          0.1103293140004098,
+          0.103385750499001,
+          0.10805987749881751,
+          0.10523260400077561,
+          0.11942984000052093,
+          0.11834395699952438,
+          0.10426845399888407,
+          0.10955394799930218
+        ],
+        "routes_called_all_workers": [
+          "serial"
+        ],
+        "leg": "fork_workers_all",
+        "numba_num_threads_env": null,
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "paired_kernels": {
+        "routes_called": [
+          "prange",
+          "serial"
+        ],
+        "n_calls_timed": 1,
+        "median_s": 0.05083269549868419,
+        "walls_s": [
+          0.04064964599820087
+        ],
+        "cpu_per_wall": 1.0321418297679001,
+        "kernel_cache_keys": [
+          "False",
+          "True"
+        ],
+        "numba_get_num_threads": 1,
+        "numba_threading_layer": "omp",
+        "pid": 231887,
+        "serial_walls_s": [
+          0.049873184001626214,
+          0.05070344299747376,
+          0.05077930900006322,
+          0.052799873003095854,
+          0.05194674899757956,
+          0.05139514800248435,
+          0.050886081997305155,
+          0.05132945600053063,
+          0.05077378599889926,
+          0.050710032002825756
+        ],
+        "prange_t1_walls_s": [
+          0.03964537100182497,
+          0.04132129500067094,
+          0.0407551610005612,
+          0.04235279600106878,
+          0.040617671998916194,
+          0.04084245999911218,
+          0.040594709000288276,
+          0.04051186699871323,
+          0.041000197001267225,
+          0.041067924998060334
+        ],
+        "serial_over_prange_t1_per_pair": [
+          1.2579825271235432,
+          1.2270535808872998,
+          1.24596021101141,
+          1.246667941397858,
+          1.2789198996674567,
+          1.2583754260541984,
+          1.2535151316626951,
+          1.2670227220621797,
+          1.2383790740646918,
+          1.2347843726027263
+        ],
+        "prange_t1_median_s": 0.04079881049983669,
+        "serial_over_prange_t1": 1.2500915365302765,
+        "n_workers": 0,
+        "leg": "paired_kernels",
+        "numba_num_threads_env": "1",
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      },
+      "paired_patch_worker": {
+        "patched_walls_s": [
+          0.07070686999941245,
+          0.09036392000052729,
+          0.081323316997441,
+          0.06929286000013235,
+          0.07138364300044486,
+          0.07480981300250278,
+          0.07467351999730454,
+          0.08230440299666952,
+          0.08125816399842734,
+          0.09857060300055309
+        ],
+        "worker_walls_s": [
+          0.06832863499948871,
+          0.06599809399995138,
+          0.06717164599831449,
+          0.06936838999899919,
+          0.07235524999850895,
+          0.07291319200157886,
+          0.07382872600283008,
+          0.08183336599904578,
+          0.0977156320004724,
+          0.1001955369974894
+        ],
+        "patched_over_worker_per_pair": [
+          1.0348058321367246,
+          1.3691898435823595,
+          1.2106792350969278,
+          0.9989111755531889,
+          0.986571713896585,
+          1.0260120418385037,
+          1.011442619156696,
+          1.0057560506264551,
+          0.831577940344637,
+          0.9837823714944807
+        ],
+        "patched_over_worker": 1.0085993348915756,
+        "median_s": 0.07803398850046506,
+        "worker_median_s": 0.07263422100004391,
+        "parent_routes_called": [
+          "serial"
+        ],
+        "worker_routes_called": [
+          "serial"
+        ],
+        "routes_called": [
+          "serial"
+        ],
+        "in_multiprocessing_child": true,
+        "cpu_per_wall": null,
+        "numba_get_num_threads": null,
+        "numba_threading_layer": null,
+        "n_workers": 1,
+        "leg": "paired_patch_worker",
+        "numba_num_threads_env": null,
+        "blas_thread_env": {
+          "n_threads": 1,
+          "vars": [
+            "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+            "NUMEXPR_NUM_THREADS"
+          ],
+          "set_to": "1",
+          "preexisting": {
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "OMP_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1"
+          },
+          "overridden": {},
+          "note": "Set by _production_config.pin_thread_env before numpy import; mirrors the production SLURM submit scripts."
+        },
+        "numba_version": "0.68.1",
+        "points": 1280,
+        "queries": 61600,
+        "output_sha256": "ab73ecb58b251b46fc9560bf8be24aec4461f8eef4b8cc10e20fc8f66c0a9a79"
+      }
+    }
+  ]
+}

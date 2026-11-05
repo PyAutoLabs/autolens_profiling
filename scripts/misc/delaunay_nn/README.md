@@ -90,3 +90,24 @@ supplement contributes only zeros. The tail geometries that do exceed it are
 audited by `autolens_workspace_test/scripts/misc/jax_assertions/delaunay_nn_caps.py`,
 whose per-geometry count of above-width split rows is the margin the wide-row
 budget is set against.
+
+## Worker-route witness (`worker_route_witness.py`)
+
+Nautilus runs the likelihood in a Python `multiprocessing` pool: PyAutoFit evaluates it once in
+the parent, then forks one worker per core. Since PyAutoArray#677 a worker runs the Sibson
+interpolator's **serial** compilation, while a single-process script (a profiling cell) takes the
+`prange` compilation. `worker_route_witness.py` checks that the DelaunayNN numba profiling cells,
+which force `numba_util.parallel_kernel_allowed` False in-process
+(`_production_config.numba_worker_route_pin` / `apply_numba_worker_route`, autolens_profiling#519),
+time what a worker runs. It times the Sibson kernel at the profiled HST size in fresh interpreters:
+`prange` on all cores, on 8 threads, on 1 thread; the patched serial route; a real forked worker
+after a parent evaluation; one worker per core at once; and two call-by-call pairings (serial vs
+`prange` at 1 thread in one process, and patched parent vs forked worker). The decisive check is
+the patched / worker pairing on a paired round bootstrap, against 1 ± 10 %.
+
+```bash
+python scripts/misc/delaunay_nn/worker_route_witness.py                          # ~4 min laptop
+python scripts/misc/delaunay_nn/worker_route_witness.py --rounds 2 --repeats 2 --queries 3000   # smoke
+```
+
+It writes `results/misc/delaunay_nn/worker_route_witness_<host>.json`.

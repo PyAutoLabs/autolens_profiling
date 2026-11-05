@@ -4,7 +4,7 @@
   "repo": "autolens_profiling",
   "status": "green",
   "headline": "294 series across 68 cells and 7 releases; none drifted >= 2x (single-sample endpoints: not a measured null)",
-  "updated": "2026-10-31T15:54:27Z",
+  "updated": "2026-11-05T19:53:33Z",
   "pages_url": "https://pyautolabs.github.io/autolens_profiling/",
   "items": []
 }

@@ -3,11 +3,11 @@
  "version": 1,
  "project": "autolens_profiling",
  "scope": "release-runtime",
- "generated_at": "2026-10-31T15:54:27Z",
+ "generated_at": "2026-11-05T19:53:33Z",
  "evidence_updated_at": "2026-10-25T00:00:00Z",
  "evidence_updated_at_reason": null,
  "valid_until": null,
- "producer_revision": "a1d7db65336ad697a6d85ae04026f7a90116637e",
+ "producer_revision": "cefcbb7da046056da916ff5e2d8da0a500623164",
  "comparison_policy": {
   "id": "runtime-drift-2x-1ms",
   "ratio": 2.0,

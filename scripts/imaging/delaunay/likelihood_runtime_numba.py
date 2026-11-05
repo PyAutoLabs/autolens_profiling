@@ -53,6 +53,9 @@ _sys.path.insert(0, str(_profiling_root()))
 # OpenBLAS / MKL read their thread-count variables once, when the shared library
 # loads, so pinning after `import numpy` has no effect on the pools the timings
 # actually run through. Both modules are stdlib-only at import time.
+from _production_config import (
+    numba_worker_route_pin as _numba_worker_route_pin,
+)
 from _production_config import (  # noqa: E402
     observe_thread_env as _observe_thread_env,
 )
@@ -65,7 +68,29 @@ _cli = _parse_profile_cli()
 
 thread_env = _pin_thread_env(1) if _cli.variant == "production" else _observe_thread_env()
 
-import argparse as _argparse
+import argparse as _argparse  # noqa: E402
+
+# ``--mesh-class delaunay_nn`` builds ``al.mesh.DelaunayNN`` (Sibson natural-neighbour weights) in
+# place of ``al.mesh.Delaunay``, everything else unchanged: the numba CPU leg of the
+# ``imaging/delaunay_nn`` cells (likelihood-lifecycle 2a). Its rows belong to the delaunay_nn
+# variant, which the legacy name does not encode, so it needs an explicit ``--output-path``.
+# It is read here, before numpy / numba are imported, because of the pin below.
+_mesh_parser = _argparse.ArgumentParser(add_help=False)
+_mesh_parser.add_argument("--mesh-class", choices=("delaunay", "delaunay_nn"), default="delaunay")
+MESH_CLASS = _mesh_parser.parse_known_args()[0].mesh_class
+if MESH_CLASS == "delaunay_nn" and _cli.output_path is None:
+    raise SystemExit("--mesh-class delaunay_nn needs --output-path (the legacy name says delaunay)")
+
+# DelaunayNN runs the numba Sibson interpolator, a ``prange`` kernel. Production runs it inside
+# Nautilus' multiprocessing workers, which take its serial compilation (PyAutoArray#677), so the
+# production variant pins NUMBA_NUM_THREADS=1 now (numba reads it once, at import) and forces the
+# worker route after the imports: ``_production_config.numba_worker_route_pin``,
+# autolens_profiling#519. Plain Delaunay runs no prange kernel and is left exactly as it was.
+numba_worker_route = (
+    _numba_worker_route_pin()
+    if MESH_CLASS == "delaunay_nn" and _cli.variant == "production"
+    else None
+)
 import json
 import os
 
@@ -79,6 +104,11 @@ from pathlib import Path
 import autofit as af
 import autolens as al
 import numpy as np
+
+if numba_worker_route is not None:
+    from _production_config import apply_numba_worker_route  # noqa: E402
+
+    apply_numba_worker_route(numba_worker_route)
 
 if _smoke_os.environ.get("AUTOLENS_PROFILING_SMOKE") == "1":
     print(f"[smoke] {__file__}: imports + module setup OK; exiting.")
@@ -122,16 +152,6 @@ from _profile_cli import (  # noqa: E402
 
 instrument = _cli.instrument or "euclid"  # default; override via --instrument
 
-
-# ``--mesh-class delaunay_nn`` builds ``al.mesh.DelaunayNN`` (Sibson natural-neighbour weights) in
-# place of ``al.mesh.Delaunay``, everything else unchanged: the numba CPU leg of the
-# ``imaging/delaunay_nn`` cells (likelihood-lifecycle 2a). Its rows belong to the delaunay_nn
-# variant, which the legacy name does not encode, so it needs an explicit ``--output-path``.
-_mesh_parser = _argparse.ArgumentParser(add_help=False)
-_mesh_parser.add_argument("--mesh-class", choices=("delaunay", "delaunay_nn"), default="delaunay")
-MESH_CLASS = _mesh_parser.parse_known_args()[0].mesh_class
-if MESH_CLASS == "delaunay_nn" and _cli.output_path is None:
-    raise SystemExit("--mesh-class delaunay_nn needs --output-path (the legacy name says delaunay)")
 
 # ``--standard-size`` (likelihood-lifecycle phase 2): the production preset at the standard
 # source-pixel count, for every instrument (``standard_size_preset``; jwst / ao borrow the hst
@@ -495,6 +515,7 @@ likelihood_summary = {
         "use_jax": False,
         "n_instances": n_instances,
         "thread_env": thread_env,
+        **({"numba_worker_route": numba_worker_route} if numba_worker_route is not None else {}),
         "memo_provenance": memo_provenance,
         "omp_num_threads": os.environ.get("OMP_NUM_THREADS", None),
     },
