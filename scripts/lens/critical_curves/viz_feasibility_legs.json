@@ -1,0 +1,189 @@
+[
+ {
+  "record": "results/cluster/image_plane/simple/validation/default/jax_cpu_na_fp64/seed_0/stages.json",
+  "job": "414145_0",
+  "status": "complete",
+  "dataset_class": "cluster",
+  "instrument": "simple",
+  "config": "hpc_ral_jax_cpu_na_fp64",
+  "seed": 0,
+  "stage": "modeling[1]",
+  "output_path": "/mnt/ral/jnightin/inference/autolens_inference/output/p4_validation/validation_cluster_image_plane_simple_jax_cpu_na/autolens/cluster/simple/modeling/modeling_image_plane/hpc_ral_jax_cpu_na_fp64/seed_0/modeling[1]/38f0486390e92d6472a2a2137721f490"
+ },
+ {
+  "record": "results/cluster/source_plane/simple/validation/default/jax_cpu_na_fp64/seed_0/stages.json",
+  "job": "414147_0",
+  "status": "complete",
+  "dataset_class": "cluster",
+  "instrument": "simple",
+  "config": "hpc_ral_jax_cpu_na_fp64",
+  "seed": 0,
+  "stage": "modeling[1]",
+  "output_path": "/mnt/ral/jnightin/inference/autolens_inference/output/p4_validation/validation_cluster_source_plane_simple_jax_cpu_na/autolens/cluster/simple/modeling/modeling_source_plane/hpc_ral_jax_cpu_na_fp64/seed_0/modeling[1]/38f0486390e92d6472a2a2137721f490"
+ },
+ {
+  "record": "results/group/delaunay/euclid/validation/default/numba_cpu_sparse_fp64/seed_0/stages.json",
+  "job": "414151_0",
+  "status": "complete",
+  "dataset_class": "group",
+  "instrument": "euclid",
+  "config": "hpc_ral_numba_cpu_sparse_fp64",
+  "seed": 0,
+  "stage": "mass_total[1]",
+  "output_path": "/mnt/ral/jnightin/inference/autolens_inference/output/p4_validation/validation_group_delaunay_euclid_numba_cpu_sparse/autolens/group/euclid/slam/slam_delaunay/hpc_ral_numba_cpu_sparse_fp64/seed_0/mass_total[1]/f47a348722cfc47b3d8e779f796e6e48"
+ },
+ {
+  "record": "results/group/delaunay/euclid/validation/light_fixed/numba_cpu_sparse_fp64/seed_0/stages.json",
+  "job": "414151_0",
+  "status": "complete",
+  "dataset_class": "group",
+  "instrument": "euclid",
+  "config": "hpc_ral_numba_cpu_sparse_fp64",
+  "seed": 0,
+  "stage": "mass_total[1]",
+  "output_path": "/mnt/ral/jnightin/inference/autolens_inference/output/p4_validation/validation_group_delaunay_euclid_numba_cpu_sparse/autolens/group/euclid/slam/slam_delaunay_light_fixed/hpc_ral_numba_cpu_sparse_fp64/seed_0/mass_total[1]/218e0d7bcb1d18af67829a97f97a2859"
+ },
+ {
+  "record": "results/group/mge/euclid/validation/default/jax_cpu_dense_fp64/seed_0/stages.json",
+  "job": "414152_0",
+  "status": "complete",
+  "dataset_class": "group",
+  "instrument": "euclid",
+  "config": "hpc_ral_jax_cpu_dense_fp64",
+  "seed": 0,
+  "stage": "mass_total[1]",
+  "output_path": "/mnt/ral/jnightin/inference/autolens_inference/output/p4_validation/validation_group_mge_euclid_jax_cpu_dense/autolens/group/euclid/slam/slam_mge/hpc_ral_jax_cpu_dense_fp64/seed_0/mass_total[1]/368cd7b6bc38382141cef01e362b0b06"
+ },
+ {
+  "record": "results/group/mge/euclid/validation/light_fixed/jax_cpu_dense_fp64/seed_0/stages.json",
+  "job": "414152_0",
+  "status": "complete",
+  "dataset_class": "group",
+  "instrument": "euclid",
+  "config": "hpc_ral_jax_cpu_dense_fp64",
+  "seed": 0,
+  "stage": "mass_total[1]",
+  "output_path": "/mnt/ral/jnightin/inference/autolens_inference/output/p4_validation/validation_group_mge_euclid_jax_cpu_dense/autolens/group/euclid/slam/slam_mge_light_fixed/hpc_ral_jax_cpu_dense_fp64/seed_0/mass_total[1]/4784689a2f37d83e0335a14d74ce3d9f"
+ },
+ {
+  "record": "results/group/rectangular/euclid/validation/default/numba_cpu_sparse_fp64/seed_0/stages.json",
+  "job": "414153_0",
+  "status": "complete",
+  "dataset_class": "group",
+  "instrument": "euclid",
+  "config": "hpc_ral_numba_cpu_sparse_fp64",
+  "seed": 0,
+  "stage": "mass_total[1]",
+  "output_path": "/mnt/ral/jnightin/inference/autolens_inference/output/p4_validation/validation_group_rectangular_euclid_numba_cpu_sparse/autolens/group/euclid/slam/slam_rectangular/hpc_ral_numba_cpu_sparse_fp64/seed_0/mass_total[1]/fa3dd0f7c9a8212091827ff47f3e47ee"
+ },
+ {
+  "record": "results/group/rectangular/euclid/validation/light_fixed/numba_cpu_sparse_fp64/seed_0/stages.json",
+  "job": "414153_0",
+  "status": "complete",
+  "dataset_class": "group",
+  "instrument": "euclid",
+  "config": "hpc_ral_numba_cpu_sparse_fp64",
+  "seed": 0,
+  "stage": "mass_total[1]",
+  "output_path": "/mnt/ral/jnightin/inference/autolens_inference/output/p4_validation/validation_group_rectangular_euclid_numba_cpu_sparse/autolens/group/euclid/slam/slam_rectangular_light_fixed/hpc_ral_numba_cpu_sparse_fp64/seed_0/mass_total[1]/acb070bc02c9924d9235ca8e50bf8607"
+ },
+ {
+  "record": "results/imaging/delaunay/hst/validation/default/numba_cpu_sparse_fp64/seed_0/stages.json",
+  "job": "414149_0",
+  "status": "complete",
+  "dataset_class": "imaging",
+  "instrument": "hst",
+  "config": "hpc_ral_numba_cpu_sparse_fp64",
+  "seed": 0,
+  "stage": "mass_total[1]",
+  "output_path": "/mnt/ral/jnightin/inference/autolens_inference/output/p4_validation/validation_delaunay_hst_numba_cpu_sparse_seed_0/autolens/imaging/hst/slam/slam_delaunay/hpc_ral_numba_cpu_sparse_fp64/seed_0/mass_total[1]/63d5fb156655738eb7d42de39a2a9280"
+ },
+ {
+  "record": "results/imaging/delaunay/hst/validation/light_fixed/numba_cpu_sparse_fp64/seed_0/stages.json",
+  "job": "414149_0",
+  "status": "complete",
+  "dataset_class": "imaging",
+  "instrument": "hst",
+  "config": "hpc_ral_numba_cpu_sparse_fp64",
+  "seed": 0,
+  "stage": "mass_total[1]",
+  "output_path": "/mnt/ral/jnightin/inference/autolens_inference/output/p4_validation/validation_delaunay_hst_numba_cpu_sparse_seed_0/autolens/imaging/hst/slam/slam_delaunay_light_fixed/hpc_ral_numba_cpu_sparse_fp64/seed_0/mass_total[1]/bf97cc4e78cf07b7f55c7d6c5ca34223"
+ },
+ {
+  "record": "results/imaging/delaunay_nn/hst/validation/default/numba_cpu_sparse_fp64/seed_0/stages.json",
+  "job": "414189_0",
+  "status": "complete",
+  "dataset_class": "imaging",
+  "instrument": "hst",
+  "config": "hpc_ral_numba_cpu_sparse_fp64",
+  "seed": 0,
+  "stage": "mass_total[1]",
+  "output_path": "/mnt/ral/jnightin/inference/autolens_inference/output/p4_validation/validation_delaunay_nn_hst_numba_cpu_sparse/autolens/imaging/hst/slam/slam_delaunay_nn/hpc_ral_numba_cpu_sparse_fp64/seed_0/mass_total[1]/f108ace38644c2dd0b6bf0e5c575bcc4"
+ },
+ {
+  "record": "results/imaging/delaunay_nn/hst/validation/light_fixed/numba_cpu_sparse_fp64/seed_0/stages.json",
+  "job": "414189_0",
+  "status": "complete",
+  "dataset_class": "imaging",
+  "instrument": "hst",
+  "config": "hpc_ral_numba_cpu_sparse_fp64",
+  "seed": 0,
+  "stage": "mass_total[1]",
+  "output_path": "/mnt/ral/jnightin/inference/autolens_inference/output/p4_validation/validation_delaunay_nn_hst_numba_cpu_sparse/autolens/imaging/hst/slam/slam_delaunay_nn_light_fixed/hpc_ral_numba_cpu_sparse_fp64/seed_0/mass_total[1]/8e013c3ed5799b2458598e62f27e714e"
+ },
+ {
+  "record": "results/imaging/mge/hst/validation/default/jax_cpu_dense_fp64/seed_0/stages.json",
+  "job": "414157_0",
+  "status": "complete",
+  "dataset_class": "imaging",
+  "instrument": "hst",
+  "config": "hpc_ral_jax_cpu_dense_fp64",
+  "seed": 0,
+  "stage": "mass_total[1]",
+  "output_path": "/mnt/ral/jnightin/inference/autolens_inference/output/p4_validation/validation_mge_hst_jax_cpu_dense/autolens/imaging/hst/slam/slam_mge/hpc_ral_jax_cpu_dense_fp64/seed_0/mass_total[1]/266b496a2a153244f292c5ce46127d7a"
+ },
+ {
+  "record": "results/imaging/mge/hst/validation/light_fixed/jax_cpu_dense_fp64/seed_0/stages.json",
+  "job": "414157_0",
+  "status": "complete",
+  "dataset_class": "imaging",
+  "instrument": "hst",
+  "config": "hpc_ral_jax_cpu_dense_fp64",
+  "seed": 0,
+  "stage": "mass_total[1]",
+  "output_path": "/mnt/ral/jnightin/inference/autolens_inference/output/p4_validation/validation_mge_hst_jax_cpu_dense/autolens/imaging/hst/slam/slam_mge_light_fixed/hpc_ral_jax_cpu_dense_fp64/seed_0/mass_total[1]/5d40a2f64aeaaf61a62830c692af5e5c"
+ },
+ {
+  "record": "results/interferometer/delaunay/sma/validation/default/numba_cpu_sparse_fp64_wtilde/seed_0/stages.json",
+  "job": "414154_0",
+  "status": "complete",
+  "dataset_class": "interferometer",
+  "instrument": "sma",
+  "config": "hpc_ral_numba_cpu_sparse_fp64_wtilde",
+  "seed": 0,
+  "stage": "mass_total[1]",
+  "output_path": "/mnt/ral/jnightin/inference/autolens_inference/output/p4_validation/validation_interferometer_delaunay_sma_numba_cpu_sparse_wtilde/autolens/interferometer/sma/slam/slam_delaunay/hpc_ral_numba_cpu_sparse_fp64_wtilde/seed_0/mass_total[1]/168a719c6047740af1ecbf94b8a42ca2"
+ },
+ {
+  "record": "results/interferometer/mge/sma/validation/default/jax_cpu_dense_fp64_nufft/seed_0/stages.json",
+  "job": "414155_0",
+  "status": "complete",
+  "dataset_class": "interferometer",
+  "instrument": "sma",
+  "config": "hpc_ral_jax_cpu_dense_fp64_nufft",
+  "seed": 0,
+  "stage": "mass_total[1]",
+  "output_path": "/mnt/ral/jnightin/inference/autolens_inference/output/p4_validation/validation_interferometer_mge_sma_jax_cpu_dense_nufft/autolens/interferometer/sma/slam/slam_mge/hpc_ral_jax_cpu_dense_fp64_nufft/seed_0/mass_total[1]/b9e19503b68f4946e9f8be19cb4dc5c2"
+ },
+ {
+  "record": "results/interferometer/rectangular/sma/validation/default/numba_cpu_sparse_fp64_wtilde/seed_0/stages.json",
+  "job": "414156_0",
+  "status": "complete",
+  "dataset_class": "interferometer",
+  "instrument": "sma",
+  "config": "hpc_ral_numba_cpu_sparse_fp64_wtilde",
+  "seed": 0,
+  "stage": "mass_total[1]",
+  "output_path": "/mnt/ral/jnightin/inference/autolens_inference/output/p4_validation/validation_interferometer_rectangular_sma_numba_cpu_sparse_wtilde/autolens/interferometer/sma/slam/slam_rectangular/hpc_ral_numba_cpu_sparse_fp64_wtilde/seed_0/mass_total[1]/037f0284704af3841acbcf0cd84c7aab"
+ }
+]

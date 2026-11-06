@@ -328,6 +328,12 @@ def main():
     parser.add_argument("--classes", default="group,cluster")
     parser.add_argument("--draws", type=int, default=5)
     parser.add_argument("--limit", type=int, default=0)
+    parser.add_argument(
+        "--index",
+        type=int,
+        default=None,
+        help="Run only this leg of --selected (a SLURM array task id).",
+    )
     args = parser.parse_args()
     if args.worker:
         worker(args.worker[0], args.worker[1], args.draws, args.samples_root)
@@ -335,8 +341,15 @@ def main():
         # Reuse the galaxy driver (subprocess per leg, LEG_TIMEOUT, resume) with
         # this script as the worker entry point.
         mvf.SCRIPT = SCRIPT
+        mvf.LEG_TIMEOUT = 7200
+        selected = args.selected
+        if args.index is not None:
+            legs = json.loads(Path(args.selected).read_text())
+            args.run.mkdir(parents=True, exist_ok=True)
+            selected = args.run / f"selected_{args.index}.json"
+            selected.write_text(json.dumps([legs[args.index]]))
         mvf.run(
-            args.selected,
+            selected,
             args.samples_root,
             args.run,
             args.classes.split(","),
