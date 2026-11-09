@@ -71,6 +71,7 @@ the library's with them absent.
 from __future__ import annotations
 
 import jax.numpy as jnp
+import numpy as np
 from jax.scipy.linalg import cho_solve
 
 
@@ -147,6 +148,7 @@ def log_evidence_terms(
     reduced_indices,
     reg_reduced,
     curv_reg_reduced,
+    grounding=None,
 ) -> dict:
     """Every term of ``-2 ln e = chi^2 + s^T H s + ln det(F+λH) - ln det(H) + noise_norm``.
 
@@ -161,6 +163,13 @@ def log_evidence_terms(
     ``H`` is rank-deficient by construction (non-regularised linear components
     such as an MGE lens light), so its log-det is ``-inf``.
 
+    ``grounding`` is ``inversion._intrinsic_regularization_blocks``: the first
+    index of every regularized block whose ``H`` has an exact constant null mode,
+    and ``sum log P_b`` over those blocks. Given it, ``ln det(H)`` is the
+    pseudo-determinant PyAutoArray uses since #682: delete each grounded row and
+    column, then add ``sum log P_b``. Without it, the plain ``ln det(H)`` (the
+    pre-#682 library value, which includes ``log`` of the 1e-8 jitter) is used.
+
     Returned values are Python floats — this is called **eagerly, once**, for
     the JSON, never inside a timed row.
     """
@@ -171,7 +180,12 @@ def log_evidence_terms(
     regularization_term = jnp.dot(s_reduced, jnp.dot(reg_reduced, s_reduced))
 
     log_det_curvature_reg = log_det_cholesky(curv_reg_reduced)
-    log_det_regularization = log_det_cholesky(reg_reduced)
+    if grounding is not None and len(grounding[0]) > 0:
+        grounded, log_block_sizes = grounding
+        keep = np.setdiff1d(np.arange(reg_reduced.shape[0]), np.asarray(grounded, dtype=int))
+        log_det_regularization = log_block_sizes + log_det_cholesky(reg_reduced[keep][:, keep])
+    else:
+        log_det_regularization = log_det_cholesky(reg_reduced)
 
     noise_normalization = jnp.sum(jnp.log(2 * jnp.pi * noise_map**2))
 
