@@ -319,10 +319,97 @@ def worker(leg_json, out_path, n_draws, samples_root):
         galaxy_worker(leg_json, out_path, n_draws, samples_root)
 
 
+def summarize_corpus(directory):
+    """Per-family correctness, failure modes, cost and fallback-detector score.
+
+    Failure modes for zero-contour tangential critical curves (galaxy/group, unclipped draws):
+    ``none_found`` (no seed reached the curve), ``extra_dupes`` (the reference curve traced
+    more than once, every copy within tolerance) and ``mismatch`` (anything else). The detector
+    flags a draw when the zero-contour count differs from the coarse marching-squares count or
+    a path is not closed; it is scored against the rule's pass/fail.
+    """
+    import collections
+    import statistics
+
+    rows = [json.loads(p.read_text()) for p in sorted(Path(directory).glob("*__seed_*.json"))]
+    families, detector = {}, collections.Counter()
+    for row in rows:
+        leg = row["leg"]["record"].split("/")
+        family = f"{leg[1]}/{leg[2]}"
+        fam = families.setdefault(
+            family,
+            {
+                "scale": row["scale"],
+                "draws": 0,
+                "clipped": 0,
+                "ms_s": [],
+                "zc_s": [],
+                "zc_cold_s": [],
+                "zc_warm_s": [],
+                "modes": collections.Counter(),
+                "ms_tangential_fail": 0,
+                "graded": 0,
+            },
+        )
+        reused = row["draws"][0].get("zero_contour_reused_calc_s", {})
+        for value in [reused] if "warm" in reused else reused.values():
+            if "warm" in value:
+                fam["zc_cold_s"].append(value["cold"])
+                fam["zc_warm_s"].append(value["warm"])
+        for d in row["draws"]:
+            fam["draws"] += 1
+            fam["ms_s"].append(d["marching_squares"]["timing"]["seconds"])
+            fam["zc_s"].append(d["zero_contour"]["timing"]["seconds"])
+            if d["reference_clipped"]:
+                fam["clipped"] += 1
+                continue
+            for key, g in d["zero_contour"]["grades"].items():
+                if not key.startswith("tangential_critical_curve") or not g.get("graded"):
+                    continue
+                ms = d["marching_squares"]["grades"][key]
+                fam["graded"] += 1
+                fam["ms_tangential_fail"] += not ms.get("pass")
+                n, ref = g.get("count", 0), g.get("reference_count", 0)
+                if g.get("pass"):
+                    mode = "pass"
+                elif n == 0:
+                    mode = "none_found"
+                elif n > ref and all(p["distance"] <= mvf.TOLERANCE for p in g.get("pairs", [])):
+                    mode = "extra_dupes"
+                else:
+                    mode = "mismatch"
+                fam["modes"][mode] += 1
+                if row["scale"] != "cluster":
+                    flagged = n != d["coarse_tangential_count"] or (n > 0 and not g.get("closed"))
+                    detector[(mode != "pass", flagged)] += 1
+    summary = {}
+    for family, fam in sorted(families.items()):
+        med = {
+            k: statistics.median(fam[k]) if fam[k] else None
+            for k in ("ms_s", "zc_s", "zc_cold_s", "zc_warm_s")
+        }
+        summary[family] = {
+            **{k: v for k, v in fam.items() if not k.endswith("_s")},
+            "modes": dict(fam["modes"]),
+            "median_s": med,
+        }
+        print(
+            f"{family:28s} {fam['scale']:7s} draws={fam['draws']:3d} clipped={fam['clipped']:2d} "
+            f"zc_tangential={dict(fam['modes'])} ms_tangential_fail={fam['ms_tangential_fail']}/"
+            f"{fam['graded']} | MS {med['ms_s']:.2f}s ZC {med['zc_s']:.2f}s "
+            f"cold {med['zc_cold_s'] or 0:.2f}s warm {med['zc_warm_s'] or 0:.2f}s"
+        )
+    score = {f"zc_fail={a},flagged={b}": v for (a, b), v in sorted(detector.items())}
+    print("fallback detector:", score)
+    return {"families": summary, "fallback_detector": score}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[1])
     parser.add_argument("--run", type=Path)
     parser.add_argument("--worker", nargs=2)
+    parser.add_argument("--summarize-corpus", type=Path, help="Results directory to summarise.")
+    parser.add_argument("--summary-out", type=Path, help="Write the corpus summary JSON here.")
     parser.add_argument("--selected", type=Path)
     parser.add_argument("--samples-root", type=Path)
     parser.add_argument("--classes", default="group,cluster")
@@ -335,7 +422,11 @@ def main():
         help="Run only this leg of --selected (a SLURM array task id).",
     )
     args = parser.parse_args()
-    if args.worker:
+    if args.summarize_corpus:
+        summary = summarize_corpus(args.summarize_corpus)
+        if args.summary_out:
+            args.summary_out.write_text(json.dumps(summary, indent=1, default=float))
+    elif args.worker:
         worker(args.worker[0], args.worker[1], args.draws, args.samples_root)
     elif args.run:
         # Reuse the galaxy driver (subprocess per leg, LEG_TIMEOUT, resume) with
