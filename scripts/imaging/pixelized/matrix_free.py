@@ -514,6 +514,11 @@ with timer.section("fit_imaging_eager"):
     log_evidence_ref = fit.figure_of_merit
 
 inversion = fit.inversion
+
+# ``ln det(H)`` is the pseudo-determinant PyAutoArray uses since #682: ground one
+# pixel per intrinsic regularized block and add ``sum log P_b``. Resolved eagerly
+# (static ``keep`` indices); None = plain ln det.
+REG_GROUNDING = reconstruction_steps.grounding_from(inversion)
 print(f"  inversion class: {type(inversion).__name__}")
 print(f"  figure_of_merit (log_evidence) = {log_evidence_ref}")
 
@@ -666,7 +671,9 @@ try:
 
     exact_log_dets = {
         "log_det_curvature_reg": float(reconstruction_steps.log_det_cholesky(creg_reduced)),
-        "log_det_regularization": float(reconstruction_steps.log_det_cholesky(reg_reduced)),
+        "log_det_regularization": float(
+            reconstruction_steps.log_det_regularization_from(reg_reduced, REG_GROUNDING)
+        ),
     }
     print(f"  exact log dets: {exact_log_dets}")
 
@@ -803,27 +810,46 @@ _reduced_reg_matvec = matrix_free_steps.reduced_matvec_from(
     ctx, matrix_free_steps.bcoo_matvec(ctx.reg_bcoo)
 )
 
+# The library's ``ln det(H)`` is the pseudo-determinant (PyAutoArray#682): SLQ runs
+# on the grounded subspace (embed with the grounded pixels at zero, read the kept
+# rows back) and adds ``sum log P_b``, so it estimates the same term it is
+# compared with. ``F + λH`` is untouched.
+if REG_GROUNDING is None:
+    _reg_slq_matvec, _reg_slq_n, _reg_slq_offset = _reduced_reg_matvec, n_reduced, 0.0
+else:
+    _reg_keep = jnp.asarray(REG_GROUNDING[0])
+    _reg_slq_offset = float(REG_GROUNDING[1])
+    _reg_slq_n = int(_reg_keep.shape[0])
+
+    def _reg_slq_matvec(V, _full=_reduced_reg_matvec, _keep=_reg_keep):
+        one_d = V.ndim == 1
+        V2 = V[:, None] if one_d else V
+        embedded = jnp.zeros((n_reduced, V2.shape[1]), dtype=V2.dtype).at[_keep].set(V2)
+        out = _full(embedded)[_keep]
+        return out[:, 0] if one_d else out
+
+
 #: ``{(target, probes, steps): estimate}`` — the noise-vs-probes curve, and
 #: where the default pair's value is read back from for the evidence row.
 slq_estimates: dict[tuple, float] = {}
 
-for _target, _matvec, _exact_key in (
-    ("F+λH reduced", _reduced_curv_reg_matvec, "log_det_curvature_reg"),
-    ("λH reduced", _reduced_reg_matvec, "log_det_regularization"),
+for _target, _matvec, _exact_key, _n_slq, _slq_offset in (
+    ("F+λH reduced", _reduced_curv_reg_matvec, "log_det_curvature_reg", n_reduced, 0.0),
+    ("λH reduced", _reg_slq_matvec, "log_det_regularization", _reg_slq_n, _reg_slq_offset),
 ):
     for _probes in SLQ_PROBES:
         for _steps in SLQ_STEPS:
 
-            def _slq(key, matvec=_matvec, probes=_probes, steps=_steps):
+            def _slq(key, matvec=_matvec, probes=_probes, steps=_steps, n=_n_slq):
                 return matrix_free_steps.slq_logdet(
-                    matvec, n_reduced, n_probes=probes, n_lanczos=steps, key=key
+                    matvec, n, n_probes=probes, n_lanczos=steps, key=key
                 )
 
             _label = f"slq_{_exact_key}_p{_probes}_m{_steps}"
             _, _slq_out = jit_profile(_slq, _label, slq_key)
             _slq_s = timer.records[-1][1] / 10
             _estimate, _per_probe, _n_clamped = _slq_out
-            _estimate = float(_estimate)
+            _estimate = float(_estimate) + _slq_offset
             slq_estimates[(_exact_key, _probes, _steps)] = _estimate
 
             _facts = {
@@ -880,6 +906,7 @@ if DENSE_OK:
         jnp.asarray(np.asarray(inversion.mapper_indices)),
         reg_reduced,
         creg_reduced,
+        grounding=REG_GROUNDING,
     )
 
     _slq_curv = slq_estimates[("log_det_curvature_reg", SLQ_DEFAULT_PROBES, SLQ_DEFAULT_STEPS)]

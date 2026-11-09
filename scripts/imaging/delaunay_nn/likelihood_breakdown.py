@@ -1013,6 +1013,11 @@ print("\n--- Extracting inversion matrices from FitImaging ---")
 
 inversion = fit.inversion
 
+# ``ln det(H)`` is the pseudo-determinant PyAutoArray uses since #682: ground one
+# pixel per intrinsic regularized block and add ``sum log P_b``. Resolved eagerly
+# (static ``keep`` indices), read by the evidence step below; None = plain ln det.
+REG_GROUNDING = reconstruction_steps.grounding_from(inversion)
+
 print(f"  inversion class: {type(inversion).__name__}")
 
 with timer.section("extract_inversion_matrices"):
@@ -1994,8 +1999,9 @@ def compute_log_evidence(
     # linear parameters.
     L_cr = jnp.linalg.cholesky(curv_reg_reduced)
     log_det_curvature_reg = 2.0 * jnp.sum(jnp.log(jnp.diag(L_cr)))
-    L_r = jnp.linalg.cholesky(reg_reduced)
-    log_det_regularization = 2.0 * jnp.sum(jnp.log(jnp.diag(L_r)))
+    log_det_regularization = reconstruction_steps.log_det_regularization_from(
+        reg_reduced, REG_GROUNDING
+    )
 
     # Noise normalization (over full masked image)
     noise_normalization = jnp.sum(jnp.log(2 * jnp.pi * noise_map**2))
@@ -2127,7 +2133,12 @@ jit_profile(
 )
 reconstruction_sub_rows["Log det Cholesky (F+λH reduced)"] = timer.records[-1][1] / 10
 
-jit_profile(reconstruction_steps.log_det_cholesky, "log_det_regularization_jit", reg_reduced_jnp)
+# The library's ln det(H) is the pseudo-determinant since PyAutoArray#682.
+jit_profile(
+    lambda h: reconstruction_steps.log_det_regularization_from(h, REG_GROUNDING),
+    "log_det_regularization_jit",
+    reg_reduced_jnp,
+)
 reconstruction_sub_rows["Log det Cholesky (H reduced)"] = timer.records[-1][1] / 10
 
 if _cli.use_sparse_operator:
@@ -2149,6 +2160,7 @@ log_evidence_term_values = reconstruction_steps.log_evidence_terms(
     reduced_indices_jnp,
     reg_reduced_jnp,
     curv_reg_reduced_jnp,
+    grounding=REG_GROUNDING,
 )
 for _term, _value in log_evidence_term_values.items():
     print(f"  {_term:<24} {_value!r}")

@@ -106,6 +106,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 from autofit.jax import register_model as _register_model_pytrees
+from likelihood_breakdown import reconstruction_steps  # noqa: E402
 
 sys.path.insert(0, str(_profiling_root()))
 # ---------------------------------------------------------------------------
@@ -515,6 +516,11 @@ else:
 
 inversion = fit.inversion
 
+# ``ln det(H)`` is the pseudo-determinant PyAutoArray uses since #682: ground one
+# pixel per intrinsic regularized block and add ``sum log P_b``. Resolved eagerly
+# (static ``keep`` indices), read by the evidence step below; None = plain ln det.
+REG_GROUNDING = reconstruction_steps.grounding_from(inversion)
+
 if dense_breakdown_feasible:
     # ==================================================================
     # DENSE PATH — full per-step breakdown (SMA scale)
@@ -774,7 +780,9 @@ if dense_breakdown_feasible:
         creg_reduced = curvature_reg_matrix[mapper_indices][:, mapper_indices]
         reg_reduced = regularization_matrix[mapper_indices][:, mapper_indices]
         log_det_curvature_reg = 2.0 * jnp.sum(jnp.log(jnp.diag(jnp.linalg.cholesky(creg_reduced))))
-        log_det_regularization = 2.0 * jnp.sum(jnp.log(jnp.diag(jnp.linalg.cholesky(reg_reduced))))
+        log_det_regularization = reconstruction_steps.log_det_regularization_from(
+            reg_reduced, REG_GROUNDING
+        )
 
         noise_normalization = jnp.sum(jnp.log(2 * jnp.pi * noise_real**2)) + jnp.sum(
             jnp.log(2 * jnp.pi * noise_imag**2)
@@ -1140,7 +1148,9 @@ else:
         creg_reduced = curvature_reg_matrix[mapper_indices][:, mapper_indices]
         reg_reduced = regularization_matrix[mapper_indices][:, mapper_indices]
         log_det_curvature_reg = 2.0 * jnp.sum(jnp.log(jnp.diag(jnp.linalg.cholesky(creg_reduced))))
-        log_det_regularization = 2.0 * jnp.sum(jnp.log(jnp.diag(jnp.linalg.cholesky(reg_reduced))))
+        log_det_regularization = reconstruction_steps.log_det_regularization_from(
+            reg_reduced, REG_GROUNDING
+        )
 
         noise_normalization = jnp.sum(jnp.log(2 * jnp.pi * noise_real**2)) + jnp.sum(
             jnp.log(2 * jnp.pi * noise_imag**2)
