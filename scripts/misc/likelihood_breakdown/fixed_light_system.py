@@ -149,6 +149,10 @@ class FixedLightSystem:
     subtracted_light_image: np.ndarray | None = None
     subtracted_light_flux: float | None = None
 
+    # ``inversion._intrinsic_regularization_blocks`` (PyAutoArray#682): grounded
+    # block indexes and ``sum log P_b`` for the pseudo-determinant ``ln det(H)``.
+    reg_grounding: tuple = field(default=(np.zeros(0, dtype=int), 0.0), compare=False)
+
     _pdip: tuple | None = field(default=None, repr=False, compare=False)
 
     # -- scoring ----------------------------------------------------------
@@ -182,6 +186,7 @@ class FixedLightSystem:
             jnp.asarray(self.mapper_indices),
             jnp.asarray(self.reg_reduced, dtype=jnp.float64),
             jnp.asarray(self.curv_reg_reduced, dtype=jnp.float64),
+            grounding=self.reg_grounding,
         )
 
     def log_evidence(self, x) -> float:
@@ -319,6 +324,19 @@ def _jacobi_scaled(curvature_reg_matrix, data_vector, scaling: str):
     )
 
 
+def _reg_grounding_from(inversion) -> tuple:
+    """The library's pseudo-determinant grounding of ``H`` (PyAutoArray#682).
+
+    Older libraries have no ``_intrinsic_regularization_blocks``; they use the
+    plain ``ln det(H)``, so an empty grounding reproduces them.
+    """
+    blocks = getattr(inversion, "_intrinsic_regularization_blocks", None)
+    if blocks is None:
+        return (np.zeros(0, dtype=int), 0.0)
+    grounded, log_block_sizes = blocks
+    return (np.asarray(grounded, dtype=int), float(log_block_sizes))
+
+
 def linear_system_from(
     fit,
     dataset=None,
@@ -368,6 +386,7 @@ def linear_system_from(
         mapper_indices=np.asarray(inversion.mapper_indices),
         reg_reduced=np.asarray(inversion.regularization_matrix_reduced, dtype=float),
         curv_reg_reduced=np.asarray(inversion.curvature_reg_matrix_reduced, dtype=float),
+        reg_grounding=_reg_grounding_from(inversion),
         Q=np.asarray(Q, dtype=float),
         q=np.asarray(q, dtype=float),
         d_scale=np.asarray(d_scale, dtype=float),

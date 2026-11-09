@@ -618,14 +618,16 @@ _LOGDET_HARNESS = "likelihood_breakdown/logdet_reuse_injection.py"
 #: 2026-09-30 after PyAutoArray#586 moved everything below line 305 by +9; re-pinned
 #: 2026-09-30 again after PyAutoArray#591 inserted one import line at 10 (+1 below it)
 #: and eight lines in ``data_subtracted_dict`` at old 880 (+9 below it); re-pinned
-#: 2026-10-16 after PyAutoArray#634 inserted 81 lines at 763/770/1022/1094 (+12, +68, +70, +81)).
-LIBRARY_ANCHOR_REVISION = "PyAutoArray main 02aa2e48 (2026-10-15)"
+#: 2026-10-16 after PyAutoArray#634 inserted 81 lines at 763/770/1022/1094 (+12, +68, +70, +81));
+#: re-pinned 2026-11-09 after PyAutoArray#682 (pseudo-determinant ``ln det H``) grew
+#: ``log_det_regularization_matrix_term`` by 19 lines (end 1258 -> 1277); nothing above 1253 moved.
+LIBRARY_ANCHOR_REVISION = "PyAutoArray main a589c35b (2026-11-09)"
 #: ``_log_det_symmetric_from`` — the shared body of both log determinants.
 _ABSTRACT_LOG_DET_BODY = (1037, 1081)
 #: ``log_det_curvature_reg_matrix_term`` (decorator to last line).
 _ABSTRACT_LOG_DET_CURVATURE_CALLER = (1083, 1177)
 #: ``log_det_regularization_matrix_term`` (decorator to last line).
-_ABSTRACT_LOG_DET_REGULARIZATION_CALLER = (1197, 1258)
+_ABSTRACT_LOG_DET_REGULARIZATION_CALLER = (1197, 1277)
 #: ``curvature_reg_matrix``'s single-line ``self._xp.add(F, H)``.
 _ABSTRACT_CURVATURE_ADD_LINE = 399
 #: ``curvature_reg_matrix_reduced`` (the ``mapper_indices`` gathers).
