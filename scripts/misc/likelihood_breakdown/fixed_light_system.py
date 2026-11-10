@@ -149,9 +149,9 @@ class FixedLightSystem:
     subtracted_light_image: np.ndarray | None = None
     subtracted_light_flux: float | None = None
 
-    # ``inversion._intrinsic_regularization_blocks`` (PyAutoArray#682): grounded
-    # block indexes and ``sum log P_b`` for the pseudo-determinant ``ln det(H)``.
-    reg_grounding: tuple = field(default=(np.zeros(0, dtype=int), 0.0), compare=False)
+    # ``reconstruction_steps.grounding_from(inversion)`` (PyAutoArray#682): the kept
+    # indices and ``sum log P_b`` of the pseudo-determinant ``ln det(H)``; None = plain.
+    reg_grounding: tuple | None = field(default=None, compare=False)
 
     _pdip: tuple | None = field(default=None, repr=False, compare=False)
 
@@ -324,17 +324,21 @@ def _jacobi_scaled(curvature_reg_matrix, data_vector, scaling: str):
     )
 
 
-def _reg_grounding_from(inversion) -> tuple:
-    """The library's pseudo-determinant grounding of ``H`` (PyAutoArray#682).
+def _grounding_from(inversion):
+    """``reconstruction_steps.grounding_from`` in pure numpy (no JAX import).
 
-    Older libraries have no ``_intrinsic_regularization_blocks``; they use the
-    plain ``ln det(H)``, so an empty grounding reproduces them.
+    A numba CPU cell builds systems without JAX, so this builder must not import
+    ``reconstruction_steps``. Pinned equal to it by ``test_pdet_grounding.py``.
     """
     blocks = getattr(inversion, "_intrinsic_regularization_blocks", None)
     if blocks is None:
-        return (np.zeros(0, dtype=int), 0.0)
+        return None
     grounded, log_block_sizes = blocks
-    return (np.asarray(grounded, dtype=int), float(log_block_sizes))
+    if len(grounded) == 0:
+        return None
+    n = int(np.asarray(inversion.regularization_matrix_reduced).shape[0])
+    keep = np.setdiff1d(np.arange(n), np.asarray(grounded, dtype=int))
+    return keep, float(log_block_sizes)
 
 
 def linear_system_from(
@@ -386,7 +390,7 @@ def linear_system_from(
         mapper_indices=np.asarray(inversion.mapper_indices),
         reg_reduced=np.asarray(inversion.regularization_matrix_reduced, dtype=float),
         curv_reg_reduced=np.asarray(inversion.curvature_reg_matrix_reduced, dtype=float),
-        reg_grounding=_reg_grounding_from(inversion),
+        reg_grounding=_grounding_from(inversion),
         Q=np.asarray(Q, dtype=float),
         q=np.asarray(q, dtype=float),
         d_scale=np.asarray(d_scale, dtype=float),

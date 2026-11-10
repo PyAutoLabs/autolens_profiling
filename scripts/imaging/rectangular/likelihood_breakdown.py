@@ -787,6 +787,11 @@ print(f"  pix_indexes shape: {mapper.pix_indexes_for_sub_slim_index.shape}")
 print("\n--- Extracting inversion matrices from FitImaging ---")
 
 inversion = fit.inversion
+
+# ``ln det(H)`` is the pseudo-determinant PyAutoArray uses since #682: ground one
+# pixel per intrinsic regularized block and add ``sum log P_b``. Resolved eagerly
+# (static ``keep`` indices), read by the evidence step below; None = plain ln det.
+REG_GROUNDING = reconstruction_steps.grounding_from(inversion)
 print(f"  inversion class: {type(inversion).__name__}")
 
 with timer.section("extract_inversion_matrices"):
@@ -1678,7 +1683,9 @@ def compute_log_evidence(
     reg_reduced = regularization_matrix[mapper_indices][:, mapper_indices]
 
     log_det_curvature_reg = 2.0 * jnp.sum(jnp.log(jnp.diag(jnp.linalg.cholesky(creg_reduced))))
-    log_det_regularization = 2.0 * jnp.sum(jnp.log(jnp.diag(jnp.linalg.cholesky(reg_reduced))))
+    log_det_regularization = reconstruction_steps.log_det_regularization_from(
+        reg_reduced, REG_GROUNDING
+    )
 
     # Noise normalization
     noise_normalization = jnp.sum(jnp.log(2 * jnp.pi * noise_map**2))
@@ -1815,7 +1822,12 @@ _reg_reduced_row = jnp.array(inversion.regularization_matrix_reduced)
 jit_profile(reconstruction_steps.log_det_cholesky, "log_det_curvature_reg_jit", _creg_reduced_row)
 reconstruction_sub_rows["Log det Cholesky (F+λH reduced)"] = timer.records[-1][1] / 10
 
-jit_profile(reconstruction_steps.log_det_cholesky, "log_det_regularization_jit", _reg_reduced_row)
+# The library's ln det(H) is the pseudo-determinant since PyAutoArray#682.
+jit_profile(
+    lambda h: reconstruction_steps.log_det_regularization_from(h, REG_GROUNDING),
+    "log_det_regularization_jit",
+    _reg_reduced_row,
+)
 reconstruction_sub_rows["Log det Cholesky (H reduced)"] = timer.records[-1][1] / 10
 
 if _cli.use_sparse_operator:
@@ -1837,6 +1849,7 @@ log_evidence_term_values = reconstruction_steps.log_evidence_terms(
     mapper_indices_jnp,
     _reg_reduced_row,
     _creg_reduced_row,
+    grounding=REG_GROUNDING,
 )
 for _term, _value in log_evidence_term_values.items():
     print(f"  {_term:<24} {_value!r}")
@@ -2143,10 +2156,15 @@ print(f"  Bar chart saved to:    {chart_path}")
 # #247): a different mesh fits the data differently, and comparing its evidence
 # to this number would flag drift that is not drift. Such a run writes
 # ``pinned_expected: null`` so the row says out loud that nothing checked it.
+# Re-pinned 2026-11-09 (autolens_profiling#525) from RAL job 414743 (CPU fp64, library mains
+# Array af80e69d / Fit bdb7af0e / Galaxy bc3918a4 / Lens bb87dad3 / Nerves 9b204c90): PyAutoArray#682's
+# pseudo-determinant ln det H adds +9.21 nats per regularized mapper, and the shifts below also carry
+# library changes since the previous pins. The cell's own grounded evidence matched the library
+# (log_evidence (inv matrices) == reference) on every run.
 EXPECTED_LOG_EVIDENCE_HST = {
     # 39x39 = 1521 source pixels, MGE-60 lens light, adapt_image=lensed_source
-    "bilinear": 28621.128714095972,
-    "rtu": 28505.343980143432,
+    "bilinear": 28631.6052079193,  # was 28621.128714095972
+    "rtu": 28515.531620400456,  # was 28505.343980143432
 }[_cli.rect_mesh]
 
 # The pins also describe hst at flat-1 over-sampling and nothing else (as the

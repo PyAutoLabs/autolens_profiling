@@ -84,6 +84,8 @@ from autoarray.inversion.inversion.imaging import inversion_imaging_util
 from autoarray.inversion.mappers import mapper_util
 from autoarray.structures.arrays.uniform_2d import Array2D
 
+from likelihood_breakdown import reconstruction_steps
+
 
 @dataclass(frozen=True)
 class SparseContext:
@@ -108,6 +110,9 @@ class SparseContext:
     n_funcs: int
     add_to_diag_value: float
     no_regularization_index_list: tuple[int, ...]
+    # ``reconstruction_steps.grounding_from`` (PyAutoArray#682 pseudo-determinant
+    # ``ln det(H)``); static ``keep`` indices, None = plain ln det.
+    reg_grounding: Any = None
 
     @property
     def sparse_batch_size(self) -> int:
@@ -155,6 +160,7 @@ def sparse_context_from(inversion, dataset) -> SparseContext:
         n_funcs=int(operated.shape[1]),
         add_to_diag_value=float(inversion.settings.no_regularization_add_to_curvature_diag_value),
         no_regularization_index_list=tuple(int(i) for i in inversion.no_regularization_index_list),
+        reg_grounding=reconstruction_steps.grounding_from(inversion),
     )
 
 
@@ -445,8 +451,9 @@ def log_evidence(
 
     L_cr = jnp.linalg.cholesky(curv_reg_reduced)
     log_det_curvature_reg = 2.0 * jnp.sum(jnp.log(jnp.diag(L_cr)))
-    L_r = jnp.linalg.cholesky(reg_reduced)
-    log_det_regularization = 2.0 * jnp.sum(jnp.log(jnp.diag(L_r)))
+    log_det_regularization = reconstruction_steps.log_det_regularization_from(
+        reg_reduced, ctx.reg_grounding
+    )
 
     noise_normalization = jnp.sum(jnp.log(2 * jnp.pi * noise_map**2))
 

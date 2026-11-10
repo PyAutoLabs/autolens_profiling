@@ -204,10 +204,10 @@ def log_evidence_terms_np(system, x) -> dict:
 
     log_det_curvature_reg = _log_det_cholesky_np(curv_reg_reduced)
     # The pseudo-determinant grounding of ``reconstruction_steps.log_evidence_terms``
-    # (PyAutoArray#682): delete each grounded row/column, add ``sum log P_b``.
-    grounded, log_block_sizes = getattr(system, "reg_grounding", (np.zeros(0, dtype=int), 0.0))
-    if len(grounded) > 0:
-        keep = np.setdiff1d(np.arange(reg_reduced.shape[0]), np.asarray(grounded, dtype=int))
+    # (PyAutoArray#682): ``(keep, sum log P_b)`` from ``grounding_from``; None = plain.
+    grounding = getattr(system, "reg_grounding", None)
+    if grounding is not None:
+        keep, log_block_sizes = grounding
         log_det_regularization = log_block_sizes + _log_det_cholesky_np(reg_reduced[keep][:, keep])
     else:
         log_det_regularization = _log_det_cholesky_np(reg_reduced)

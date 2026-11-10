@@ -140,6 +140,38 @@ def log_det_cholesky(matrix):
     return 2.0 * jnp.sum(jnp.log(jnp.diag(jnp.linalg.cholesky(matrix))))
 
 
+def grounding_from(inversion):
+    """The pseudo-determinant grounding of ``H`` that PyAutoArray uses since #682.
+
+    Returns ``(keep, sum_log_P)``: the indices of ``regularization_matrix_reduced``
+    left after deleting the first row/column of every regularized block whose
+    ``H`` has an exact constant null mode, and ``sum log P_b`` over those blocks.
+    ``keep`` is computed here, eagerly, so a jitted step only gathers with it.
+    ``None`` (an older library, or no such block) means the plain ``ln det(H)``.
+    """
+    blocks = getattr(inversion, "_intrinsic_regularization_blocks", None)
+    if blocks is None:
+        return None
+    grounded, log_block_sizes = blocks
+    if len(grounded) == 0:
+        return None
+    n = int(np.asarray(inversion.regularization_matrix_reduced).shape[0])
+    keep = np.setdiff1d(np.arange(n), np.asarray(grounded, dtype=int))
+    return keep, float(log_block_sizes)
+
+
+def log_det_regularization_from(reg_reduced, grounding=None):
+    """``ln det(H)`` as the library computes it: pseudo-determinant when grounded.
+
+    ``pdet(H) = prod P_b * det(H with the grounded rows/columns deleted)``
+    (PyAutoArray ``AbstractInversion.log_det_regularization_matrix_term``).
+    """
+    if grounding is None:
+        return log_det_cholesky(reg_reduced)
+    keep, log_block_sizes = grounding
+    return log_block_sizes + log_det_cholesky(reg_reduced[keep][:, keep])
+
+
 def log_evidence_terms(
     data,
     noise_map,
@@ -163,12 +195,9 @@ def log_evidence_terms(
     ``H`` is rank-deficient by construction (non-regularised linear components
     such as an MGE lens light), so its log-det is ``-inf``.
 
-    ``grounding`` is ``inversion._intrinsic_regularization_blocks``: the first
-    index of every regularized block whose ``H`` has an exact constant null mode,
-    and ``sum log P_b`` over those blocks. Given it, ``ln det(H)`` is the
-    pseudo-determinant PyAutoArray uses since #682: delete each grounded row and
-    column, then add ``sum log P_b``. Without it, the plain ``ln det(H)`` (the
-    pre-#682 library value, which includes ``log`` of the 1e-8 jitter) is used.
+    ``grounding`` is ``grounding_from(inversion)``; given it, ``ln det(H)`` is the
+    pseudo-determinant PyAutoArray uses since #682. ``None`` is the plain
+    ``ln det(H)`` (the pre-#682 value, which includes ``log`` of the 1e-8 jitter).
 
     Returned values are Python floats — this is called **eagerly, once**, for
     the JSON, never inside a timed row.
@@ -180,12 +209,7 @@ def log_evidence_terms(
     regularization_term = jnp.dot(s_reduced, jnp.dot(reg_reduced, s_reduced))
 
     log_det_curvature_reg = log_det_cholesky(curv_reg_reduced)
-    if grounding is not None and len(grounding[0]) > 0:
-        grounded, log_block_sizes = grounding
-        keep = np.setdiff1d(np.arange(reg_reduced.shape[0]), np.asarray(grounded, dtype=int))
-        log_det_regularization = log_block_sizes + log_det_cholesky(reg_reduced[keep][:, keep])
-    else:
-        log_det_regularization = log_det_cholesky(reg_reduced)
+    log_det_regularization = log_det_regularization_from(reg_reduced, grounding)
 
     noise_normalization = jnp.sum(jnp.log(2 * jnp.pi * noise_map**2))
 
