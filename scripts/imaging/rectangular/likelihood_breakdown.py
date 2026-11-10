@@ -2156,10 +2156,15 @@ print(f"  Bar chart saved to:    {chart_path}")
 # #247): a different mesh fits the data differently, and comparing its evidence
 # to this number would flag drift that is not drift. Such a run writes
 # ``pinned_expected: null`` so the row says out loud that nothing checked it.
+# Re-pinned 2026-11-09 (autolens_profiling#525) from RAL job 414743 (CPU fp64, library mains
+# Array af80e69d / Fit bdb7af0e / Galaxy bc3918a4 / Lens bb87dad3 / Nerves 9b204c90): PyAutoArray#682's
+# pseudo-determinant ln det H adds +9.21 nats per regularized mapper, and the shifts below also carry
+# library changes since the previous pins. The cell's own grounded evidence matched the library
+# (log_evidence (inv matrices) == reference) on every run.
 EXPECTED_LOG_EVIDENCE_HST = {
     # 39x39 = 1521 source pixels, MGE-60 lens light, adapt_image=lensed_source
-    "bilinear": 28621.128714095972,
-    "rtu": 28505.343980143432,
+    "bilinear": 28631.6052079193,  # was 28621.128714095972
+    "rtu": 28515.531620400456,  # was 28505.343980143432
 }[_cli.rect_mesh]
 
 # The pins also describe hst at flat-1 over-sampling and nothing else (as the

@@ -2240,9 +2240,14 @@ print(f"  Bar chart saved to:    {chart_path}")
 # pinned evidences moved. Measured from one eager run per scheme on this host
 # (WSL, fp64). `constant_split` for delaunay_nn moved too but by 7.6e-5
 # relative, inside rtol=1e-4, so it PASSED and is left as measured in August.
+# Re-pinned 2026-11-09 (autolens_profiling#525) from RAL job 414743 (CPU fp64, library mains
+# Array af80e69d / Fit bdb7af0e / Galaxy bc3918a4 / Lens bb87dad3 / Nerves 9b204c90): PyAutoArray#682's
+# pseudo-determinant ln det H adds +9.21 nats per regularized mapper, and the shifts below also carry
+# library changes since the previous pins. The cell's own grounded evidence matched the library
+# (log_evidence (inv matrices) == reference) on every run.
 EXPECTED_LOG_EVIDENCE_HST = {
-    "constant_split": 29083.548352148413,  # was 29110.92085793
-    "adapt_split": 29140.29588193227,  # was 29155.0010494252
+    "constant_split": 29120.132849358866,  # was 29083.548352148413
+    "adapt_split": 29164.21050649178,  # was 29140.29588193227
 }
 
 # The pins describe the 1500-vertex fiducial mesh and nothing else, so a run

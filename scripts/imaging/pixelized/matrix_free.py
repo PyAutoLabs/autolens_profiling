@@ -217,18 +217,23 @@ FIDUCIAL_SOURCE_PIXELS = {"rectangular": 39 * 39, "delaunay": 1500, "delaunay_nn
 #: read from the ``*_hpc_a100_fp64_recon_split`` rows, now at ``results/imaging/<mesh>/hst/
 #: jax_gpu_dense_fp64/hpc_a100/experiments/recon_split/breakdown.json``
 #: (``log_evidence_terms``). They are what an SLQ estimate is checked against.
+#: Re-pinned 2026-11-09 (autolens_profiling#525) from RAL job 414743, CPU fp64, library mains incl.
+#: PyAutoArray#682: ``log_det_regularization`` is now the pseudo-determinant (rectangular moved by exactly
+#: ln 1e8 = +18.42); the Delaunay meshes also carry library changes since the 2026-09-11 A100 pins.
+#: Previous values: rectangular 3888.258089645771 / 1692.7868170935546, delaunay 8360.401762997288 /
+#: 7756.614958909804, delaunay_nn 7224.568777674853 / 6690.183751527879.
 PINNED_LOG_DETS = {
     "rectangular": {
-        "log_det_curvature_reg": 3888.258089645771,
-        "log_det_regularization": 1692.7868170935546,
+        "log_det_curvature_reg": 3878.498233358226,
+        "log_det_regularization": 1711.2075305507315,
     },
     "delaunay": {
-        "log_det_curvature_reg": 8360.401762997288,
-        "log_det_regularization": 7756.614958909804,
+        "log_det_curvature_reg": 8716.973825231513,
+        "log_det_regularization": 8137.151235880323,
     },
     "delaunay_nn": {
-        "log_det_curvature_reg": 7224.568777674853,
-        "log_det_regularization": 6690.183751527879,
+        "log_det_curvature_reg": 7133.99282196596,
+        "log_det_regularization": 6597.224578421075,
     },
 }
 

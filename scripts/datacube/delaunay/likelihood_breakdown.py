@@ -1434,7 +1434,8 @@ print(f"  Bar chart saved to:    {chart_path}")
 # For "alma" / "alma_high" the per-channel literal isn't pinned yet, so the
 # assertion is skipped until the value below is filled in from a clean run.
 EXPECTED_LOG_EVIDENCE_PER_CHANNEL = {
-    "sma": None,
+    # sma: pinned 2026-11-09 from RAL job 414743 (CPU fp64; cube -107454.92633864752 / 34 channels).
+    "sma": -3160.439009960221,
     "alma": None,
     "alma_high": None,
 }
