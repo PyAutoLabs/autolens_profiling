@@ -59,7 +59,9 @@ def run_cell(python, case, module, flag, calls, stall, cpu_window, cpus, first_s
     if module:
         cmd += ["--module", module]
     if cpus:
-        cmd = ["taskset", "-c", f"0-{cpus - 1}"] + cmd
+        # the first N cores of this process's own affinity (SLURM allocations are not 0..N-1)
+        allowed = sorted(os.sched_getaffinity(0))[:cpus]
+        cmd = ["taskset", "-c", ",".join(map(str, allowed))] + cmd
 
     row = {"case": case if not module else f"export:{Path(module).stem}", "flag": flag,
            "jax_source": "shadow" if pythonpath else "venv",
@@ -129,6 +131,7 @@ def main():
     p.add_argument("--cases", default="fft,lapack", help="fft, lapack, export:<module stem>")
     p.add_argument("--modules-dir", default=str(HERE.parents[2] / "output" / "jax_version_policy" / "modules"))
     p.add_argument("--repeats", type=int, default=1)
+    p.add_argument("--repeat-offset", type=int, default=0, help="first repeat index (array tasks)")
     p.add_argument("--calls", type=int, default=300)
     p.add_argument("--stall", type=float, default=60.0, help="seconds without a call line")
     p.add_argument("--first-stall", type=float, default=600.0, help="seconds allowed for compile")
@@ -159,7 +162,7 @@ def main():
                                    a.cpus, a.first_stall, pythonpath)
                     row.update(
                         jax_requested=version,
-                        repeat=rep,
+                        repeat=rep + a.repeat_offset,
                         environment=a.environment,
                         host=socket.gethostname(),
                         cpus_pinned=a.cpus or None,
@@ -168,7 +171,7 @@ def main():
                     )
                     with out.open("a") as fh:
                         fh.write(json.dumps(row) + "\n")
-                    print(f"{version:>9} {flag:>5} {row['case']:<28} rep{rep} -> {row['outcome']:<10}"
+                    print(f"{version:>9} {flag:>5} {row['case']:<28} rep{row['repeat']} -> {row['outcome']:<10}"
                           f" calls={row['calls_completed']:>3} med={row['median_call_s']}"
                           f" wall={row['wall_s']}s", flush=True)
 
