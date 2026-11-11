@@ -17,7 +17,9 @@
 # the shared /mnt/ral/jnightin/PyAuto mirror and its venv are never used or changed).
 #
 # BEFORE SUBMITTING (once, on a RAL login node, in this private clone of the feature branch):
-#   PYTHON=/usr/bin/python3.12 bash scripts/misc/jax_version_policy/make_venvs.sh output/jax_version_policy/venvs \
+#   cp -a /mnt/ral/jnightin/PyAuto/python-3.12 output/jax_version_policy/python-3.12   # PRIVATE copy
+#   PYTHON=output/jax_version_policy/python-3.12/bin/python3.12 \
+#     bash scripts/misc/jax_version_policy/make_venvs.sh output/jax_version_policy/venvs \
 #        0.9.2 0.11.2 0.12.0 0.12.0.1
 #   rsync the four exported modules (gitignored, ~14 MB) from the laptop into
 #   output/jax_version_policy/modules/  (group_mge_p3, group_mge_full, multi_galaxy_mge_full,
@@ -59,7 +61,9 @@ O=$AP_ROOT/output/jax_version_policy
 CASES=fft,export:group_mge_p3,export:group_mge_full,export:multi_galaxy_mge_full,export:multi_galaxy_rectangular_full
 
 export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
-PY=/usr/bin/python3.12   # system Python: the shared PyAuto interpreter on PATH is never used
+# A private copy of a CPython 3.12 that compute nodes can see. /usr/bin/python3.12 exists only on
+# the jump host (job 414969 failed on it in 2 s); the shared PyAuto interpreter is never used.
+PY=$O/python-3.12/bin/python3.12
 
 echo "=========================================="
 date; hostname; lscpu | grep 'Model name' || true
