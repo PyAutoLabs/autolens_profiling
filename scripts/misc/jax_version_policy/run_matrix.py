@@ -84,6 +84,9 @@ def run_cell(python, case, module, flag, calls, stall, cpu_window, cpus, first_s
                 outcome = "pass" if row.get("done") else "error"
                 if outcome == "error":
                     note = proc.stderr.read()[-600:]
+                    # an older jax that cannot read a newer export is not a failure of that jax
+                    if "Failed to deserialize StableHLO" in note and "compile_s" not in row:
+                        outcome = "unloadable"
                 continue
             last = time.perf_counter()
             tag, _, rest = line.strip().partition(" ")
