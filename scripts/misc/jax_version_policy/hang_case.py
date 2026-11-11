@@ -66,7 +66,9 @@ def _fft_case():
         flat = jnp.zeros((s * s,), dtype=jnp.float64)
         for i in range(n):
             grid = flat.at[idx].set(vals[i]).reshape(s, s)
-            total = total + jnp.fft.irfft2(jnp.fft.rfft2(grid) * jnp.fft.rfft2(psfs[i]), s=(s, s)).sum()
+            total = (
+                total + jnp.fft.irfft2(jnp.fft.rfft2(grid) * jnp.fft.rfft2(psfs[i]), s=(s, s)).sum()
+            )
         return total
 
     return f, (vals, psfs)

@@ -44,9 +44,9 @@ def export_one(name, dataset_type, variant, stage, out_dir):
     import jax
     import numpy as np
     from autofit.jax import register_model
+    from likelihood_breakdown import galaxy_group_standard as gs
 
     from _profile_cli import parse_profile_cli
-    from likelihood_breakdown import galaxy_group_standard as gs
 
     argv, sys.argv = sys.argv, [sys.argv[0]]
     try:

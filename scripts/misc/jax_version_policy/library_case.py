@@ -29,16 +29,18 @@ def main():
     p = argparse.ArgumentParser(description="one library hang-matrix cell")
     p.add_argument("--cell", required=True, help="<dataset_type>/<variant>, e.g. group/delaunay")
     p.add_argument("--calls", type=int, default=30)
-    p.add_argument("--stage", type=int, default=7, help="breakdown prefix stage (7 = full likelihood)")
+    p.add_argument(
+        "--stage", type=int, default=7, help="breakdown prefix stage (7 = full likelihood)"
+    )
     a = p.parse_args()
     dataset_type, variant = a.cell.split("/")
 
     import jax
     from autofit.jax import register_model
-
-    from _profile_cli import parse_profile_cli
     from hang_case import _header
     from likelihood_breakdown import galaxy_group_standard as gs
+
+    from _profile_cli import parse_profile_cli
 
     head = _header(f"library:{a.cell}", None)
     head["jax_file"] = os.path.dirname(jax.__file__).rsplit(os.sep, 2)[-2]  # venv vs shadow

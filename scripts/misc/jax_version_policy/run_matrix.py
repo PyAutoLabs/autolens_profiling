@@ -44,16 +44,27 @@ def _cpu_seconds(pid: int) -> float:
     return (int(fields[11]) + int(fields[12])) / tick
 
 
-def run_cell(python, case, module, flag, calls, stall, cpu_window, cpus, first_stall, pythonpath=None):
+def run_cell(
+    python, case, module, flag, calls, stall, cpu_window, cpus, first_stall, pythonpath=None
+):
     env = {k: v for k, v in os.environ.items() if not k.startswith(("PYTHON", "JAX_", "XLA_"))}
     env["JAX_ENABLE_X64"] = "True"
     env["JAX_PLATFORMS"] = "cpu"
     env["XLA_FLAGS"] = FLAGS[flag]
     if case.startswith("library:"):
         # the real library: PyAuto interpreter, jax under test shadowed in front via PYTHONPATH
-        env["PYTHONPATH"] = os.pathsep.join(p for p in (pythonpath, os.environ.get("PYTHONPATH")) if p)
+        env["PYTHONPATH"] = os.pathsep.join(
+            p for p in (pythonpath, os.environ.get("PYTHONPATH")) if p
+        )
         env["PYTHONDONTWRITEBYTECODE"] = "1"
-        cmd = [python, str(HERE / "library_case.py"), "--cell", case.split(":", 1)[1], "--calls", str(calls)]
+        cmd = [
+            python,
+            str(HERE / "library_case.py"),
+            "--cell",
+            case.split(":", 1)[1],
+            "--calls",
+            str(calls),
+        ]
     else:
         cmd = [python, "-I", str(HERE / "hang_case.py"), "--case", case, "--calls", str(calls)]
     if module:
@@ -63,12 +74,17 @@ def run_cell(python, case, module, flag, calls, stall, cpu_window, cpus, first_s
         allowed = sorted(os.sched_getaffinity(0))[:cpus]
         cmd = ["taskset", "-c", ",".join(map(str, allowed))] + cmd
 
-    row = {"case": case if not module else f"export:{Path(module).stem}", "flag": flag,
-           "jax_source": "shadow" if pythonpath else "venv",
-           "xla_flags": FLAGS[flag], "calls_requested": calls}
+    row = {
+        "case": case if not module else f"export:{Path(module).stem}",
+        "flag": flag,
+        "jax_source": "shadow" if pythonpath else "venv",
+        "xla_flags": FLAGS[flag],
+        "calls_requested": calls,
+    }
     started = time.perf_counter()
-    proc = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                            text=True, bufsize=1)
+    proc = subprocess.Popen(
+        cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1
+    )
     sel = selectors.DefaultSelector()
     sel.register(proc.stdout, selectors.EVENT_READ)
     per_call, last = [], time.perf_counter()
@@ -125,14 +141,22 @@ def run_cell(python, case, module, flag, calls, stall, cpu_window, cpus, first_s
 
 def main():
     p = argparse.ArgumentParser(description=__doc__.split("\n")[1])
-    p.add_argument("--venv", action="append", default=[], help="VERSION=/path/to/venv (pure-jax cases)")
-    p.add_argument("--shadow", action="append", default=[],
-                   help="VERSION=/path/to/pip-target-dir or VERSION=base (library: cases, run under "
-                        "--library-python with that jax put first on PYTHONPATH)")
+    p.add_argument(
+        "--venv", action="append", default=[], help="VERSION=/path/to/venv (pure-jax cases)"
+    )
+    p.add_argument(
+        "--shadow",
+        action="append",
+        default=[],
+        help="VERSION=/path/to/pip-target-dir or VERSION=base (library: cases, run under "
+        "--library-python with that jax put first on PYTHONPATH)",
+    )
     p.add_argument("--library-python", default=sys.executable)
     p.add_argument("--flags", default="none,eigen,sched")
     p.add_argument("--cases", default="fft,lapack", help="fft, lapack, export:<module stem>")
-    p.add_argument("--modules-dir", default=str(HERE.parents[2] / "output" / "jax_version_policy" / "modules"))
+    p.add_argument(
+        "--modules-dir", default=str(HERE.parents[2] / "output" / "jax_version_policy" / "modules")
+    )
     p.add_argument("--repeats", type=int, default=1)
     p.add_argument("--repeat-offset", type=int, default=0, help="first repeat index (array tasks)")
     p.add_argument("--calls", type=int, default=300)
@@ -151,8 +175,11 @@ def main():
     library = [c for c in a.cases.split(",") if c.startswith("library:")]
     pure = [c for c in a.cases.split(",") if not c.startswith("library:")]
     plan = [(v, str(Path(d) / "bin" / "python"), None, pure) for v, d in venvs.items() if pure]
-    plan += [(v, a.library_python, None if d == "base" else str(Path(d).resolve()), library)
-             for v, d in shadows.items() if library]
+    plan += [
+        (v, a.library_python, None if d == "base" else str(Path(d).resolve()), library)
+        for v, d in shadows.items()
+        if library
+    ]
     for rep in range(a.repeats):
         for version, python, pythonpath, cases in plan:
             for case in cases:
@@ -161,8 +188,18 @@ def main():
                     module = str(Path(a.modules_dir) / f"{case.split(':', 1)[1]}.pkl")
                     case = "export"
                 for flag in a.flags.split(","):
-                    row = run_cell(python, case, module, flag, a.calls, a.stall, a.cpu_window,
-                                   a.cpus, a.first_stall, pythonpath)
+                    row = run_cell(
+                        python,
+                        case,
+                        module,
+                        flag,
+                        a.calls,
+                        a.stall,
+                        a.cpu_window,
+                        a.cpus,
+                        a.first_stall,
+                        pythonpath,
+                    )
                     row.update(
                         jax_requested=version,
                         repeat=rep + a.repeat_offset,
@@ -170,13 +207,16 @@ def main():
                         host=socket.gethostname(),
                         cpus_pinned=a.cpus or None,
                         stall_s=a.stall,
-                        recorded=datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+                        recorded=datetime.datetime.now(datetime.UTC).isoformat(timespec="seconds"),
                     )
                     with out.open("a") as fh:
                         fh.write(json.dumps(row) + "\n")
-                    print(f"{version:>9} {flag:>5} {row['case']:<28} rep{row['repeat']} -> {row['outcome']:<10}"
-                          f" calls={row['calls_completed']:>3} med={row['median_call_s']}"
-                          f" wall={row['wall_s']}s", flush=True)
+                    print(
+                        f"{version:>9} {flag:>5} {row['case']:<28} rep{row['repeat']} -> {row['outcome']:<10}"
+                        f" calls={row['calls_completed']:>3} med={row['median_call_s']}"
+                        f" wall={row['wall_s']}s",
+                        flush=True,
+                    )
 
 
 if __name__ == "__main__":
