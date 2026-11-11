@@ -763,6 +763,10 @@ iteration counts, budgets in iterations, geometry or formatting, not a measured 
 - `scripts/misc/tooling/build_day_zero_pages.py::_duration`: picks the display unit (ms below
   one second, s above) for a recorded per-call time on the day-zero rule pages (#501); it
   formats, it never accepts or rejects a measurement.
+- `scripts/misc/jax_version_policy/run_matrix.py::run_cell`: a stall watchdog for the XLA:CPU
+  hang matrix (PyAutoNerves#213). When no call finishes for `--stall` seconds it samples the
+  child's CPU time; only ~0 % CPU is recorded as a hang, and a stall with CPU work is recorded
+  as `slow`, never as a failure. It decides when to look, not whether a speed passes.
 - `scripts/imaging/pixelized/fixed_light.py::<module>`: `PASS_BUDGET` / `SAFE_BUDGET` are
   active-set iteration budgets.
 - `scripts/imaging/pixelized/fixed_light_cpu_kernels.py::<module>`,

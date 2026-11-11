@@ -1,0 +1,87 @@
+#!/bin/bash -l
+#
+# JAX version policy hang matrix (PyAutoLabs/PyAutoNerves#213), RAL CPU array.
+#
+# WHAT THIS MEASURES. Whether compiled JAX CPU executables deadlock on repeated calls (0 % CPU,
+# futex wait in CpuPjRtRawLoadedExecutable::Execute) for each jax version x XLA:CPU flag. Each
+# array task runs scripts/misc/jax_version_policy/run_matrix.py for ONE jax version, ONE core count
+# and ONE repeat: every pure-jax reproducer (fft + the four exported 2d likelihoods) x
+# {no flag, --xla_cpu_multi_thread_eigen=false, --xla_cpu_enable_concurrency_optimized_scheduler=false},
+# 300 calls each. A cell with no completed call for 60 s is sampled for 5 s: ~0 % CPU = hang.
+# Timing is a by-product; the row's outcome is the measurement. Laptop pilot (2026-11-10):
+# 0.11.2 no-flag hangs on group MGE (call 4), multi_galaxy MGE (call 94) and fft (call 1);
+# both flags and 0.12.0.1 no-flag passed 100 calls. One repeat per cell; this array is the N.
+#
+# NO PYAUTO LIBRARY. Every cell runs `python -I` in a venv holding only jax/jaxlib/flatbuffers,
+# built by make_venvs.sh under $AP_ROOT/output/jax_version_policy/venvs (private to this clone;
+# the shared /mnt/ral/jnightin/PyAuto mirror is never pulled or changed, and its PyAuto packages
+# are never imported; only its base CPython interpreter is referenced, read-only).
+#
+# BEFORE SUBMITTING (once, on a RAL login node, in this private clone of the feature branch):
+#   PYTHON=/mnt/ral/jnightin/PyAuto/python-3.12/bin/python3.12 \
+#     bash scripts/misc/jax_version_policy/make_venvs.sh output/jax_version_policy/venvs \
+#        0.9.2 0.11.2 0.12.0 0.12.0.1
+#   rsync the four exported modules (gitignored, ~14 MB) from the laptop into
+#   output/jax_version_policy/modules/  (group_mge_p3, group_mge_full, multi_galaxy_mge_full,
+#   multi_galaxy_rectangular_full .pkl, written by export_reproducers.py with jax 0.11.2).
+#
+# ARRAY. 40 tasks: index -> version = VERSIONS[i % 4], cores = CORES[(i / 4) % 2], repeat = i / 8.
+# 4 versions x 2 core counts (4, 16 pinned inside a 16-CPU allocation) x 5 repeats.
+#
+# NODE. `ral` only (CPU work never goes on `gpu`). Not exclusive: tasks share nodes, which can
+# only make a hang more likely to show, never hide one.
+#
+# WALL-BASIS (laptop pilot, 8 cores): per cell compile 25-40 s; per call MGE 0.04-0.13 s,
+# fft 0.2 s, rectangular ~2.2 s (Pulse 2d table). Per task: 3 flags x (mge p3 60 s + group mge
+# full 70 s + mg mge 50 s + fft 100 s + rectangular 700 s) ~ 49 min, plus up to 65 s per hung
+# cell. Declared 3000 s, headroom 2.4 -> --time 2:00:00.
+#   cell: misc/jax_version_policy/hang_matrix  device: ral_cpu  precision: fp64
+#   source: laptop-pilot  wall: 3000  headroom: 2.4
+
+#SBATCH -J jax_hang_matrix
+#SBATCH --partition=ral
+#SBATCH --array=0-39
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=24gb
+#SBATCH --time=2:00:00
+#SBATCH --no-requeue
+#SBATCH -o output/output.%A_%a.out
+#SBATCH -e error/error.%A_%a.err
+
+# Submit from hpc/batch_cpu/ (the -o/-e paths are relative).
+export AP_ROOT="$(cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}/../.." && pwd)"
+VERSIONS=(0.9.2 0.11.2 0.12.0 0.12.0.1)
+CORES=(4 16)
+i=${SLURM_ARRAY_TASK_ID:-0}
+VERSION=${VERSIONS[$((i % 4))]}
+NCORES=${CORES[$(((i / 4) % 2))]}
+REPEAT=$((i / 8))
+O=$AP_ROOT/output/jax_version_policy
+CASES=fft,export:group_mge_p3,export:group_mge_full,export:multi_galaxy_mge_full,export:multi_galaxy_rectangular_full
+
+export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
+# The node-visible base CPython 3.12.4, used READ-ONLY: the venvs are based on it but install
+# nothing into it and do not see its site-packages. /usr/bin/python3.12 exists only on the jump
+# host (job 414969 failed on it in 2 s). A private copy took >1 h over NFS, so it is referenced.
+PY=/mnt/ral/jnightin/PyAuto/python-3.12/bin/python3.12
+
+echo "=========================================="
+date; hostname; lscpu | grep 'Model name' || true
+echo "partition: ${SLURM_JOB_PARTITION:-unset}  node: ${SLURM_JOB_NODELIST:-unset}"
+echo "task $i: jax $VERSION, $NCORES cores, repeat $REPEAT"
+echo "sched_affinity: $($PY -c 'import os; print(len(os.sched_getaffinity(0)))')"
+echo "loadavg: $(cat /proc/loadavg)"
+echo "AP_ROOT rev: $(git -C $AP_ROOT rev-parse HEAD 2>&1)"
+test -x "$O/venvs/jax-$VERSION/bin/python" || { echo "missing venv jax-$VERSION (run make_venvs.sh)"; exit 2; }
+for m in group_mge_p3 group_mge_full multi_galaxy_mge_full multi_galaxy_rectangular_full; do
+    test -f "$O/modules/$m.pkl" || { echo "missing module $m.pkl (rsync from laptop)"; exit 2; }
+done
+
+$PY $AP_ROOT/scripts/misc/jax_version_policy/run_matrix.py \
+    --environment ral-cpu \
+    --venv "$VERSION=$O/venvs/jax-$VERSION" \
+    --flags none,eigen,sched --cases "$CASES" \
+    --calls 300 --stall 60 --cpu-window 5 --cpus "$NCORES" --repeat-offset "$REPEAT" \
+    --out "$O/rows/ral_${SLURM_ARRAY_JOB_ID:-local}_${i}.jsonl"
+echo "exit $?"; date
