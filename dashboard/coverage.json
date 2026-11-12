@@ -1,5 +1,5 @@
 {
- "catalogue_generated_at": "2026-11-09T18:21:30Z",
+ "catalogue_generated_at": "2026-11-12T14:21:41Z",
  "catalogue_release_pin": "2026.10.25.1",
  "cells": [
   {
@@ -4557,7 +4557,7 @@
   "missing": 0,
   "missing_size_fallback": 0,
   "planned_cells": 232,
-  "records_superseded": 936,
+  "records_superseded": 939,
   "stale": 0,
   "superseded": 0
  },

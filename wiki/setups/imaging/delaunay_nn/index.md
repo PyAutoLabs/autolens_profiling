@@ -22,6 +22,7 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 | [0564a315d9ad30a42059](e14fb03e63cbaff3b5a2.md) | results/imaging/delaunay_nn/hst/jax_gpu_sparse_fp64/hpc_a100/scans/n5000/breakdown.json | 139 |
 | [16ef6df6e343b29a748c](f464e977a29f81bc7e02.md) | results/imaging/delaunay_nn/hst/jax_gpu_dense_fp64/hpc_a100/breakdown.json | 86 |
 | [1c4167265b60c9224e67](fd90ebe92012fa7e2666.md) | results/imaging/delaunay_nn/hst/jax_cpu_sparse_fp64/hpc_a100/history/2026.10.23.1_2026-10-25/runtime.json | 6 |
+| [2cfa9225fb77aa07c21d](5cbc47f0611aca0bc8fa.md) | results/imaging/delaunay_nn/hst/numba_cpu_sparse_fp64/hpc_ral_cpu/experiments/worker_route_remeasure_p677/breakdown.json | 26 |
 | [2e5deec5fb065ed5601e](aefa64e8db7275ab3930.md) | results/imaging/delaunay_nn/hst/jax_cpu_sparse_fp64/hpc_a100/runtime.json | 6 |
 | [30018148bfe36b7b403b](c674b40298e7a6a5f382.md) | results/imaging/delaunay_nn/hst/jax_gpu_dense_fp64/hpc_a100/experiments/autotune4/runtime.json | 3 |
 | [30af5a3395ba4318b858](f87a39e641e31d5f85b5.md) | results/imaging/delaunay_nn/hst/numba_cpu_sparse_fp64/hpc_ral_cpu/breakdown.json | 24 |
@@ -50,6 +51,7 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 | [955e9be91fa05b096c80](4c8a835e781a4c9baef5.md) | results/imaging/delaunay_nn/hst/jax_gpu_dense_fp64/hpc_a100/scans/n3000/breakdown.json | 122 |
 | [9d1ca96833917e92bdf3](33adf0027c30e1261cc6.md) | results/imaging/delaunay_nn/hst/jax_gpu_dense_fp64/hpc_a100/experiments/constant_split/runtime.json | 3 |
 | [a0968caa26e12b727483](aca14a85f43a604009cf.md) | results/imaging/delaunay_nn/hst/jax_gpu_dense_fp64/hpc_a100/history/2026.8.17.1_2026-09-10/runtime.json | 6 |
+| [a2403d777120cd093775](e6685ccba63c4882784c.md) | results/imaging/delaunay_nn/hst/numba_cpu_sparse_fp64/hpc_ral_cpu/experiments/worker_route_remeasure_p677/runtime.json | 1 |
 | [a3c8a14f5374002af312](ebcccdfdfcbe33507f48.md) | results/imaging/delaunay_nn/hst/jax_gpu_dense_fp64/hpc_a100/history/2026.8.17.1_2026-09-10/breakdown.json | 96 |
 | [a495ca8a9003454d3a70](34f4c8a48a9f80132088.md) | results/imaging/delaunay_nn/hst/jax_gpu_dense_fp64/hpc_a100/light_fixed/experiments/library/breakdown.json | 36 |
 | [a71c3f27ec3bdd18f3df](d0bebc7e8b743b6e98e6.md) | results/imaging/delaunay_nn/hst/jax_gpu_dense_fp64/hpc_a100/experiments/matrix_free/breakdown.json | 228 |
