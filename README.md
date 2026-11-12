@@ -635,7 +635,7 @@ Dashboards can grow in many directions. The list below captures candidate improv
 
 This repo is a **collection of standalone profiling scripts**, not an installable Python package. There is no `pyproject.toml`. Run scripts from the repo root.
 
-Scripts follow the JIT conventions documented in `autolens_workspace_developer/CLAUDE.md`:
+Scripts follow the JIT conventions documented in `autolens_workspace_developer/AGENTS.md`.
 
 - Extract `.array` from autoarray types before crossing the `jax.jit` boundary (autoarray types are not JAX pytrees as inputs).
 - Pass `xp=jnp` through PyAutoLens / PyAutoGalaxy / PyAutoArray functions to select the JAX backend.
