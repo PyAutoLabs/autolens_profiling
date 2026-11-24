@@ -776,11 +776,11 @@ STAGE_MAP: tuple[StageRule, ...] = (
         "curvature_matrix_F", _ARRAY + "inversion/inversion/imaging/inversion_imaging_util.py"
     ),
     # --- PSF convolution: the image, and the mapping-matrix cube -------------
-    # The FFT body (convolver.py 555-607) is shared; the caller says which of the
+    # The FFT body (convolver.py 616-666) is shared; the caller says which of the
     # two convolutions it is, exactly as the log dets do.
-    # ``Convolver.convolved_mapping_matrix_from`` (1086-1300) convolves the
+    # ``Convolver.convolved_mapping_matrix_from`` (1153-1330) convolves the
     # mapping-matrix CUBE; ``convolved_image_from`` / the over-sampled image
-    # helpers (520-700, 1000-1085) convolve the 2D image. Both reach the same
+    # helpers (583-729, 1006-1151) convolve the 2D image. Both reach the same
     # rfft2/irfft2, so which one it is comes from the caller, exactly as the two
     # log determinants do.
     # Phase 3 (#295): the candidate convolutions are HARNESS code
@@ -790,13 +790,13 @@ STAGE_MAP: tuple[StageRule, ...] = (
     # convolver.py (``real_space_direct``, ``mp_cube_c64``) has its innermost frame
     # in convolver.py and resolves there through the ``requires`` rules below.
     StageRule("psf_convolution_mapping_matrix", _PSF_CUBE_HARNESS),
-    StageRule("psf_convolution_mapping_matrix", _ARRAY + _CONVOLVER, (1086, 1300)),
-    StageRule("psf_convolution_mapping_matrix", _ARRAY + _CONVOLVER, (632, 642)),
-    StageRule("psf_convolution_mapping_matrix", _ARRAY + _CONVOLVER, (670, 691)),
+    StageRule("psf_convolution_mapping_matrix", _ARRAY + _CONVOLVER, (1153, 1330)),
+    StageRule("psf_convolution_mapping_matrix", _ARRAY + _CONVOLVER, (693, 702)),
+    StageRule("psf_convolution_mapping_matrix", _ARRAY + _CONVOLVER, (731, 750)),
     StageRule(
         "psf_convolution_mapping_matrix",
         _ARRAY + _CONVOLVER,
-        requires=(_ARRAY + _CONVOLVER, (1086, 1300)),
+        requires=(_ARRAY + _CONVOLVER, (1153, 1330)),
     ),
     StageRule(
         "psf_convolution_mapping_matrix",
@@ -1624,8 +1624,8 @@ def hlo_census(index: Mapping[str, Instruction]) -> dict:
     def _is_mapping_convolution(i: Instruction) -> bool:
         return (
             _called_from(i, _ARRAY + _IMAGING_ABSTRACT, (119, 150))
-            or _called_from(i, _ARRAY + _CONVOLVER, (670, 691))
-            or _called_from(i, _ARRAY + _CONVOLVER, (1086, 1300))
+            or _called_from(i, _ARRAY + _CONVOLVER, (731, 750))
+            or _called_from(i, _ARRAY + _CONVOLVER, (1153, 1330))
             or _called_from(i, _PSF_CUBE_HARNESS, (1, 10**6))
         )
 
@@ -1774,9 +1774,9 @@ _PSF_CENSUS_ROWS = (
 #: rows phase 3 reads; the ``abstract.py`` anchors back the phase-1 curvature and
 #: gather rows (which is why phase 2 excluded the whole census when they moved).
 CENSUS_ANCHORS: tuple[CensusAnchor, ...] = (
-    CensusAnchor(_PSF_CENSUS_ROWS, _CONVOLVER, "convolved_mapping_matrix_from", (1086, 1300)),
+    CensusAnchor(_PSF_CENSUS_ROWS, _CONVOLVER, "convolved_mapping_matrix_from", (1153, 1330)),
     CensusAnchor(
-        _PSF_CENSUS_ROWS, _CONVOLVER, "_convolved_mapping_matrix_over_sampled_jax_from", (670, 691)
+        _PSF_CENSUS_ROWS, _CONVOLVER, "_convolved_mapping_matrix_over_sampled_jax_from", (731, 750)
     ),
     CensusAnchor(_PSF_CENSUS_ROWS, _IMAGING_ABSTRACT, "operated_mapping_matrix_list", (119, 150)),
     CensusAnchor(
