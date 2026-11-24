@@ -2,7 +2,7 @@
 # day-zero snapshot; do not edit. Copied into PyAutoLens as
 # autolens/config/runtime_estimates.yaml by likelihood lifecycle phase 5E.
 schema: runtime-estimates
-version: 1
+version: 2
 tag: "2026.10.25.1"
 source:
   repo: "PyAutoLabs/PyAutoPulse"
@@ -10,9 +10,21 @@ source:
   profiling_commit: "e4811a25ddfbc087a66f561fe8b2b41a707885aa"
   records_sha256: "ba3f63ab2c695dd40e98c3fc34ef8daefa8ce475d17c22532b67d9ea3d89518f"
 parallel_efficiency:
-  value: 1.0
-  kind: "upper bound"
-  source: "declared, unmeasured (phase 4 measures)"
+  curve:
+    1: 1.0
+    2: 0.68
+    4: 0.62
+    8: 0.55
+    16: 0.36
+    32: 0.28
+  likelihood: "imaging/rectangular"
+  setup_id: "numba_cpu_sparse_fp64"
+  kind: "measured"
+  source: "autolens_inference phase 4 (scripts/misc/wall/model.py PARALLEL_EFFICIENCY)"
+size_fields:
+  n_pixels_masked: "unmasked image pixels the cell was timed at (per dataset for multi_dataset, per channel for datacube; the real-space mask for interferometer)"
+  n_vis: "visibilities the cell was timed at (per channel for datacube)"
+  source_pixels: "source-plane mesh pixels the profiling config fixes (the requested count; a Delaunay mesh may realise a few more vertices)"
 cells: 116
 estimates:
   - likelihood: "cluster/image_plane"
@@ -30,6 +42,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 4719.0
+    n_pixels_masked: null
+    n_vis: null
+    source_pixels: null
     record_id: "lifecycle/86d6277f36e3c8ec1d2f"
   - likelihood: "cluster/image_plane"
     hardware_class: "gpu_a100"
@@ -46,6 +61,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 19870.0
+    n_pixels_masked: null
+    n_vis: null
+    source_pixels: null
     record_id: "lifecycle/d92190013ae10eaa21f6"
   - likelihood: "cluster/source_plane"
     hardware_class: "cpu_many_core"
@@ -62,6 +80,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 117400.0
+    n_pixels_masked: null
+    n_vis: null
+    source_pixels: null
     record_id: "lifecycle/004001caf29a727421e0"
   - likelihood: "cluster/source_plane"
     hardware_class: "gpu_a100"
@@ -78,6 +99,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 75560.0
+    n_pixels_masked: null
+    n_vis: null
+    source_pixels: null
     record_id: "lifecycle/02df871c3e8378b505ca"
   - likelihood: "datacube/delaunay"
     hardware_class: "cpu_many_core"
@@ -94,6 +118,9 @@ estimates:
     workers_per_node: 236
     bound_by: "cores"
     calls_per_s_per_node: 25.23
+    n_pixels_masked: 15380
+    n_vis: 1000000
+    source_pixels: 1250
     record_id: "lifecycle/5800a501664b981824d4"
   - likelihood: "datacube/delaunay"
     hardware_class: "cpu_many_core"
@@ -110,6 +137,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 2.029
+    n_pixels_masked: 15380
+    n_vis: 1000000
+    source_pixels: 1250
     record_id: "lifecycle/8e374ab509e7626573da"
   - likelihood: "datacube/delaunay"
     hardware_class: "cpu_many_core"
@@ -126,6 +156,9 @@ estimates:
     workers_per_node: 67
     bound_by: "memory"
     calls_per_s_per_node: 3.797
+    n_pixels_masked: 61572
+    n_vis: 5000000
+    source_pixels: 1250
     record_id: "lifecycle/3ea56488a996d6f0ffd1"
   - likelihood: "datacube/delaunay"
     hardware_class: "cpu_many_core"
@@ -142,6 +175,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 1.315
+    n_pixels_masked: 61572
+    n_vis: 5000000
+    source_pixels: 1250
     record_id: "lifecycle/6669e2835516e93361f1"
   - likelihood: "datacube/delaunay"
     hardware_class: "cpu_many_core"
@@ -158,6 +194,9 @@ estimates:
     workers_per_node: 236
     bound_by: "cores"
     calls_per_s_per_node: 27.95
+    n_pixels_masked: 3852
+    n_vis: 190
+    source_pixels: 1250
     record_id: "lifecycle/5b411896dcf5b1cc5853"
   - likelihood: "datacube/delaunay"
     hardware_class: "cpu_many_core"
@@ -174,6 +213,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 2.247
+    n_pixels_masked: 3852
+    n_vis: 190
+    source_pixels: 1250
     record_id: "lifecycle/649dfad640b1afce5631"
   - likelihood: "datacube/delaunay"
     hardware_class: "gpu_a100"
@@ -190,6 +232,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 3.196
+    n_pixels_masked: 15380
+    n_vis: 1000000
+    source_pixels: 1250
     record_id: "lifecycle/c3ed1c5a8847d28eb792"
   - likelihood: "datacube/delaunay"
     hardware_class: "gpu_a100"
@@ -206,6 +251,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 2.784
+    n_pixels_masked: 61572
+    n_vis: 5000000
+    source_pixels: 1250
     record_id: "lifecycle/5ddc372d7a91e6f979a8"
   - likelihood: "datacube/delaunay"
     hardware_class: "gpu_a100"
@@ -222,6 +270,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 3.465
+    n_pixels_masked: 3852
+    n_vis: 190
+    source_pixels: 1250
     record_id: "lifecycle/5a76ad3529beab044b72"
   - likelihood: "datacube/delaunay"
     hardware_class: "gpu_a100"
@@ -238,6 +289,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 3.374
+    n_pixels_masked: 3852
+    n_vis: 190
+    source_pixels: 1250
     record_id: "lifecycle/b62555fd25c854bfdf3d"
   - likelihood: "group/delaunay"
     hardware_class: "cpu_many_core"
@@ -254,6 +308,9 @@ estimates:
     workers_per_node: 191
     bound_by: "memory"
     calls_per_s_per_node: 237.6
+    n_pixels_masked: 17692
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/22696238c7226a6971dd"
   - likelihood: "group/delaunay"
     hardware_class: "cpu_many_core"
@@ -270,6 +327,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 4.79
+    n_pixels_masked: 17692
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/f4474b23fc3ee5d4b43f"
   - likelihood: "group/delaunay"
     hardware_class: "gpu_a100"
@@ -286,6 +346,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 109.4
+    n_pixels_masked: 17692
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/826e517e5786c2398767"
   - likelihood: "group/delaunay"
     hardware_class: "gpu_a100"
@@ -302,6 +365,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 71.95
+    n_pixels_masked: 17692
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/af408d3bf87b7b904f2d"
   - likelihood: "group/mge"
     hardware_class: "cpu_many_core"
@@ -318,6 +384,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 776.1
+    n_pixels_masked: 17692
+    n_vis: null
+    source_pixels: null
     record_id: "lifecycle/eb438402eb57e940aa63"
   - likelihood: "group/mge"
     hardware_class: "gpu_a100"
@@ -334,6 +403,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 4836.0
+    n_pixels_masked: 17692
+    n_vis: null
+    source_pixels: null
     record_id: "lifecycle/c631285eca889fc2c2c4"
   - likelihood: "group/rectangular"
     hardware_class: "cpu_many_core"
@@ -350,6 +422,9 @@ estimates:
     workers_per_node: 205
     bound_by: "memory"
     calls_per_s_per_node: 227.9
+    n_pixels_masked: 17692
+    n_vis: null
+    source_pixels: 1225
     record_id: "lifecycle/a393fa2e139fd0560564"
   - likelihood: "group/rectangular"
     hardware_class: "cpu_many_core"
@@ -366,6 +441,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 4.899
+    n_pixels_masked: 17692
+    n_vis: null
+    source_pixels: 1225
     record_id: "lifecycle/acba8d20547d37e8f89c"
   - likelihood: "group/rectangular"
     hardware_class: "gpu_a100"
@@ -382,6 +460,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 134.1
+    n_pixels_masked: 17692
+    n_vis: null
+    source_pixels: 1225
     record_id: "lifecycle/506bcbce87ad6c020945"
   - likelihood: "group/rectangular"
     hardware_class: "gpu_a100"
@@ -398,6 +479,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 78.96
+    n_pixels_masked: 17692
+    n_vis: null
+    source_pixels: 1225
     record_id: "lifecycle/34335ddd284ac5077dc2"
   - likelihood: "imaging/delaunay"
     hardware_class: "cpu_many_core"
@@ -414,6 +498,9 @@ estimates:
     workers_per_node: 40
     bound_by: "memory"
     calls_per_s_per_node: 4.613
+    n_pixels_masked: 384753
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/1f22a4a5fcd73276ec53"
   - likelihood: "imaging/delaunay"
     hardware_class: "cpu_many_core"
@@ -430,6 +517,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 0.3567
+    n_pixels_masked: 384753
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/e08b7a6ff7b9daea8790"
   - likelihood: "imaging/delaunay"
     hardware_class: "cpu_many_core"
@@ -446,6 +536,9 @@ estimates:
     workers_per_node: 236
     bound_by: "cores"
     calls_per_s_per_node: 287.8
+    n_pixels_masked: 3841
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/5556ca430bc180c2d536"
   - likelihood: "imaging/delaunay"
     hardware_class: "cpu_many_core"
@@ -462,6 +555,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 23.26
+    n_pixels_masked: 3841
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/b202eb6f7da58a38882f"
   - likelihood: "imaging/delaunay"
     hardware_class: "cpu_many_core"
@@ -478,6 +574,9 @@ estimates:
     workers_per_node: 236
     bound_by: "cores"
     calls_per_s_per_node: 248.0
+    n_pixels_masked: 15361
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/321ec1f6f2a5955a9a20"
   - likelihood: "imaging/delaunay"
     hardware_class: "cpu_many_core"
@@ -494,6 +593,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 9.696
+    n_pixels_masked: 15361
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/06a9dad80c65ecd81c6c"
   - likelihood: "imaging/delaunay"
     hardware_class: "cpu_many_core"
@@ -510,6 +612,9 @@ estimates:
     workers_per_node: 236
     bound_by: "cores"
     calls_per_s_per_node: 135.3
+    n_pixels_masked: 42737
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/d93b4dad29e8a0f77987"
   - likelihood: "imaging/delaunay"
     hardware_class: "cpu_many_core"
@@ -526,6 +631,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 4.42
+    n_pixels_masked: 42737
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/b5b87c504713b9831857"
   - likelihood: "imaging/delaunay"
     hardware_class: "gpu_a100"
@@ -542,6 +650,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 11.5
+    n_pixels_masked: 384753
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/fa028d54604cd08d3555"
   - likelihood: "imaging/delaunay"
     hardware_class: "gpu_a100"
@@ -558,6 +669,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 4.869
+    n_pixels_masked: 384753
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/99d7c3c7623e3d43d059"
   - likelihood: "imaging/delaunay"
     hardware_class: "gpu_a100"
@@ -574,6 +688,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 275.9
+    n_pixels_masked: 3841
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/c07af59a8d393975dd28"
   - likelihood: "imaging/delaunay"
     hardware_class: "gpu_a100"
@@ -590,6 +707,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 222.8
+    n_pixels_masked: 3841
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/371f67d50254479493ee"
   - likelihood: "imaging/delaunay"
     hardware_class: "gpu_a100"
@@ -606,6 +726,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 117.0
+    n_pixels_masked: 15361
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/73c19173fcc983318b61"
   - likelihood: "imaging/delaunay"
     hardware_class: "gpu_a100"
@@ -622,6 +745,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 84.81
+    n_pixels_masked: 15361
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/12c678df16e04f4f9011"
   - likelihood: "imaging/delaunay"
     hardware_class: "gpu_a100"
@@ -638,6 +764,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 57.39
+    n_pixels_masked: 42737
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/12348bea7be2ca70cffb"
   - likelihood: "imaging/delaunay"
     hardware_class: "gpu_a100"
@@ -654,6 +783,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 37.18
+    n_pixels_masked: 42737
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/d34ebb3d52e02dfb8b16"
   - likelihood: "imaging/delaunay_nn"
     hardware_class: "cpu_many_core"
@@ -670,6 +802,9 @@ estimates:
     workers_per_node: 236
     bound_by: "cores"
     calls_per_s_per_node: 182.3
+    n_pixels_masked: 15361
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/05dde64a0eb7fdd0c4a1"
   - likelihood: "imaging/delaunay_nn"
     hardware_class: "cpu_many_core"
@@ -686,6 +821,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 4.001
+    n_pixels_masked: 15361
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/1ae46b0872f10459a7c4"
   - likelihood: "imaging/delaunay_nn"
     hardware_class: "gpu_a100"
@@ -702,6 +840,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 95.83
+    n_pixels_masked: 15361
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/c661098ad46c65fa59b2"
   - likelihood: "imaging/delaunay_nn"
     hardware_class: "gpu_a100"
@@ -718,6 +859,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 3.481
+    n_pixels_masked: 15361
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/70bcae3ab1c4777651f0"
   - likelihood: "imaging/mge"
     hardware_class: "cpu_many_core"
@@ -734,6 +878,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 56.66
+    n_pixels_masked: 384753
+    n_vis: null
+    source_pixels: null
     record_id: "lifecycle/3216ffc143645fb46c72"
   - likelihood: "imaging/mge"
     hardware_class: "cpu_many_core"
@@ -750,6 +897,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 4103.0
+    n_pixels_masked: 3841
+    n_vis: null
+    source_pixels: null
     record_id: "lifecycle/190ebc582d9aba9aaa9c"
   - likelihood: "imaging/mge"
     hardware_class: "cpu_many_core"
@@ -766,6 +916,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 1780.0
+    n_pixels_masked: 15361
+    n_vis: null
+    source_pixels: null
     record_id: "lifecycle/54979849c807d452c510"
   - likelihood: "imaging/mge"
     hardware_class: "cpu_many_core"
@@ -782,6 +935,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 573.7
+    n_pixels_masked: 42737
+    n_vis: null
+    source_pixels: null
     record_id: "lifecycle/4baa9bc04c8d24a713b6"
   - likelihood: "imaging/mge"
     hardware_class: "gpu_a100"
@@ -798,6 +954,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 212.9
+    n_pixels_masked: 384753
+    n_vis: null
+    source_pixels: null
     record_id: "lifecycle/4b514c4262172f610fee"
   - likelihood: "imaging/mge"
     hardware_class: "gpu_a100"
@@ -814,6 +973,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 20150.0
+    n_pixels_masked: 3841
+    n_vis: null
+    source_pixels: null
     record_id: "lifecycle/770dce7d7db7a1fc3b53"
   - likelihood: "imaging/mge"
     hardware_class: "gpu_a100"
@@ -830,6 +992,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 10220.0
+    n_pixels_masked: 15361
+    n_vis: null
+    source_pixels: null
     record_id: "lifecycle/8a475e9abd97a8c4a1c0"
   - likelihood: "imaging/mge"
     hardware_class: "gpu_a100"
@@ -846,6 +1011,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 4357.0
+    n_pixels_masked: 42737
+    n_vis: null
+    source_pixels: null
     record_id: "lifecycle/0756e600e86d7ae6a462"
   - likelihood: "imaging/rectangular"
     hardware_class: "cpu_many_core"
@@ -862,6 +1030,9 @@ estimates:
     workers_per_node: 32
     bound_by: "memory"
     calls_per_s_per_node: 3.206
+    n_pixels_masked: 384753
+    n_vis: null
+    source_pixels: 1225
     record_id: "lifecycle/403420f8debaaa38956c"
   - likelihood: "imaging/rectangular"
     hardware_class: "cpu_many_core"
@@ -878,6 +1049,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 0.3775
+    n_pixels_masked: 384753
+    n_vis: null
+    source_pixels: 1225
     record_id: "lifecycle/d7020017fca2249bf32b"
   - likelihood: "imaging/rectangular"
     hardware_class: "cpu_many_core"
@@ -894,6 +1068,9 @@ estimates:
     workers_per_node: null
     bound_by: null
     calls_per_s_per_node: null
+    n_pixels_masked: 3841
+    n_vis: null
+    source_pixels: 1225
     record_id: "lifecycle/6060fdcfa2e5a4a0c168"
   - likelihood: "imaging/rectangular"
     hardware_class: "cpu_many_core"
@@ -910,6 +1087,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 31.85
+    n_pixels_masked: 3841
+    n_vis: null
+    source_pixels: 1225
     record_id: "lifecycle/4c53e409a27040f5d6a4"
   - likelihood: "imaging/rectangular"
     hardware_class: "cpu_many_core"
@@ -926,6 +1106,9 @@ estimates:
     workers_per_node: 236
     bound_by: "cores"
     calls_per_s_per_node: 338.7
+    n_pixels_masked: 15361
+    n_vis: null
+    source_pixels: 1225
     record_id: "lifecycle/b62534053c00fb102bf4"
   - likelihood: "imaging/rectangular"
     hardware_class: "cpu_many_core"
@@ -942,6 +1125,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 9.787
+    n_pixels_masked: 15361
+    n_vis: null
+    source_pixels: 1225
     record_id: "lifecycle/2b5e34f509175fd4d030"
   - likelihood: "imaging/rectangular"
     hardware_class: "cpu_many_core"
@@ -958,6 +1144,9 @@ estimates:
     workers_per_node: 236
     bound_by: "cores"
     calls_per_s_per_node: 139.8
+    n_pixels_masked: 42737
+    n_vis: null
+    source_pixels: 1225
     record_id: "lifecycle/304ac75d242dcbc2c22f"
   - likelihood: "imaging/rectangular"
     hardware_class: "cpu_many_core"
@@ -974,6 +1163,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 5.04
+    n_pixels_masked: 42737
+    n_vis: null
+    source_pixels: 1225
     record_id: "lifecycle/9bb2e30e94491253641b"
   - likelihood: "imaging/rectangular"
     hardware_class: "gpu_a100"
@@ -990,6 +1182,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 12.61
+    n_pixels_masked: 384753
+    n_vis: null
+    source_pixels: 1225
     record_id: "lifecycle/d570569f32c953038fde"
   - likelihood: "imaging/rectangular"
     hardware_class: "gpu_a100"
@@ -1006,6 +1201,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 4.269
+    n_pixels_masked: 384753
+    n_vis: null
+    source_pixels: 1225
     record_id: "lifecycle/46db4990a22e25aee123"
   - likelihood: "imaging/rectangular"
     hardware_class: "gpu_a100"
@@ -1022,6 +1220,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 520.6
+    n_pixels_masked: 3841
+    n_vis: null
+    source_pixels: 1225
     record_id: "lifecycle/456f7d65babc5524183a"
   - likelihood: "imaging/rectangular"
     hardware_class: "gpu_a100"
@@ -1038,6 +1239,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 309.4
+    n_pixels_masked: 3841
+    n_vis: null
+    source_pixels: 1225
     record_id: "lifecycle/bc5ed323618c58fc7682"
   - likelihood: "imaging/rectangular"
     hardware_class: "gpu_a100"
@@ -1054,6 +1258,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 162.1
+    n_pixels_masked: 15361
+    n_vis: null
+    source_pixels: 1225
     record_id: "lifecycle/42f6a707360ce63b8150"
   - likelihood: "imaging/rectangular"
     hardware_class: "gpu_a100"
@@ -1070,6 +1277,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 98.72
+    n_pixels_masked: 15361
+    n_vis: null
+    source_pixels: 1225
     record_id: "lifecycle/cc3f3365b6ac65388a93"
   - likelihood: "imaging/rectangular"
     hardware_class: "gpu_a100"
@@ -1086,6 +1296,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 65.89
+    n_pixels_masked: 42737
+    n_vis: null
+    source_pixels: 1225
     record_id: "lifecycle/ec69a200557ea8212e5e"
   - likelihood: "imaging/rectangular"
     hardware_class: "gpu_a100"
@@ -1102,6 +1315,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 37.27
+    n_pixels_masked: 42737
+    n_vis: null
+    source_pixels: 1225
     record_id: "lifecycle/bdffd9d6d157b3b66435"
   - likelihood: "interferometer/delaunay"
     hardware_class: "cpu_many_core"
@@ -1118,6 +1334,9 @@ estimates:
     workers_per_node: 236
     bound_by: "cores"
     calls_per_s_per_node: 308.5
+    n_pixels_masked: 15380
+    n_vis: 1000000
+    source_pixels: 1250
     record_id: "lifecycle/5e9d64046821795b4651"
   - likelihood: "interferometer/delaunay"
     hardware_class: "cpu_many_core"
@@ -1134,6 +1353,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 13.67
+    n_pixels_masked: 15380
+    n_vis: 1000000
+    source_pixels: 1250
     record_id: "lifecycle/60747d6f7a1867da50c9"
   - likelihood: "interferometer/delaunay"
     hardware_class: "cpu_many_core"
@@ -1150,6 +1372,9 @@ estimates:
     workers_per_node: 236
     bound_by: "cores"
     calls_per_s_per_node: 25.3
+    n_pixels_masked: 61572
+    n_vis: 5000000
+    source_pixels: 1250
     record_id: "lifecycle/bfe464d85eab437c56be"
   - likelihood: "interferometer/delaunay"
     hardware_class: "cpu_many_core"
@@ -1166,6 +1391,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 3.815
+    n_pixels_masked: 61572
+    n_vis: 5000000
+    source_pixels: 1250
     record_id: "lifecycle/d54c6814c51c381564cf"
   - likelihood: "interferometer/delaunay"
     hardware_class: "cpu_many_core"
@@ -1182,6 +1410,9 @@ estimates:
     workers_per_node: 78
     bound_by: "memory"
     calls_per_s_per_node: 1.223
+    n_pixels_masked: 384852
+    n_vis: 25000000
+    source_pixels: 1250
     record_id: "lifecycle/e63a97d451e1633c91aa"
   - likelihood: "interferometer/delaunay"
     hardware_class: "cpu_many_core"
@@ -1198,6 +1429,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 0.5638
+    n_pixels_masked: 384852
+    n_vis: 25000000
+    source_pixels: 1250
     record_id: "lifecycle/757d2c2d7167cdef0457"
   - likelihood: "interferometer/delaunay"
     hardware_class: "cpu_many_core"
@@ -1214,6 +1448,9 @@ estimates:
     workers_per_node: 236
     bound_by: "cores"
     calls_per_s_per_node: 844.8
+    n_pixels_masked: 3852
+    n_vis: 190
+    source_pixels: 1250
     record_id: "lifecycle/b2d01ef74bf71e49d774"
   - likelihood: "interferometer/delaunay"
     hardware_class: "cpu_many_core"
@@ -1230,6 +1467,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 36.96
+    n_pixels_masked: 3852
+    n_vis: 190
+    source_pixels: 1250
     record_id: "lifecycle/00838694b2c3c955a644"
   - likelihood: "interferometer/delaunay"
     hardware_class: "gpu_a100"
@@ -1246,6 +1486,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 192.1
+    n_pixels_masked: 15380
+    n_vis: 1000000
+    source_pixels: 1250
     record_id: "lifecycle/8dada4df3a4ed30d1721"
   - likelihood: "interferometer/delaunay"
     hardware_class: "gpu_a100"
@@ -1262,6 +1505,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 62.79
+    n_pixels_masked: 61572
+    n_vis: 5000000
+    source_pixels: 1250
     record_id: "lifecycle/ba12584bdfe8c2e16f30"
   - likelihood: "interferometer/delaunay"
     hardware_class: "gpu_a100"
@@ -1278,6 +1524,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 8.599
+    n_pixels_masked: 384852
+    n_vis: 25000000
+    source_pixels: 1250
     record_id: "lifecycle/3c33efbabefe647c901b"
   - likelihood: "interferometer/delaunay"
     hardware_class: "gpu_a100"
@@ -1294,6 +1543,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 352.0
+    n_pixels_masked: 3852
+    n_vis: 190
+    source_pixels: 1250
     record_id: "lifecycle/742eaf1292ed737e591e"
   - likelihood: "interferometer/delaunay"
     hardware_class: "gpu_a100"
@@ -1310,6 +1562,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 69.75
+    n_pixels_masked: 3852
+    n_vis: 190
+    source_pixels: 1250
     record_id: "lifecycle/ff5c53947f845ee5f2d8"
   - likelihood: "interferometer/mge"
     hardware_class: "cpu_many_core"
@@ -1326,6 +1581,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 348.2
+    n_pixels_masked: null
+    n_vis: 190
+    source_pixels: null
     record_id: "lifecycle/02e5496a9c9da3407d87"
   - likelihood: "interferometer/mge"
     hardware_class: "gpu_a100"
@@ -1342,6 +1600,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 6675.0
+    n_pixels_masked: null
+    n_vis: 190
+    source_pixels: null
     record_id: "lifecycle/4c9e3b4239cc98b8a7ff"
   - likelihood: "interferometer/rectangular"
     hardware_class: "cpu_many_core"
@@ -1358,6 +1619,9 @@ estimates:
     workers_per_node: 236
     bound_by: "cores"
     calls_per_s_per_node: 265.5
+    n_pixels_masked: 15380
+    n_vis: 1000000
+    source_pixels: 1225
     record_id: "lifecycle/4663f221c8c3ce49b76f"
   - likelihood: "interferometer/rectangular"
     hardware_class: "cpu_many_core"
@@ -1374,6 +1638,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 15.03
+    n_pixels_masked: 15380
+    n_vis: 1000000
+    source_pixels: 1225
     record_id: "lifecycle/41fd14e1f19bad947f24"
   - likelihood: "interferometer/rectangular"
     hardware_class: "cpu_many_core"
@@ -1390,6 +1657,9 @@ estimates:
     workers_per_node: 236
     bound_by: "cores"
     calls_per_s_per_node: 26.46
+    n_pixels_masked: 61572
+    n_vis: 5000000
+    source_pixels: 1225
     record_id: "lifecycle/d79f1b94f4b03452d745"
   - likelihood: "interferometer/rectangular"
     hardware_class: "cpu_many_core"
@@ -1406,6 +1676,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 3.903
+    n_pixels_masked: 61572
+    n_vis: 5000000
+    source_pixels: 1225
     record_id: "lifecycle/fe0f252f68dcc26d7d13"
   - likelihood: "interferometer/rectangular"
     hardware_class: "cpu_many_core"
@@ -1422,6 +1695,9 @@ estimates:
     workers_per_node: 84
     bound_by: "memory"
     calls_per_s_per_node: 1.367
+    n_pixels_masked: 384852
+    n_vis: 25000000
+    source_pixels: 1225
     record_id: "lifecycle/15aded078686cdf03ff5"
   - likelihood: "interferometer/rectangular"
     hardware_class: "cpu_many_core"
@@ -1438,6 +1714,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 0.5982
+    n_pixels_masked: 384852
+    n_vis: 25000000
+    source_pixels: 1225
     record_id: "lifecycle/99c70939e335d08c4cff"
   - likelihood: "interferometer/rectangular"
     hardware_class: "cpu_many_core"
@@ -1454,6 +1733,9 @@ estimates:
     workers_per_node: 236
     bound_by: "cores"
     calls_per_s_per_node: 1022.0
+    n_pixels_masked: 3852
+    n_vis: 190
+    source_pixels: 1225
     record_id: "lifecycle/0e27b1175ce084dff51e"
   - likelihood: "interferometer/rectangular"
     hardware_class: "cpu_many_core"
@@ -1470,6 +1752,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 45.04
+    n_pixels_masked: 3852
+    n_vis: 190
+    source_pixels: 1225
     record_id: "lifecycle/29d350ddd936276d4121"
   - likelihood: "interferometer/rectangular"
     hardware_class: "gpu_a100"
@@ -1486,6 +1771,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 81.69
+    n_pixels_masked: 15380
+    n_vis: 1000000
+    source_pixels: 1225
     record_id: "lifecycle/fe32c3ee13ad9afc455c"
   - likelihood: "interferometer/rectangular"
     hardware_class: "gpu_a100"
@@ -1502,6 +1790,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 49.35
+    n_pixels_masked: 61572
+    n_vis: 5000000
+    source_pixels: 1225
     record_id: "lifecycle/2ab9504c46bb8170ba54"
   - likelihood: "interferometer/rectangular"
     hardware_class: "gpu_a100"
@@ -1518,6 +1809,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 8.767
+    n_pixels_masked: 384852
+    n_vis: 25000000
+    source_pixels: 1225
     record_id: "lifecycle/220d076d8421130e83cf"
   - likelihood: "interferometer/rectangular"
     hardware_class: "gpu_a100"
@@ -1534,6 +1828,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 592.7
+    n_pixels_masked: 3852
+    n_vis: 190
+    source_pixels: 1225
     record_id: "lifecycle/a39d6114339d546f6bd6"
   - likelihood: "interferometer/rectangular"
     hardware_class: "gpu_a100"
@@ -1550,6 +1847,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 76.95
+    n_pixels_masked: 3852
+    n_vis: 190
+    source_pixels: 1225
     record_id: "lifecycle/e44acbf15a2387706fa1"
   - likelihood: "multi_dataset/delaunay"
     hardware_class: "cpu_many_core"
@@ -1566,6 +1866,9 @@ estimates:
     workers_per_node: 236
     bound_by: "cores"
     calls_per_s_per_node: 82.74
+    n_pixels_masked: 15361
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/f57f23fc63823bcdf1bc"
   - likelihood: "multi_dataset/delaunay"
     hardware_class: "cpu_many_core"
@@ -1582,6 +1885,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 4.667
+    n_pixels_masked: 15361
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/f1dc379c56f5c2c7f32d"
   - likelihood: "multi_dataset/delaunay"
     hardware_class: "gpu_a100"
@@ -1598,6 +1904,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 22.69
+    n_pixels_masked: 15361
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/b5dea27fcaf8b14ec9bb"
   - likelihood: "multi_dataset/delaunay"
     hardware_class: "gpu_a100"
@@ -1614,6 +1923,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 19.59
+    n_pixels_masked: 15361
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/b14372bc431d168fa7ff"
   - likelihood: "multi_galaxy/delaunay"
     hardware_class: "cpu_many_core"
@@ -1630,6 +1942,9 @@ estimates:
     workers_per_node: 236
     bound_by: "cores"
     calls_per_s_per_node: 277.5
+    n_pixels_masked: 11304
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/fc2096cb1c848e64b674"
   - likelihood: "multi_galaxy/delaunay"
     hardware_class: "cpu_many_core"
@@ -1646,6 +1961,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 7.793
+    n_pixels_masked: 11304
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/d3102456687aef830651"
   - likelihood: "multi_galaxy/delaunay"
     hardware_class: "gpu_a100"
@@ -1662,6 +1980,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 131.2
+    n_pixels_masked: 11304
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/5a510cca4fff0c0d5b58"
   - likelihood: "multi_galaxy/delaunay"
     hardware_class: "gpu_a100"
@@ -1678,6 +1999,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 88.41
+    n_pixels_masked: 11304
+    n_vis: null
+    source_pixels: 1250
     record_id: "lifecycle/ec0a8fbc9c4e2d8b587e"
   - likelihood: "multi_galaxy/mge"
     hardware_class: "cpu_many_core"
@@ -1694,6 +2018,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 1091.0
+    n_pixels_masked: 11304
+    n_vis: null
+    source_pixels: null
     record_id: "lifecycle/2ee75bc51ab781c2df4e"
   - likelihood: "multi_galaxy/mge"
     hardware_class: "gpu_a100"
@@ -1710,6 +2037,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 6896.0
+    n_pixels_masked: 11304
+    n_vis: null
+    source_pixels: null
     record_id: "lifecycle/ad7e6ff9cd88a460649a"
   - likelihood: "multi_galaxy/rectangular"
     hardware_class: "cpu_many_core"
@@ -1726,6 +2056,9 @@ estimates:
     workers_per_node: 236
     bound_by: "cores"
     calls_per_s_per_node: 214.8
+    n_pixels_masked: 11304
+    n_vis: null
+    source_pixels: 1225
     record_id: "lifecycle/a3ef052bb150d3365992"
   - likelihood: "multi_galaxy/rectangular"
     hardware_class: "cpu_many_core"
@@ -1742,6 +2075,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 7.514
+    n_pixels_masked: 11304
+    n_vis: null
+    source_pixels: 1225
     record_id: "lifecycle/51f5d0ecf49223f09154"
   - likelihood: "multi_galaxy/rectangular"
     hardware_class: "gpu_a100"
@@ -1758,6 +2094,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 183.2
+    n_pixels_masked: 11304
+    n_vis: null
+    source_pixels: 1225
     record_id: "lifecycle/6d59cdcd3eb1e4abf967"
   - likelihood: "multi_galaxy/rectangular"
     hardware_class: "gpu_a100"
@@ -1774,6 +2113,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 105.0
+    n_pixels_masked: 11304
+    n_vis: null
+    source_pixels: 1225
     record_id: "lifecycle/f6d5339ad2b2bd8b790b"
   - likelihood: "point_source_image/image_plane"
     hardware_class: "cpu_many_core"
@@ -1790,6 +2132,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 30400.0
+    n_pixels_masked: null
+    n_vis: null
+    source_pixels: null
     record_id: "lifecycle/6cbf08c848ae6cdb820f"
   - likelihood: "point_source_image/image_plane"
     hardware_class: "gpu_a100"
@@ -1806,6 +2151,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 10120.0
+    n_pixels_masked: null
+    n_vis: null
+    source_pixels: null
     record_id: "lifecycle/6282556b81be530f7bce"
   - likelihood: "point_source_source/source_plane"
     hardware_class: "cpu_many_core"
@@ -1822,6 +2170,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 447100.0
+    n_pixels_masked: null
+    n_vis: null
+    source_pixels: null
     record_id: "lifecycle/61082dc032d7280b3bd1"
   - likelihood: "point_source_source/source_plane"
     hardware_class: "gpu_a100"
@@ -1838,6 +2189,9 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 32490.0
+    n_pixels_masked: null
+    n_vis: null
+    source_pixels: null
     record_id: "lifecycle/fcb319f0f24b8cc9fd37"
   - likelihood: "weak/isothermal"
     hardware_class: "cpu_many_core"
@@ -1854,6 +2208,9 @@ estimates:
     workers_per_node: 29
     bound_by: "cores"
     calls_per_s_per_node: 717700.0
+    n_pixels_masked: null
+    n_vis: null
+    source_pixels: null
     record_id: "lifecycle/03601d3a29aca4f5c389"
   - likelihood: "weak/isothermal"
     hardware_class: "gpu_a100"
@@ -1870,4 +2227,7 @@ estimates:
     workers_per_node: 4
     bound_by: "gpus"
     calls_per_s_per_node: 447700.0
+    n_pixels_masked: null
+    n_vis: null
+    source_pixels: null
     record_id: "lifecycle/fbd315b1a0e03f308c76"
