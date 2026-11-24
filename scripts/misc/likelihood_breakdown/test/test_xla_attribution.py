@@ -869,7 +869,7 @@ def test_a_harness_psf_candidate_kernel_is_the_mapping_matrix_convolution():
 
 
 def test_a_candidate_calling_back_into_the_real_space_path_is_the_mapping_convolution():
-    """``real_space_direct`` runs convolver.py:1348+, outside the 1086-1300 range."""
+    """``real_space_direct`` runs convolver.py:1409+, outside the 1153-1330 range."""
     frames = (
         xa.Frame(
             file=_CONVOLVER, function="convolved_mapping_matrix_via_real_space_from", line=1419
