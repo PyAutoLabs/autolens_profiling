@@ -1636,13 +1636,41 @@ def auto_simulate_if_missing(
     imported lazily so this helper can sit in any module without forcing
     the heavy import chain on every caller.
     """
-    import sys
+    import autolens as al
 
-    import autolens as al  # noqa: F401 — imported lazily to defer side effects
+    if al.util.dataset.should_simulate(str(dataset_path)):
+        _run_simulator(dataset_path, dataset_type, instrument, workspace_root)
 
-    if not al.util.dataset.should_simulate(str(dataset_path)):
-        return
+    if (dataset_type, instrument) == ("cluster", "simple"):
+        _validate_simple_cluster(dataset_path)
 
+
+def _validate_simple_cluster(dataset_path: Path) -> None:
+    """Reject legacy simple-cluster caches before their truth enters a fit."""
+    import autolens as al
+
+    recovery = (
+        "Move the old dataset directory aside and rerun the cluster cell "
+        "to regenerate it with scripts/misc/simulators/cluster.py."
+    )
+    members = dataset_path / "scaling_galaxies.csv"
+    if not members.is_file():
+        raise FileNotFoundError(f"Missing simple-cluster member table: {members}. {recovery}")
+
+    truth = dataset_path / "tracer.json"
+    try:
+        tracer = al.from_json(file_path=truth)
+    except Exception as exc:
+        raise ValueError(
+            f"Cannot load simple-cluster truth from {truth}: {exc}. {recovery}"
+        ) from exc
+    if not isinstance(tracer, al.Tracer):
+        raise ValueError(f"Expected a Tracer in {truth}, found {type(tracer).__name__}. {recovery}")
+
+
+def _run_simulator(
+    dataset_path: Path, dataset_type: str, instrument: str, workspace_root: Path
+) -> None:
     simulator_script = workspace_root / "scripts" / "misc" / "simulators" / f"{dataset_type}.py"
     if not simulator_script.exists():
         raise FileNotFoundError(
