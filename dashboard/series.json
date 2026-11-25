@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "generated": "2026-11-25T13:22:15Z",
+ "generated": "2026-11-25T16:21:20Z",
  "reference_host": "euclid-ral-gpu-2",
  "loadavg_cap": 8.0,
  "drift_ratio": 2.0,
@@ -23,17 +23,17 @@
    "points": [
     {
      "version": "2026.8.17.1",
-     "single_jit_s": 0.006931382999937341,
-     "vmap_per_call_s": 0.038738187777804946,
+     "single_jit_s": 0.008917552999264444,
+     "vmap_per_call_s": 0.00495426344423322,
      "host": "DESKTOP-H143S82",
      "backend": "cpu",
      "job": null,
-     "loadavg": 1.205,
+     "loadavg": 2.634,
      "has_provenance": true,
      "source": "results/cluster/image_plane/simple/jax_cpu_na_fp64/local_laptop/runtime.json",
      "headline_estimator": "steady median",
-     "single_jit_block_mean_s": 0.0070757473331468645,
-     "single_jit_median_s": 0.006931382999937341,
+     "single_jit_block_mean_s": 0.011344428334268741,
+     "single_jit_median_s": 0.008917552999264444,
      "qualified": false,
      "reason": "not a reference host class; laptop rows never qualify as trend points"
     }
@@ -101,17 +101,17 @@
    "points": [
     {
      "version": "2026.8.17.1",
-     "single_jit_s": 0.0007603220001328737,
-     "vmap_per_call_s": 0.00032998343334232535,
+     "single_jit_s": 0.0005178004994377261,
+     "vmap_per_call_s": 0.0002628887332927358,
      "host": "DESKTOP-H143S82",
      "backend": "cpu",
      "job": null,
-     "loadavg": 1.042,
+     "loadavg": 3.608,
      "has_provenance": true,
      "source": "results/cluster/source_plane/simple/jax_cpu_na_fp64/local_laptop/runtime.json",
      "headline_estimator": "steady median",
-     "single_jit_block_mean_s": 0.0011369465999450767,
-     "single_jit_median_s": 0.0007603220001328737,
+     "single_jit_block_mean_s": 0.0007913117999123643,
+     "single_jit_median_s": 0.0005178004994377261,
      "qualified": false,
      "reason": "not a reference host class; laptop rows never qualify as trend points"
     }

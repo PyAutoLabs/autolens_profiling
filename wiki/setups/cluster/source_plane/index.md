@@ -19,10 +19,10 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 | [2306a573742ba88a18d8](61f6338530e8796b2ef6.md) | results/cluster/source_plane/simple/jax_gpu_na_fp64/hpc_a100/breakdown.json | 17 |
 | [5d5d2b598e771e26be83](63ea0966c12960254586.md) | results/cluster/source_plane/simple/jax_gpu_na_fp64/hpc_a100/runtime.json | 14 |
 | [802507a991ff42ea8041](2a08837b2fd6206af557.md) | results/cluster/source_plane/simple/jax_cpu_na_fp64/hpc_a100/runtime.json | 14 |
+| [9028032b9ca20005a50c](9506184f5046539905b3.md) | results/cluster/source_plane/simple/jax_cpu_na_fp64/local_laptop/runtime.json | 14 |
 | [a7eec237667c43d921a8](1b99fd244b15abfbdd2d.md) | results/cluster/source_plane/simple/jax_cpu_na_fp64/hpc_a100/breakdown.json | 17 |
 | [c818bd6fccbd2dc87d53](2e92916255bf3ba97e47.md) | results/cluster/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/breakdown.json | 17 |
 | [db4af85b250ff104277f](f13b3369ed8042d68fa7.md) | results/cluster/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/runtime.json | 14 |
-| [fdf590d00c55e72bf360](a3d03de8663350dea2b4.md) | results/cluster/source_plane/simple/jax_cpu_na_fp64/local_laptop/runtime.json | 14 |
 
 ## unspecified
 

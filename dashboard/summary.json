@@ -3,11 +3,11 @@
  "version": 1,
  "project": "autolens_profiling",
  "scope": "release-runtime",
- "generated_at": "2026-11-25T13:22:15Z",
+ "generated_at": "2026-11-25T16:21:20Z",
  "evidence_updated_at": "2026-10-25T00:00:00Z",
  "evidence_updated_at_reason": null,
  "valid_until": null,
- "producer_revision": "b905808178b80b08b6afa721d2651934a61d9acd",
+ "producer_revision": "7b686ffc43a04bf0b203da4c5fe854ecc6e98ff9",
  "comparison_policy": {
   "id": "runtime-drift-2x-1ms",
   "ratio": 2.0,
@@ -1457,9 +1457,9 @@
    "axis": "runtime",
    "unit": "s",
    "measurement": {
-    "single_jit_s": 0.006931382999937341,
-    "vmap_per_call_s": 0.038738187777804946,
-    "single_jit_block_mean_s": 0.0070757473331468645
+    "single_jit_s": 0.008917552999264444,
+    "vmap_per_call_s": 0.00495426344423322,
+    "single_jit_block_mean_s": 0.011344428334268741
    },
    "identity": {
     "section": "runtime",
@@ -1478,7 +1478,7 @@
    "provenance": {
     "host": "DESKTOP-H143S82",
     "job": null,
-    "loadavg": 1.205,
+    "loadavg": 2.634,
     "has_provenance": true,
     "qualified": false,
     "reason": "not a reference host class; laptop rows never qualify as trend points"
@@ -1529,9 +1529,9 @@
    "axis": "runtime",
    "unit": "s",
    "measurement": {
-    "single_jit_s": 0.0007603220001328737,
-    "vmap_per_call_s": 0.00032998343334232535,
-    "single_jit_block_mean_s": 0.0011369465999450767
+    "single_jit_s": 0.0005178004994377261,
+    "vmap_per_call_s": 0.0002628887332927358,
+    "single_jit_block_mean_s": 0.0007913117999123643
    },
    "identity": {
     "section": "runtime",
@@ -1550,7 +1550,7 @@
    "provenance": {
     "host": "DESKTOP-H143S82",
     "job": null,
-    "loadavg": 1.042,
+    "loadavg": 3.608,
     "has_provenance": true,
     "qualified": false,
     "reason": "not a reference host class; laptop rows never qualify as trend points"
