@@ -22,6 +22,7 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 | [a7eec237667c43d921a8](1b99fd244b15abfbdd2d.md) | results/cluster/source_plane/simple/jax_cpu_na_fp64/hpc_a100/breakdown.json | 17 |
 | [c818bd6fccbd2dc87d53](2e92916255bf3ba97e47.md) | results/cluster/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/breakdown.json | 17 |
 | [db4af85b250ff104277f](f13b3369ed8042d68fa7.md) | results/cluster/source_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/runtime.json | 14 |
+| [fdf590d00c55e72bf360](a3d03de8663350dea2b4.md) | results/cluster/source_plane/simple/jax_cpu_na_fp64/local_laptop/runtime.json | 14 |
 
 ## unspecified
 

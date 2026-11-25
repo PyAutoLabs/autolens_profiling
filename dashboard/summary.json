@@ -3,11 +3,11 @@
  "version": 1,
  "project": "autolens_profiling",
  "scope": "release-runtime",
- "generated_at": "2026-11-12T14:21:41Z",
+ "generated_at": "2026-11-25T13:22:15Z",
  "evidence_updated_at": "2026-10-25T00:00:00Z",
  "evidence_updated_at_reason": null,
  "valid_until": null,
- "producer_revision": "93ba0388456e735096b07bba6f80b172f6eb6a16",
+ "producer_revision": "b905808178b80b08b6afa721d2651934a61d9acd",
  "comparison_policy": {
   "id": "runtime-drift-2x-1ms",
   "ratio": 2.0,
@@ -27,8 +27,8 @@
    "reason": "no declared cell matrix; the results/ scan is the inventory"
   },
   "observed": {
-   "series": 294,
-   "points": 404,
+   "series": 296,
+   "points": 406,
    "releases": 7,
    "cells": 68
   },
@@ -1453,6 +1453,42 @@
  },
  "records": [
   {
+   "id": "runtime:cluster/image_plane:simple:jax_cpu_na_fp64:local_laptop:default@2026.8.17.1",
+   "axis": "runtime",
+   "unit": "s",
+   "measurement": {
+    "single_jit_s": 0.006931382999937341,
+    "vmap_per_call_s": 0.038738187777804946,
+    "single_jit_block_mean_s": 0.0070757473331468645
+   },
+   "identity": {
+    "section": "runtime",
+    "cell": "cluster/image_plane/simple",
+    "config": "local_cpu_fp64",
+    "sparse": false,
+    "tier": "local",
+    "device": "cpu",
+    "backend": "cpu",
+    "precision": "float64",
+    "library": "PyAutoLens",
+    "library_version": "2026.8.17.1",
+    "release_date": "2026-08-17",
+    "reason": null
+   },
+   "provenance": {
+    "host": "DESKTOP-H143S82",
+    "job": null,
+    "loadavg": 1.205,
+    "has_provenance": true,
+    "qualified": false,
+    "reason": "not a reference host class; laptop rows never qualify as trend points"
+   },
+   "evidence": {
+    "path": "results/cluster/image_plane/simple/jax_cpu_na_fp64/local_laptop/runtime.json",
+    "fragment": null
+   }
+  },
+  {
    "id": "runtime:cluster/image_plane:simple:jax_gpu_na_fp64:hpc_a100:default@2026.10.25.1",
    "axis": "runtime",
    "unit": "s",
@@ -1485,6 +1521,42 @@
    },
    "evidence": {
     "path": "results/cluster/image_plane/simple/jax_gpu_na_fp64/hpc_a100/runtime.json",
+    "fragment": null
+   }
+  },
+  {
+   "id": "runtime:cluster/source_plane:simple:jax_cpu_na_fp64:local_laptop:default@2026.8.17.1",
+   "axis": "runtime",
+   "unit": "s",
+   "measurement": {
+    "single_jit_s": 0.0007603220001328737,
+    "vmap_per_call_s": 0.00032998343334232535,
+    "single_jit_block_mean_s": 0.0011369465999450767
+   },
+   "identity": {
+    "section": "runtime",
+    "cell": "cluster/source_plane/simple",
+    "config": "local_cpu_fp64",
+    "sparse": false,
+    "tier": "local",
+    "device": "cpu",
+    "backend": "cpu",
+    "precision": "float64",
+    "library": "PyAutoLens",
+    "library_version": "2026.8.17.1",
+    "release_date": "2026-08-17",
+    "reason": null
+   },
+   "provenance": {
+    "host": "DESKTOP-H143S82",
+    "job": null,
+    "loadavg": 1.042,
+    "has_provenance": true,
+    "qualified": false,
+    "reason": "not a reference host class; laptop rows never qualify as trend points"
+   },
+   "evidence": {
+    "path": "results/cluster/source_plane/simple/jax_cpu_na_fp64/local_laptop/runtime.json",
     "fragment": null
    }
   },
@@ -15713,7 +15785,35 @@
  ],
  "comparisons": [
   {
+   "comparison_key": "runtime:cluster/image_plane:simple:jax_cpu_na_fp64:local_laptop:default",
+   "policy": "runtime-drift-2x-1ms",
+   "axis": "runtime",
+   "metric": "single_jit_s",
+   "baseline": null,
+   "candidate": null,
+   "ratio": null,
+   "status": "insufficient",
+   "qualified": false,
+   "reasons": [
+    "one release only"
+   ]
+  },
+  {
    "comparison_key": "runtime:cluster/image_plane:simple:jax_gpu_na_fp64:hpc_a100:default",
+   "policy": "runtime-drift-2x-1ms",
+   "axis": "runtime",
+   "metric": "single_jit_s",
+   "baseline": null,
+   "candidate": null,
+   "ratio": null,
+   "status": "insufficient",
+   "qualified": false,
+   "reasons": [
+    "one release only"
+   ]
+  },
+  {
+   "comparison_key": "runtime:cluster/source_plane:simple:jax_cpu_na_fp64:local_laptop:default",
    "policy": "runtime-drift-2x-1ms",
    "axis": "runtime",
    "metric": "single_jit_s",
