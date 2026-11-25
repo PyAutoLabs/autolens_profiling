@@ -1,5 +1,6 @@
 """Cache gate regression for the legacy simple cluster in profiling issue 445."""
 
+import shutil
 import sys
 from pathlib import Path
 
@@ -31,6 +32,13 @@ def test_simple_cluster_cache(tmp_path, monkeypatch):
         check_cache()
 
     al.output_to_json(obj=al.Tracer(galaxies=[al.Galaxy(redshift=0.5)]), file_path=truth)
+    with pytest.raises(ValueError, match="reviewed Simple gallery fixture"):
+        check_cache()
+
+    from simple_cluster import DIRECTORY, INPUTS
+
+    for filename in INPUTS:
+        shutil.copyfile(DIRECTORY / filename, dataset / filename)
     check_cache()
 
 
@@ -76,3 +84,34 @@ def test_newly_simulated_simple_cache_is_validated(tmp_path, monkeypatch):
         auto_simulate_if_missing(
             dataset, dataset_type="cluster", instrument="simple", workspace_root=tmp_path
         )
+
+
+def test_standard_model_reproduces_gallery_tracer_and_positions(tmp_path):
+    import numpy as np
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    from likelihood_breakdown import cluster_standard
+
+    from simple_cluster import DIRECTORY, INPUTS
+
+    folder = tmp_path / "dataset/cluster/simple"
+    folder.mkdir(parents=True)
+    for filename in INPUTS:
+        shutil.copyfile(DIRECTORY / filename, folder / filename)
+    cell = cluster_standard.load_cell(tmp_path)
+    assert [(d.name, len(d.positions), d.redshift) for d in cell["dataset_list"]] == [
+        ("point_0", 5, 1.0),
+        ("point_1", 2, 2.0),
+    ]
+    fitted = cluster_standard.model(cell, solved=True, point_centres=cell["source_centres"])
+    instance = fitted.instance_from_vector(vector=fitted.physical_values_from_prior_medians)
+    model_tracer = al.Tracer(galaxies=list(instance.galaxies))
+    truth = al.from_json(file_path=DIRECTORY / "tracer.json")
+    sky = np.vstack([*cell["positions_list"], np.random.default_rng(1).uniform(-40, 40, (256, 2))])
+    grid = al.Grid2DIrregular(sky)
+    for expected, actual in zip(
+        truth.traced_grid_2d_list_from(grid=grid)[1:],
+        model_tracer.traced_grid_2d_list_from(grid=grid)[1:],
+        strict=True,
+    ):
+        np.testing.assert_allclose(actual, expected, atol=1e-10, rtol=0)

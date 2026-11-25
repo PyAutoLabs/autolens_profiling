@@ -1688,6 +1688,18 @@ def _validate_simple_cluster(dataset_path: Path) -> None:
     if not isinstance(tracer, al.Tracer):
         raise ValueError(f"Expected a Tracer in {truth}, found {type(tracer).__name__}. {recovery}")
 
+    import simple_cluster
+
+    for filename in simple_cluster.INPUTS:
+        cached = dataset_path / filename
+        if (
+            not cached.is_file()
+            or cached.read_text() != (simple_cluster.DIRECTORY / filename).read_text()
+        ):
+            raise ValueError(
+                f"{cached} does not match the reviewed Simple gallery fixture. {recovery}"
+            )
+
 
 def _run_simulator(
     dataset_path: Path, dataset_type: str, instrument: str, workspace_root: Path

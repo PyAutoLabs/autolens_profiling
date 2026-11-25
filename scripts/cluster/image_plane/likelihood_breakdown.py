@@ -211,67 +211,13 @@ N_REPEATS = 3
 # ===================================================================
 # PART A — Setup
 # ===================================================================
-dataset_path = _workspace_root / "dataset" / "cluster" / "simple"
+from likelihood_breakdown import cluster_standard  # noqa: E402
 
-auto_simulate_if_missing(
-    dataset_path,
-    dataset_type="cluster",
-    instrument="simple",
-    workspace_root=_workspace_root,
-)
-
-dataset_list = al.list_from_csv(file_path=dataset_path / "point_datasets.csv")
-print(f"Loaded {len(dataset_list)} point-source systems from {dataset_path}.")
-
-redshift_lens = 0.5
-
-main_lens_params = [
-    ((0.0, 0.0), 8.0, 20.0, 3.0),
-    ((10.0, 8.0), 5.0, 12.0, 1.2),
-]
-main_lens_galaxies = [
-    al.Galaxy(
-        redshift=redshift_lens,
-        mass=al.mp.dPIEMassB0Sph(centre=centre, ra=ra, rs=rs, b0=b0),
-    )
-    for centre, ra, rs, b0 in main_lens_params
-]
-
-scaling_table = al.galaxy_table_from_csv(file_path=dataset_path / "scaling_galaxies.csv")
-SCALING_B0_REF, SCALING_RS_REF, SCALING_RA, SCALING_EXPONENT = 0.12, 10.0, 0.1, 0.5
-_lum_ref = max(scaling_table.luminosities)
-scaling_galaxies = [
-    al.Galaxy(
-        redshift=redshift_lens,
-        mass=al.mp.dPIEMassB0Sph(
-            centre=tuple(centre),
-            ra=SCALING_RA,
-            rs=SCALING_RS_REF * (lum / _lum_ref) ** SCALING_EXPONENT,
-            b0=SCALING_B0_REF * (lum / _lum_ref) ** SCALING_EXPONENT,
-        ),
-    )
-    for centre, lum in zip(scaling_table.centres, scaling_table.luminosities)
-]
-
-host_halo_galaxy = al.Galaxy(
-    redshift=redshift_lens,
-    dark=al.mp.NFWMCRLudlowSph(
-        centre=(0.0, 0.0),
-        mass_at_200=10**15.3,
-        redshift_object=redshift_lens,
-        redshift_source=max(float(d.redshift) for d in dataset_list),
-    ),
-)
-
-source_galaxies = [
-    al.Galaxy(redshift=float(d.redshift), **{d.name: al.ps.Point(centre=(0.0, 0.0))})
-    for d in dataset_list
-]
-
-tracer = al.Tracer(
-    galaxies=main_lens_galaxies + scaling_galaxies + [host_halo_galaxy] + source_galaxies
-)
-n_mass_profiles = len(main_lens_galaxies) + len(scaling_galaxies) + 1
+cell = cluster_standard.load_cell(_workspace_root)
+dataset_list = cell["dataset_list"]
+tracer = cell["tracer"]
+lenses = cell["lenses"]
+n_mass_profiles = cell["n_mass_profiles"]
 print(f"Tracer: {len(tracer.planes)} planes, {n_mass_profiles} mass components.")
 
 # Solved tracer (the headline): `al.ps.PointSolved` (0 params) in place of `al.ps.Point`
@@ -280,11 +226,9 @@ print(f"Tracer: {len(tracer.planes)} planes, {n_mass_profiles} mass components."
 source_galaxies_solved = [
     al.Galaxy(redshift=float(d.redshift), **{d.name: al.ps.PointSolved()}) for d in dataset_list
 ]
-tracer_solved = al.Tracer(
-    galaxies=main_lens_galaxies + scaling_galaxies + [host_halo_galaxy] + source_galaxies_solved
-)
+tracer_solved = al.Tracer(galaxies=lenses + source_galaxies_solved)
 
-positions_list = [np.atleast_2d(np.asarray(d.positions)) for d in dataset_list]
+positions_list = cell["positions_list"]
 plane_indices = [
     tracer.plane_index_via_redshift_from(redshift=float(d.redshift)) for d in dataset_list
 ]
@@ -327,9 +271,7 @@ with timer.section("stepP1_plain_source_centres"):
         source_centres.append(tuple(traced.mean(axis=0)))
 plain_centres_s = timer.records[-1][1]
 tracer_plain = al.Tracer(
-    galaxies=main_lens_galaxies
-    + scaling_galaxies
-    + [host_halo_galaxy]
+    galaxies=lenses
     + [
         al.Galaxy(redshift=float(d.redshift), **{d.name: al.ps.Point(centre=c)})
         for d, c in zip(dataset_list, source_centres)
@@ -347,34 +289,7 @@ from autoarray.abstract_ndarray import register_instance_pytree  # noqa: E402
 from autofit.jax import register_model as _register_model_pytrees  # noqa: E402
 from autolens.lens.tracer import Tracer  # noqa: E402
 
-_registration_model = af.Collection(
-    galaxies=af.Collection(
-        af.Model(
-            al.Galaxy,
-            redshift=redshift_lens,
-            mass=af.Model(al.mp.dPIEMassB0Sph, centre=(0.0, 0.0), ra=1.0, rs=10.0, b0=1.0),
-        ),
-        af.Model(
-            al.Galaxy,
-            redshift=redshift_lens,
-            dark=af.Model(
-                al.mp.NFWMCRLudlowSph,
-                centre=(0.0, 0.0),
-                mass_at_200=10**15.3,
-                redshift_object=redshift_lens,
-                redshift_source=max(float(d.redshift) for d in dataset_list),
-            ),
-        ),
-        *[
-            af.Model(
-                al.Galaxy,
-                redshift=float(d.redshift),
-                **{d.name: af.Model(al.ps.Point, centre=(0.0, 0.0))},
-            )
-            for d in dataset_list
-        ],
-    )
-)
+_registration_model = cluster_standard.model(cell, solved=False, point_centres=source_centres)
 _register_model_pytrees(_registration_model)
 register_instance_pytree(Tracer, no_flatten=("cosmology",))
 
@@ -500,56 +415,10 @@ print(f"  TOTAL delta across {len(dataset_list)} systems: {delta_total:+.6f}s")
 # ---------------------------------------------------------------------------
 from autofit.jax import register_model as _register_fused_pytrees  # noqa: E402
 
-
-def _gaussian(mean, fraction=0.01, floor=0.01):
-    return af.GaussianPrior(mean=float(mean), sigma=max(abs(float(mean)) * fraction, floor))
-
-
-def _fused_model(*, solved: bool):
-    galaxies = {}
-    for i, (centre, ra, rs, b0) in enumerate(main_lens_params):
-        mass = af.Model(al.mp.dPIEMassB0Sph)
-        mass.centre.centre_0 = _gaussian(centre[0])
-        mass.centre.centre_1 = _gaussian(centre[1])
-        mass.ra = _gaussian(ra)
-        mass.rs = _gaussian(rs)
-        mass.b0 = _gaussian(b0)
-        galaxies[f"main_{i}"] = af.Model(al.Galaxy, redshift=redshift_lens, mass=mass)
-
-    scaling_b0_ref = _gaussian(SCALING_B0_REF, floor=0.001)
-    for i, (centre, lum) in enumerate(zip(scaling_table.centres, scaling_table.luminosities)):
-        ratio = (lum / _lum_ref) ** SCALING_EXPONENT
-        mass = af.Model(al.mp.dPIEMassB0Sph)
-        mass.centre = tuple(centre)
-        mass.ra = SCALING_RA
-        mass.rs = SCALING_RS_REF * ratio
-        mass.b0 = scaling_b0_ref * ratio
-        galaxies[f"scaling_{i}"] = af.Model(al.Galaxy, redshift=redshift_lens, mass=mass)
-
-    dark = af.Model(
-        al.mp.NFWMCRLudlowSph,
-        mass_at_200=10**15.3,
-        redshift_object=redshift_lens,
-        redshift_source=max(float(d.redshift) for d in dataset_list),
-    )
-    dark.centre.centre_0 = _gaussian(0.0)
-    dark.centre.centre_1 = _gaussian(0.0)
-    galaxies["host_halo"] = af.Model(al.Galaxy, redshift=redshift_lens, dark=dark)
-
-    for i, (d, centre) in enumerate(zip(dataset_list, source_centres)):
-        if solved:
-            point = af.Model(al.ps.PointSolved)
-        else:
-            point = af.Model(al.ps.Point)
-            point.centre.centre_0 = _gaussian(centre[0])
-            point.centre.centre_1 = _gaussian(centre[1])
-        galaxies[f"source_{i}"] = af.Model(al.Galaxy, redshift=float(d.redshift), **{d.name: point})
-
-    return af.Collection(galaxies=af.Collection(**galaxies))
-
-
-# The headline (solved, D3) first, then the plain sub-row.
-fused_models = {"solved": _fused_model(solved=True), "plain": _fused_model(solved=False)}
+fused_models = {
+    variant: cluster_standard.model(cell, solved=variant == "solved", point_centres=source_centres)
+    for variant in ("solved", "plain")
+}
 fused_fit_cls = {
     "solved": al.FitPositionsImagePairRepeatSolved,
     "plain": al.FitPositionsImagePairRepeat,
@@ -560,7 +429,7 @@ for variant, model in fused_models.items():
     instance = model.instance_from_vector(vector=model.physical_values_from_prior_medians)
     _register_fused_pytrees(model)
     fused_instances[variant] = instance
-    fused_params[variant] = jax.tree_util.tree_map(jnp.asarray, instance)
+    fused_params[variant] = jnp.asarray(model.physical_values_from_prior_medians)
 
 
 def _analyses(variant: str, *, use_jax: bool):
@@ -577,15 +446,6 @@ def _analyses(variant: str, *, use_jax: bool):
 
 fused_analyses = {variant: _analyses(variant, use_jax=True) for variant in fused_models}
 eager_analyses = {variant: _analyses(variant, use_jax=False) for variant in fused_models}
-
-
-def _fused_full(variant: str):
-    analyses = fused_analyses[variant]
-
-    def full(params):
-        return sum(analysis.log_likelihood_function(instance=params) for analysis in analyses)
-
-    return full
 
 
 print("\n--- Step 5: eager controls for the fused rows ---")
@@ -605,7 +465,10 @@ fused_jit = {}
 fused_label = {"solved": "fused_full_solved", "plain": "fused_full_plain"}
 for variant in fused_models:
     _, value = jit_profile(
-        _fused_full(variant), fused_label[variant], fused_params[variant], n_repeats=N_REPEATS
+        cluster_standard.summed_likelihood(fused_models[variant], fused_analyses[variant]),
+        fused_label[variant],
+        fused_params[variant],
+        n_repeats=N_REPEATS,
     )
     fused_jit[variant] = float(value)
     print(f"  {variant} fused likelihood: {fused_jit[variant]:.12e}")
@@ -688,6 +551,8 @@ breakdown_summary = {
     "thread_environment": thread_environment(),
     "n_repeats": N_REPEATS,
     "configuration": {
+        "gallery_revision": cell["gallery_revision"],
+        "n_images_per_family": {d.name: len(d.positions) for d in dataset_list},
         "n_systems": len(dataset_list),
         "n_images_total": int(sum(len(p) for p in positions_list)),
         "n_planes": len(tracer.planes),
