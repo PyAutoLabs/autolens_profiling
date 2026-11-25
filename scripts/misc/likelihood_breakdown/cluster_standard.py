@@ -426,6 +426,11 @@ def run_runtime(likelihood: str, cli, *, profiling_root: Path) -> Path:
         "n_repeats": n_repeats,
         "jax_enable_x64": bool(jax.config.jax_enable_x64),
     }
+    if likelihood == "image_plane":
+        configuration["n_predicted_images_per_family"] = {
+            dataset.name: int(np.isfinite(np.asarray(fit.positions.model_data)).all(axis=1).sum())
+            for dataset, fit in zip(cell["dataset_list"], eager_fits, strict=True)
+        }
     summary: dict[str, Any] = {
         "autolens_version": al_version,
         "device": device_info_dict(),
