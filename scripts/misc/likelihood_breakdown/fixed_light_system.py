@@ -36,7 +36,8 @@ none of which alters the JAX path:
   ``sparse_operator={"drop", "carry", "rebake_cpu"}``. The subtraction rebuilds
   the ``Imaging``, and a rebuilt ``Imaging`` has no operator unless one is given:
   ``"drop"`` is the historic behaviour (dense S3, which is what the JAX cells
-  measure), ``"carry"`` passes the original operator straight through, and
+  measure; it also switches off the lazy sparse operator that the R6
+  ``lazy_sparse_operator: auto`` default would otherwise build), ``"carry"`` passes the original operator straight through, and
   ``"rebake_cpu"`` calls ``apply_sparse_operator_cpu()`` on the rebuilt dataset —
   the numba CPU leg's route, and the only one of the three that is correct on
   the sparse path (see below).
@@ -404,6 +405,23 @@ def linear_system_from(
     )
 
 
+def _without_lazy_sparse_operator(settings):
+    """A shallow copy of ``settings`` (or default ``Settings``) with the lazy sparse operator off.
+
+    ``Settings`` has no public copy-with-one-field-changed, so this sets the private
+    ``_lazy_sparse_operator`` that ``Settings(lazy_sparse_operator="off")`` would set. An
+    explicit value decides on its own, whatever ``general.yaml`` or ``PYAUTO_SETUP`` say
+    (``autoarray.dataset.lazy_operator.lazy_sparse_operator_enabled``).
+    """
+    import copy
+
+    import autolens as al
+
+    settings = copy.copy(settings) if settings is not None else al.Settings()
+    settings._lazy_sparse_operator = "off"
+    return settings
+
+
 def fixed_light_system_from(
     fit,
     dataset=None,
@@ -441,7 +459,10 @@ def fixed_light_system_from(
 
     - ``"drop"`` — no operator, a dense ``InversionImagingMapping``. The historic
       behaviour and the default, because every existing caller and pin expects
-      the dense S3 system.
+      the dense S3 system. Since PyAutoArray's R6 default
+      (``lazy_sparse_operator: auto``) a NumPy fit on a dataset without an operator
+      builds the numba one lazily, so this mode fits with a copy of the settings
+      whose lazy policy is ``"off"`` (autolens_profiling#538).
     - ``"carry"`` — the source dataset's own operator object, passed through
       unchanged. Correct only when the operator does not depend on the data;
       offered so a cell can *measure* that rather than assume it.
@@ -498,6 +519,9 @@ def fixed_light_system_from(
         subtracted = subtracted.apply_sparse_operator_cpu()
 
     source_only_tracer = _light_stripped_tracer(fit.tracer)
+
+    if sparse_operator == "drop":
+        settings = _without_lazy_sparse_operator(settings)
 
     fit_source_only = al.FitImaging(
         dataset=subtracted,
