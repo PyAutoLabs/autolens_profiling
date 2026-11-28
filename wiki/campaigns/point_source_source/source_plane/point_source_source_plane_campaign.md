@@ -1347,7 +1347,7 @@ recover all five truth parameters within 0.74σ across seeds 0–4. Search walls
 0.0405–0.0447% of search wall in steady likelihood evaluation (4.59–5.01 µs/eval).
 This is source-plane evidence, **not an image-plane PointSolver end-to-end timing**.
 Review: [inference PR #17](https://github.com/PyAutoLabs/autolens_inference/pull/17) and [ledger PR #361](https://github.com/PyAutoLabs/autolens_profiling/pull/361); both open, no second phase issued.
-See the [inference journal](https://github.com/PyAutoLabs/autolens_inference/blob/feature/point-source-search-nautilus-leaf/wiki/project/state.md#2026-10-02--point-source-nautilus-admission-bar-five-seeds-recovered)
+See the [inference journal](https://github.com/PyAutoLabs/autolens_inference/blob/main/wiki/project/state.md#2026-10-02--point-source-nautilus-admission-bar-five-seeds-recovered)
 for all rows and limitations. The estimate uses one prior-median vector and fixed
 batch size, not an instrumented fit decomposition; it does not establish the
 wall-share of a gradient sampler. blackjax forward mode still needs its own
