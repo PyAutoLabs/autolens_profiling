@@ -1,11 +1,50 @@
 {
  "schema_version": 1,
- "generated": "2026-11-12T14:21:41Z",
+ "generated": "2026-11-28T10:36:48Z",
  "reference_host": "euclid-ral-gpu-2",
  "loadavg_cap": 8.0,
  "drift_ratio": 2.0,
  "drift_floor_s": 0.001,
  "series": [
+  {
+   "key": "runtime:cluster/image_plane:simple:jax_cpu_na_fp64:local_laptop:default",
+   "section": "runtime",
+   "cell": "cluster/image_plane/simple",
+   "config": "local_cpu_fp64",
+   "sparse": false,
+   "identity": {
+    "likelihood": "cluster/image_plane",
+    "instrument": "simple",
+    "setup_id": "jax_cpu_na_fp64",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 0.008917552999264444,
+     "vmap_per_call_s": 0.00495426344423322,
+     "host": "DESKTOP-H143S82",
+     "backend": "cpu",
+     "job": null,
+     "loadavg": 2.634,
+     "has_provenance": true,
+     "source": "results/cluster/image_plane/simple/jax_cpu_na_fp64/local_laptop/runtime.json",
+     "headline_estimator": "steady median",
+     "single_jit_block_mean_s": 0.011344428334268741,
+     "single_jit_median_s": 0.008917552999264444,
+     "qualified": false,
+     "reason": "not a reference host class; laptop rows never qualify as trend points"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
   {
    "key": "runtime:cluster/image_plane:simple:jax_gpu_na_fp64:hpc_a100:default",
    "section": "runtime",
@@ -36,6 +75,45 @@
      "single_jit_median_s": 0.0023180925054475665,
      "qualified": false,
      "reason": "off the reference host (euclid-ral-gpu-1 != euclid-ral-gpu-2)"
+    }
+   ],
+   "drift": {
+    "status": "single-release",
+    "ratio": null,
+    "from": null,
+    "to": null
+   }
+  },
+  {
+   "key": "runtime:cluster/source_plane:simple:jax_cpu_na_fp64:local_laptop:default",
+   "section": "runtime",
+   "cell": "cluster/source_plane/simple",
+   "config": "local_cpu_fp64",
+   "sparse": false,
+   "identity": {
+    "likelihood": "cluster/source_plane",
+    "instrument": "simple",
+    "setup_id": "jax_cpu_na_fp64",
+    "host_class": "local_laptop",
+    "model_variant": "default",
+    "measurement": "runtime"
+   },
+   "points": [
+    {
+     "version": "2026.8.17.1",
+     "single_jit_s": 0.0005178004994377261,
+     "vmap_per_call_s": 0.0002628887332927358,
+     "host": "DESKTOP-H143S82",
+     "backend": "cpu",
+     "job": null,
+     "loadavg": 3.608,
+     "has_provenance": true,
+     "source": "results/cluster/source_plane/simple/jax_cpu_na_fp64/local_laptop/runtime.json",
+     "headline_estimator": "steady median",
+     "single_jit_block_mean_s": 0.0007913117999123643,
+     "single_jit_median_s": 0.0005178004994377261,
+     "qualified": false,
+     "reason": "not a reference host class; laptop rows never qualify as trend points"
     }
    ],
    "drift": {

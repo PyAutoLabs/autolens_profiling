@@ -43,6 +43,7 @@ import json
 # Verifies the import graph + module-level setup succeeded without running
 # the full profiling pipeline. Skipped entirely when the env var is unset.
 import os as _smoke_os
+import shutil
 import sys as _smoke_sys
 import time
 from contextlib import contextmanager
@@ -66,6 +67,9 @@ import matplotlib.pyplot as plt
 from autoarray.abstract_ndarray import register_instance_pytree
 from autofit.jax import register_model as _register_model_pytrees
 from autolens.lens.tracer import Tracer
+
+_sys.path.insert(0, str(_profiling_root()))
+import simple_cluster  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -141,39 +145,16 @@ dataset_path.mkdir(parents=True, exist_ok=True)
 
 print("\n--- PART 1: Setup ---")
 
-redshift_lens = 0.5
-source_redshifts = [1.0, 2.0]
-
-main_lens_centres = [
-    (0.0, 0.0),
-    (10.0, 8.0),
-]
-host_halo_centre = (0.0, 0.0)
-source_centres = [
-    (0.3, 0.5),
-    (-0.8, 1.2),
-]
-
-# Scaling-tier members: mirrors the autolens_workspace cluster simulator truth (the
-# reference-anchored Lenstool convention made default in autolens_workspace#238):
-# b0_i = b0_ref * (L_i/L_ref)^0.5, rs_i = rs_ref * (L_i/L_ref)^0.5, brightest member anchors.
-scaling_galaxies_centres = [
-    (5.5, -6.5),
-    (-7.5, 3.0),
-    (12.0, -5.0),
-    (-4.0, -9.0),
-    (3.0, 13.0),
-    (-14.0, 4.0),
-    (15.0, 9.0),
-    (-9.0, -12.0),
-    (8.5, 5.5),
-    (-6.5, 11.0),
-]
-scaling_galaxies_luminosities = [0.40, 0.32, 0.25, 0.20, 0.16, 0.13, 0.10, 0.08, 0.06, 0.05]
-SCALING_B0_REF = 0.12
-SCALING_RS_REF = 10.0
-SCALING_RA = 0.1
-SCALING_EXPONENT = 0.5
+with timer.section("load_gallery_truth"):
+    tracer = al.from_json(file_path=simple_cluster.DIRECTORY / "tracer.json")
+    lenses, *sources = tracer.planes
+    main_lens_galaxies = lenses[:2]
+    host_halo = lenses[-1].dark
+    redshift_lens = lenses[0].redshift
+    source_redshifts = [plane[0].redshift for plane in sources]
+    source_centres = [plane[0].bulge.centre for plane in sources]
+    main_lens_centres = [g.mass.centre for g in main_lens_galaxies]
+    host_halo_centre = host_halo.centre
 
 with timer.section("setup_imaging_grid"):
     imaging_grid = al.Grid2D.uniform(shape_native=(1000, 1000), pixel_scales=0.1)
@@ -184,73 +165,6 @@ with timer.section("setup_imaging_grid"):
         centre_list=main_lens_centres,
     )
     imaging_grid = imaging_grid.apply_over_sampling(over_sample_size=imaging_over_sample)
-
-with timer.section("setup_galaxies"):
-    main_lens_dpie_params = [
-        (8.0, 20.0, 3.0),
-        (5.0, 12.0, 1.2),
-    ]
-    main_lens_sersic_params = [
-        (1.5, 3.0, 4.0),
-        (0.8, 1.5, 3.5),
-    ]
-    main_lens_galaxies = []
-    for centre, (ra, rs, b0), (intensity, effective_radius, sersic_index) in zip(
-        main_lens_centres, main_lens_dpie_params, main_lens_sersic_params
-    ):
-        bulge = al.lp.SersicSph(
-            centre=centre,
-            intensity=intensity,
-            effective_radius=effective_radius,
-            sersic_index=sersic_index,
-        )
-        mass = al.mp.dPIEMassB0Sph(centre=centre, ra=ra, rs=rs, b0=b0)
-        main_lens_galaxies.append(al.Galaxy(redshift=redshift_lens, bulge=bulge, mass=mass))
-
-    host_halo = al.mp.NFWMCRLudlowSph(
-        centre=host_halo_centre,
-        mass_at_200=10**15.3,
-        redshift_object=redshift_lens,
-        redshift_source=max(source_redshifts),
-    )
-    host_halo_galaxy = al.Galaxy(redshift=redshift_lens, dark=host_halo)
-
-    source_galaxies = []
-    for i, (centre, src_z) in enumerate(zip(source_centres, source_redshifts)):
-        bulge = al.lp.SersicCore(
-            centre=centre,
-            ell_comps=al.convert.ell_comps_from(axis_ratio=0.8, angle=60.0 + 30.0 * i),
-            intensity=2.0,
-            effective_radius=0.3,
-            sersic_index=1.0,
-        )
-        point = al.ps.Point(centre=centre)
-        source_galaxies.append(al.Galaxy(redshift=src_z, bulge=bulge, **{f"point_{i}": point}))
-
-    scaling_galaxies = []
-    _lum_ref = max(scaling_galaxies_luminosities)
-    for centre, luminosity in zip(scaling_galaxies_centres, scaling_galaxies_luminosities):
-        ratio = luminosity / _lum_ref
-        scaling_galaxies.append(
-            al.Galaxy(
-                redshift=redshift_lens,
-                bulge=al.lp.SersicSph(
-                    centre=centre, intensity=luminosity, effective_radius=0.8, sersic_index=3.0
-                ),
-                mass=al.mp.dPIEMassB0Sph(
-                    centre=centre,
-                    ra=SCALING_RA,
-                    rs=SCALING_RS_REF * ratio**SCALING_EXPONENT,
-                    b0=SCALING_B0_REF * ratio**SCALING_EXPONENT,
-                ),
-            )
-        )
-
-with timer.section("setup_tracer"):
-    tracer = al.Tracer(
-        galaxies=main_lens_galaxies + scaling_galaxies + [host_halo_galaxy] + source_galaxies
-    )
-
 
 # === PART 2 — Pytree registration ===
 
@@ -269,11 +183,15 @@ with timer.section("register_pytrees"):
                 sersic_index=g.bulge.sersic_index,
             ),
             mass=af.Model(
-                al.mp.dPIEMassB0Sph,
+                al.mp.dPIEMassSph,
                 centre=g.mass.centre,
-                ra=g.mass.ra,
-                rs=g.mass.rs,
-                b0=g.mass.b0,
+                r_core=g.mass.r_core,
+                r_cut=g.mass.r_cut,
+                sigma=g.mass.sigma,
+                H0=g.mass.H0,
+                Om0=g.mass.Om0,
+                redshift_object=redshift_lens,
+                redshift_source=max(source_redshifts),
             ),
         )
         for g in main_lens_galaxies
@@ -337,8 +255,7 @@ print("\n--- PART 4: jitted_solve per source ---")
 # committed positions back-traced to the truth centre only on the z=2.0 plane). It is
 # closed over per source below (a python float, so it must be static under jit).
 def jitted_solve_for(plane_redshift):
-    @jax.jit
-    def jitted_solve(tracer, source_plane_coordinate):
+    def jitted_solve(source_plane_coordinate):
         return solver.solve(
             tracer=tracer,
             source_plane_coordinate=source_plane_coordinate,
@@ -360,7 +277,7 @@ for i, (src_centre, src_z) in enumerate(zip(source_centres, source_redshifts)):
     # independently for each source — this is what makes per-source compile
     # cost visible.
     _, raw = jit_profile(
-        lambda c, _tracer=tracer, _solve=jitted_solve: _solve(_tracer, c),
+        jitted_solve,
         f"jitted_solve_src{i}",
         coord,
         n_repeats=3,
@@ -406,33 +323,15 @@ with timer.section("output_fits"):
         overwrite=True,
     )
 
-with timer.section("output_scaling_galaxies_csv"):
-    al.galaxy_table_to_csv(
-        centres=scaling_galaxies_centres,
-        luminosities=scaling_galaxies_luminosities,
-        file_path=dataset_path / "scaling_galaxies.csv",
-    )
-
-with timer.section("output_point_datasets"):
-    # Position noise = 5 mas (HST PSF-centroiding precision), not the imaging pixel scale.
-    position_noise = 0.005
-    dataset_list = []
-    for i, positions in enumerate(positions_list):
-        ds = al.PointDataset(
-            name=f"point_{i}",
-            positions=positions,
-            positions_noise_map=position_noise,
-            redshift=source_redshifts[i],
-        )
-        dataset_list.append(ds)
-        al.output_to_json(obj=ds, file_path=dataset_path / f"point_dataset_{i}.json")
-    al.output_to_csv(
-        datasets=dataset_list,
-        file_path=dataset_path / "point_datasets.csv",
-    )
+# The solver above is timed independently. Fit exactly the reviewed noisy observations.
+with timer.section("output_gallery_catalogue"):
+    for filename in simple_cluster.INPUTS:
+        shutil.copyfile(simple_cluster.DIRECTORY / filename, dataset_path / filename)
+    dataset_list = al.list_from_csv(file_path=dataset_path / "point_datasets.csv")
+    for i, dataset in enumerate(dataset_list):
+        al.output_to_json(obj=dataset, file_path=dataset_path / f"point_dataset_{i}.json")
 
 with timer.section("output_json"):
-    al.output_to_json(obj=tracer, file_path=dataset_path / "tracer.json")
     al.output_to_json(
         obj=al.Grid2DIrregular(main_lens_centres),
         file_path=dataset_path / "main_lens_centres.json",
@@ -497,6 +396,8 @@ results_summary = {
             round(solver_compile_total / via_tracer_time, 2) if via_tracer_time > 0 else None
         ),
     },
+    "gallery_revision": simple_cluster.GALLERY_REVISION,
+    "observed_counts": [len(d.positions) for d in dataset_list],
     "positions_found": {f"src{i}": len(p) for i, p in enumerate(positions_list)},
 }
 

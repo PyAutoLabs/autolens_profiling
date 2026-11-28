@@ -1638,16 +1638,23 @@ def auto_simulate_if_missing(
     """
     import autolens as al
 
+    simple_cluster = (dataset_type, instrument) == ("cluster", "simple")
+    if simple_cluster and dataset_path.is_dir():
+        # The resolution-regime check can remove a cache before regenerating it.
+        _validate_simple_cluster(dataset_path)
+
     if al.util.dataset.should_simulate(str(dataset_path)):
         _run_simulator(dataset_path, dataset_type, instrument, workspace_root)
-
-    if (dataset_type, instrument) == ("cluster", "simple"):
-        _validate_simple_cluster(dataset_path)
+        if simple_cluster:
+            _validate_simple_cluster(dataset_path)
 
 
 def _validate_simple_cluster(dataset_path: Path) -> None:
     """Reject legacy simple-cluster caches before their truth enters a fit."""
+    import csv
+
     import autolens as al
+    import numpy as np
 
     recovery = (
         "Move the old dataset directory aside and rerun the cluster cell "
@@ -1656,6 +1663,20 @@ def _validate_simple_cluster(dataset_path: Path) -> None:
     members = dataset_path / "scaling_galaxies.csv"
     if not members.is_file():
         raise FileNotFoundError(f"Missing simple-cluster member table: {members}. {recovery}")
+
+    try:
+        table = al.galaxy_table_from_csv(file_path=members)
+        if not table.luminosities:
+            raise ValueError("no member rows")
+        if not np.isfinite(table.centres).all():
+            raise ValueError("member coordinates must be finite")
+        luminosities = np.asarray(table.luminosities)
+        if not np.isfinite(luminosities).all() or (luminosities <= 0).any():
+            raise ValueError("member luminosities must be finite and positive")
+    except (OSError, csv.Error, KeyError, TypeError, ValueError) as exc:
+        raise ValueError(
+            f"Cannot load simple-cluster members from {members}: {exc}. {recovery}"
+        ) from exc
 
     truth = dataset_path / "tracer.json"
     try:
@@ -1666,6 +1687,18 @@ def _validate_simple_cluster(dataset_path: Path) -> None:
         ) from exc
     if not isinstance(tracer, al.Tracer):
         raise ValueError(f"Expected a Tracer in {truth}, found {type(tracer).__name__}. {recovery}")
+
+    import simple_cluster
+
+    for filename in simple_cluster.INPUTS:
+        cached = dataset_path / filename
+        if (
+            not cached.is_file()
+            or cached.read_text() != (simple_cluster.DIRECTORY / filename).read_text()
+        ):
+            raise ValueError(
+                f"{cached} does not match the reviewed Simple gallery fixture. {recovery}"
+            )
 
 
 def _run_simulator(

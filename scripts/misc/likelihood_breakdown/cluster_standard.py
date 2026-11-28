@@ -4,7 +4,7 @@ Every setup of one cluster likelihood evaluates one model: the standard cluster 
 ``dataset/cluster/simple`` (2 main dPIE + 10 scaling-relation dPIE members + 1 NFW host at
 z = 0.5; 2 point sources at z = 1.0 and 2.0, so ray-tracing is multi-plane), parameterised the
 way ``scripts/cluster/image_plane/likelihood_breakdown.py`` parameterises its fused rows: tight
-Gaussian priors on the truth (main lenses fully free, one shared scaling-relation normalisation,
+Gaussian priors on the truth (main-lens centres, dispersions and cut radii free, one shared scaling-relation normalisation,
 a free NFW centre), evaluated at the prior-median instance. This module holds that model, the
 PointSolver settings of the standard cell, and the runtime driver the two runtime scripts call,
 so the runtime and breakdown of one likelihood cannot drift:
@@ -65,17 +65,6 @@ HISTORIC_SOLVER = {
     "magnification_threshold": 0.1,
     "residual_threshold": None,
 }
-
-#: Constants of the standard cluster (``simulators/cluster.py``).
-REDSHIFT_LENS = 0.5
-MAIN_LENS_PARAMS = (
-    ((0.0, 0.0), 8.0, 20.0, 3.0),
-    ((10.0, 8.0), 5.0, 12.0, 1.2),
-)
-SCALING_B0_REF, SCALING_RS_REF, SCALING_RA, SCALING_EXPONENT = 0.12, 10.0, 0.1, 0.5
-MASS_AT_200 = 10**15.3
-#: The simulator's true source centres, the source-plane cell's ``Point`` centres.
-TRUTH_SOURCE_CENTRES = ((0.3, 0.5), (-0.8, 1.2))
 
 #: The fit classes per likelihood: the solved headline and the plain sub-row (decision D3).
 FIT_CLASS_NAMES = {
@@ -146,63 +135,32 @@ def load_cell(profiling_root: Path) -> dict:
     import numpy as np
 
     from _profile_cli import auto_simulate_if_missing
+    from simple_cluster import GALLERY_REVISION
 
     dataset_path = Path(profiling_root) / "dataset" / "cluster" / INSTRUMENT
     auto_simulate_if_missing(
         dataset_path, dataset_type="cluster", instrument=INSTRUMENT, workspace_root=profiling_root
     )
     dataset_list = al.list_from_csv(file_path=dataset_path / "point_datasets.csv")
-    scaling_table = al.galaxy_table_from_csv(file_path=dataset_path / "scaling_galaxies.csv")
-    lum_ref = max(scaling_table.luminosities)
-    z_source_max = max(float(d.redshift) for d in dataset_list)
-
-    galaxies = [
-        al.Galaxy(
-            redshift=REDSHIFT_LENS,
-            mass=al.mp.dPIEMassB0Sph(centre=centre, ra=ra, rs=rs, b0=b0),
-        )
-        for centre, ra, rs, b0 in MAIN_LENS_PARAMS
+    truth = al.from_json(file_path=dataset_path / "tracer.json")
+    lens_plane, *source_planes = truth.planes
+    # Only mass and point profiles enter the timed likelihood.
+    lenses = [al.Galaxy(redshift=g.redshift, mass=g.mass) for g in lens_plane[:-1]]
+    host = lens_plane[-1]
+    lenses.append(al.Galaxy(redshift=host.redshift, dark=host.dark))
+    centres = [plane[0].bulge.centre for plane in source_planes]
+    sources = [
+        al.Galaxy(redshift=d.redshift, **{d.name: al.ps.Point(centre=c)})
+        for d, c in zip(dataset_list, centres, strict=True)
     ]
-    galaxies += [
-        al.Galaxy(
-            redshift=REDSHIFT_LENS,
-            mass=al.mp.dPIEMassB0Sph(
-                centre=tuple(centre),
-                ra=SCALING_RA,
-                rs=SCALING_RS_REF * (lum / lum_ref) ** SCALING_EXPONENT,
-                b0=SCALING_B0_REF * (lum / lum_ref) ** SCALING_EXPONENT,
-            ),
-        )
-        for centre, lum in zip(scaling_table.centres, scaling_table.luminosities)
-    ]
-    galaxies.append(
-        al.Galaxy(
-            redshift=REDSHIFT_LENS,
-            dark=al.mp.NFWMCRLudlowSph(
-                centre=(0.0, 0.0),
-                mass_at_200=MASS_AT_200,
-                redshift_object=REDSHIFT_LENS,
-                redshift_source=z_source_max,
-            ),
-        )
-    )
-    lens_tracer = al.Tracer(
-        galaxies=galaxies
-        + [
-            al.Galaxy(redshift=float(d.redshift), **{d.name: al.ps.Point(centre=c)})
-            for d, c in zip(dataset_list, TRUTH_SOURCE_CENTRES)
-        ]
-    )
-    positions_list = [np.atleast_2d(np.asarray(d.positions)) for d in dataset_list]
     return {
-        "dataset_path": dataset_path,
         "dataset_list": dataset_list,
-        "scaling_table": scaling_table,
-        "lum_ref": lum_ref,
-        "z_source_max": z_source_max,
-        "tracer": lens_tracer,
-        "positions_list": positions_list,
-        "n_mass_profiles": len(galaxies),
+        "gallery_revision": GALLERY_REVISION,
+        "lenses": lenses,
+        "source_centres": centres,
+        "tracer": al.Tracer(galaxies=lenses + sources),
+        "positions_list": [np.asarray(d.positions) for d in dataset_list],
+        "n_mass_profiles": len(lenses),
     }
 
 
@@ -223,59 +181,26 @@ def backtraced_centres(cell: dict) -> list[tuple[float, float]]:
     return centres
 
 
-def _gaussian(mean, fraction=0.01, floor=0.01):
-    import autofit as af
-
-    return af.GaussianPrior(mean=float(mean), sigma=max(abs(float(mean)) * fraction, floor))
-
-
 def model(cell: dict, *, solved: bool, point_centres):
-    """The cell's model: tight Gaussians on the truth, the prior-median instance is the truth
-    lens with each ``Point`` at ``point_centres`` (``PointSolved`` when ``solved``)."""
+    """Build the shared gallery lens model and attach the fitted point profiles."""
     import autofit as af
     import autolens as al
 
-    galaxies = {}
-    for i, (centre, ra, rs, b0) in enumerate(MAIN_LENS_PARAMS):
-        mass = af.Model(al.mp.dPIEMassB0Sph)
-        mass.centre.centre_0 = _gaussian(centre[0])
-        mass.centre.centre_1 = _gaussian(centre[1])
-        mass.ra = _gaussian(ra)
-        mass.rs = _gaussian(rs)
-        mass.b0 = _gaussian(b0)
-        galaxies[f"main_{i}"] = af.Model(al.Galaxy, redshift=REDSHIFT_LENS, mass=mass)
+    from simple_cluster import gaussian, lens_model
 
-    table = cell["scaling_table"]
-    b0_ref = _gaussian(SCALING_B0_REF, floor=0.001)
-    for i, (centre, lum) in enumerate(zip(table.centres, table.luminosities)):
-        ratio = (lum / cell["lum_ref"]) ** SCALING_EXPONENT
-        mass = af.Model(al.mp.dPIEMassB0Sph)
-        mass.centre = tuple(centre)
-        mass.ra = SCALING_RA
-        mass.rs = SCALING_RS_REF * ratio
-        mass.b0 = b0_ref * ratio
-        galaxies[f"scaling_{i}"] = af.Model(al.Galaxy, redshift=REDSHIFT_LENS, mass=mass)
-
-    dark = af.Model(
-        al.mp.NFWMCRLudlowSph,
-        mass_at_200=MASS_AT_200,
-        redshift_object=REDSHIFT_LENS,
-        redshift_source=cell["z_source_max"],
-    )
-    dark.centre.centre_0 = _gaussian(0.0)
-    dark.centre.centre_1 = _gaussian(0.0)
-    galaxies["host_halo"] = af.Model(al.Galaxy, redshift=REDSHIFT_LENS, dark=dark)
-
+    model = lens_model(cell["lenses"])
     for i, (d, centre) in enumerate(zip(cell["dataset_list"], point_centres)):
         if solved:
             point = af.Model(al.ps.PointSolved)
         else:
             point = af.Model(al.ps.Point)
-            point.centre.centre_0 = _gaussian(centre[0])
-            point.centre.centre_1 = _gaussian(centre[1])
-        galaxies[f"source_{i}"] = af.Model(al.Galaxy, redshift=float(d.redshift), **{d.name: point})
+            point.centre.centre_0 = gaussian(centre[0])
+            point.centre.centre_1 = gaussian(centre[1])
+        model.galaxies[f"source_{i}"] = af.Model(
+            al.Galaxy, redshift=float(d.redshift), **{d.name: point}
+        )
 
-    return af.Collection(galaxies=af.Collection(**galaxies))
+    return model
 
 
 def fit_classes(likelihood: str) -> dict:
@@ -298,9 +223,13 @@ def analyses(cell: dict, likelihood: str, arm: str, solver, *, use_jax: bool) ->
 # --------------------------------------------------------------------------- the runtime
 
 
-def _summed(analysis_list):
+def summed_likelihood(model, analysis_list):
+    """Rebuild the physical model from its free parameters inside the timed JIT."""
+    import jax.numpy as jnp
+
     def full(params):
-        return sum(a.log_likelihood_function(instance=params) for a in analysis_list)
+        instance = model.instance_from_vector(vector=params, xp=jnp)
+        return sum(a.log_likelihood_function(instance=instance) for a in analysis_list)
 
     return full
 
@@ -354,7 +283,7 @@ def run_runtime(likelihood: str, cli, *, profiling_root: Path) -> Path:
         )
     else:
         settings, solver = None, None
-        point_centres = list(TRUTH_SOURCE_CENTRES)
+        point_centres = cell["source_centres"]
         point_centres_source = "plain sub-row only: the simulator's true source centres"
 
     arms: dict[str, Any] = {}
@@ -367,7 +296,7 @@ def run_runtime(likelihood: str, cli, *, profiling_root: Path) -> Path:
         m = model(cell, solved=arm == "solved", point_centres=point_centres)
         instance = m.instance_from_vector(vector=m.physical_values_from_prior_medians)
         register_model(m)
-        params = jax.tree_util.tree_map(jnp.asarray, instance)
+        params = jnp.asarray(m.physical_values_from_prior_medians)
 
         eager = analyses(cell, likelihood, arm, solver, use_jax=False)
         t0 = time.perf_counter()
@@ -381,7 +310,7 @@ def run_runtime(likelihood: str, cli, *, profiling_root: Path) -> Path:
                 [float(v) for v in fit.positions.source_plane_coordinate] for fit in eager_fits
             ]
 
-        full = _summed(analyses(cell, likelihood, arm, solver, use_jax=True))
+        full = summed_likelihood(m, analyses(cell, likelihood, arm, solver, use_jax=True))
         if arm == HEADLINE_ARM and gradient_harness.gradient_requested():
             # Phase 6 (#507): the headline (solved) class's own fused likelihood.
             device = "gpu" if jax.default_backend() == "gpu" else "cpu"
@@ -416,7 +345,7 @@ def run_runtime(likelihood: str, cli, *, profiling_root: Path) -> Path:
             "jit_phases": jit_records[f"full_pipeline_{arm}"],
         }
         if arm == HEADLINE_ARM:
-            headline_compiled, headline_params = compiled, params
+            headline_compiled, headline_params, full_headline = compiled, params, full
         else:
             del compiled
         gc.collect()
@@ -434,7 +363,6 @@ def run_runtime(likelihood: str, cli, *, profiling_root: Path) -> Path:
     backend = jax.default_backend()
     batch_size = VMAP_BATCH["gpu" if backend == "gpu" else "cpu"]
     print(f"\n--- vmap {headline_cls} (batch {batch_size}, cluster_standard.VMAP_BATCH) ---")
-    full_headline = _summed(analyses(cell, likelihood, HEADLINE_ARM, solver, use_jax=True))
     vmap: dict[str, Any] | None = None
     attempts = []
     for nb in sorted({batch_size, max(1, batch_size // 2), 1}, reverse=True):
@@ -475,6 +403,9 @@ def run_runtime(likelihood: str, cli, *, profiling_root: Path) -> Path:
 
     al_version = al.__version__
     configuration = {
+        "gallery_revision": cell["gallery_revision"],
+        "n_images_per_family": {d.name: len(d.positions) for d in cell["dataset_list"]},
+        "mass_parameterization": "dPIEMassSph (sigma, r_core, r_cut)",
         "likelihood": f"{likelihood} ({headline_cls})",
         "headline_arm": HEADLINE_ARM,
         "sub_row_arm": SUB_ARM,
@@ -495,6 +426,11 @@ def run_runtime(likelihood: str, cli, *, profiling_root: Path) -> Path:
         "n_repeats": n_repeats,
         "jax_enable_x64": bool(jax.config.jax_enable_x64),
     }
+    if likelihood == "image_plane":
+        configuration["n_predicted_images_per_family"] = {
+            dataset.name: int(np.isfinite(np.asarray(fit.positions.model_data)).all(axis=1).sum())
+            for dataset, fit in zip(cell["dataset_list"], eager_fits, strict=True)
+        }
     summary: dict[str, Any] = {
         "autolens_version": al_version,
         "device": device_info_dict(),

@@ -16,6 +16,7 @@ Discovery links are not exact setup/version applicability or evidence that a mod
 
 | Exact configuration | Evidence source | Records |
 |---|---|---|
+| [1ad258f7ea660458ecaf](de5706399088ed20d17e.md) | results/cluster/image_plane/simple/jax_cpu_na_fp64/local_laptop/runtime.json | 14 |
 | [2e3107c95d70bc050b65](fe5222d1cbad75011ca4.md) | results/cluster/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/experiments/robust_settings_sweep/breakdown.json | 1 |
 | [4cd4b7ee6eae1f714728](2a0e1f097d2191fd37c9.md) | results/cluster/image_plane/simple/jax_cpu_na_fp64/hpc_ral_cpu/runtime.json | 14 |
 | [6c720640e3ed895baf0b](05d316717f0563b06065.md) | results/cluster/image_plane/simple/jax_cpu_na_fp64/local_laptop/experiments/robust_settings_sweep_draws53_73_81/breakdown.json | 1 |

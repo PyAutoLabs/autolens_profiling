@@ -1,0 +1,132 @@
+{
+  "settings": {
+    "grid_shape_native": [
+      100,
+      100
+    ],
+    "grid_pixel_scales": 1.0,
+    "pixel_scale_precision": 0.001,
+    "magnification_threshold": 0.1,
+    "residual_threshold": 10.0,
+    "residual_threshold_source": "explicit"
+  },
+  "families": {
+    "point_0": {
+      "observed": 5,
+      "predicted": 4,
+      "nearest_arcsec": [
+        0.003452083620545436,
+        2.764217793433222,
+        0.0016206646458204923,
+        0.0024781116113430923,
+        0.0010937165368957596
+      ],
+      "matched_distinct_within_0p01_arcsec": 4,
+      "source_centre_yx_arcsec": [
+        0.3003489355823258,
+        0.5001001820842671
+      ]
+    },
+    "point_1": {
+      "observed": 2,
+      "predicted": 2,
+      "nearest_arcsec": [
+        0.0012174008121917951,
+        0.0006653411440818765
+      ],
+      "matched_distinct_within_0p01_arcsec": 2,
+      "source_centre_yx_arcsec": [
+        -0.800898072480259,
+        1.200782609764027
+      ]
+    }
+  },
+  "gallery_revision": "017c8673aba5a579b2cba3318a3d1bae34b9b595",
+  "fit_class": "FitPositionsImagePairRepeatSolved",
+  "parameter_vector": [
+    85.0,
+    0.0,
+    0.0,
+    20.0,
+    330.0,
+    10.0,
+    8.0,
+    12.0,
+    210.0,
+    0.0,
+    0.0
+  ],
+  "numpy_log_likelihood": -152787.82064745954,
+  "jax_log_likelihood": -152787.8206474597,
+  "phases": {
+    "lower_s": 97.99953123900195,
+    "compile_s": 3.865854001000116,
+    "first_call_s": 0.028286875000048894,
+    "steady_per_call_s": 0.01981007900030818
+  },
+  "steady": {
+    "n_warm": 5,
+    "n_timed": 200,
+    "median_s": 0.011777939500461798,
+    "p10_s": 0.00883978310303064,
+    "p90_s": 0.01760892409838561,
+    "mean_s": 0.012712448015081463,
+    "statistic": "median of individually timed calls after warm calls"
+  },
+  "device": {
+    "backend": "cpu",
+    "device": "cpu:0",
+    "hostname": "DESKTOP-H143S82",
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": "1",
+    "cpu_count": 8,
+    "jax_compilation_cache_dir": "/home/jammy/.cache/pyauto_jax",
+    "autotune_cache_entries_at_start": 0,
+    "cache_fresh": true,
+    "provenance": {
+      "provenance_schema": 1,
+      "captured_at": "2026-11-25T16:44:22Z",
+      "host": "DESKTOP-H143S82",
+      "slurm": {
+        "job_id": null,
+        "array_job_id": null,
+        "array_task_id": null
+      },
+      "loadavg_at_import": [
+        7.979,
+        7.18,
+        4.52
+      ],
+      "loadavg_at_write": [
+        7.927,
+        7.244,
+        4.833
+      ],
+      "profiling_revision": "177c5d10e7fbe14e3e8e61a75af63963acccd6b2",
+      "library_revisions": {
+        "autolens_profiling": "177c5d10e7fbe14e3e8e61a75af63963acccd6b2",
+        "PyAutoNerves": "3af6de8d6f9262289bd5e9dd2d78e191403332f1",
+        "PyAutoFit": "cc764bf70bcca8015fb6eb2e99cbb1a226a073ad",
+        "PyAutoArray": "5240c7e88618d4bb0d9845e07e3ddf4e18bef1d7",
+        "PyAutoGalaxy": "9756fa9c1615d18b3e7d21fcb2e2c8e3b5290c63",
+        "PyAutoLens": "f216a053b87b90d708827fc270eb3de80168eb78"
+      },
+      "library_versions": {
+        "PyAutoNerves": "2026.8.17.1",
+        "PyAutoFit": "2026.8.17.1",
+        "PyAutoArray": "2026.8.17.1",
+        "PyAutoGalaxy": "2026.8.17.1",
+        "PyAutoLens": "2026.8.17.1"
+      },
+      "dependency_versions": {
+        "jax": "0.10.2",
+        "jaxlib": "0.10.2",
+        "numpy": "2.2.6",
+        "scipy": "1.17.1",
+        "numba": "0.62.1",
+        "nufftax": "0.6.1",
+        "finufft": "2.5.1"
+      }
+    }
+  }
+}

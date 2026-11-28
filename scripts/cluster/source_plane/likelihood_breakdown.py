@@ -211,79 +211,14 @@ likelihood_steps = []  # (label, per_call_seconds)
 # ---------------------------------------------------------------------------
 # 1. Dataset (auto-simulated on first run via simulators/cluster.py)
 # ---------------------------------------------------------------------------
-dataset_path = _workspace_root / "dataset" / "cluster" / "simple"
+from likelihood_breakdown import cluster_standard  # noqa: E402
 
-auto_simulate_if_missing(
-    dataset_path,
-    dataset_type="cluster",
-    instrument="simple",
-    workspace_root=_workspace_root,
-)
-
-dataset_list = al.list_from_csv(file_path=dataset_path / "point_datasets.csv")
-print(f"Loaded {len(dataset_list)} point-source systems from {dataset_path}.")
-
-# ---------------------------------------------------------------------------
-# 2. Tracer — the standard cluster model, at the simulator truth values.
-#    Constants mirror simulators/cluster.py (which mirrors the workspace
-#    cluster simulator + its reference-anchored scaling relation).
-# ---------------------------------------------------------------------------
-redshift_lens = 0.5
-
-main_lens_params = [
-    ((0.0, 0.0), 8.0, 20.0, 3.0),
-    ((10.0, 8.0), 5.0, 12.0, 1.2),
-]
-main_lens_galaxies = [
-    al.Galaxy(
-        redshift=redshift_lens,
-        mass=al.mp.dPIEMassB0Sph(centre=centre, ra=ra, rs=rs, b0=b0),
-    )
-    for centre, ra, rs, b0 in main_lens_params
-]
-
-scaling_table = al.galaxy_table_from_csv(file_path=dataset_path / "scaling_galaxies.csv")
-SCALING_B0_REF, SCALING_RS_REF, SCALING_RA, SCALING_EXPONENT = 0.12, 10.0, 0.1, 0.5
-_lum_ref = max(scaling_table.luminosities)
-scaling_galaxies = [
-    al.Galaxy(
-        redshift=redshift_lens,
-        mass=al.mp.dPIEMassB0Sph(
-            centre=tuple(centre),
-            ra=SCALING_RA,
-            rs=SCALING_RS_REF * (lum / _lum_ref) ** SCALING_EXPONENT,
-            b0=SCALING_B0_REF * (lum / _lum_ref) ** SCALING_EXPONENT,
-        ),
-    )
-    for centre, lum in zip(scaling_table.centres, scaling_table.luminosities)
-]
-
-host_halo_galaxy = al.Galaxy(
-    redshift=redshift_lens,
-    dark=al.mp.NFWMCRLudlowSph(
-        centre=(0.0, 0.0),
-        mass_at_200=10**15.3,
-        redshift_object=redshift_lens,
-        redshift_source=max(float(d.redshift) for d in dataset_list),
-    ),
-)
-
-# Point centres at the simulator truth (simulators/cluster.py source_centres) —
-# name pairing hands these to the fit as the source-plane reference points.
-TRUTH_SOURCE_CENTRES = [(0.3, 0.5), (-0.8, 1.2)]
-source_galaxies = [
-    al.Galaxy(redshift=float(d.redshift), **{d.name: al.ps.Point(centre=centre)})
-    for d, centre in zip(dataset_list, TRUTH_SOURCE_CENTRES)
-]
-
-tracer = al.Tracer(
-    galaxies=main_lens_galaxies + scaling_galaxies + [host_halo_galaxy] + source_galaxies
-)
-n_mass_profiles = len(main_lens_galaxies) + len(scaling_galaxies) + 1
-print(
-    f"Tracer: {len(tracer.planes)} planes, {n_mass_profiles} mass components "
-    f"(2 main dPIE + {len(scaling_galaxies)} scaling dPIE + 1 NFW host)."
-)
+cell = cluster_standard.load_cell(_workspace_root)
+dataset_list = cell["dataset_list"]
+tracer = cell["tracer"]
+lenses = cell["lenses"]
+n_mass_profiles = cell["n_mass_profiles"]
+print(f"Tracer: {len(tracer.planes)} planes, {n_mass_profiles} mass components.")
 
 # Solved-variant tracer: `al.ps.PointSolved` (0 params) in place of
 # `al.ps.Point(centre=...)` (2 centre params) per source, name-paired the
@@ -291,11 +226,9 @@ print(
 source_galaxies_solved = [
     al.Galaxy(redshift=float(d.redshift), **{d.name: al.ps.PointSolved()}) for d in dataset_list
 ]
-tracer_solved = al.Tracer(
-    galaxies=main_lens_galaxies + scaling_galaxies + [host_halo_galaxy] + source_galaxies_solved
-)
+tracer_solved = al.Tracer(galaxies=lenses + source_galaxies_solved)
 
-positions_list = [np.atleast_2d(np.asarray(d.positions)) for d in dataset_list]
+positions_list = cell["positions_list"]
 noise_list = [np.asarray(d.positions_noise_map) for d in dataset_list]
 plane_indices = [
     tracer.plane_index_via_redshift_from(redshift=float(d.redshift)) for d in dataset_list
@@ -471,7 +404,7 @@ _n_headline_steps = len(likelihood_steps)
 # ---------------------------------------------------------------------------
 plain_chi_squared_per_system = []
 for i, (dataset, traced, jacobians, noise, centre) in enumerate(
-    zip(dataset_list, traced_per_system, jacobians_per_system, noise_list, TRUTH_SOURCE_CENTRES)
+    zip(dataset_list, traced_per_system, jacobians_per_system, noise_list, cell["source_centres"])
 ):
 
     def weighted_chi_squared(traced_arr, jacobian_arr, noise_arr, centre_arr):
@@ -648,6 +581,8 @@ breakdown_summary = {
     "thread_environment": thread_environment(),
     "n_repeats": 10,
     "configuration": {
+        "gallery_revision": cell["gallery_revision"],
+        "n_images_per_family": {d.name: len(d.positions) for d in dataset_list},
         "n_systems": len(dataset_list),
         "n_images_total": int(sum(len(p) for p in positions_list)),
         "n_planes": len(tracer.planes),
@@ -680,7 +615,7 @@ breakdown_summary = {
         "fit_positions_cls": "FitPositionsSource",
         "log_likelihood": float(plain_log_likelihood),
         "reference_log_likelihood": reference_log_likelihood_plain,
-        "point_centres": [list(c) for c in TRUTH_SOURCE_CENTRES],
+        "point_centres": [list(c) for c in cell["source_centres"]],
         "delta_solved_minus_plain_per_system_s": delta_per_system,
         "delta_solved_minus_plain_total_s": delta_total,
     },
